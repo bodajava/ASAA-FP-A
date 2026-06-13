@@ -43,8 +43,8 @@ function RawMaterialPriceForm({ item, onClose, onSubmit, isLoading }: FormProps)
   const [source, setSource] = useState(item?.source ?? '');
 
   useEffect(() => {
-    apiGet<Material[]>('/materials')
-      .then(setMaterials)
+    apiGet<{ data: Material[] }>('/materials')
+      .then((res) => setMaterials(res.data))
       .catch(() => setMaterials([]));
   }, []);
 

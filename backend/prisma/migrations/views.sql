@@ -137,43 +137,43 @@ forecast_agg AS (
     fl.account_id, fl.site_id, fl.product_id, fl.customer_id
 )
 SELECT
-  b.company_id,
-  b.fiscal_year,
-  b.period_month,
-  b.account_id,
-  b.site_id,
-  b.product_id,
-  b.customer_id,
-  b.budget_amount,
-  COALESCE(a.actual_amount, 0) AS actual_amount,
+  a.company_id,
+  a.fiscal_year,
+  a.period_month,
+  a.account_id,
+  a.site_id,
+  a.product_id,
+  a.customer_id,
+  COALESCE(b.budget_amount, 0) AS budget_amount,
+  a.actual_amount,
   COALESCE(f.forecast_amount, 0) AS forecast_amount,
-  COALESCE(a.actual_amount, 0) - b.budget_amount AS actual_vs_budget,
-  COALESCE(f.forecast_amount, 0) - b.budget_amount AS forecast_vs_budget,
+  a.actual_amount - COALESCE(b.budget_amount, 0) AS actual_vs_budget,
+  COALESCE(f.forecast_amount, 0) - COALESCE(b.budget_amount, 0) AS forecast_vs_budget,
   CASE
-    WHEN b.budget_amount = 0 THEN NULL
-    ELSE ROUND(((COALESCE(a.actual_amount, 0) - b.budget_amount) / b.budget_amount) * 100, 2)
+    WHEN COALESCE(b.budget_amount, 0) = 0 THEN NULL
+    ELSE ROUND(((a.actual_amount - COALESCE(b.budget_amount, 0)) / COALESCE(b.budget_amount, 0)) * 100, 2)
   END AS actual_variance_pct,
   CASE
-    WHEN b.budget_amount = 0 THEN NULL
-    ELSE ROUND(((COALESCE(f.forecast_amount, 0) - b.budget_amount) / b.budget_amount) * 100, 2)
+    WHEN COALESCE(b.budget_amount, 0) = 0 THEN NULL
+    ELSE ROUND(((COALESCE(f.forecast_amount, 0) - COALESCE(b.budget_amount, 0)) / COALESCE(b.budget_amount, 0)) * 100, 2)
   END AS forecast_variance_pct
-FROM budget_agg b
-LEFT JOIN actual_agg a
-  ON  a.company_id   = b.company_id
-  AND a.fiscal_year  = b.fiscal_year
-  AND a.period_month = b.period_month
-  AND a.account_id   = b.account_id
-  AND (a.site_id     <=> b.site_id)
-  AND (a.product_id  <=> b.product_id)
-  AND (a.customer_id <=> b.customer_id)
+FROM actual_agg a
+LEFT JOIN budget_agg b
+  ON  b.company_id   = a.company_id
+  AND b.fiscal_year  = a.fiscal_year
+  AND b.period_month = a.period_month
+  AND b.account_id   = a.account_id
+  AND (b.site_id     <=> a.site_id)
+  AND (b.product_id  <=> a.product_id)
+  AND (b.customer_id <=> a.customer_id)
 LEFT JOIN forecast_agg f
-  ON  f.company_id   = b.company_id
-  AND f.fiscal_year  = b.fiscal_year
-  AND f.period_month = b.period_month
-  AND f.account_id   = b.account_id
-  AND (f.site_id     <=> b.site_id)
-  AND (f.product_id  <=> b.product_id)
-  AND (f.customer_id <=> b.customer_id);
+  ON  f.company_id   = a.company_id
+  AND f.fiscal_year  = a.fiscal_year
+  AND f.period_month = a.period_month
+  AND f.account_id   = a.account_id
+  AND (f.site_id     <=> a.site_id)
+  AND (f.product_id  <=> a.product_id)
+  AND (f.customer_id <=> a.customer_id);
 
 -- -------------------------------------------------------
 -- vw_branch_profitability

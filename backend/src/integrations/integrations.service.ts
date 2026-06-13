@@ -1337,6 +1337,360 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     }
+
+    // ============================================================
+    // 12. Sync Inventory Snapshots (FP_INVENTORY_SNAPSHOTS)
+    // ============================================================
+    try {
+      await this.prisma.inventorySnapshot.deleteMany({ where: { companyId } });
+      const invResult = await connInstance.execute(
+        `SELECT SITE_CODE, PRODUCT_CODE, MATERIAL_CODE, SNAPSHOT_DATE, QTY_ON_HAND, INVENTORY_VALUE FROM FP_INVENTORY_SNAPSHOTS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const invRows = (invResult.rows || []) as any[];
+      for (const row of invRows) {
+        const site = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } });
+        if (!site) continue;
+        let productId: bigint | null = null;
+        if (row.PRODUCT_CODE) {
+          const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } });
+          if (p) productId = p.id;
+        }
+        let materialId: bigint | null = null;
+        if (row.MATERIAL_CODE) {
+          const m = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } });
+          if (m) materialId = m.id;
+        }
+        await this.prisma.inventorySnapshot.create({
+          data: {
+            companyId,
+            siteId: site.id,
+            productId,
+            materialId,
+            snapshotDate: new Date(row.SNAPSHOT_DATE),
+            qtyOnHand: row.QTY_ON_HAND ?? 0,
+            inventoryValue: row.INVENTORY_VALUE ?? 0,
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_INVENTORY_SNAPSHOTS failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 13. Sync Budget Lines (FP_BUDGET_LINES)
+    // ============================================================
+    try {
+      const budgetYear = new Date().getFullYear();
+      let budgetCycle = await this.prisma.budgetCycle.findFirst({
+        where: { companyId, fiscalYear: budgetYear },
+      });
+      if (!budgetCycle) {
+        budgetCycle = await this.prisma.budgetCycle.create({
+          data: {
+            companyId,
+            name: `FY ${budgetYear} - Oracle Sync`,
+            fiscalYear: budgetYear,
+            status: 'approved' as any,
+            startDate: new Date(`${budgetYear}-01-01`),
+            endDate: new Date(`${budgetYear}-12-31`),
+          },
+        });
+      }
+      await this.prisma.budgetLine.deleteMany({ where: { budgetCycleId: budgetCycle.id } });
+      const budgetResult = await connInstance.execute(
+        `SELECT ACCOUNT_CODE, SITE_CODE, COST_CENTER_CODE, PRODUCT_CODE, MATERIAL_CODE, CUSTOMER_CODE, PERIOD_MONTH, QUANTITY, UNIT_PRICE, AMOUNT, NOTES FROM FP_BUDGET_LINES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const budgetRows = (budgetResult.rows || []) as any[];
+      for (const row of budgetRows) {
+        const account = await this.prisma.account.findFirst({ where: { companyId, code: row.ACCOUNT_CODE } });
+        if (!account) continue;
+        let siteId: bigint | null = null;
+        if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+        let costCenterId: bigint | null = null;
+        if (row.COST_CENTER_CODE) { const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: row.COST_CENTER_CODE } }); if (cc) costCenterId = cc.id; }
+        let productId: bigint | null = null;
+        if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+        let materialId: bigint | null = null;
+        if (row.MATERIAL_CODE) { const m = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } }); if (m) materialId = m.id; }
+        let customerId: bigint | null = null;
+        if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+        await this.prisma.budgetLine.create({
+          data: {
+            budgetCycleId: budgetCycle.id,
+            accountId: account.id,
+            siteId, costCenterId, productId, materialId, customerId,
+            periodMonth: row.PERIOD_MONTH,
+            quantity: row.QUANTITY ?? 0,
+            unitPrice: row.UNIT_PRICE ?? 0,
+            amount: row.AMOUNT ?? 0,
+            notes: row.NOTES ?? null,
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_BUDGET_LINES failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 14. Sync Forecast Lines (FP_FORECAST_LINES)
+    // ============================================================
+    try {
+      const budgetYear = new Date().getFullYear();
+      let forecastCycle = await this.prisma.forecastCycle.findFirst({
+        where: { companyId, fiscalYear: budgetYear },
+      });
+      if (!forecastCycle) {
+        forecastCycle = await this.prisma.forecastCycle.create({
+          data: {
+            companyId,
+            name: `FY ${budgetYear} - Oracle Sync`,
+            fiscalYear: budgetYear,
+            basePeriod: new Date(`${budgetYear}-01-01`),
+            status: 'approved' as any,
+          },
+        });
+      }
+      await this.prisma.forecastLine.deleteMany({ where: { forecastCycleId: forecastCycle.id } });
+      const forecastResult = await connInstance.execute(
+        `SELECT ACCOUNT_CODE, SITE_CODE, COST_CENTER_CODE, PRODUCT_CODE, MATERIAL_CODE, CUSTOMER_CODE, PERIOD_MONTH, QUANTITY, UNIT_PRICE, AMOUNT, DRIVER_TYPE, NOTES FROM FP_FORECAST_LINES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const forecastRows = (forecastResult.rows || []) as any[];
+      for (const row of forecastRows) {
+        const account = await this.prisma.account.findFirst({ where: { companyId, code: row.ACCOUNT_CODE } });
+        if (!account) continue;
+        let siteId: bigint | null = null;
+        if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+        let costCenterId: bigint | null = null;
+        if (row.COST_CENTER_CODE) { const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: row.COST_CENTER_CODE } }); if (cc) costCenterId = cc.id; }
+        let productId: bigint | null = null;
+        if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+        let materialId: bigint | null = null;
+        if (row.MATERIAL_CODE) { const m = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } }); if (m) materialId = m.id; }
+        let customerId: bigint | null = null;
+        if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+        await this.prisma.forecastLine.create({
+          data: {
+            forecastCycleId: forecastCycle.id,
+            accountId: account.id,
+            siteId, costCenterId, productId, materialId, customerId,
+            periodMonth: row.PERIOD_MONTH,
+            quantity: row.QUANTITY ?? 0,
+            unitPrice: row.UNIT_PRICE ?? 0,
+            amount: row.AMOUNT ?? 0,
+            driverType: row.DRIVER_TYPE ?? null,
+            notes: row.NOTES ?? null,
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_FORECAST_LINES failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 15. Sync Production Plans (FP_PRODUCTION_PLANS)
+    // ============================================================
+    try {
+      await this.prisma.productionPlan.deleteMany({ where: { companyId } });
+      const ppResult = await connInstance.execute(
+        `SELECT SITE_CODE, PRODUCT_CODE, PLAN_SOURCE, FISCAL_YEAR, PERIOD_MONTH, PLANNED_QTY, ACTUAL_QTY, ESTIMATED_COST, ACTUAL_COST FROM FP_PRODUCTION_PLANS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const ppRows = (ppResult.rows || []) as any[];
+      for (const row of ppRows) {
+        const site = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } });
+        if (!site) continue;
+        const product = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } });
+        if (!product) continue;
+        const planSource = row.PLAN_SOURCE?.toLowerCase() === 'auto' ? 'auto' as any : 'manual' as any;
+        await this.prisma.productionPlan.upsert({
+          where: {
+            companyId_siteId_productId_fiscalYear_periodMonth: {
+              companyId, siteId: site.id, productId: product.id,
+              fiscalYear: row.FISCAL_YEAR, periodMonth: row.PERIOD_MONTH,
+            },
+          },
+          update: { plannedQty: row.PLANNED_QTY ?? 0, actualQty: row.ACTUAL_QTY, estimatedCost: row.ESTIMATED_COST, actualCost: row.ACTUAL_COST, planSource },
+          create: {
+            companyId, siteId: site.id, productId: product.id,
+            fiscalYear: row.FISCAL_YEAR, periodMonth: row.PERIOD_MONTH,
+            plannedQty: row.PLANNED_QTY ?? 0, actualQty: row.ACTUAL_QTY, estimatedCost: row.ESTIMATED_COST, actualCost: row.ACTUAL_COST, planSource,
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_PRODUCTION_PLANS failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 16. Sync Headcount Plans (FP_HEADCOUNT_PLANS)
+    // ============================================================
+    try {
+      let hcBudgetCycle = await this.prisma.budgetCycle.findFirst({
+        where: { companyId, fiscalYear: new Date().getFullYear() },
+      });
+      if (!hcBudgetCycle) {
+        const y = new Date().getFullYear();
+        hcBudgetCycle = await this.prisma.budgetCycle.create({
+          data: {
+            companyId, name: `FY ${y} - Oracle Sync`, fiscalYear: y,
+            status: 'approved' as any, startDate: new Date(`${y}-01-01`), endDate: new Date(`${y}-12-31`),
+          },
+        });
+      }
+      await this.prisma.headcountPlan.deleteMany({ where: { budgetCycleId: hcBudgetCycle.id } });
+      const hcResult = await connInstance.execute(
+        `SELECT SITE_CODE, COST_CENTER_CODE, JOB_TITLE, DEPARTMENT, EMPLOYMENT_TYPE, HEADCOUNT, PERIOD_MONTH, BASIC_SALARY, ALLOWANCES, SOCIAL_INSURANCE, TOTAL_COST, NOTES FROM FP_HEADCOUNT_PLANS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const hcRows = (hcResult.rows || []) as any[];
+      const validEmpTypes = ['full_time', 'part_time', 'contractor', 'intern'];
+      for (const row of hcRows) {
+        let siteId: bigint | null = null;
+        if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+        let costCenterId: bigint | null = null;
+        if (row.COST_CENTER_CODE) { const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: row.COST_CENTER_CODE } }); if (cc) costCenterId = cc.id; }
+        const empType = row.EMPLOYMENT_TYPE?.toLowerCase() || 'full_time';
+        await this.prisma.headcountPlan.create({
+          data: {
+            budgetCycleId: hcBudgetCycle.id, siteId, costCenterId,
+            jobTitle: row.JOB_TITLE, department: row.DEPARTMENT,
+            employmentType: validEmpTypes.includes(empType) ? empType as any : 'full_time',
+            headcount: row.HEADCOUNT ?? 1, periodMonth: row.PERIOD_MONTH,
+            basicSalary: row.BASIC_SALARY ?? 0, allowances: row.ALLOWANCES ?? 0,
+            socialInsurance: row.SOCIAL_INSURANCE ?? 0, totalCost: row.TOTAL_COST ?? 0,
+            notes: row.NOTES ?? null,
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_HEADCOUNT_PLANS failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 17. Sync Promotions (FP_PROMOTIONS)
+    // ============================================================
+    try {
+      await this.prisma.promotion.deleteMany({ where: { companyId } });
+      const promoResult = await connInstance.execute(
+        `SELECT NAME, DESCRIPTION, PRODUCT_CODE, CUSTOMER_CODE, DISCOUNT_PCT, DISCOUNT_AMOUNT, START_DATE, END_DATE, BUDGET_AMOUNT, ACTUAL_COST, INCREMENTAL_REVENUE, ROI, IS_ACTIVE FROM FP_PROMOTIONS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const promoRows = (promoResult.rows || []) as any[];
+      for (const row of promoRows) {
+        let productId: bigint | null = null;
+        if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+        let customerId: bigint | null = null;
+        if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+        const isActive = row.IS_ACTIVE === 'Y' || row.IS_ACTIVE === 1 || row.IS_ACTIVE === true;
+        await this.prisma.promotion.create({
+          data: {
+            companyId, name: row.NAME, description: row.DESCRIPTION,
+            productId, customerId,
+            discountPct: row.DISCOUNT_PCT, discountAmt: row.DISCOUNT_AMOUNT,
+            startDate: new Date(row.START_DATE),
+            endDate: row.END_DATE ? new Date(row.END_DATE) : null,
+            budgetAmt: row.BUDGET_AMOUNT ?? 0, actualCost: row.ACTUAL_COST ?? 0,
+            incrementalRevenue: row.INCREMENTAL_REVENUE ?? 0, roi: row.ROI,
+            isActive,
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_PROMOTIONS failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 18. Sync Raw Material Prices (FP_RAW_MATERIAL_PRICES)
+    // ============================================================
+    try {
+      await this.prisma.rawMaterialPrice.deleteMany({ where: { companyId } });
+      const rmpResult = await connInstance.execute(
+        `SELECT MATERIAL_CODE, PRICE, PRICE_DATE, SOURCE FROM FP_RAW_MATERIAL_PRICES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const rmpRows = (rmpResult.rows || []) as any[];
+      for (const row of rmpRows) {
+        const material = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } });
+        if (!material) continue;
+        await this.prisma.rawMaterialPrice.create({
+          data: {
+            companyId, materialId: material.id,
+            price: row.PRICE ?? 0,
+            priceDate: new Date(row.PRICE_DATE),
+            source: row.SOURCE ?? 'oracle-sync',
+          },
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_RAW_MATERIAL_PRICES failed: ${msg}`);
+    }
+
+    // ============================================================
+    // 19. Sync GL Actuals (FP_GL_ACTUALS) → actual_imports + actual_lines
+    // ============================================================
+    try {
+      const glResult = await connInstance.execute(
+        `SELECT ACCOUNT_CODE, SITE_CODE, PRODUCT_CODE, CUSTOMER_CODE, QUANTITY, AMOUNT, TRANSACTION_DATE, REFERENCE_NO FROM FP_GL_ACTUALS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const glRows = (glResult.rows || []) as any[];
+      if (glRows.length > 0) {
+        let minDate = new Date('9999-12-31');
+        let maxDate = new Date('1900-01-01');
+        for (const row of glRows) {
+          const d = new Date(row.TRANSACTION_DATE);
+          if (d < minDate) minDate = d;
+          if (d > maxDate) maxDate = d;
+        }
+        const actualImport = await this.prisma.actualImport.create({
+          data: {
+            companyId, sourceSystem: 'oracle', importType: 'expenses',
+            periodFrom: minDate, periodTo: maxDate,
+            status: 'validated', importedBy: null,
+          },
+        });
+        for (const row of glRows) {
+          const account = await this.prisma.account.findFirst({ where: { companyId, code: row.ACCOUNT_CODE } });
+          if (!account) continue;
+          let siteId: bigint | null = null;
+          if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+          let productId: bigint | null = null;
+          if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+          let customerId: bigint | null = null;
+          if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+          await this.prisma.actualLine.create({
+            data: {
+              actualImportId: actualImport.id, accountId: account.id,
+              siteId, productId, customerId,
+              quantity: row.QUANTITY ?? 0, amount: row.AMOUNT ?? 0,
+              transactionDate: new Date(row.TRANSACTION_DATE),
+              referenceNo: row.REFERENCE_NO ?? null,
+            },
+          });
+        }
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[syncMasterData] FP_GL_ACTUALS failed: ${msg}`);
+    }
   }
 
   async runCompanySyncForConnection(

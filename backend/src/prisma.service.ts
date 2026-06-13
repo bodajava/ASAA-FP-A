@@ -40,7 +40,12 @@ export class PrismaService
 
   async onModuleInit() {
     this.logger.log('PrismaService initializing...');
-    await this.ensureViewsCreated();
+    if (process.env.DEPLOY_VIEWS === 'true') {
+      this.logger.log('DEPLOY_VIEWS is set to true. Deploying database views...');
+      await this.ensureViewsCreated();
+    } else {
+      this.logger.log('Skipping database view deployment (DEPLOY_VIEWS is not true).');
+    }
   }
 
   async onModuleDestroy() {

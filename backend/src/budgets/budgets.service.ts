@@ -287,9 +287,7 @@ export class BudgetsService {
         entityType: 'BudgetCycle',
         entityId: cycle.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(fullCycle),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(fullCycle),
       },
     });
 
@@ -489,12 +487,8 @@ export class BudgetsService {
         entityType: 'BudgetCycle',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldCycle),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(fullCycle),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCycle),
+        newValues: JSON.stringify(fullCycle),
       },
     });
 
@@ -528,7 +522,7 @@ export class BudgetsService {
         entityType: 'BudgetCycle',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(JSON.stringify(cycle)) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(cycle),
       },
     });
 
@@ -598,12 +592,8 @@ export class BudgetsService {
         entityType: 'BudgetCycle',
         entityId: id,
         action: 'status_change',
-        oldValues: JSON.parse(
-          JSON.stringify(oldCycle),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedCycle),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCycle),
+        newValues: JSON.stringify(updatedCycle),
       },
     });
 

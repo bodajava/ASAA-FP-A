@@ -60,7 +60,7 @@ export class CompaniesService {
         entityType: 'Company',
         entityId: company.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(company)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(company),
       },
     });
 
@@ -120,9 +120,7 @@ export class CompaniesService {
         entityType: 'Company',
         entityId: id,
         action: 'update',
-        newValues: JSON.parse(
-          JSON.stringify(updatedCompany),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(updatedCompany),
       },
     });
 
@@ -145,9 +143,7 @@ export class CompaniesService {
         entityType: 'Company',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedCompany),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedCompany),
       },
     });
 

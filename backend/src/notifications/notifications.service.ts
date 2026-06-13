@@ -29,8 +29,8 @@ function mapRuleToResponse(
     thresholdValue: rule.thresholdValue ? Number(rule.thresholdValue) : null,
     accountId: rule.accountId ? rule.accountId.toString() : null,
     siteId: rule.siteId ? rule.siteId.toString() : null,
-    notifyRoles: rule.notifyRoles ? (rule.notifyRoles as string[]) : null,
-    notifyUsers: rule.notifyUsers ? (rule.notifyUsers as string[]) : null,
+    notifyRoles: rule.notifyRoles ? (JSON.parse(rule.notifyRoles) as string[]) : null,
+    notifyUsers: rule.notifyUsers ? (JSON.parse(rule.notifyUsers) as string[]) : null,
     channel: rule.channel,
     isActive: rule.isActive,
     createdBy: rule.createdBy ? rule.createdBy.toString() : null,
@@ -53,7 +53,7 @@ function mapNotificationToResponse(
     entityType: notif.entityType,
     entityId: notif.entityId ? notif.entityId.toString() : null,
     triggerData: notif.triggerData
-      ? (notif.triggerData as Record<string, string | number | boolean | null>)
+      ? (JSON.parse(notif.triggerData) as Record<string, string | number | boolean | null>)
       : null,
     status: notif.status,
     sentAt: notif.sentAt,
@@ -133,11 +133,11 @@ export class NotificationsService {
         accountId,
         siteId,
         notifyRoles: dto.notifyRoles
-          ? (dto.notifyRoles as Prisma.InputJsonValue)
-          : Prisma.DbNull,
+          ? JSON.stringify(dto.notifyRoles)
+          : null,
         notifyUsers: dto.notifyUsers
-          ? (dto.notifyUsers as Prisma.InputJsonValue)
-          : Prisma.DbNull,
+          ? JSON.stringify(dto.notifyUsers)
+          : null,
         channel: dto.channel ?? 'system,email',
         isActive: dto.isActive ?? true,
         createdBy: userId,
@@ -151,9 +151,7 @@ export class NotificationsService {
         entityType: 'NotificationRule',
         entityId: rule.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(mapRuleToResponse(rule)),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(mapRuleToResponse(rule)),
       },
     });
 
@@ -276,13 +274,13 @@ export class NotificationsService {
 
     if (dto.notifyRoles !== undefined) {
       updatedData.notifyRoles = dto.notifyRoles
-        ? dto.notifyRoles
-        : Prisma.DbNull;
+        ? JSON.stringify(dto.notifyRoles)
+        : null;
     }
     if (dto.notifyUsers !== undefined) {
       updatedData.notifyUsers = dto.notifyUsers
-        ? dto.notifyUsers
-        : Prisma.DbNull;
+        ? JSON.stringify(dto.notifyUsers)
+        : null;
     }
 
     const updatedRule = await this.prisma.notificationRule.update({
@@ -297,12 +295,8 @@ export class NotificationsService {
         entityType: 'NotificationRule',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(mapRuleToResponse(rule)),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(mapRuleToResponse(updatedRule)),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(mapRuleToResponse(rule)),
+        newValues: JSON.stringify(mapRuleToResponse(updatedRule)),
       },
     });
 
@@ -336,9 +330,7 @@ export class NotificationsService {
         entityType: 'NotificationRule',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(mapRuleToResponse(rule)),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(mapRuleToResponse(rule)),
       },
     });
 
@@ -450,7 +442,7 @@ export class NotificationsService {
 
     // 1. Explicit users list
     if (rule.notifyUsers) {
-      const explicitIds = rule.notifyUsers as string[];
+      const explicitIds = JSON.parse(rule.notifyUsers) as string[];
       for (const strId of explicitIds) {
         userIds.push(BigInt(strId));
       }
@@ -458,7 +450,7 @@ export class NotificationsService {
 
     // 2. Resolve roles to users
     if (rule.notifyRoles) {
-      const explicitRoles = rule.notifyRoles as string[];
+      const explicitRoles = JSON.parse(rule.notifyRoles) as string[];
       const usersWithRoles = await this.prisma.user.findMany({
         where: {
           tenantId,
@@ -518,10 +510,10 @@ export class NotificationsService {
             status: NotificationStatus.pending,
             entityType: 'ActualImport',
             entityId: importId,
-            triggerData: {
+            triggerData: JSON.stringify({
               importId: importId.toString(),
               errorLog,
-            },
+            }),
           },
         });
       }
@@ -559,10 +551,10 @@ export class NotificationsService {
             status: NotificationStatus.pending,
             entityType: 'BudgetCycle',
             entityId: budgetCycleId,
-            triggerData: {
+            triggerData: JSON.stringify({
               budgetCycleId: budgetCycleId.toString(),
               name: budgetName,
-            },
+            }),
           },
         });
       }
@@ -641,16 +633,21 @@ export class NotificationsService {
         if (isBreached) {
           // Prevent duplication: check if notification was already sent for this account, period and rule
           const monthStr = comp.periodMonth.toString();
-          const existing = await this.prisma.notification.findFirst({
+          const existingNotifications = await this.prisma.notification.findMany({
             where: {
               ruleId: rule.id,
               entityType: 'Account',
               entityId: comp.accountId,
-              triggerData: {
-                path: 'periodMonth',
-                equals: monthStr,
-              },
             },
+          });
+          const existing = existingNotifications.find(n => {
+            if (!n.triggerData) return false;
+            try {
+              const data = JSON.parse(n.triggerData);
+              return data.periodMonth === monthStr;
+            } catch {
+              return false;
+            }
           });
 
           if (!existing) {
@@ -670,12 +667,12 @@ export class NotificationsService {
                   status: NotificationStatus.pending,
                   entityType: 'Account',
                   entityId: comp.accountId,
-                  triggerData: {
+                  triggerData: JSON.stringify({
                     periodMonth: monthStr,
                     fiscalYear: fiscalYear.toString(),
                     varianceAmount: comp.varianceAmount.toString(),
                     variancePct: comp.variancePct.toString(),
-                  },
+                  }),
                 },
               });
             }

@@ -67,9 +67,7 @@ export class ProductCategoriesService {
         entityType: 'ProductCategory',
         entityId: category.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(category),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(category),
       },
     });
 
@@ -200,12 +198,8 @@ export class ProductCategoriesService {
         entityType: 'ProductCategory',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldCategory),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedCategory),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCategory),
+        newValues: JSON.stringify(updatedCategory),
       },
     });
 
@@ -239,9 +233,7 @@ export class ProductCategoriesService {
         entityType: 'ProductCategory',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedCategory),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedCategory),
       },
     });
 

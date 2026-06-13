@@ -248,9 +248,7 @@ export class BomRecipesService {
         entityType: 'BomRecipe',
         entityId: recipe.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(fullRecipe),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(fullRecipe),
       },
     });
 
@@ -511,12 +509,8 @@ export class BomRecipesService {
         entityType: 'BomRecipe',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldRecipe),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(fullRecipe),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldRecipe),
+        newValues: JSON.stringify(fullRecipe),
       },
     });
 
@@ -543,7 +537,7 @@ export class BomRecipesService {
         entityType: 'BomRecipe',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(JSON.stringify(recipe)) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(recipe),
       },
     });
 

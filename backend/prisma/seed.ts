@@ -64,7 +64,7 @@ async function main() {
       data: {
         tenantId: tenant.id,
         name: 'Super Admin',
-        permissions: { all: true },
+        permissions: JSON.stringify({ all: true }),
       },
     });
     console.log(`✅ Created Role: ID=${role.id}, Name=${role.name}`);
@@ -544,7 +544,7 @@ async function main() {
           companyId: company.id,
           name: sc.name,
           scenarioType: sc.scenarioType,
-          assumptionsJson: sc.assumptionsJson,
+          assumptionsJson: JSON.stringify(sc.assumptionsJson),
           createdBy: user.id,
         },
       });
@@ -654,7 +654,7 @@ async function main() {
           yearlyPrice: p.yearlyPrice,
           maxCompanies: p.maxCompanies,
           maxUsers: p.maxUsers,
-          features: p.features,
+          features: JSON.stringify(p.features),
         },
       });
       console.log(`✅ Created Plan: ${plan.name}`);
@@ -976,7 +976,7 @@ async function main() {
         data: {
           tenantId: tenant.id,
           name: r.name,
-          permissions: r.permissions,
+          permissions: JSON.stringify(r.permissions),
         },
       });
       console.log(`✅ Created Role: ${r.name}`);

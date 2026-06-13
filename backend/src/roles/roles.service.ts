@@ -21,8 +21,9 @@ export class RolesService {
       data: {
         tenantId,
         name: createRoleDto.name,
-        permissions:
-          (createRoleDto.permissions as Prisma.InputJsonValue) ?? null,
+        permissions: createRoleDto.permissions
+          ? JSON.stringify(createRoleDto.permissions)
+          : null,
       },
     });
 
@@ -34,7 +35,7 @@ export class RolesService {
         entityType: 'Role',
         entityId: role.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(role)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(role),
       },
     });
 
@@ -94,8 +95,9 @@ export class RolesService {
       where: { id },
       data: {
         name: updateRoleDto.name,
-        permissions:
-          (updateRoleDto.permissions as Prisma.InputJsonValue) ?? undefined,
+        permissions: updateRoleDto.permissions
+          ? JSON.stringify(updateRoleDto.permissions)
+          : undefined,
       },
     });
 
@@ -107,10 +109,8 @@ export class RolesService {
         entityType: 'Role',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(JSON.stringify(oldRole)) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedRole),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldRole),
+        newValues: JSON.stringify(updatedRole),
       },
     });
 
@@ -147,9 +147,7 @@ export class RolesService {
         entityType: 'Role',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedRole),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedRole),
       },
     });
 

@@ -66,9 +66,7 @@ export class CustomersService {
         entityType: 'Customer',
         entityId: customer.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(customer),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(customer),
       },
     });
 
@@ -177,12 +175,8 @@ export class CustomersService {
         entityType: 'Customer',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldCustomer),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedCustomer),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCustomer),
+        newValues: JSON.stringify(updatedCustomer),
       },
     });
 
@@ -209,9 +203,7 @@ export class CustomersService {
         entityType: 'Customer',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedCustomer),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedCustomer),
       },
     });
 

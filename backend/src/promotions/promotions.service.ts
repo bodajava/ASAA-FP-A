@@ -154,9 +154,7 @@ export class PromotionsService {
         entityType: 'Promotion',
         entityId: promotion.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(promotion),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(promotion),
       },
     });
 
@@ -354,12 +352,8 @@ export class PromotionsService {
         entityType: 'Promotion',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldPromotion),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedPromotion),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldPromotion),
+        newValues: JSON.stringify(updatedPromotion),
       },
     });
 
@@ -387,9 +381,7 @@ export class PromotionsService {
         entityType: 'Promotion',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(promotion),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(promotion),
       },
     });
 

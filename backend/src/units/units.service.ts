@@ -45,7 +45,7 @@ export class UnitsService {
         entityType: 'Unit',
         entityId: unit.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(unit)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(unit),
       },
     });
 
@@ -134,10 +134,8 @@ export class UnitsService {
         entityType: 'Unit',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(JSON.stringify(oldUnit)) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedUnit),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldUnit),
+        newValues: JSON.stringify(updatedUnit),
       },
     });
 
@@ -164,9 +162,7 @@ export class UnitsService {
         entityType: 'Unit',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedUnit),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedUnit),
       },
     });
 

@@ -100,7 +100,7 @@ export class ExchangeRatesService {
           companyId,
           name: scenarioName,
           scenarioType: ScenarioType.custom,
-          assumptionsJson: {
+          assumptionsJson: JSON.stringify({
             subtype: 'currency_rate_change',
             fromCurrency: 'USD',
             toCurrency: 'EGP',
@@ -108,7 +108,7 @@ export class ExchangeRatesService {
             targetAccountIds: accountIds,
             percentage: pctChange,
             notes: `Automatically generated scenario simulating a ${pctChange.toFixed(1)}% USD to EGP rate hike.`,
-          },
+          }),
           createdBy: userId,
         },
       });

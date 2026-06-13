@@ -80,9 +80,7 @@ export class CostCentersService {
         entityType: 'CostCenter',
         entityId: costCenter.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(costCenter),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(costCenter),
       },
     });
 
@@ -243,10 +241,8 @@ export class CostCentersService {
         entityType: 'CostCenter',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(JSON.stringify(oldCC)) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedCC),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCC),
+        newValues: JSON.stringify(updatedCC),
       },
     });
 
@@ -280,9 +276,7 @@ export class CostCentersService {
         entityType: 'CostCenter',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedCC),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedCC),
       },
     });
 

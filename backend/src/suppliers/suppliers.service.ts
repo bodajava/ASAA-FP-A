@@ -46,9 +46,7 @@ export class SuppliersService {
         entityType: 'Supplier',
         entityId: supplier.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(supplier),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(supplier),
       },
     });
 
@@ -139,12 +137,8 @@ export class SuppliersService {
         entityType: 'Supplier',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldSupplier),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedSupplier),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldSupplier),
+        newValues: JSON.stringify(updatedSupplier),
       },
     });
 
@@ -171,9 +165,7 @@ export class SuppliersService {
         entityType: 'Supplier',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedSupplier),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedSupplier),
       },
     });
 

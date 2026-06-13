@@ -83,9 +83,9 @@ export class RawMaterialPricesService {
         entityId: record.id,
         action: existing ? 'update' : 'create',
         oldValues: existing
-          ? (JSON.parse(JSON.stringify(existing)) as Prisma.InputJsonValue)
+          ? (JSON.stringify(existing))
           : undefined,
-        newValues: JSON.parse(JSON.stringify(record)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(record),
       },
     });
 
@@ -318,12 +318,8 @@ export class RawMaterialPricesService {
         entityType: 'RawMaterialPrice',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldRecord),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedRecord),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldRecord),
+        newValues: JSON.stringify(updatedRecord),
       },
     });
 
@@ -355,9 +351,7 @@ export class RawMaterialPricesService {
         entityType: 'RawMaterialPrice',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(oldRecord),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldRecord),
       },
     });
 

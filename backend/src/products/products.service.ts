@@ -95,7 +95,7 @@ export class ProductsService {
         entityType: 'Product',
         entityId: product.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(product)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(product),
       },
     });
 
@@ -262,12 +262,8 @@ export class ProductsService {
         entityType: 'Product',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldProduct),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedProduct),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldProduct),
+        newValues: JSON.stringify(updatedProduct),
       },
     });
 
@@ -294,9 +290,7 @@ export class ProductsService {
         entityType: 'Product',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedProduct),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedProduct),
       },
     });
 

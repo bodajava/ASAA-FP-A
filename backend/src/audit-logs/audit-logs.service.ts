@@ -13,13 +13,13 @@ function mapAuditLogToResponse(log: AuditLog): AuditLogResponseDto {
     entityId: log.entityId ? log.entityId.toString() : null,
     action: log.action,
     oldValues: log.oldValues
-      ? (log.oldValues as Prisma.JsonObject as Record<
+      ? (JSON.parse(log.oldValues) as Record<
           string,
           string | number | boolean | null | object
         >)
       : null,
     newValues: log.newValues
-      ? (log.newValues as Prisma.JsonObject as Record<
+      ? (JSON.parse(log.newValues) as Record<
           string,
           string | number | boolean | null | object
         >)

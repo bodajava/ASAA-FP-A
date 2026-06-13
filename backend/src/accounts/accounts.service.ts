@@ -80,7 +80,7 @@ export class AccountsService {
         entityType: 'Account',
         entityId: account.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(account)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(account),
       },
     });
 
@@ -231,12 +231,8 @@ export class AccountsService {
         entityType: 'Account',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldAccount),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedAccount),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldAccount),
+        newValues: JSON.stringify(updatedAccount),
       },
     });
 
@@ -268,9 +264,7 @@ export class AccountsService {
         entityType: 'Account',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedAccount),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedAccount),
       },
     });
 

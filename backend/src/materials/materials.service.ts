@@ -94,9 +94,7 @@ export class MaterialsService {
         entityType: 'Material',
         entityId: material.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(material),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(material),
       },
     });
 
@@ -262,12 +260,8 @@ export class MaterialsService {
         entityType: 'Material',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldMaterial),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedMaterial),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldMaterial),
+        newValues: JSON.stringify(updatedMaterial),
       },
     });
 
@@ -294,9 +288,7 @@ export class MaterialsService {
         entityType: 'Material',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedMaterial),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedMaterial),
       },
     });
 

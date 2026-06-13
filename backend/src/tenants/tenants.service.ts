@@ -32,7 +32,7 @@ export class TenantsService {
         entityType: 'Tenant',
         entityId: tenant.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(tenant)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(tenant),
       },
     });
 
@@ -102,9 +102,7 @@ export class TenantsService {
         entityType: 'Tenant',
         entityId: id,
         action: 'update',
-        newValues: JSON.parse(
-          JSON.stringify(updatedTenant),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(updatedTenant),
       },
     });
 
@@ -127,9 +125,7 @@ export class TenantsService {
         entityType: 'Tenant',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedTenant),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedTenant),
       },
     });
 

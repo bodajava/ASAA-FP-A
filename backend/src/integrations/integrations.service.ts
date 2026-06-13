@@ -67,7 +67,7 @@ function mapMappingToResponse(mapping: ImportMapping): MappingResponseDto {
     name: mapping.name,
     sourceSystem: mapping.sourceSystem,
     importType: mapping.importType,
-    mappingConfig: mapping.mappingConfig as Record<string, string | null>,
+    mappingConfig: JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
     skipErrors: mapping.skipErrors,
     isDefault: mapping.isDefault,
     isActive: mapping.isActive,
@@ -168,12 +168,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         passwordEnc,
         apiBaseUrl: dto.apiBaseUrl ?? null,
         apiKeyEnc,
-        extraConfig:
-          dto.extraConfig !== undefined
-            ? dto.extraConfig
-              ? (dto.extraConfig as Prisma.InputJsonValue)
-              : Prisma.DbNull
-            : undefined,
+        extraConfig: dto.extraConfig !== undefined ? dto.extraConfig ? JSON.stringify(dto.extraConfig) : null : undefined,
         syncSchedule: dto.syncSchedule ?? SyncSchedule.manual,
         isActive: dto.isActive ?? true,
         createdBy: userId,
@@ -187,9 +182,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'IntegrationConnection',
         entityId: connection.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(maskConnection(connection)),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(maskConnection(connection)),
       },
     });
 
@@ -295,8 +288,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
     if (dto.apiBaseUrl !== undefined) updatedData.apiBaseUrl = dto.apiBaseUrl;
     if (dto.extraConfig !== undefined) {
       updatedData.extraConfig = dto.extraConfig
-        ? dto.extraConfig
-        : Prisma.DbNull;
+        ? JSON.stringify(dto.extraConfig)
+        : null;
     }
     if (dto.syncSchedule !== undefined)
       updatedData.syncSchedule = dto.syncSchedule;
@@ -321,12 +314,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'IntegrationConnection',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(maskConnection(connection)),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(maskConnection(updatedConnection)),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(maskConnection(connection)),
+        newValues: JSON.stringify(maskConnection(updatedConnection)),
       },
     });
 
@@ -371,9 +360,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'IntegrationConnection',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(maskConnection(connection)),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(maskConnection(connection)),
       },
     });
 
@@ -413,7 +400,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         name: dto.name,
         sourceSystem: dto.sourceSystem,
         importType: dto.importType,
-        mappingConfig: dto.mappingConfig,
+        mappingConfig: JSON.stringify(dto.mappingConfig),
         skipErrors: dto.skipErrors ?? false,
         isDefault: dto.isDefault ?? false,
         isActive: dto.isActive ?? true,
@@ -428,9 +415,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'ImportMapping',
         entityId: mapping.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(mapMappingToResponse(mapping)),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(mapMappingToResponse(mapping)),
       },
     });
 
@@ -543,7 +528,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
     if (dto.mappingConfig !== undefined) {
       this.validateMappingConfig(dto.mappingConfig);
-      updatedData.mappingConfig = dto.mappingConfig;
+      updatedData.mappingConfig = JSON.stringify(dto.mappingConfig);
     }
 
     const updatedMapping = await this.prisma.importMapping.update({
@@ -558,12 +543,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'ImportMapping',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(mapMappingToResponse(mapping)),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(mapMappingToResponse(updatedMapping)),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(mapMappingToResponse(mapping)),
+        newValues: JSON.stringify(mapMappingToResponse(updatedMapping)),
       },
     });
 
@@ -599,9 +580,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'ImportMapping',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(mapMappingToResponse(mapping)),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(mapMappingToResponse(mapping)),
       },
     });
 
@@ -831,7 +810,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
               name: mData.name,
               sourceSystem: mData.source as any,
               importType: mData.type as any,
-              mappingConfig: mData.config as any,
+              mappingConfig: JSON.stringify(mData.config),
               isActive: true,
               isDefault: true,
               createdBy: originConnection.createdBy,
@@ -1945,11 +1924,11 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'IntegrationConnection',
         entityId: dto.connectionId ? BigInt(dto.connectionId) : null,
         action: 'test',
-        newValues: {
+        newValues: JSON.stringify({
           success,
           message,
           connectionType,
-        },
+        }),
       },
     });
 
@@ -2018,7 +1997,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         if (connection.connectionType === ConnectionType.oracle) {
           if (connection.host?.toLowerCase() === 'mock') {
             rawRows = await this.generateMockRows(
-              mapping.mappingConfig as Record<string, string | null>,
+              JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
               companyId,
             );
           } else {
@@ -2050,10 +2029,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
               await this.syncMasterData(connInstance, companyId);
 
               // Build dynamic select query mapping Oracle columns to mapped fields
-              const config = mapping.mappingConfig as Record<
-                string,
-                string | null
-              >;
+              const config = JSON.parse(mapping.mappingConfig) as Record<string, string | null>;
               const selectParts: string[] = [];
               if (config.accountCode)
                 selectParts.push(`ACCOUNT_CODE AS "${config.accountCode}"`);
@@ -2156,7 +2132,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           rawRows = await this.generateMockRowsForConnection(
             connection.connectionType,
             mapping.importType,
-            mapping.mappingConfig as Record<string, string | null>,
+            JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
             companyId,
           );
         } else if (connection.connectionType === ConnectionType.sftp) {
@@ -2189,7 +2165,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
             );
           }
           rawRows = await this.generateMockRows(
-            mapping.mappingConfig as Record<string, string | null>,
+            JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
             companyId,
           );
         } else if (
@@ -2229,7 +2205,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       } else {
         // No connection template: Generate simulated rows
         rawRows = await this.generateMockRows(
-          mapping.mappingConfig as Record<string, string | null>,
+          JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
           companyId,
         );
       }
@@ -2337,13 +2313,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
         entityType: 'ActualImport',
         entityId: createdImport.id,
         action: 'sync',
-        newValues: {
+        newValues: JSON.stringify({
           importId: createdImport.id.toString(),
           status: initialStatus,
           recordsSynced:
             initialStatus === 'validated' ? resolvedLines.length : 0,
           errorLog,
-        },
+        }),
       },
     });
 
@@ -2517,10 +2493,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
             await this.syncMasterData(connInstance, conn.companyId);
 
-            const config = mapping.mappingConfig as Record<
-              string,
-              string | null
-            >;
+            const config = JSON.parse(mapping.mappingConfig) as Record<string, string | null>;
             const selectParts: string[] = [];
             if (config.accountCode)
               selectParts.push(`ACCOUNT_CODE AS "${config.accountCode}"`);
@@ -2588,7 +2561,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           rawRows = await this.generateMockRowsForConnection(
             conn.connectionType,
             mapping.importType,
-            mapping.mappingConfig as Record<string, string | null>,
+            JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
             conn.companyId,
           );
         }

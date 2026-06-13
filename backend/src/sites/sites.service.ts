@@ -51,7 +51,7 @@ export class SitesService {
         entityType: 'Site',
         entityId: site.id,
         action: 'create',
-        newValues: JSON.parse(JSON.stringify(site)) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(site),
       },
     });
 
@@ -145,10 +145,8 @@ export class SitesService {
         entityType: 'Site',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(JSON.stringify(oldSite)) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedSite),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldSite),
+        newValues: JSON.stringify(updatedSite),
       },
     });
 
@@ -175,9 +173,7 @@ export class SitesService {
         entityType: 'Site',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(deletedSite),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(deletedSite),
       },
     });
 

@@ -304,9 +304,7 @@ export class ForecastsService {
         entityType: 'ForecastCycle',
         entityId: cycle.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(fullCycle),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(fullCycle),
       },
     });
 
@@ -523,12 +521,8 @@ export class ForecastsService {
         entityType: 'ForecastCycle',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldCycle),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(fullCycle),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCycle),
+        newValues: JSON.stringify(fullCycle),
       },
     });
 
@@ -561,7 +555,7 @@ export class ForecastsService {
         entityType: 'ForecastCycle',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(JSON.stringify(cycle)) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(cycle),
       },
     });
 
@@ -631,12 +625,8 @@ export class ForecastsService {
         entityType: 'ForecastCycle',
         entityId: id,
         action: 'status_change',
-        oldValues: JSON.parse(
-          JSON.stringify(oldCycle),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedCycle),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldCycle),
+        newValues: JSON.stringify(updatedCycle),
       },
     });
 
@@ -751,7 +741,9 @@ export class ForecastsService {
     let ramadanMonth = 0;
     let monthlyInflation = 0;
     if (cycle.scenario && cycle.scenario.assumptionsJson) {
-      const assumptions = cycle.scenario.assumptionsJson as Record<string, any>;
+      const assumptions = cycle.scenario.assumptionsJson
+        ? (JSON.parse(cycle.scenario.assumptionsJson) as Record<string, any>)
+        : {};
       revenueGrowth = Number(
         assumptions['sales_volume_growth'] ??
           assumptions['revenue_growth'] ??

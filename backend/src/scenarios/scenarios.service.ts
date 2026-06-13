@@ -51,8 +51,9 @@ export function mapScenarioToResponse(scenario: Scenario): ScenarioResponseDto {
     companyId: scenario.companyId.toString(),
     name: scenario.name,
     scenarioType: scenario.scenarioType ?? ScenarioType.custom,
-    assumptions:
-      scenario.assumptionsJson as unknown as object as ScenarioAssumptionsDto,
+    assumptions: scenario.assumptionsJson
+      ? (JSON.parse(scenario.assumptionsJson) as ScenarioAssumptionsDto)
+      : ({} as ScenarioAssumptionsDto),
     createdAt: scenario.createdAt,
     updatedAt: scenario.updatedAt,
   };
@@ -231,7 +232,7 @@ export class ScenariosService {
         companyId,
         name: createDto.name,
         scenarioType: createDto.scenarioType,
-        assumptionsJson: createDto.assumptions,
+        assumptionsJson: JSON.stringify(createDto.assumptions),
         createdBy: userId,
       },
     });
@@ -244,9 +245,7 @@ export class ScenariosService {
         entityType: 'Scenario',
         entityId: scenario.id,
         action: 'create',
-        newValues: JSON.parse(
-          JSON.stringify(scenario),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(scenario),
       },
     });
 
@@ -350,7 +349,7 @@ export class ScenariosService {
         name: updateDto.name,
         scenarioType: updateDto.scenarioType,
         assumptionsJson: updateDto.assumptions
-          ? (updateDto.assumptions as object as Prisma.InputJsonValue)
+          ? JSON.stringify(updateDto.assumptions)
           : undefined,
       },
     });
@@ -363,12 +362,8 @@ export class ScenariosService {
         entityType: 'Scenario',
         entityId: id,
         action: 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldScenario),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedScenario),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldScenario),
+        newValues: JSON.stringify(updatedScenario),
       },
     });
 
@@ -395,9 +390,7 @@ export class ScenariosService {
         entityType: 'Scenario',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(
-          JSON.stringify(scenario),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(scenario),
       },
     });
 
@@ -425,8 +418,9 @@ export class ScenariosService {
           `Scenario with ID ${previewDto.scenarioId} not found under this company`,
         );
       }
-      assumptions =
-        scenario.assumptionsJson as unknown as object as ScenarioAssumptionsDto;
+      assumptions = scenario.assumptionsJson
+        ? (JSON.parse(scenario.assumptionsJson) as ScenarioAssumptionsDto)
+        : ({} as ScenarioAssumptionsDto);
     } else {
       throw new BadRequestException(
         'Either overrideAssumptions or scenarioId must be provided',

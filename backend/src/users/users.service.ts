@@ -81,12 +81,12 @@ export class UsersService {
         entityType: 'User',
         entityId: user.id,
         action: 'create',
-        newValues: {
+        newValues: JSON.stringify({
           name: user.name,
           email: user.email,
           status: user.status,
           roleId: user.roleId?.toString() ?? null,
-        },
+        }),
       },
     });
 
@@ -204,18 +204,18 @@ export class UsersService {
         entityType: 'User',
         entityId: id,
         action: 'update',
-        oldValues: {
+        oldValues: JSON.stringify({
           name: existingUser.name,
           email: existingUser.email,
           status: existingUser.status,
           roleId: existingUser.roleId?.toString() ?? null,
-        },
-        newValues: {
+        }),
+        newValues: JSON.stringify({
           name: updatedUser.name,
           email: updatedUser.email,
           status: updatedUser.status,
           roleId: updatedUser.roleId?.toString() ?? null,
-        },
+        }),
       },
     });
 
@@ -248,11 +248,11 @@ export class UsersService {
         entityType: 'User',
         entityId: id,
         action: 'delete',
-        oldValues: {
+        oldValues: JSON.stringify({
           name: existingUser.name,
           email: existingUser.email,
           status: existingUser.status,
-        },
+        }),
       },
     });
 
@@ -286,8 +286,8 @@ export class UsersService {
         entityType: 'User',
         entityId: id,
         action: 'status_update',
-        oldValues: { status: existingUser.status },
-        newValues: { status: updatedUser.status },
+        oldValues: JSON.stringify({ status: existingUser.status }),
+        newValues: JSON.stringify({ status: updatedUser.status }),
       },
     });
 

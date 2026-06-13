@@ -1063,11 +1063,11 @@ export class ImportsService {
         entityType: 'Import',
         entityId: null,
         action: 'import',
-        newValues: {
+        newValues: JSON.stringify({
           module,
           successCount: validRows.length,
           failCount,
-        },
+        }),
       },
     });
 

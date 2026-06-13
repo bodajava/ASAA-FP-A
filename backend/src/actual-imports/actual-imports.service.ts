@@ -301,7 +301,7 @@ export class ActualImportsService {
       );
     }
 
-    const config = mapping.mappingConfig as Record<string, string | undefined>;
+    const config = JSON.parse(mapping.mappingConfig) as Record<string, string | undefined>;
     const results: MappedRowResult[] = [];
 
     let rowIdx = 0;
@@ -653,9 +653,7 @@ export class ActualImportsService {
         entityType: 'ActualImport',
         entityId: imp.id,
         action: initialStatus === 'failed' ? 'fail' : 'create',
-        newValues: JSON.parse(
-          JSON.stringify(fullImport),
-        ) as Prisma.InputJsonValue,
+        newValues: JSON.stringify(fullImport),
       },
     });
 
@@ -905,12 +903,8 @@ export class ActualImportsService {
         entityType: 'ActualImport',
         entityId: id,
         action: targetStatus === 'failed' ? 'fail' : 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldImport),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(fullImport),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldImport),
+        newValues: JSON.stringify(fullImport),
       },
     });
 
@@ -943,7 +937,7 @@ export class ActualImportsService {
         entityType: 'ActualImport',
         entityId: id,
         action: 'delete',
-        oldValues: JSON.parse(JSON.stringify(imp)) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(imp),
       },
     });
 
@@ -1016,12 +1010,8 @@ export class ActualImportsService {
         entityType: 'ActualImport',
         entityId: id,
         action: targetStatus === 'failed' ? 'fail' : 'update',
-        oldValues: JSON.parse(
-          JSON.stringify(oldImport),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedImport),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldImport),
+        newValues: JSON.stringify(updatedImport),
       },
     });
 
@@ -1072,12 +1062,8 @@ export class ActualImportsService {
         entityType: 'ActualImport',
         entityId: id,
         action: 'post',
-        oldValues: JSON.parse(
-          JSON.stringify(oldImport),
-        ) as Prisma.InputJsonValue,
-        newValues: JSON.parse(
-          JSON.stringify(updatedImport),
-        ) as Prisma.InputJsonValue,
+        oldValues: JSON.stringify(oldImport),
+        newValues: JSON.stringify(updatedImport),
       },
     });
 

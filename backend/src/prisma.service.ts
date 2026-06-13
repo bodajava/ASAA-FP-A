@@ -40,11 +40,14 @@ export class PrismaService
 
   async onModuleInit() {
     this.logger.log('PrismaService initializing...');
-    if (process.env.DEPLOY_VIEWS === 'true') {
-      this.logger.log('DEPLOY_VIEWS is set to true. Deploying database views...');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const forceDeploy = process.env.DEPLOY_VIEWS === 'true';
+
+    if (forceDeploy || (!isProduction && process.env.DEPLOY_VIEWS !== 'false')) {
+      this.logger.log('Deploying database views...');
       await this.ensureViewsCreated();
     } else {
-      this.logger.log('Skipping database view deployment (DEPLOY_VIEWS is not true).');
+      this.logger.log('Skipping database view deployment (production or disabled).');
     }
   }
 

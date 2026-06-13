@@ -826,7 +826,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
     }
   }
 
+  private isHostingerDb(): boolean {
+    const url = process.env.DATABASE_URL || '';
+    return url.includes('hstgr.io') || url.includes('srv503.hstgr.io');
+  }
+
   async syncMasterData(connInstance: any, companyId: bigint): Promise<void> {
+    if (this.isHostingerDb()) {
+      throw new BadRequestException(
+        'Heavy sync jobs cannot be run directly against the production Hostinger shared database to prevent connection/resource exhaustion. Please run them locally on a development database.',
+      );
+    }
     const companyCode = `COMP-${companyId}`;
     let oracledb: any;
     try {
@@ -2420,6 +2430,12 @@ export class IntegrationsService implements OnApplicationBootstrap {
   }
 
   onApplicationBootstrap() {
+    if (this.isHostingerDb()) {
+      console.log(
+        '[Background Sync] Skipping simulated background sync interval on Hostinger production DB to prevent connection exhaustion.',
+      );
+      return;
+    }
     // Start a simulated background sync task that runs every 60 seconds
     setInterval(async () => {
       try {

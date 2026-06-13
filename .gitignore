@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.next/
+
+.env*
+
+.agent/
+
+*.pdf
+
+.DS_Store
+*.log
+scratch/

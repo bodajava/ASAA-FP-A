@@ -1,0 +1,2 @@
+budgetCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,notes
+FY25 Annual Budget,2025,4000,Cairo HQ,CC-MKT,PROD-CAN,,,1,1000,15,15000,January sales projection

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>شرح FP&A ونظام الموازنات والفوركاست - idiibi</title>
+<style>
+@page { size: A4; margin: 12mm; }
+*{box-sizing:border-box} body{margin:0;background:#eef3f3;color:#102326;font-family:'Noto Sans Arabic','Arial',sans-serif;line-height:1.75;font-size:14px} .page{max-width:1000px;margin:0 auto;background:white;min-height:100vh;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+.cover{background:linear-gradient(135deg,#032f35,#038387 55%,#08a6a1);color:#fff;padding:38px 42px 30px;position:relative;overflow:hidden} .cover:after{content:"";position:absolute;inset:auto -80px -120px auto;width:310px;height:310px;border-radius:50%;background:rgba(255,255,255,.11)}
+.brand{display:flex;justify-content:space-between;gap:20px;align-items:flex-start} .logo{font-size:34px;font-weight:900;letter-spacing:.5px} .tag{font-size:12px;opacity:.9} .qr{background:#fff;padding:8px;border-radius:12px;width:95px;height:95px} .qr img{width:100%;height:100%}
+h1{font-size:31px;line-height:1.35;margin:35px 0 8px;font-weight:900} .subtitle{font-size:17px;max-width:760px;opacity:.96} .meta{margin-top:25px;display:flex;flex-wrap:wrap;gap:10px} .pill{border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 12px;background:rgba(255,255,255,.09)}
+.content{padding:24px 30px} .card{break-inside:avoid;page-break-inside:avoid;margin:0 0 14px;background:#fff;border:1px solid #dce7e7;border-right:6px solid #038387;border-radius:16px;padding:17px 20px;box-shadow:0 6px 20px rgba(3,131,135,.06)}
+h2{font-size:20px;margin:0 0 10px;color:#032f35} h3{font-size:15px;margin:0 0 6px;color:#038387} p{margin:0 0 8px} ul,ol{margin:0;padding-right:22px} li{margin:3px 0} .grid{display:grid;gap:12px} .two{grid-template-columns:1fr 1fr} .three{grid-template-columns:repeat(3,1fr)} .mini{background:#f3faf9;border:1px solid #d7eeee;border-radius:14px;padding:12px} .highlight{background:linear-gradient(90deg,#e7f8f7,#fff);border:1px solid #bfe5e3;border-radius:14px;padding:12px 14px;margin:10px 0;font-weight:700;color:#03484d}
+table{width:100%;border-collapse:separate;border-spacing:0;margin:6px 0;border:1px solid #d8e6e6;border-radius:12px;overflow:hidden;font-size:12.5px} th{background:#038387;color:white;text-align:right;padding:9px} td{padding:9px;border-top:1px solid #e5eeee;vertical-align:top} tr:nth-child(even) td{background:#f8fbfb} .ltr{direction:ltr;unicode-bidi:embed;display:inline-block} .formula{direction:rtl;background:#062f35;color:#fff;border-radius:12px;padding:12px;margin-top:8px;text-align:center;font-weight:800}
+.columns ol{columns:2} .timeline{display:grid;grid-template-columns:1fr 1fr;gap:8px} .timeline div{background:#f5fafa;border:1px solid #d7eeee;border-radius:12px;padding:8px 10px;font-weight:700} .footer{padding:14px 30px 24px;text-align:center;color:#4a6669;font-size:12px} .actions{position:sticky;top:0;z-index:9;background:#032f35;color:#fff;padding:10px 16px;display:flex;justify-content:center;gap:10px} button{background:#038387;color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:800;cursor:pointer}
+@media print{body{background:#fff}.page{box-shadow:none;max-width:none}.actions{display:none}.card{box-shadow:none}}
+@media(max-width:760px){.content{padding:16px}.cover{padding:26px 20px}.two,.three,.timeline{grid-template-columns:1fr}.columns ol{columns:1}h1{font-size:24px}}
+</style></head>
+<body><div class="actions"><button onclick="window.print()">طباعة / حفظ PDF</button></div><main class="page">
+<header class="cover"><div class="brand"><div><div class="logo">idiibi</div><div class="tag">Innovative Digital Integrated Internet Business Infrastructure</div></div><div class="qr"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMMAAADDCAIAAACwHTL9AAAE7ElEQVR4nO3dQY7jNhCG0UyQA2WV+6+zyoECdPZCQIPDj6R68N4uaFvS2D+IslIq/vj6+voNlv1++wL4RUgSDUmiIUk0/nj+959/nTnxv//8/dPvHV/k48hT/6KVqxp7XMb4ROMXT/11n8d5rUk0JImGJNGQJBrPivshrECnKsFxUTmuMfeVqyuH2neisWPfoDWJhiTRkCQakkTjQ8X9fPW2+8Ur1evU/eKp845NFdH77stP2fcNWpNoSBINSaIhSTTmKu5jVnowxlbaOVZM3Zf/jqxJNCSJhiTRkCQaL624V0rsW50wx2r5fT8LVliTaEgSDUmiIUk05iruY8XdVFG571HJsDFmpTU7LLH3fYPWJBqSREOSaEgSjQ8V961uh33PKL7kr2PhkY99g9YkGpJEQ5JoSBKNHy+Zxx3Wpw/hoUK6SuD/SRINSaIhSTSeFfexWc/hQOrxkb9FL/bYrR8NZpVwgSTRkCQakkTj2VUSlqvH5n6Ehwpr+Ze0oKy8d+rI1iQakkRDkmhIEo2lWSX7CsOXzKfet6lNeFUveZzVmkRDkmhIEg1JovFhl/ewy+LYho1TjnWGjN8bbqbzEA42seckJ0gSDUmiIUk0zj05uXIL+Nid6JUjP9zqeR+/d9+HY02iIUk0JImGJNFYenLy1v6NL9kB51bH9JRjHeLWJBqSREOSaEgSjQ/3uMM7wlMvfuft41uzvMfCz2rl07Am0ZAkGpJEQ5JozPVxT/UXh5VgeOSpm7zHOtOnhF3t4XdkTaIhSTQkiYYk0ShnlYTP+x2rx/fdIN739OO+u+cr77Um0ZAkGpJEQ5JozD05eaxF4dhc7LFj/dT7/r3hVenj5gRJoiFJNCSJxlLF/ZIxIMeeQhxfxsO+uYPHfkNMXYY1iYYk0ZAkGpJE40Mf98NUX/OUY9u4PKyU5+PK9yVt3Su/XXSVcIEk0ZAkGpJEo7zHPX7xw7FZJccOtXLk8YmOdaSM3ztmTaIhSTQkiYYk0ZibDvjOUdehfXMHw0/y2KH0cXOBJNGQJBqSROPDDjhj+7ZTCfdtWXGs8N+38dAU87i5T5JoSBINSaKxcVbJw627ui8ZB3hsePet30zWJBqSREOSaEgSjbknJx9u3XoOHXuCMRyEfWz6ij5uLpAkGpJEQ5JofOgquVXcvfMRzWPb2E859j8AxqxJNCSJhiTRkCQaS3tOHusv/hbd5fumA07N8Bu/d4p53FwgSTQkiYYk0Sh3eZ968cqskn0bqE+5Nbt86jLG5w0nC1qTaEgSDUmiIUk05rpKfoHhefv+unIZt4TfgjWJhiTRkCQakkRjblbJPsf6x1eE9+XDAnzfxu1TrEk0JImGJNGQJBpLs0pWrGwovnKiY/epwxI7PO/Ukaf+ak2iIUk0JImGJNH40Md9rN34ndvWrJSr4Yn2HcqsEl5HkmhIEg1JojH35OSxhxJXDrWvJfwhvE1/bJDLgz5uXkeSaEgSDUmisTSrZJ+XDDbZtyHOsU0mV/blmWJNoiFJNCSJhiTReGnFvVKB3tp6ZnwZ+xpU9n04U5dhTaIhSTQkiYYk0ZiruPeNEAmfYAxbUG4dObxrf+yJTWsSDUmiIUk0JInGh4r72OiSla7nfb0fK+ed6t8Ip4RPCQ9lTaIhSTQkiYYk0XjLPG6+O2sSDUmiIUk0JInGf/pZ22QnHS0kAAAAAElFTkSuQmCC" alt="QR"></div></div>
+<h1>شرح وظيفة FP&A وبناء نظام موازنات وفوركاست للشركات الكبرى</h1><div class="subtitle">دراسة تفصيلية لتحويل مهام التخطيط المالي والتحليل إلى نظام SaaS احترافي يخدم مصانع الأغذية وشركات التجزئة الغذائية وسلاسل الفروع.</div>
+<div class="meta"><span class="pill">Website: idiibi.com</span><span class="pill">Email: info@idiibi.com</span><span class="pill">Phone: 01018719010</span><span class="pill">Platform: pms.idiibi.com</span></div></header>
+<div class="content"><section class="card"><h2>1) تعريف وظيفة FP&A</h2>
+<p><b>FP&A</b> هي اختصار <span class="ltr">Financial Planning & Analysis</span>، وتعني التخطيط المالي والتحليل المالي. الوظيفة مسؤولة عن تحويل بيانات الشركة المالية والتشغيلية إلى قرارات واضحة تساعد الإدارة في التخطيط، القياس، التوقع، والتحكم في الربحية والسيولة.</p>
+<div class="grid two">
+<div class="mini"><h3>الهدف المالي</h3><p>معرفة الإيرادات، التكاليف، الأرباح، السيولة، والانحرافات عن الخطة.</p></div>
+<div class="mini"><h3>الهدف التشغيلي</h3><p>ربط المبيعات والإنتاج والمخزون والمشتريات والموارد البشرية بخطة مالية واحدة.</p></div>
+</div>
+</section><section class="card"><h2>2) المهام الأساسية لمسؤول FP&A</h2>
+<ul>
+<li>إعداد الموازنة السنوية والتوزيع الشهري والربع سنوي.</li>
+<li>إعداد الفوركاست المتجدد حسب النتائج الفعلية.</li>
+<li>تحليل الانحرافات بين المخطط والفعلي والتوقع.</li>
+<li>تحليل الربحية حسب المنتج، الفرع، العميل، المنطقة، وخط الإنتاج.</li>
+<li>تقديم تقارير للإدارة العليا عن الأداء والمخاطر والفرص.</li>
+<li>دراسة السيناريوهات: زيادة أسعار الخامات، تغير سعر العملة، انخفاض الطلب، أو توسع الفروع.</li>
+<li>متابعة الكاش فلو واحتياجات التمويل والتحصيل والدفع.</li>
+</ul>
+</section><section class="card"><h2>3) الفرق بين Budget و Forecast</h2>
+<table><thead><tr><th>البند</th><th>Budget - الموازنة</th><th>Forecast - التوقع</th></tr></thead><tbody>
+<tr><td>التوقيت</td><td>قبل بداية السنة أو الفترة</td><td>يتحدث شهرياً أو ربع سنوي</td></tr>
+<tr><td>الغرض</td><td>خطة رسمية معتمدة</td><td>توقع بناءً على الواقع الحالي</td></tr>
+<tr><td>المرونة</td><td>أقل مرونة</td><td>أكثر مرونة</td></tr>
+<tr><td>الاستخدام</td><td>قياس الأداء والمحاسبة الإدارية</td><td>اتخاذ قرارات تصحيحية مبكرة</td></tr>
+</tbody></table>
+</section><section class="card"><h2>4) النظام المطلوب: idiibi FP&A Suite</h2>
+<p>نظام ويب SaaS متخصص في إدارة الموازنات والفوركاست والتحليل المالي للشركات الكبرى، مع تركيز خاص على <b>مصانع الأغذية</b> و<b>شركات التجزئة الغذائية</b> وسلاسل الفروع.</p>
+<div class="highlight">النظام لا يكتفي بتسجيل الأرقام، بل يربط التشغيل بالماليات: المبيعات، الإنتاج، الخامات، المخزون، المشتريات، المصروفات، الرواتب، الفروع، والتدفقات النقدية.</div>
+</section><section class="card"><h2>5) القطاعات المستهدفة</h2>
+<div class="grid three">
+<div class="mini"><h3>مصانع غذائية</h3><p>وصفات إنتاج، خامات، هالك، خطوط إنتاج، طاقة إنتاجية، تكلفة منتج.</p></div>
+<div class="mini"><h3>تجزئة غذائية</h3><p>فروع، POS، مخزون، عروض، خصومات، تالف، ربحية فرع ومنتج.</p></div>
+<div class="mini"><h3>توزيع ومخازن</h3><p>عملاء، مناطق، سيارات، تكلفة نقل، مخزون، تغطية الطلب.</p></div>
+</div>
+</section><section class="card"><h2>6) موديولات النظام الرئيسية</h2>
+<table><thead><tr><th>الموديول</th><th>الوصف</th><th>المخرجات</th></tr></thead><tbody>
+<tr><td>Company Setup</td><td>تعريف الشركات، الفروع، المصانع، الأنشطة، العملة، السنة المالية.</td><td>بيئة تشغيل جاهزة لكل عميل.</td></tr>
+<tr><td>Budget</td><td>إنشاء موازنات المبيعات، الإنتاج، المشتريات، الرواتب، المصروفات، التسويق.</td><td>خطة سنوية/شهرية معتمدة.</td></tr>
+<tr><td>Forecast</td><td>توقع الإيرادات والتكاليف والمخزون والكاش فلو حسب الفعلي.</td><td>تحديث مستمر للخطة.</td></tr>
+<tr><td>Actual Data</td><td>استيراد البيانات الفعلية من Excel/ERP/POS/Oracle.</td><td>قاعدة مقارنة دقيقة.</td></tr>
+<tr><td>Variance Analysis</td><td>مقارنة Budget vs Actual vs Forecast.</td><td>تحليل انحرافات ونسب تأثير.</td></tr>
+<tr><td>Scenario Planning</td><td>تجربة سيناريوهات ارتفاع الخامات، تغير السعر، نقص الطلب، توسع الفروع.</td><td>قرارات قبل حدوث الخطر.</td></tr>
+<tr><td>Reports</td><td>تقارير الإدارة العليا ولوحات مؤشرات.</td><td>PDF / Excel / Dashboard.</td></tr>
+</tbody></table>
+</section><section class="card"><h2>7) متطلبات مصانع الأغذية</h2>
+<ul>
+<li>تعريف المنتجات النهائية ونصف المصنعة والخامات.</li>
+<li>إدارة الوصفات والتكاليف <span class="ltr">BOM</span>.</li>
+<li>احتساب الهالك الطبيعي وغير الطبيعي.</li>
+<li>تحديد تكلفة الوحدة والكرتونة والطن.</li>
+<li>ربط خطة المبيعات بخطة الإنتاج.</li>
+<li>تحليل الطاقة الإنتاجية وخطوط الإنتاج.</li>
+<li>توقع احتياج الخامات بناءً على خطة البيع.</li>
+<li>مقارنة تكلفة المنتج المخططة بالتكلفة الفعلية.</li>
+</ul>
+<div class="formula">تكلفة المنتج = خامات + عمالة مباشرة + طاقة + صيانة + تحميل مصروفات غير مباشرة + هالك</div>
+</section><section class="card"><h2>8) متطلبات شركات التجزئة الغذائية</h2>
+<ul>
+<li>تحليل المبيعات حسب الفرع والمنتج والفترة.</li>
+<li>قياس ربحية كل فرع بعد الإيجار والعمالة والكهرباء والتشغيل.</li>
+<li>توقع المخزون المطلوب حسب الطلب الموسمي.</li>
+<li>تحليل المنتجات الراكدة وسريعة الدوران.</li>
+<li>تقييم العروض والخصومات ومدى تأثيرها على الهامش.</li>
+<li>تحليل التالف والفاقد والمرتجعات.</li>
+<li>توقع المبيعات اليومية والأسبوعية والشهرية.</li>
+</ul>
+</section><section class="card"><h2>9) أهم الشاشات</h2>
+<div class="columns">
+<ol>
+<li>لوحة التحكم الرئيسية</li><li>إعداد الشركة والنشاط</li><li>الفروع والمصانع</li><li>المنتجات والخامات</li><li>BOM والوصفات</li><li>المبيعات الفعلية</li><li>المشتريات والمخزون</li><li>المصروفات والرواتب</li><li>الموازنة السنوية</li><li>الفوركاست</li><li>تحليل الانحرافات</li><li>الكاش فلو</li><li>P&L</li><li>التقارير والتصدير</li><li>الصلاحيات والاعتمادات</li><li>الربط والاستيراد</li>
+</ol>
+</div>
+</section><section class="card"><h2>10) التقارير المطلوبة</h2>
+<div class="grid two">
+<div><h3>تقارير مالية</h3><ul><li>P&L الأرباح والخسائر</li><li>Cash Flow</li><li>Gross Margin</li><li>Net Profit</li><li>Budget vs Actual</li><li>Forecast Accuracy</li></ul></div>
+<div><h3>تقارير تشغيلية</h3><ul><li>Product Profitability</li><li>Branch Profitability</li><li>Factory Costing</li><li>Inventory Coverage</li><li>Slow Moving Items</li><li>Wastage Analysis</li></ul></div>
+</div>
+</section><section class="card"><h2>11) الصلاحيات وسير الاعتماد</h2>
+<table><thead><tr><th>الدور</th><th>الصلاحيات</th></tr></thead><tbody>
+<tr><td>Super Admin</td><td>إدارة النظام والعملاء والاشتراكات.</td></tr>
+<tr><td>CFO</td><td>اعتماد الموازنات والفوركاست والتقارير النهائية.</td></tr>
+<tr><td>FP&A Manager</td><td>إدارة النماذج، تحليل الانحرافات، إعداد السيناريوهات.</td></tr>
+<tr><td>Financial Analyst</td><td>إدخال وتحليل البيانات وتجهيز التقارير.</td></tr>
+<tr><td>Sales / Production / Procurement Manager</td><td>إدخال خطط القسم ومراجعة الفعلي.</td></tr>
+<tr><td>Branch / Warehouse Manager</td><td>متابعة بيانات الفرع أو المخزن.</td></tr>
+<tr><td>Auditor / Viewer</td><td>عرض التقارير فقط بدون تعديل.</td></tr>
+</tbody></table>
+</section><section class="card"><h2>12) الربط مع الأنظمة الخارجية</h2>
+<ul>
+<li>استيراد Excel و CSV.</li>
+<li>ربط ERP داخلي أو PMS.</li>
+<li>ربط POS للفروع.</li>
+<li>ربط Oracle أو SAP أو Odoo عبر API أو ملفات تصدير.</li>
+<li>ربط WooCommerce للمتاجر الإلكترونية.</li>
+<li>إمكانية جدولة الاستيراد اليومي أو الشهري.</li>
+</ul>
+</section><section class="card"><h2>13) دورة العمل داخل النظام</h2>
+<div class="timeline">
+<div>1. إنشاء الشركة وتحديد النشاط</div><div>2. تعريف الفروع والمصانع والمنتجات</div><div>3. رفع بيانات السنوات السابقة</div><div>4. إنشاء الموازنة السنوية</div><div>5. اعتماد الموازنة</div><div>6. استيراد البيانات الفعلية</div><div>7. إنشاء الفوركاست الشهري</div><div>8. تحليل الانحرافات</div><div>9. إصدار تقارير الإدارة</div><div>10. اتخاذ قرارات تصحيحية</div>
+</div>
+</section><section class="card"><h2>14) القيمة البيعية للنظام</h2>
+<div class="highlight">النظام يساعد الشركة تعرف: هتكسب كام؟ هتصرف كام؟ أي منتج مربح؟ أي فرع خاسر؟ المخزون يكفي كام يوم؟ هل الإنتاج يغطي الطلب؟ وهل الكاش يكفي التشغيل؟</div>
+<ul>
+<li>تقليل الاعتماد على شيتات Excel المتفرقة.</li>
+<li>توحيد مصدر البيانات بين المالية والتشغيل.</li>
+<li>سرعة اتخاذ القرار.</li>
+<li>زيادة دقة التوقعات وتقليل المفاجآت المالية.</li>
+<li>مناسب كمنتج اشتراكات للشركات المتوسطة والكبيرة.</li>
+</ul>
+</section><section class="card"><h2>15) باقات مقترحة للبيع</h2>
+<table><thead><tr><th>الباقة</th><th>مناسبة لـ</th><th>المميزات</th></tr></thead><tbody>
+<tr><td>Starter</td><td>شركة صغيرة أو فرع واحد</td><td>Budget + Forecast + Excel Import + تقارير أساسية</td></tr>
+<tr><td>Business</td><td>شركة متعددة الفروع</td><td>فروع، مخزون، POS Import، تحليل ربحية، صلاحيات</td></tr>
+<tr><td>Enterprise</td><td>مصانع وسلاسل كبيرة</td><td>BOM، إنتاج، Oracle/API، Workflow approvals، سيناريوهات متقدمة</td></tr>
+</tbody></table>
+</section></div><footer class="footer">© idiibi - مستند تخطيطي أولي قابل للتطوير إلى عرض سعر، SRS، أو Pitch Deck</footer></main></body></html>

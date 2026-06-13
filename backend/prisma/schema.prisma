@@ -1,0 +1,1194 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Plan {
+  id            BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name          String         @db.VarChar(120)
+  monthlyPrice  Decimal        @default(0.00) @map("monthly_price") @db.Decimal(12, 2)
+  yearlyPrice   Decimal        @default(0.00) @map("yearly_price") @db.Decimal(12, 2)
+  maxCompanies  Int            @default(1) @map("max_companies")
+  maxUsers      Int            @default(5) @map("max_users")
+  features      String?        @db.LongText
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime?      @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime?      @map("updated_at") @db.Timestamp(0)
+  subscriptions Subscription[]
+  tenants       Tenant[]
+
+  @@map("plans")
+}
+
+model Tenant {
+  id            BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  planId        BigInt?        @map("plan_id") @db.UnsignedBigInt
+  name          String         @db.VarChar(180)
+  slug          String?        @unique @db.VarChar(120)
+  status        TenantStatus?  @default(trial)
+  trialEndsAt   DateTime?      @map("trial_ends_at") @db.Date
+  createdAt     DateTime?      @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime?      @map("updated_at") @db.Timestamp(0)
+  approvals     Approval[]
+  auditLogs     AuditLog[]
+  companies     Company[]
+  roles         Role[]
+  subscriptions Subscription[]
+  plan          Plan?          @relation(fields: [planId], references: [id], map: "fk_tenants_plan")
+  users         User[]
+
+  @@index([planId], map: "fk_tenants_plan")
+  @@map("tenants")
+}
+
+model Subscription {
+  id           BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId     BigInt              @map("tenant_id") @db.UnsignedBigInt
+  planId       BigInt              @map("plan_id") @db.UnsignedBigInt
+  startsAt     DateTime            @map("starts_at") @db.Date
+  endsAt       DateTime?           @map("ends_at") @db.Date
+  billingCycle BillingCycle?       @default(monthly) @map("billing_cycle")
+  amount       Decimal             @default(0.00) @db.Decimal(12, 2)
+  status       SubscriptionStatus? @default(active) @map("status")
+  createdAt    DateTime?           @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime?           @map("updated_at") @db.Timestamp(0)
+  plan         Plan                @relation(fields: [planId], references: [id])
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([planId], map: "subscriptions_plan_id_fkey")
+  @@index([tenantId], map: "subscriptions_tenant_id_fkey")
+  @@map("subscriptions")
+}
+
+model Company {
+  id                     BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId               BigInt                  @map("tenant_id") @db.UnsignedBigInt
+  name                   String                  @db.VarChar(200)
+  legalName              String?                 @map("legal_name") @db.VarChar(220)
+  industryType           IndustryType?           @default(mixed) @map("industry_type")
+  currencyCode           String?                 @default("EGP") @map("currency_code") @db.Char(3)
+  fiscalYearStartMonth   Int?                    @default(1) @map("fiscal_year_start_month") @db.TinyInt
+  taxNumber              String?                 @map("tax_number") @db.VarChar(80)
+  createdAt              DateTime?               @map("created_at") @db.Timestamp(0)
+  updatedAt              DateTime?               @map("updated_at") @db.Timestamp(0)
+  accounts               Account[]
+  actualImports          ActualImport[]
+  bomRecipes             BomRecipe[]
+  budgetCycles           BudgetCycle[]
+  tenant                 Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  costCenters            CostCenter[]
+  customers              Customer[]
+  exchangeRates          ExchangeRate[]
+  forecastAccuracyLogs   ForecastAccuracyLog[]
+  forecastCycles         ForecastCycle[]
+  importMappings         ImportMapping[]
+  integrationConnections IntegrationConnection[]
+  inventorySnapshots     InventorySnapshot[]
+  kpiTargets             KpiTarget[]
+  materials              Material[]
+  notificationRules      NotificationRule[]
+  notifications          Notification[]
+  productCategories      ProductCategory[]
+  productionPlans        ProductionPlan[]
+  products               Product[]
+  promotions             Promotion[]
+  rawMaterialPrices      RawMaterialPrice[]
+  scenarios              Scenario[]
+  seasonalIndices        SeasonalIndex[]
+  sites                  Site[]
+  suppliers              Supplier[]
+  units                  Unit[]
+
+  @@index([tenantId], map: "idx_companies_tenant")
+  @@map("companies")
+}
+
+model Role {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId    BigInt?   @map("tenant_id") @db.UnsignedBigInt
+  name        String    @db.VarChar(100)
+  permissions String?   @db.LongText
+  createdAt   DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime? @map("updated_at") @db.Timestamp(0)
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       User[]
+
+  @@unique([tenantId, name], map: "uq_role_name")
+  @@index([tenantId], map: "idx_roles_tenant")
+  @@map("roles")
+}
+
+model User {
+  id                     BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId               BigInt                  @map("tenant_id") @db.UnsignedBigInt
+  roleId                 BigInt?                 @map("role_id") @db.UnsignedBigInt
+  name                   String                  @db.VarChar(160)
+  email                  String                  @db.VarChar(190)
+  phone                  String?                 @db.VarChar(40)
+  passwordHash           String                  @map("password_hash") @db.VarChar(255)
+  status                 UserStatus              @default(active)
+  lastLoginAt            DateTime?               @map("last_login_at") @db.Timestamp(0)
+  createdAt              DateTime?               @map("created_at") @db.Timestamp(0)
+  updatedAt              DateTime?               @map("updated_at") @db.Timestamp(0)
+  actualImports          ActualImport[]
+  approvedApprovals      Approval[]              @relation("approved_approvals")
+  requestedApprovals     Approval[]              @relation("requested_approvals")
+  auditLogs              AuditLog[]
+  budgetApproved         BudgetCycle[]           @relation("budget_approved")
+  budgetCreated          BudgetCycle[]           @relation("budget_created")
+  createdRates           ExchangeRate[]
+  forecastApproved       ForecastCycle[]         @relation("forecast_approved")
+  forecastCreated        ForecastCycle[]         @relation("forecast_created")
+  importMappings         ImportMapping[]
+  integrationConnections IntegrationConnection[]
+  kpiTargetsCreated      KpiTarget[]
+  rulesCreated           NotificationRule[]
+  notifications          Notification[]
+  promotions             Promotion[]
+  scenariosCreated       Scenario[]
+  managedSites           Site[]
+  role                   Role?                   @relation(fields: [roleId], references: [id])
+  tenant                 Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email], map: "uq_tenant_email")
+  @@index([roleId], map: "users_role_id_fkey")
+  @@map("users")
+}
+
+model Site {
+  id                 BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId          BigInt              @map("company_id") @db.UnsignedBigInt
+  managerUserId      BigInt?             @map("manager_user_id") @db.UnsignedBigInt
+  name               String              @db.VarChar(180)
+  type               SiteType
+  region             String?             @db.VarChar(120)
+  address            String?             @db.VarChar(255)
+  status             SiteStatus?         @default(active)
+  createdAt          DateTime?           @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime?           @map("updated_at") @db.Timestamp(0)
+  actualLines        ActualLine[]
+  budgetLines        BudgetLine[]
+  costCenters        CostCenter[]
+  forecastLines      ForecastLine[]
+  headcountPlans     HeadcountPlan[]
+  inventorySnapshots InventorySnapshot[]
+  kpiTargets         KpiTarget[]
+  notificationRules  NotificationRule[]
+  productionPlans    ProductionPlan[]
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  manager            User?               @relation(fields: [managerUserId], references: [id])
+
+  @@index([companyId, type], map: "idx_sites_company_type")
+  @@index([managerUserId], map: "sites_manager_user_id_fkey")
+  @@map("sites")
+}
+
+model Unit {
+  id        BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId BigInt     @map("company_id") @db.UnsignedBigInt
+  name      String     @db.VarChar(80)
+  symbol    String     @db.VarChar(20)
+  createdAt DateTime?  @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime?  @map("updated_at") @db.Timestamp(0)
+  materials Material[]
+  products  Product[]
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId], map: "units_company_id_fkey")
+  @@map("units")
+}
+
+model Account {
+  id                   BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId            BigInt                @map("company_id") @db.UnsignedBigInt
+  parentId             BigInt?               @map("parent_id") @db.UnsignedBigInt
+  code                 String                @db.VarChar(50)
+  name                 String                @db.VarChar(160)
+  type                 AccountType
+  isActive             Boolean               @default(true) @map("is_active")
+  createdAt            DateTime?             @map("created_at") @db.Timestamp(0)
+  updatedAt            DateTime?             @map("updated_at") @db.Timestamp(0)
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent               Account?              @relation("account_hierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children             Account[]             @relation("account_hierarchy")
+  actualLines          ActualLine[]
+  budgetLines          BudgetLine[]
+  forecastAccuracyLogs ForecastAccuracyLog[]
+  forecastLines        ForecastLine[]
+  notificationRules    NotificationRule[]
+  seasonalIndices      SeasonalIndex[]
+
+  @@unique([companyId, code], map: "uq_account_code")
+  @@index([parentId], map: "accounts_parent_id_fkey")
+  @@map("accounts")
+}
+
+model CostCenter {
+  id             BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId      BigInt          @map("company_id") @db.UnsignedBigInt
+  siteId         BigInt?         @map("site_id") @db.UnsignedBigInt
+  parentId       BigInt?         @map("parent_id") @db.UnsignedBigInt
+  code           String?         @db.VarChar(60)
+  name           String          @db.VarChar(160)
+  type           CostCenterType? @default(other)
+  createdAt      DateTime?       @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime?       @map("updated_at") @db.Timestamp(0)
+  actualLines    ActualLine[]
+  budgetLines    BudgetLine[]
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent         CostCenter?     @relation("cc_hierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children       CostCenter[]    @relation("cc_hierarchy")
+  site           Site?           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  forecastLines  ForecastLine[]
+  headcountPlans HeadcountPlan[]
+
+  @@index([companyId], map: "idx_cc_company")
+  @@index([parentId], map: "cost_centers_parent_id_fkey")
+  @@index([siteId], map: "cost_centers_site_id_fkey")
+  @@map("cost_centers")
+}
+
+model ProductCategory {
+  id        BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId BigInt            @map("company_id") @db.UnsignedBigInt
+  name      String            @db.VarChar(160)
+  parentId  BigInt?           @map("parent_id") @db.UnsignedBigInt
+  createdAt DateTime?         @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime?         @map("updated_at") @db.Timestamp(0)
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent    ProductCategory?  @relation("pc_hierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  ProductCategory[] @relation("pc_hierarchy")
+  products  Product[]
+
+  @@index([companyId], map: "idx_pc_company")
+  @@index([parentId], map: "product_categories_parent_id_fkey")
+  @@map("product_categories")
+}
+
+model Product {
+  id                 BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId          BigInt              @map("company_id") @db.UnsignedBigInt
+  categoryId         BigInt?             @map("category_id") @db.UnsignedBigInt
+  unitId             BigInt?             @map("unit_id") @db.UnsignedBigInt
+  sku                String              @db.VarChar(80)
+  name               String              @db.VarChar(200)
+  productType        ProductType?        @default(finished_good) @map("product_type")
+  salePrice          Decimal             @default(0.0000) @map("sale_price") @db.Decimal(14, 4)
+  standardCost       Decimal             @default(0.0000) @map("standard_cost") @db.Decimal(14, 4)
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime?           @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime?           @map("updated_at") @db.Timestamp(0)
+  actualLines        ActualLine[]
+  bomRecipes         BomRecipe[]
+  budgetLines        BudgetLine[]
+  forecastLines      ForecastLine[]
+  inventorySnapshots InventorySnapshot[]
+  productionPlans    ProductionPlan[]
+  category           ProductCategory?    @relation(fields: [categoryId], references: [id])
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  unit               Unit?               @relation(fields: [unitId], references: [id])
+  promotions         Promotion[]
+
+  @@unique([companyId, sku], map: "uq_product_sku")
+  @@index([categoryId], map: "products_category_id_fkey")
+  @@index([unitId], map: "products_unit_id_fkey")
+  @@map("products")
+}
+
+model Supplier {
+  id        BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId BigInt     @map("company_id") @db.UnsignedBigInt
+  name      String     @db.VarChar(200)
+  phone     String?    @db.VarChar(50)
+  email     String?    @db.VarChar(160)
+  createdAt DateTime?  @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime?  @map("updated_at") @db.Timestamp(0)
+  materials Material[]
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId], map: "suppliers_company_id_fkey")
+  @@map("suppliers")
+}
+
+model Material {
+  id                 BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId          BigInt              @map("company_id") @db.UnsignedBigInt
+  supplierId         BigInt?             @map("supplier_id") @db.UnsignedBigInt
+  unitId             BigInt?             @map("unit_id") @db.UnsignedBigInt
+  code               String              @db.VarChar(80)
+  name               String              @db.VarChar(200)
+  purchasePrice      Decimal             @default(0.0000) @map("purchase_price") @db.Decimal(14, 4)
+  safetyStockQty     Decimal             @default(0.0000) @map("safety_stock_qty") @db.Decimal(14, 4)
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime?           @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime?           @map("updated_at") @db.Timestamp(0)
+  actualLines        ActualLine[]
+  bomLines           BomLine[]
+  budgetLines        BudgetLine[]
+  forecastLines      ForecastLine[]
+  inventorySnapshots InventorySnapshot[]
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id])
+  unit               Unit?               @relation(fields: [unitId], references: [id])
+  rawMaterialPrices  RawMaterialPrice[]
+
+  @@unique([companyId, code], map: "uq_material_code")
+  @@index([companyId], map: "idx_materials_company")
+  @@index([supplierId], map: "materials_supplier_id_fkey")
+  @@index([unitId], map: "materials_unit_id_fkey")
+  @@map("materials")
+}
+
+model Customer {
+  id            BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId     BigInt         @map("company_id") @db.UnsignedBigInt
+  code          String         @db.VarChar(80)
+  name          String         @db.VarChar(200)
+  customerType  CustomerType?  @default(retail) @map("customer_type")
+  region        String?        @db.VarChar(120)
+  phone         String?        @db.VarChar(50)
+  email         String?        @db.VarChar(160)
+  creditLimit   Decimal        @default(0.00) @map("credit_limit") @db.Decimal(16, 2)
+  paymentTerms  Int?           @default(30) @map("payment_terms") @db.TinyInt
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime?      @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime?      @map("updated_at") @db.Timestamp(0)
+  actualLines   ActualLine[]
+  budgetLines   BudgetLine[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  forecastLines ForecastLine[]
+  promotions    Promotion[]
+
+  @@unique([companyId, code], map: "uq_customer_code")
+  @@index([companyId], map: "idx_customers_company")
+  @@map("customers")
+}
+
+model ExchangeRate {
+  id           BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId    BigInt      @map("company_id") @db.UnsignedBigInt
+  fromCurrency String      @map("from_currency") @db.Char(3)
+  toCurrency   String      @map("to_currency") @db.Char(3)
+  rate         Decimal     @db.Decimal(18, 6)
+  rateDate     DateTime    @map("rate_date") @db.Date
+  source       RateSource? @default(manual)
+  createdBy    BigInt?     @map("created_by") @db.UnsignedBigInt
+  createdAt    DateTime?   @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime?   @map("updated_at") @db.Timestamp(0)
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator      User?       @relation(fields: [createdBy], references: [id])
+
+  @@unique([companyId, fromCurrency, toCurrency, rateDate], map: "uq_rate_date")
+  @@index([createdBy], map: "exchange_rates_created_by_fkey")
+  @@map("exchange_rates")
+}
+
+model Promotion {
+  id                 BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId          BigInt    @map("company_id") @db.UnsignedBigInt
+  name               String    @db.VarChar(160)
+  description        String?   @db.Text
+  productId          BigInt?   @map("product_id") @db.UnsignedBigInt
+  customerId         BigInt?   @map("customer_id") @db.UnsignedBigInt
+  discountPct        Decimal?  @map("discount_pct") @db.Decimal(6, 3)
+  discountAmt        Decimal?  @map("discount_amount") @db.Decimal(16, 2)
+  startDate          DateTime  @map("start_date") @db.Date
+  endDate            DateTime? @map("end_date") @db.Date
+  budgetAmt          Decimal?  @default(0.00) @map("budget_amount") @db.Decimal(16, 2)
+  actualCost         Decimal?  @default(0.00) @map("actual_cost") @db.Decimal(16, 2)
+  incrementalRevenue Decimal?  @default(0.00) @map("incremental_revenue") @db.Decimal(16, 2)
+  roi                Decimal?  @map("roi") @db.Decimal(7, 2)
+  isActive           Boolean   @default(true) @map("is_active")
+  createdBy          BigInt?   @map("created_by") @db.UnsignedBigInt
+  createdAt          DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime? @map("updated_at") @db.Timestamp(0)
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator            User?     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  customer           Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product            Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isActive], map: "idx_promo_company_active")
+  @@index([productId], map: "idx_promo_product")
+  @@index([createdBy], map: "promotions_created_by_fkey")
+  @@index([customerId], map: "promotions_customer_id_fkey")
+  @@map("promotions")
+}
+
+model BomRecipe {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId    BigInt    @map("company_id") @db.UnsignedBigInt
+  productId    BigInt    @map("product_id") @db.UnsignedBigInt
+  version      String?   @default("v1") @db.VarChar(30)
+  outputQty    Decimal   @default(1.0000) @map("output_qty") @db.Decimal(14, 4)
+  wastagePct   Decimal   @default(0.000) @map("wastage_pct") @db.Decimal(6, 3)
+  laborCost    Decimal   @default(0.0000) @map("labor_cost") @db.Decimal(14, 4)
+  overheadCost Decimal   @default(0.0000) @map("overhead_cost") @db.Decimal(14, 4)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+  bomLines     BomLine[]
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([companyId], map: "bom_recipes_company_id_fkey")
+  @@index([productId], map: "bom_recipes_product_id_fkey")
+  @@map("bom_recipes")
+}
+
+model BomLine {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  bomId        BigInt    @map("bom_id") @db.UnsignedBigInt
+  materialId   BigInt    @map("material_id") @db.UnsignedBigInt
+  qtyPerOutput Decimal?  @default(1.000000) @map("qty_per_output") @db.Decimal(14, 6)
+  unitCost     Decimal?  @default(0.0000) @map("unit_cost") @db.Decimal(14, 4)
+  wastagePct   Decimal?  @default(0.000) @map("wastage_pct") @db.Decimal(6, 3)
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+  quantity     Decimal   @default(1.0000) @db.Decimal(14, 4)
+  bomRecipe    BomRecipe @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  material     Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([bomId])
+  @@index([materialId])
+  @@map("bom_lines")
+}
+
+model ForecastCycle {
+  id                   BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId            BigInt                @map("company_id") @db.UnsignedBigInt
+  scenarioId           BigInt?               @map("scenario_id") @db.UnsignedBigInt
+  name                 String                @db.VarChar(160)
+  fiscalYear           Int                   @map("fiscal_year")
+  basePeriod           DateTime              @map("base_period") @db.Date
+  method               ForecastMethod?       @default(manual)
+  status               CycleStatus?          @default(draft)
+  createdBy            BigInt?               @map("created_by") @db.UnsignedBigInt
+  approvedBy           BigInt?               @map("approved_by") @db.UnsignedBigInt
+  approvedAt           DateTime?             @map("approved_at") @db.Timestamp(0)
+  createdAt            DateTime?             @map("created_at") @db.Timestamp(0)
+  updatedAt            DateTime?             @map("updated_at") @db.Timestamp(0)
+  forecastAccuracyLogs ForecastAccuracyLog[]
+  approver             User?                 @relation("forecast_approved", fields: [approvedBy], references: [id], onDelete: SetNull)
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator              User?                 @relation("forecast_created", fields: [createdBy], references: [id], onDelete: SetNull)
+  scenario             Scenario?             @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  forecastLines        ForecastLine[]
+
+  @@index([companyId, fiscalYear], map: "idx_forecast_year")
+  @@index([approvedBy], map: "forecast_cycles_approved_by_fkey")
+  @@index([createdBy], map: "forecast_cycles_created_by_fkey")
+  @@index([scenarioId], map: "forecast_cycles_scenario_id_fkey")
+  @@map("forecast_cycles")
+}
+
+model ForecastLine {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  forecastCycleId BigInt        @map("forecast_cycle_id") @db.UnsignedBigInt
+  accountId       BigInt        @map("account_id") @db.UnsignedBigInt
+  siteId          BigInt?       @map("site_id") @db.UnsignedBigInt
+  costCenterId    BigInt?       @map("cost_center_id") @db.UnsignedBigInt
+  productId       BigInt?       @map("product_id") @db.UnsignedBigInt
+  materialId      BigInt?       @map("material_id") @db.UnsignedBigInt
+  customerId      BigInt?       @map("customer_id") @db.UnsignedBigInt
+  periodMonth     Int           @map("period_month") @db.TinyInt
+  quantity        Decimal?      @default(0.0000) @db.Decimal(16, 4)
+  unitPrice       Decimal?      @default(0.0000) @map("unit_price") @db.Decimal(16, 4)
+  amount          Decimal       @default(0.00) @db.Decimal(16, 2)
+  driverType      String?       @map("driver_type") @db.VarChar(80)
+  notes           String?       @db.Text
+  createdAt       DateTime?     @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime?     @map("updated_at") @db.Timestamp(0)
+  account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  costCenter      CostCenter?   @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
+  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  forecastCycle   ForecastCycle @relation(fields: [forecastCycleId], references: [id], onDelete: Cascade)
+  material        Material?     @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  product         Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  site            Site?         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([forecastCycleId, periodMonth, accountId], map: "idx_forecast_lines_period")
+  @@index([accountId], map: "forecast_lines_account_id_fkey")
+  @@index([costCenterId], map: "forecast_lines_cost_center_id_fkey")
+  @@index([customerId], map: "forecast_lines_customer_id_fkey")
+  @@index([materialId], map: "forecast_lines_material_id_fkey")
+  @@index([productId], map: "forecast_lines_product_id_fkey")
+  @@index([siteId], map: "forecast_lines_site_id_fkey")
+  @@map("forecast_lines")
+}
+
+model SeasonalIndex {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId BigInt   @map("company_id") @db.UnsignedBigInt
+  accountId BigInt   @map("account_id") @db.UnsignedBigInt
+  month     Int      @db.TinyInt
+  factor    Decimal  @db.Decimal(7, 4)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, accountId, month], map: "uq_seasonal_idx")
+  @@index([accountId], map: "seasonal_indices_account_id_fkey")
+  @@map("seasonal_indices")
+}
+
+model RawMaterialPrice {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId  BigInt    @map("company_id") @db.UnsignedBigInt
+  materialId BigInt    @map("material_id") @db.UnsignedBigInt
+  price      Decimal   @db.Decimal(14, 4)
+  priceDate  DateTime  @map("price_date") @db.Date
+  source     String?   @default("manual") @db.VarChar(60)
+  createdAt  DateTime? @map("created_at") @db.Timestamp(0)
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  material   Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, materialId, priceDate], map: "idx_rmp_lookup")
+  @@index([materialId], map: "raw_material_prices_material_id_fkey")
+  @@map("raw_material_prices")
+}
+
+model ForecastAccuracyLog {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId       BigInt        @map("company_id") @db.UnsignedBigInt
+  forecastCycleId BigInt        @map("forecast_cycle_id") @db.UnsignedBigInt
+  accountId       BigInt        @map("account_id") @db.UnsignedBigInt
+  fiscalYear      Int           @map("fiscal_year")
+  periodMonth     Int           @map("period_month") @db.TinyInt
+  forecastAmount  Decimal       @map("forecast_amount") @db.Decimal(16, 2)
+  actualAmount    Decimal       @map("actual_amount") @db.Decimal(16, 2)
+  variancePct     Decimal       @map("variance_pct") @db.Decimal(7, 2)
+  methodUsed      String        @map("method_used") @db.VarChar(60)
+  confidenceScore Decimal?      @map("confidence_score") @db.Decimal(5, 2)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  forecastCycle   ForecastCycle @relation(fields: [forecastCycleId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, forecastCycleId, accountId, periodMonth], map: "uq_accuracy_entry")
+  @@index([companyId, fiscalYear, accountId], map: "idx_accuracy_lookup")
+  @@index([accountId], map: "forecast_accuracy_logs_account_id_fkey")
+  @@index([forecastCycleId], map: "forecast_accuracy_logs_forecast_cycle_id_fkey")
+  @@map("forecast_accuracy_logs")
+}
+
+model BudgetCycle {
+  id             BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId      BigInt          @map("company_id") @db.UnsignedBigInt
+  name           String          @db.VarChar(160)
+  fiscalYear     Int             @map("fiscal_year")
+  periodType     PeriodType?     @default(annual) @map("period_type")
+  version        Int?            @default(1)
+  status         CycleStatus?    @default(draft)
+  createdBy      BigInt?         @map("created_by") @db.UnsignedBigInt
+  approvedBy     BigInt?         @map("approved_by") @db.UnsignedBigInt
+  approvedAt     DateTime?       @map("approved_at") @db.Timestamp(0)
+  createdAt      DateTime?       @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime?       @map("updated_at") @db.Timestamp(0)
+  startDate      DateTime?       @map("start_date") @db.Date
+  endDate        DateTime?       @map("end_date") @db.Date
+  notes          String?         @db.Text
+  approver       User?           @relation("budget_approved", fields: [approvedBy], references: [id], onDelete: SetNull)
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator        User?           @relation("budget_created", fields: [createdBy], references: [id], onDelete: SetNull)
+  budgetLines    BudgetLine[]
+  headcountPlans HeadcountPlan[]
+
+  @@index([approvedBy])
+  @@index([createdBy])
+  @@index([companyId, fiscalYear, status], map: "idx_budget_year")
+  @@map("budget_cycles")
+}
+
+model BudgetLine {
+  id            BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  budgetCycleId BigInt      @map("budget_cycle_id") @db.UnsignedBigInt
+  accountId     BigInt      @map("account_id") @db.UnsignedBigInt
+  siteId        BigInt?     @map("site_id") @db.UnsignedBigInt
+  costCenterId  BigInt?     @map("cost_center_id") @db.UnsignedBigInt
+  productId     BigInt?     @map("product_id") @db.UnsignedBigInt
+  materialId    BigInt?     @map("material_id") @db.UnsignedBigInt
+  customerId    BigInt?     @map("customer_id") @db.UnsignedBigInt
+  periodMonth   Int         @map("period_month") @db.TinyInt
+  quantity      Decimal?    @default(0.0000) @db.Decimal(16, 4)
+  unitPrice     Decimal?    @default(0.0000) @map("unit_price") @db.Decimal(16, 4)
+  amount        Decimal     @default(0.00) @db.Decimal(16, 2)
+  notes         String?     @db.Text
+  createdAt     DateTime?   @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime?   @map("updated_at") @db.Timestamp(0)
+  unitId        BigInt?     @map("unit_id") @db.UnsignedBigInt
+  account       Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  budgetCycle   BudgetCycle @relation(fields: [budgetCycleId], references: [id], onDelete: Cascade)
+  costCenter    CostCenter? @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
+  customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  material      Material?   @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  product       Product?    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  site          Site?       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([costCenterId])
+  @@index([customerId])
+  @@index([materialId])
+  @@index([productId])
+  @@index([siteId])
+  @@index([budgetCycleId, periodMonth, accountId], map: "idx_budget_lines_period")
+  @@map("budget_lines")
+}
+
+model HeadcountPlan {
+  id              BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  budgetCycleId   BigInt          @map("budget_cycle_id") @db.UnsignedBigInt
+  siteId          BigInt?         @map("site_id") @db.UnsignedBigInt
+  costCenterId    BigInt?         @map("cost_center_id") @db.UnsignedBigInt
+  jobTitle        String          @map("job_title") @db.VarChar(160)
+  department      String?         @db.VarChar(120)
+  employmentType  EmploymentType? @default(full_time) @map("employment_type")
+  headcount       Int?            @default(1)
+  periodMonth     Int             @map("period_month") @db.TinyInt
+  basicSalary     Decimal?        @default(0.00) @map("basic_salary") @db.Decimal(14, 2)
+  allowances      Decimal?        @default(0.00) @map("allowances") @db.Decimal(14, 2)
+  socialInsurance Decimal?        @default(0.00) @map("social_insurance") @db.Decimal(14, 2)
+  totalCost       Decimal         @map("total_cost") @db.Decimal(14, 2)
+  notes           String?         @db.Text
+  createdAt       DateTime?       @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime?       @map("updated_at") @db.Timestamp(0)
+  budgetCycle     BudgetCycle     @relation(fields: [budgetCycleId], references: [id], onDelete: Cascade)
+  costCenter      CostCenter?     @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
+  site            Site?           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([costCenterId])
+  @@index([siteId])
+  @@index([budgetCycleId, periodMonth], map: "idx_headcount_cycle")
+  @@map("headcount_plans")
+}
+
+model Scenario {
+  id              BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId       BigInt          @map("company_id") @db.UnsignedBigInt
+  name            String          @db.VarChar(160)
+  scenarioType    ScenarioType?   @default(custom) @map("scenario_type")
+  assumptionsJson String?         @map("assumptions_json") @db.LongText
+  createdBy       BigInt?         @map("created_by") @db.UnsignedBigInt
+  createdAt       DateTime?       @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime?       @map("updated_at") @db.Timestamp(0)
+  forecastCycles  ForecastCycle[]
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator         User?           @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([createdBy])
+  @@map("scenarios")
+}
+
+model ActualImport {
+  id           BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId    BigInt              @map("company_id") @db.UnsignedBigInt
+  sourceSystem ImportSourceSystem? @default(excel) @map("source_system")
+  mappingId    BigInt?             @map("mapping_id") @db.UnsignedBigInt
+  importType   ImportType          @map("import_type")
+  periodFrom   DateTime            @map("period_from") @db.Date
+  periodTo     DateTime            @map("period_to") @db.Date
+  filePath     String?             @map("file_path") @db.VarChar(255)
+  status       ImportStatus?       @default(uploaded)
+  errorLog     String?             @map("error_log") @db.Text
+  importedBy   BigInt?             @map("imported_by") @db.UnsignedBigInt
+  createdAt    DateTime?           @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime?           @map("updated_at") @db.Timestamp(0)
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  importer     User?               @relation(fields: [importedBy], references: [id], onDelete: SetNull)
+  mapping      ImportMapping?      @relation(fields: [mappingId], references: [id], onDelete: Cascade, map: "fk_actual_import_mapping")
+  actualLines  ActualLine[]
+
+  @@index([companyId, status, importType], map: "idx_actual_imports_lookup")
+  @@index([importedBy], map: "actual_imports_imported_by_fkey")
+  @@index([mappingId], map: "fk_actual_import_mapping")
+  @@map("actual_imports")
+}
+
+model ActualLine {
+  id              BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  actualImportId  BigInt       @map("actual_import_id") @db.UnsignedBigInt
+  accountId       BigInt       @map("account_id") @db.UnsignedBigInt
+  siteId          BigInt?      @map("site_id") @db.UnsignedBigInt
+  costCenterId    BigInt?      @map("cost_center_id") @db.UnsignedBigInt
+  productId       BigInt?      @map("product_id") @db.UnsignedBigInt
+  materialId      BigInt?      @map("material_id") @db.UnsignedBigInt
+  customerId      BigInt?      @map("customer_id") @db.UnsignedBigInt
+  transactionDate DateTime     @map("transaction_date") @db.Date
+  quantity        Decimal?     @default(0.0000) @db.Decimal(16, 4)
+  unitPrice       Decimal?     @default(0.0000) @map("unit_price") @db.Decimal(16, 4)
+  amount          Decimal      @default(0.00) @db.Decimal(16, 2)
+  referenceNo     String?      @map("reference_no") @db.VarChar(120)
+  createdAt       DateTime?    @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime?    @map("updated_at") @db.Timestamp(0)
+  account         Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  actualImport    ActualImport @relation(fields: [actualImportId], references: [id], onDelete: Cascade)
+  costCenter      CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
+  customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  material        Material?    @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  product         Product?     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  site            Site?        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([transactionDate, accountId], map: "idx_actual_lines_date")
+  @@index([accountId], map: "actual_lines_account_id_fkey")
+  @@index([actualImportId], map: "actual_lines_actual_import_id_fkey")
+  @@index([costCenterId], map: "actual_lines_cost_center_id_fkey")
+  @@index([customerId], map: "actual_lines_customer_id_fkey")
+  @@index([materialId], map: "actual_lines_material_id_fkey")
+  @@index([productId], map: "actual_lines_product_id_fkey")
+  @@index([siteId], map: "actual_lines_site_id_fkey")
+  @@map("actual_lines")
+}
+
+model ProductionPlan {
+  id            BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId     BigInt      @map("company_id") @db.UnsignedBigInt
+  siteId        BigInt      @map("site_id") @db.UnsignedBigInt
+  productId     BigInt      @map("product_id") @db.UnsignedBigInt
+  planSource    PlanSource? @default(manual) @map("plan_source")
+  fiscalYear    Int         @map("fiscal_year")
+  periodMonth   Int         @map("period_month") @db.TinyInt
+  plannedQty    Decimal     @default(0.0000) @map("planned_qty") @db.Decimal(16, 4)
+  actualQty     Decimal?    @default(0.0000) @map("actual_qty") @db.Decimal(16, 4)
+  estimatedCost Decimal?    @default(0.00) @map("estimated_cost") @db.Decimal(16, 2)
+  actualCost    Decimal?    @default(0.00) @map("actual_cost") @db.Decimal(16, 2)
+  createdAt     DateTime?   @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime?   @map("updated_at") @db.Timestamp(0)
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  site          Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, siteId, productId, fiscalYear, periodMonth], map: "uq_production_plan")
+  @@index([productId], map: "production_plans_product_id_fkey")
+  @@index([siteId], map: "production_plans_site_id_fkey")
+  @@map("production_plans")
+}
+
+model InventorySnapshot {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId      BigInt    @map("company_id") @db.UnsignedBigInt
+  siteId         BigInt    @map("site_id") @db.UnsignedBigInt
+  productId      BigInt?   @map("product_id") @db.UnsignedBigInt
+  materialId     BigInt?   @map("material_id") @db.UnsignedBigInt
+  snapshotDate   DateTime  @map("snapshot_date") @db.Date
+  qtyOnHand      Decimal?  @default(0.0000) @map("qty_on_hand") @db.Decimal(16, 4)
+  inventoryValue Decimal?  @default(0.00) @map("inventory_value") @db.Decimal(16, 2)
+  createdAt      DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime? @map("updated_at") @db.Timestamp(0)
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  material       Material? @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  product        Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  site           Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, siteId, snapshotDate], map: "idx_inventory_date")
+  @@index([materialId], map: "inventory_snapshots_material_id_fkey")
+  @@index([productId], map: "inventory_snapshots_product_id_fkey")
+  @@index([siteId], map: "inventory_snapshots_site_id_fkey")
+  @@map("inventory_snapshots")
+}
+
+model KpiTarget {
+  id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId   BigInt       @map("company_id") @db.UnsignedBigInt
+  siteId      BigInt?      @map("site_id") @db.UnsignedBigInt
+  kpiName     String       @map("kpi_name") @db.VarChar(160)
+  kpiCategory KpiCategory? @default(financial) @map("kpi_category")
+  fiscalYear  Int          @map("fiscal_year")
+  periodMonth Int?         @map("period_month") @db.TinyInt
+  targetValue Decimal      @map("target_value") @db.Decimal(18, 4)
+  unit        String?      @db.VarChar(40)
+  createdBy   BigInt?      @map("created_by") @db.UnsignedBigInt
+  createdAt   DateTime?    @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime?    @map("updated_at") @db.Timestamp(0)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator     User?        @relation(fields: [createdBy], references: [id])
+  site        Site?        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, fiscalYear, kpiName], map: "idx_kpi_year")
+  @@index([createdBy], map: "kpi_targets_created_by_fkey")
+  @@index([siteId], map: "kpi_targets_site_id_fkey")
+  @@map("kpi_targets")
+}
+
+model NotificationRule {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId      BigInt         @map("company_id") @db.UnsignedBigInt
+  ruleName       String         @map("rule_name") @db.VarChar(160)
+  triggerType    TriggerType    @map("trigger_type")
+  thresholdValue Decimal?       @map("threshold_value") @db.Decimal(14, 4)
+  accountId      BigInt?        @map("account_id") @db.UnsignedBigInt
+  siteId         BigInt?        @map("site_id") @db.UnsignedBigInt
+  notifyRoles    String?        @map("notify_roles") @db.LongText
+  notifyUsers    String?        @map("notify_users") @db.LongText
+  channel        String?        @default("system,email") @db.VarChar(255)
+  isActive       Boolean        @default(true) @map("is_active")
+  createdBy      BigInt?        @map("created_by") @db.UnsignedBigInt
+  createdAt      DateTime?      @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime?      @map("updated_at") @db.Timestamp(0)
+  account        Account?       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator        User?          @relation(fields: [createdBy], references: [id])
+  site           Site?          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  notifications  Notification[]
+
+  @@index([accountId], map: "notification_rules_account_id_fkey")
+  @@index([companyId], map: "notification_rules_company_id_fkey")
+  @@index([createdBy], map: "notification_rules_created_by_fkey")
+  @@index([siteId], map: "notification_rules_site_id_fkey")
+  @@map("notification_rules")
+}
+
+model Approval {
+  id          BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId    BigInt          @map("tenant_id") @db.UnsignedBigInt
+  entityType  String          @map("entity_type") @db.VarChar(80)
+  entityId    BigInt          @map("entity_id") @db.UnsignedBigInt
+  stepOrder   Int?            @default(1) @map("step_order")
+  status      ApprovalStatus? @default(pending)
+  requestedBy BigInt?         @map("requested_by") @db.UnsignedBigInt
+  approvedBy  BigInt?         @map("approved_by") @db.UnsignedBigInt
+  approvedAt  DateTime?       @map("approved_at") @db.Timestamp(0)
+  comments    String?         @db.Text
+  createdAt   DateTime?       @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime?       @map("updated_at") @db.Timestamp(0)
+  approver    User?           @relation("approved_approvals", fields: [approvedBy], references: [id])
+  requester   User?           @relation("requested_approvals", fields: [requestedBy], references: [id])
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId, status], map: "idx_approvals_entity")
+  @@index([approvedBy], map: "approvals_approved_by_fkey")
+  @@index([requestedBy], map: "approvals_requested_by_fkey")
+  @@index([tenantId], map: "approvals_tenant_id_fkey")
+  @@map("approvals")
+}
+
+model AuditLog {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId   BigInt    @map("tenant_id") @db.UnsignedBigInt
+  userId     BigInt?   @map("user_id") @db.UnsignedBigInt
+  entityType String    @map("entity_type") @db.VarChar(80)
+  entityId   BigInt?   @map("entity_id") @db.UnsignedBigInt
+  action     String    @db.VarChar(80)
+  oldValues  String?   @map("old_values") @db.LongText
+  newValues  String?   @map("new_values") @db.LongText
+  ipAddress  String?   @map("ip_address") @db.VarChar(60)
+  userAgent  String?   @map("user_agent") @db.VarChar(255)
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, entityType, entityId], map: "idx_audit_entity")
+  @@index([userId], map: "audit_logs_user_id_fkey")
+  @@map("audit_logs")
+}
+
+model Notification {
+  id           BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  ruleId       BigInt?              @map("rule_id") @db.UnsignedBigInt
+  companyId    BigInt               @map("company_id") @db.UnsignedBigInt
+  userId       BigInt?              @map("user_id") @db.UnsignedBigInt
+  title        String               @db.VarChar(255)
+  body         String?              @db.Text
+  channel      NotificationChannel? @default(system)
+  entityType   String?              @map("entity_type") @db.VarChar(80)
+  entityId     BigInt?              @map("entity_id") @db.UnsignedBigInt
+  triggerData  String?              @map("trigger_data") @db.LongText
+  status       NotificationStatus?  @default(pending)
+  sentAt       DateTime?            @map("sent_at") @db.Timestamp(0)
+  readAt       DateTime?            @map("read_at") @db.Timestamp(0)
+  errorMessage String?              @map("error_message") @db.VarChar(500)
+  createdAt    DateTime?            @default(now()) @map("created_at") @db.Timestamp(0)
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rule         NotificationRule?    @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  user         User?                @relation(fields: [userId], references: [id])
+
+  @@index([userId, status, createdAt], map: "idx_notif_user_status")
+  @@index([companyId, createdAt], map: "idx_notif_company")
+  @@index([ruleId], map: "notifications_rule_id_fkey")
+  @@map("notifications")
+}
+
+model IntegrationConnection {
+  id             BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId      BigInt          @map("company_id") @db.UnsignedBigInt
+  name           String          @db.VarChar(160)
+  connectionType ConnectionType  @map("connection_type")
+  host           String?         @db.VarChar(255)
+  port           Int?            @db.SmallInt
+  databaseName   String?         @map("database_name") @db.VarChar(120)
+  username       String?         @db.VarChar(120)
+  passwordEnc    String?         @map("password_enc") @db.Text
+  apiBaseUrl     String?         @map("api_base_url") @db.VarChar(500)
+  apiKeyEnc      String?         @map("api_key_enc") @db.Text
+  extraConfig    String?         @map("extra_config") @db.LongText
+  syncSchedule   SyncSchedule?   @default(manual) @map("sync_schedule")
+  lastSyncAt     DateTime?       @map("last_sync_at") @db.Timestamp(0)
+  lastSyncStatus SyncStatus?     @default(never) @map("last_sync_status")
+  lastSyncLog    String?         @map("last_sync_log") @db.Text
+  isActive       Boolean         @default(true) @map("is_active")
+  createdBy      BigInt?         @map("created_by") @db.UnsignedBigInt
+  createdAt      DateTime?       @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime?       @map("updated_at") @db.Timestamp(0)
+  importMappings ImportMapping[]
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator        User?           @relation(fields: [createdBy], references: [id])
+
+  @@index([companyId, connectionType, isActive], map: "idx_conn_company_type")
+  @@index([createdBy], map: "integration_connections_created_by_fkey")
+  @@map("integration_connections")
+}
+
+model ImportMapping {
+  id            BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId     BigInt                 @map("company_id") @db.UnsignedBigInt
+  connectionId  BigInt?                @map("connection_id") @db.UnsignedBigInt
+  name          String                 @db.VarChar(160)
+  sourceSystem  ImportSourceSystem     @map("source_system")
+  importType    ImportType             @map("import_type")
+  mappingConfig String                 @map("mapping_config") @db.LongText
+  skipErrors    Boolean?               @default(false) @map("skip_errors")
+  isDefault     Boolean?               @default(false) @map("is_default")
+  isActive      Boolean?               @default(true) @map("is_active")
+  lastUsedAt    DateTime?              @map("last_used_at") @db.Timestamp(0)
+  createdBy     BigInt?                @map("created_by") @db.UnsignedBigInt
+  createdAt     DateTime?              @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime?              @map("updated_at") @db.Timestamp(0)
+  actualImports ActualImport[]
+  company       Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  connection    IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  creator       User?                  @relation(fields: [createdBy], references: [id])
+
+  @@index([companyId, sourceSystem, importType], map: "idx_mapping_company_source")
+  @@index([connectionId], map: "idx_mapping_connection")
+  @@index([createdBy], map: "import_mappings_created_by_fkey")
+  @@map("import_mappings")
+}
+
+enum TenantStatus {
+  trial
+  active
+  suspended
+  cancelled
+}
+
+enum BillingCycle {
+  monthly
+  yearly
+  custom
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  cancelled
+  expired
+}
+
+enum IndustryType {
+  food_manufacturing
+  food_retail
+  mixed
+  other
+}
+
+enum UserStatus {
+  active
+  inactive
+  invited
+  blocked
+}
+
+enum SiteType {
+  factory
+  branch
+  warehouse
+  office
+  distribution_center
+}
+
+enum SiteStatus {
+  active
+  inactive
+}
+
+enum AccountType {
+  revenue
+  cogs
+  expense
+  asset
+  liability
+  equity
+  cashflow
+}
+
+enum CostCenterType {
+  sales
+  production
+  admin
+  marketing
+  logistics
+  maintenance
+  other
+}
+
+enum ProductType {
+  finished_good
+  semi_finished
+  service
+}
+
+enum CustomerType {
+  retail
+  wholesale
+  distributor
+  internal
+  other
+}
+
+enum RateSource {
+  manual
+  api
+  import
+}
+
+enum ForecastMethod {
+  manual
+  rolling
+  driver_based
+  ai_assisted
+  seasonal_adjusted
+  hybrid
+}
+
+enum CycleStatus {
+  draft
+  submitted
+  approved
+  rejected
+  locked
+}
+
+enum PeriodType {
+  annual
+  quarterly
+  monthly
+}
+
+enum EmploymentType {
+  full_time
+  part_time
+  contract
+  seasonal
+}
+
+enum ScenarioType {
+  base
+  optimistic
+  pessimistic
+  custom
+}
+
+enum ImportSourceSystem {
+  excel
+  oracle
+  sap
+  erp
+  pms
+  odoo
+  pos
+  woocommerce
+  manual
+  api
+  custom
+}
+
+enum ImportType {
+  sales
+  expenses
+  production
+  inventory
+  gl
+  cashflow
+  payroll
+}
+
+enum ImportStatus {
+  uploaded
+  validated
+  posted
+  failed
+}
+
+enum PlanSource {
+  budget
+  forecast
+  manual
+}
+
+enum KpiCategory {
+  financial
+  operational
+  sales
+  production
+  hr
+}
+
+enum TriggerType {
+  variance_pct
+  variance_amount
+  kpi_breach
+  budget_approval
+  forecast_approval
+  import_failed
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum NotificationChannel {
+  email
+  system
+  sms
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+  read
+}
+
+enum ConnectionType {
+  oracle
+  sap
+  erp
+  pms
+  odoo
+  pos
+  woocommerce
+  rest_api
+  sftp
+  custom
+}
+
+enum SyncSchedule {
+  manual
+  hourly
+  daily
+  weekly
+  monthly
+}
+
+enum SyncStatus {
+  success
+  failed
+  partial
+  never
+}

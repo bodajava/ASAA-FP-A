@@ -8,20 +8,24 @@ datasource db {
 }
 
 model Plan {
-  id            BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
-  name          String         @db.VarChar(120)
-  code          String         @default("") @db.VarChar(60)
-  description   String?        @db.Text
-  monthlyPrice  Decimal        @default(0.00) @map("monthly_price") @db.Decimal(12, 2)
-  yearlyPrice   Decimal        @default(0.00) @map("yearly_price") @db.Decimal(12, 2)
-  maxCompanies  Int            @default(1) @map("max_companies")
-  maxUsers      Int            @default(5) @map("max_users")
-  features      String?        @db.LongText
-  isActive      Boolean        @default(true) @map("is_active")
-  createdAt     DateTime?      @map("created_at") @db.Timestamp(0)
-  updatedAt     DateTime?      @map("updated_at") @db.Timestamp(0)
-  subscriptions Subscription[]
-  tenants       Tenant[]
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name           String         @db.VarChar(120)
+  code           String         @default("") @db.VarChar(60)
+  description    String?        @db.Text
+  monthlyPrice   Decimal        @default(0.00) @map("monthly_price") @db.Decimal(12, 2)
+  yearlyPrice    Decimal        @default(0.00) @map("yearly_price") @db.Decimal(12, 2)
+  maxCompanies   Int            @default(1) @map("max_companies")
+  maxUsers       Int            @default(5) @map("max_users")
+  maxBranches    Int            @default(1) @map("max_branches")
+  dashboardLevel String         @default("basic") @map("dashboard_level") @db.VarChar(20)
+  features       String?        @db.LongText
+  restrictions   String?        @db.LongText
+  suitableFor    String?        @map("suitable_for") @db.Text
+  isActive       Boolean        @default(true) @map("is_active")
+  createdAt      DateTime?      @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime?      @map("updated_at") @db.Timestamp(0)
+  subscriptions  Subscription[]
+  tenants        Tenant[]
 
   @@map("plans")
 }

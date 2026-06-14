@@ -14,7 +14,10 @@ export class PlanResponseDto {
   description!: string;
 
   @ApiProperty()
-  monthlyPrice!: string;
+  monthlyPrice!: number;
+
+  @ApiProperty()
+  yearlyPrice!: number;
 
   @ApiProperty()
   maxCompanies!: number;
@@ -22,6 +25,21 @@ export class PlanResponseDto {
   @ApiProperty()
   maxUsers!: number;
 
+  @ApiProperty()
+  maxBranches!: number;
+
+  @ApiProperty()
+  dashboardLevel!: string;
+
   @ApiPropertyOptional()
   features!: string[];
+
+  @ApiPropertyOptional()
+  restrictions!: string[];
+
+  @ApiPropertyOptional()
+  suitableFor!: string[];
+
+  @ApiProperty()
+  isActive!: boolean;
 }

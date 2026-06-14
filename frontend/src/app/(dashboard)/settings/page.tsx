@@ -16,6 +16,7 @@ import {
   Lock,
   Zap,
   Sparkles,
+  BarChart3,
   Check,
   X,
   Loader2,
@@ -111,6 +112,7 @@ export default function SettingsPage() {
   const [plansError, setPlansError] = useState<string | null>(null);
 
   // Subscription upgrade state
+  const [isYearly, setIsYearly] = useState(false);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null);
@@ -487,124 +489,181 @@ export default function SettingsPage() {
         ) : plans.length === 0 ? (
           <ErrorState message="No subscription plans available." />
         ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {plans.map((p) => {
-            const code = p.code?.toLowerCase() ?? '';
-            const isCurrent = tenant?.plan?.name?.toLowerCase() === p.name.toLowerCase() || 
-                             (!tenant?.plan && code === 'starter');
-            
-            // Choose header visual based on plan code
-            let headerBg = 'bg-slate-50 border-slate-200';
-            let planIcon = <Building2 className="h-5 w-5 text-slate-500" />;
-            let badgeText = '';
-            let badgeClasses = 'bg-slate-100 text-slate-800';
-            let accentColor = 'emerald';
-            
-            if (code === 'business') {
-              headerBg = 'bg-emerald-50/50 border-emerald-100';
-              planIcon = <Zap className="h-5 w-5 text-emerald-600" />;
-              badgeText = 'Most Popular';
-              badgeClasses = 'bg-emerald-100 text-emerald-800';
-              accentColor = 'emerald';
-            } else if (code === 'enterprise') {
-              headerBg = 'bg-indigo-50/50 border-indigo-100';
-              planIcon = <Sparkles className="h-5 w-5 text-indigo-600" />;
-              badgeText = 'Complete Suite';
-              badgeClasses = 'bg-indigo-100 text-indigo-800';
-              accentColor = 'indigo';
-            }
+        <>
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <span className={`text-xs font-bold transition-colors ${!isYearly ? 'text-slate-800' : 'text-slate-400'}`}>Monthly</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isYearly}
+              onClick={() => setIsYearly(!isYearly)}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${isYearly ? 'bg-emerald-500' : 'bg-slate-200'}`}
+            >
+              <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform ${isYearly ? 'translate-x-4' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-xs font-bold transition-colors ${isYearly ? 'text-slate-800' : 'text-slate-400'}`}>
+              Yearly
+              <span className="ml-1 text-[10px] text-emerald-600 font-bold">Save ~17%</span>
+            </span>
+          </div>
 
-            return (
-              <div 
-                key={p.id} 
-                className={`flex flex-col rounded-xl border transition-all duration-200 ${
-                  isCurrent 
-                    ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500/10' 
-                    : 'border-slate-200 hover:border-slate-300 shadow-sm'
-                }`}
-              >
-                {/* Plan Header */}
-                <div className={`p-5 rounded-t-xl border-b border-slate-100 ${headerBg} relative`}>
-                  {badgeText && (
-                    <span className={`absolute top-4 right-4 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeClasses}`}>
-                      {badgeText}
-                    </span>
-                  )}
-                  <div className="flex items-center gap-2">
-                    {planIcon}
-                    <h3 className="text-sm font-bold text-slate-800">{p.name}</h3>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1.5 min-h-[32px]">{p.description}</p>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-2xl font-extrabold text-slate-800">${p.monthlyPrice}</span>
-                    <span className="text-xs text-slate-400 font-semibold">/ month</span>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {plans.map((p) => {
+              const code = p.code?.toLowerCase() ?? '';
+              const isCurrent = tenant?.plan?.name?.toLowerCase() === p.name.toLowerCase() || 
+                               (!tenant?.plan && code === 'starter');
+              
+              let headerBg = 'bg-slate-50 border-slate-200';
+              let planIcon = <Building2 className="h-5 w-5 text-slate-500" />;
+              let badgeText = '';
+              let badgeClasses = 'bg-slate-100 text-slate-800';
+              let accentColor = 'emerald';
+              let borderAccent = 'border-emerald-500';
+              let btnStyle = '';
+              
+              if (code === 'business') {
+                headerBg = 'bg-emerald-50/50 border-emerald-100';
+                planIcon = <Zap className="h-5 w-5 text-emerald-600" />;
+                badgeText = 'Most Popular';
+                badgeClasses = 'bg-emerald-100 text-emerald-800';
+                accentColor = 'emerald';
+                borderAccent = 'border-emerald-500';
+                btnStyle = 'bg-emerald-600 hover:bg-emerald-700 text-white border-none';
+              } else if (code === 'enterprise') {
+                headerBg = 'bg-indigo-50/50 border-indigo-100';
+                planIcon = <Sparkles className="h-5 w-5 text-indigo-600" />;
+                badgeText = 'Complete Suite';
+                badgeClasses = 'bg-indigo-100 text-indigo-800';
+                accentColor = 'indigo';
+                borderAccent = 'border-indigo-500';
+                btnStyle = 'bg-indigo-600 hover:bg-indigo-700 text-white border-none';
+              }
 
-                {/* Plan Limits & Features */}
-                <div className="p-5 flex-1 flex flex-col justify-between gap-6">
-                  <div className="space-y-4">
-                    {/* Limits Info */}
-                    <div className="grid grid-cols-2 gap-2 pb-4 border-b border-slate-100 text-[11px] text-slate-500 font-semibold">
-                      <div className="flex items-center gap-1">
-                        <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{p.maxCompanies >= 999 ? 'Unlimited' : `${p.maxCompanies} ${p.maxCompanies === 1 ? 'Company' : 'Companies'}`}</span>
+              const price = isYearly ? p.yearlyPrice : p.monthlyPrice;
+              const periodLabel = isYearly ? '/ year' : '/ month';
+
+              return (
+                <div 
+                  key={p.id} 
+                  className={`flex flex-col rounded-xl border transition-all duration-200 ${
+                    isCurrent 
+                      ? `${borderAccent} shadow-md ring-2 ring-${accentColor}-500/10` 
+                      : 'border-slate-200 hover:border-slate-300 shadow-sm'
+                  }`}
+                >
+                  {/* Plan Header */}
+                  <div className={`p-5 rounded-t-xl border-b border-slate-100 ${headerBg} relative`}>
+                    {badgeText && (
+                      <span className={`absolute top-4 right-4 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeClasses}`}>
+                        {badgeText}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {planIcon}
+                      <h3 className="text-sm font-bold text-slate-800">{p.name}</h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1.5 min-h-[32px]">{p.description}</p>
+                    
+                    {/* Pricing */}
+                    <div className="mt-4">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-extrabold text-slate-800">${price}</span>
+                        <span className="text-xs text-slate-400 font-semibold">{periodLabel}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <User className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{p.maxUsers >= 999 ? 'Unlimited Users' : `Up to ${p.maxUsers} Users`}</span>
+                      {isYearly && p.monthlyPrice > 0 && (
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          ${(price / 12).toFixed(2)}/mo billed annually
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Plan Body */}
+                  <div className="p-5 flex-1 flex flex-col justify-between gap-5">
+                    <div className="space-y-4">
+                      {/* Limits */}
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 pb-4 border-b border-slate-100 text-[11px] font-semibold">
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span>Companies</span>
+                          <span className="ml-auto text-slate-800">{p.maxCompanies >= 999 ? 'Unlimited' : p.maxCompanies}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span>Users</span>
+                          <span className="ml-auto text-slate-800">{p.maxUsers >= 999 ? 'Unlimited' : p.maxUsers}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span>Branches</span>
+                          <span className="ml-auto text-slate-800">{p.maxBranches >= 999 ? 'Unlimited' : p.maxBranches}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <BarChart3 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span>Dashboard</span>
+                          <span className="ml-auto text-slate-800 capitalize">{p.dashboardLevel}</span>
+                        </div>
                       </div>
+
+                      {/* Features */}
+                      {p.features && p.features.length > 0 && (
+                        <ul className="space-y-2">
+                          {p.features.map((feature, index) => (
+                            <li key={index} className="flex items-start gap-2 text-xs font-medium text-slate-600">
+                              <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {/* Restrictions */}
+                      {p.restrictions && p.restrictions.length > 0 && (
+                        <div className="pt-3 border-t border-slate-100">
+                          <ul className="space-y-2">
+                            {p.restrictions.map((restriction, index) => (
+                              <li key={index} className="flex items-start gap-2 text-xs font-medium text-slate-400">
+                                <X className="h-3.5 w-3.5 text-slate-300 shrink-0 mt-0.5" />
+                                <span>{restriction}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Features List */}
-                    {p.features && p.features.length > 0 && (
-                      <ul className="space-y-2.5">
-                        {p.features.map((feature, index) => (
-                          <li key={index} className="flex items-start gap-2 text-xs font-medium text-slate-600">
-                            <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Actions Button */}
-                  <div className="pt-4 border-t border-slate-100">
-                    {isCurrent ? (
-                      <div className="flex items-center justify-center gap-1.5 w-full rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700">
-                        <CheckCircle className="h-4 w-4 shrink-0" />
-                        Active Plan
-                      </div>
-                    ) : (
-                      <Button
-                        variant={code === 'starter' ? 'outline' : 'primary'}
-                        className={`w-full text-xs font-bold flex items-center justify-center gap-1.5 py-2.5 ${
-                          code === 'business' 
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-none' 
-                            : code === 'enterprise'
-                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-none'
-                            : ''
-                        }`}
-                        disabled={upgradingPlanId !== null}
-                        onClick={() => void handleUpgradePlan(p.id, p.name)}
-                      >
-                        {upgradingPlanId === p.id ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            Upgrading...
-                          </>
-                        ) : (
-                          `Select ${p.name}`
-                        )}
-                      </Button>
-                    )}
+                    {/* Action Button */}
+                    <div className="pt-4 border-t border-slate-100">
+                      {isCurrent ? (
+                        <div className="flex items-center justify-center gap-1.5 w-full rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700">
+                          <CheckCircle className="h-4 w-4 shrink-0" />
+                          Active Plan
+                        </div>
+                      ) : (
+                        <Button
+                          variant={code === 'starter' ? 'outline' : 'primary'}
+                          className={`w-full text-xs font-bold flex items-center justify-center gap-1.5 py-2.5 ${btnStyle}`}
+                          disabled={upgradingPlanId !== null}
+                          onClick={() => void handleUpgradePlan(p.id, p.name)}
+                        >
+                          {upgradingPlanId === p.id ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Upgrading...
+                            </>
+                          ) : (
+                            `Select ${p.name}`
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
         )}
       </SectionCard>
     </div>

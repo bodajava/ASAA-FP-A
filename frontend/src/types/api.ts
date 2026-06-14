@@ -1039,10 +1039,16 @@ export interface Plan {
   name: string;
   code: string;
   description: string;
-  monthlyPrice: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
   maxCompanies: number;
   maxUsers: number;
+  maxBranches: number;
+  dashboardLevel: string;
   features: string[];
+  restrictions: string[];
+  suitableFor: string[];
+  isActive: boolean;
 }
 
 // ---------------------------------------------------------------------------

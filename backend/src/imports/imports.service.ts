@@ -50,21 +50,21 @@ export class ImportsService {
       case 'customers':
         return 'code,name,customerType,region,phone,email,creditLimit,paymentTerms\nCUST-01,Universal Stores,wholesale,Giza,,info@universal.com,50000,30';
       case 'products':
-        return 'sku,name,productType,salePrice,standardCost,categoryName,unitSymbol\nPROD-CAN,Canned Drink,finished_good,15,10,Beverages,pcs';
+        return 'sku,name,productType,salePrice,standardCost,categoryName,unitSymbol\nPROD-JUICE,Apple Juice 250ml,finished_good,15,8,Beverages,pcs';
       case 'materials':
-        return 'code,name,purchasePrice,safetyStockQty,supplierName,unitSymbol\nMAT-SUG,Raw Sugar,5,100,Al Ahram Corp,kg';
+        return 'code,name,purchasePrice,safetyStockQty,supplierName,unitSymbol\nMAT-SUGAR,Refined White Sugar,30,100,Al-Hoda Raw Materials Co.,kg';
       case 'bomrecipes':
       case 'bom-recipes':
-        return 'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct\nPROD-CAN,v1,1,0.02,2.5,1.2,MAT-SUG,0.15,0.01';
+        return 'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct\nPROD-JUICE,v1,1,0.02,0.5,0.3,MAT-SUGAR,0.02,0.01';
       case 'budgetlines':
       case 'budget-lines':
-        return 'budgetCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,notes\nFY25 Annual Budget,2025,4000,Cairo HQ,CC-MKT,PROD-CAN,,,1,1000,15,15000,January sales projection';
+        return 'budgetCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,notes\nFY25 Annual Budget,2025,4000,Cairo HQ,CC-MKT,PROD-JUICE,,,1,1000,15,15000,January sales projection';
       case 'forecastlines':
       case 'forecast-lines':
-        return 'forecastCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,driverType,notes\nFY25 Rolling Q1,2025,4000,Cairo HQ,CC-MKT,PROD-CAN,,,1,1200,15,18000,driver_based,Q1 updated forecast';
+        return 'forecastCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,driverType,notes\nFY25 Rolling Q1,2025,4000,Cairo HQ,CC-MKT,PROD-JUICE,,,1,1200,15,18000,driver_based,Q1 updated forecast';
       case 'actuallines':
       case 'actual-lines':
-        return 'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo\n4000,Cairo HQ,CC-MKT,PROD-CAN,,,2025-01-15,950,15,14250,TX-99812';
+        return 'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo\n4000,Cairo HQ,CC-MKT,PROD-JUICE,,,2025-01-15,950,15,14250,TX-99812';
       default:
         throw new BadRequestException(`Unknown module template: ${module}`);
     }

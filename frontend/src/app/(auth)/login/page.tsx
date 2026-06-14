@@ -33,9 +33,9 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        const msg =
-          (err.response?.data as { message?: string } | undefined)?.message ??
-          'Invalid credentials. Please try again.';
+        const msg = err.response
+          ? (err.response.data as { message?: string } | undefined)?.message ?? 'Invalid credentials. Please try again.'
+          : 'Failed to connect to the backend server. Please verify your NEXT_PUBLIC_API_URL configuration and ensure the backend is running.';
         setError(msg);
       } else {
         setError('An unexpected error occurred. Please try again.');

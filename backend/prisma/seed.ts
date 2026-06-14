@@ -7,8 +7,16 @@ function createPrismaClient(): PrismaClient {
   if (url && url.startsWith('"') && url.endsWith('"')) {
     url = url.slice(1, -1);
   }
-  const adapter = new PrismaMariaDb(url);
-  return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
+  const urlObj = new URL(url);
+  if (!urlObj.searchParams.has('allowPublicKeyRetrieval')) {
+    urlObj.searchParams.set('allowPublicKeyRetrieval', 'true');
+  }
+  if (!urlObj.searchParams.has('connectionLimit')) {
+    urlObj.searchParams.set('connectionLimit', '10');
+  }
+  url = urlObj.toString();
+  const adapter = new PrismaMariaDb(url, { useTextProtocol: true });
+  return new PrismaClient({ adapter });
 }
 
 const prisma = createPrismaClient();

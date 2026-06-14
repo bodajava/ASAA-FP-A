@@ -15,6 +15,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/feedback-states';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet } from '@/lib/api';
+import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
 import type {
   VarianceRecord,
   Account,
@@ -36,7 +37,7 @@ export default function VariancePage() {
   const [compareType, setCompareType] = useState<CompareType>('budget-vs-actual');
 
   // Filters State
-  const [fiscalYear, setFiscalYear] = useState('2025');
+  const [fiscalYear, setFiscalYear] = useState(String(getCurrentFiscalYear()));
   const [periodMonth, setPeriodMonth] = useState('');
   const [accountId, setAccountId] = useState('');
   const [siteId, setSiteId] = useState('');
@@ -327,8 +328,8 @@ export default function VariancePage() {
               className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="">All Months</option>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>Month {m}</option>
+              {MONTH_NAMES.slice(1).map((name, i) => (
+                <option key={i + 1} value={i + 1}>{name}</option>
               ))}
             </select>
           </div>

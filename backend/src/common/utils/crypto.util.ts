@@ -4,10 +4,13 @@ const ALGORITHM = 'aes-256-cbc';
 const IV_LENGTH = 16;
 
 function getEncryptionKey(): Buffer {
-  const secret =
-    process.env.ENCRYPTION_KEY ||
-    process.env.JWT_SECRET ||
-    'antigravity-default-encryption-secret-key-32-chars!!';
+  const secret = process.env.ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error(
+      'ENCRYPTION_KEY environment variable is required. ' +
+      'Set a secure 32+ character string for AES-256 encryption.',
+    );
+  }
   return crypto.createHash('sha256').update(secret).digest();
 }
 

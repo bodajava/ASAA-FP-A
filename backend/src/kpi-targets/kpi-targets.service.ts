@@ -6,6 +6,18 @@ import { CreateKpiTargetDto } from './dto/create-kpi-target.dto';
 export class KpiTargetsService {
   constructor(private prisma: PrismaService) {}
 
+  private async ensureCompanyBelongsToTenant(
+    companyId: bigint,
+    tenantId: bigint,
+  ) {
+    const company = await this.prisma.company.findFirst({
+      where: { id: companyId, tenantId },
+    });
+    if (!company) {
+      throw new NotFoundException(`Company not found under this tenant`);
+    }
+  }
+
   private s(v: any) {
     return v?.toString() ?? null;
   }
@@ -70,13 +82,17 @@ export class KpiTargetsService {
     id: bigint,
     companyId: bigint,
     dto: Partial<CreateKpiTargetDto>,
+    tenantId: bigint,
+    userId: bigint,
   ) {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     const existing = await this.prisma.kpiTarget.findFirst({
       where: { id, companyId },
     });
     if (!existing) throw new NotFoundException('KPI Target not found');
 
-    return this.prisma.kpiTarget.update({
+    const updated = await this.prisma.kpiTarget.update({
       where: { id },
       data: {
         kpiName: dto.kpiName,
@@ -88,13 +104,48 @@ export class KpiTargetsService {
         updatedAt: new Date(),
       },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entityType: 'KpiTarget',
+        entityId: id,
+        action: 'update',
+        oldValues: JSON.stringify(existing),
+        newValues: JSON.stringify(updated),
+      },
+    });
+
+    return updated;
   }
 
-  async remove(id: bigint, companyId: bigint) {
+  async remove(
+    id: bigint,
+    companyId: bigint,
+    tenantId: bigint,
+    userId: bigint,
+  ) {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     const existing = await this.prisma.kpiTarget.findFirst({
       where: { id, companyId },
     });
     if (!existing) throw new NotFoundException('KPI Target not found');
-    return this.prisma.kpiTarget.delete({ where: { id } });
+
+    await this.prisma.kpiTarget.delete({ where: { id } });
+
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entityType: 'KpiTarget',
+        entityId: id,
+        action: 'delete',
+        oldValues: JSON.stringify(existing),
+      },
+    });
+
+    return existing;
   }
 }

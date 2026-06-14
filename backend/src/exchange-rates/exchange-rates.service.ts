@@ -12,6 +12,18 @@ import {
 export class ExchangeRatesService {
   constructor(private prisma: PrismaService) {}
 
+  private async ensureCompanyBelongsToTenant(
+    companyId: bigint,
+    tenantId: bigint,
+  ) {
+    const company = await this.prisma.company.findFirst({
+      where: { id: companyId, tenantId },
+    });
+    if (!company) {
+      throw new NotFoundException(`Company not found under this tenant`);
+    }
+  }
+
   async syncUsdRate(companyId: bigint, userId: bigint) {
     let rate = 50.0; // Simulated fallback rate
     let fetchedFromApi = false;
@@ -250,11 +262,27 @@ export class ExchangeRatesService {
     return row ? Number(row.rate) : 1;
   }
 
-  async remove(companyId: bigint, id: bigint) {
+  async remove(companyId: bigint, id: bigint, tenantId: bigint, userId: bigint) {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     const existing = await this.prisma.exchangeRate.findFirst({
       where: { id, companyId },
     });
     if (!existing) throw new NotFoundException('Exchange rate not found');
-    return this.prisma.exchangeRate.delete({ where: { id } });
+
+    await this.prisma.exchangeRate.delete({ where: { id } });
+
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entityType: 'ExchangeRate',
+        entityId: id,
+        action: 'delete',
+        oldValues: JSON.stringify(existing),
+      },
+    });
+
+    return existing;
   }
 }

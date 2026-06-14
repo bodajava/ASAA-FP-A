@@ -1808,19 +1808,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
                 connectString: connectString,
               });
 
-              if (dto.connectionId) {
-                const conn = await this.prisma.integrationConnection.findFirst({
-                  where: { id: BigInt(dto.connectionId), companyId },
-                });
-                if (conn) {
-                  await this.syncCompaniesAndConnections(
-                    connInstance,
-                    tenantId,
-                    conn,
-                  );
-                }
-              }
-
               // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
               await connInstance.close();
               success = true;

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { NotificationRule, Site, Account } from '@/types/api';
 import { apiGet } from '@/lib/api';
+import { TRIGGER_TYPES } from '@/lib/constants';
 
 const columns: Column<NotificationRule>[] = [
   { key: 'ruleName', header: 'Rule Name', className: 'font-semibold text-slate-700' },
@@ -90,11 +91,9 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
           onChange={(e) => setTriggerType(e.target.value as any)}
           className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          <option value="variance_pct">Variance Percentage Breach (%)</option>
-          <option value="variance_amount">Variance Amount Breach (Absolute)</option>
-          <option value="kpi_breach">KPI Target Underperformance</option>
-          <option value="budget_approval">Budget Cycle Approved</option>
-          <option value="import_failed">Actual Data Import Failed</option>
+          {TRIGGER_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
         </select>
       </div>
 

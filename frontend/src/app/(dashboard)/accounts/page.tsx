@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { Account, AccountType } from '@/types/api';
-
-const ACCOUNT_TYPES: AccountType[] = ['revenue', 'expense', 'asset', 'liability', 'equity'];
+import { ACCOUNT_TYPES } from '@/lib/constants';
 
 const columns: Column<Account>[] = [
   { key: 'code', header: 'Code', className: 'font-mono text-xs' },

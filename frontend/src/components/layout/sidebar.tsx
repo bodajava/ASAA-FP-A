@@ -17,6 +17,7 @@ import {
   LogOut,
   Package,
   Settings,
+  Shield,
   TrendingUp,
   Users,
   X,
@@ -72,6 +73,7 @@ const NAV: NavGroup[] = [
     group: 'Operations',
     items: [
       { label: 'Inventory', href: '/inventory', icon: Package },
+      { label: 'Approvals', href: '/approvals', icon: Shield },
       { label: 'Promotions', href: '/promotions', icon: TrendingUp },
       { label: 'Raw Mat. Prices', href: '/raw-material-prices', icon: DollarSign },
     ],

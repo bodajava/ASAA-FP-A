@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
 import { CreateBomRecipeDto } from './dto/create-bom-recipe.dto';
 import { UpdateBomRecipeDto } from './dto/update-bom-recipe.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import Decimal from 'decimal.js';
 
 export type QueryBomRecipe = Prisma.BomRecipeGetPayload<{
   include: {
@@ -71,7 +72,7 @@ export interface BomRecipeResponseDto {
 export function mapRecipeToResponse(
   recipe: QueryBomRecipe,
 ): BomRecipeResponseDto {
-  let totalMaterialCost = 0;
+  let totalMaterialCost = new Decimal(0);
 
   const mappedLines = recipe.bomLines.map((line) => {
     const defaultPrice = Number(line.material.purchasePrice);
@@ -80,8 +81,10 @@ export function mapRecipeToResponse(
     const lineWastage = Number(line.wastagePct);
     const qty = Number(line.qtyPerOutput);
 
-    const lineCost = qty * price * (1 + lineWastage / 100);
-    totalMaterialCost += lineCost;
+    const lineCost = new Decimal(qty)
+      .times(price)
+      .times(new Decimal(1).plus(new Decimal(lineWastage).div(100)));
+    totalMaterialCost = totalMaterialCost.plus(lineCost);
 
     return {
       id: line.id.toString(),
@@ -103,9 +106,13 @@ export function mapRecipeToResponse(
   const labor = Number(recipe.laborCost);
   const overhead = Number(recipe.overheadCost);
 
-  const estimatedCost =
-    (totalMaterialCost + labor + overhead) * (1 + recipeWastage / 100);
-  const estimatedCostPerUnit = outputQty > 0 ? estimatedCost / outputQty : 0;
+  const estimatedCost = totalMaterialCost
+    .plus(labor)
+    .plus(overhead)
+    .times(new Decimal(1).plus(new Decimal(recipeWastage).div(100)));
+  const estimatedCostPerUnit = outputQty > 0
+    ? estimatedCost.div(outputQty)
+    : new Decimal(0);
 
   return {
     id: recipe.id.toString(),
@@ -125,9 +132,9 @@ export function mapRecipeToResponse(
       sku: recipe.product.sku,
     },
     bomLines: mappedLines,
-    totalMaterialCost: Number(totalMaterialCost.toFixed(4)),
-    estimatedCost: Number(estimatedCost.toFixed(4)),
-    estimatedCostPerUnit: Number(estimatedCostPerUnit.toFixed(4)),
+    totalMaterialCost: totalMaterialCost.toNumber(),
+    estimatedCost: estimatedCost.toNumber(),
+    estimatedCostPerUnit: estimatedCostPerUnit.toNumber(),
   };
 }
 
@@ -374,6 +381,8 @@ export class BomRecipesService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<BomRecipeResponseDto> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     // Check if recipe exists and belongs to active company
     const oldRecipe = await this.prisma.bomRecipe.findFirst({
       where: { id, companyId },
@@ -554,20 +563,20 @@ export class BomRecipesService {
       {
         name: string;
         code: string;
-        requiredQty: number;
+        requiredQty: InstanceType<typeof Decimal>;
         unitPrice: number;
-        totalCost: number;
-        wastageQty: number;
-        wastageCost: number;
+        totalCost: InstanceType<typeof Decimal>;
+        wastageQty: InstanceType<typeof Decimal>;
+        wastageCost: InstanceType<typeof Decimal>;
       }
     >();
 
     let totalSalesQty = 0;
-    let totalMaterialCost = 0;
-    let totalLaborCost = 0;
-    let totalOverheadCost = 0;
-    let totalWastageCost = 0;
-    let grandTotalCost = 0;
+    let totalMaterialCost = new Decimal(0);
+    let totalLaborCost = new Decimal(0);
+    let totalOverheadCost = new Decimal(0);
+    let totalWastageCost = new Decimal(0);
+    let grandTotalCost = new Decimal(0);
 
     for (const line of salesPlanLines) {
       const pId = BigInt(line.productId);
@@ -591,9 +600,9 @@ export class BomRecipesService {
         continue;
       }
 
-      const factor = qty / Number(recipe.outputQty);
-      let productMaterialCost = 0;
-      let productWastageCost = 0;
+      const factor = new Decimal(qty).div(Number(recipe.outputQty));
+      let productMaterialCost = new Decimal(0);
+      let productWastageCost = new Decimal(0);
 
       for (const bomLine of recipe.bomLines) {
         const matId = bomLine.materialId.toString();
@@ -604,23 +613,23 @@ export class BomRecipesService {
             : matDefaultPrice;
         const lineWastagePct = Number(bomLine.wastagePct);
 
-        const baseQty = Number(bomLine.qtyPerOutput) * factor;
-        const wastageQty = baseQty * (lineWastagePct / 100);
-        const totalLineQty = baseQty + wastageQty;
+        const baseQty = new Decimal(Number(bomLine.qtyPerOutput)).times(factor);
+        const wastageQty = baseQty.times(lineWastagePct).div(100);
+        const totalLineQty = baseQty.plus(wastageQty);
 
-        const baseCost = baseQty * matPrice;
-        const wastageCost = wastageQty * matPrice;
-        const totalLineCost = totalLineQty * matPrice;
+        const baseCost = baseQty.times(matPrice);
+        const wastageCost = wastageQty.times(matPrice);
+        const totalLineCost = totalLineQty.times(matPrice);
 
-        productMaterialCost += totalLineCost;
-        productWastageCost += wastageCost;
+        productMaterialCost = productMaterialCost.plus(totalLineCost);
+        productWastageCost = productWastageCost.plus(wastageCost);
 
         const existing = materialReqMap.get(matId);
         if (existing) {
-          existing.requiredQty += totalLineQty;
-          existing.totalCost += totalLineCost;
-          existing.wastageQty += wastageQty;
-          existing.wastageCost += wastageCost;
+          existing.requiredQty = existing.requiredQty.plus(totalLineQty);
+          existing.totalCost = existing.totalCost.plus(totalLineCost);
+          existing.wastageQty = existing.wastageQty.plus(wastageQty);
+          existing.wastageCost = existing.wastageCost.plus(wastageCost);
         } else {
           materialReqMap.set(matId, {
             name: bomLine.material.name,
@@ -634,23 +643,24 @@ export class BomRecipesService {
         }
       }
 
-      const productLaborCost = Number(recipe.laborCost) * factor;
-      const productOverheadCost = Number(recipe.overheadCost) * factor;
+      const productLaborCost = new Decimal(Number(recipe.laborCost)).times(factor);
+      const productOverheadCost = new Decimal(Number(recipe.overheadCost)).times(factor);
       const recipeWastagePct = Number(recipe.wastagePct);
-      const recipeWastageCost =
-        (productMaterialCost + productLaborCost + productOverheadCost) *
-        (recipeWastagePct / 100);
-      const productTotalCost =
-        productMaterialCost +
-        productLaborCost +
-        productOverheadCost +
-        recipeWastageCost;
+      const recipeWastageCost = productMaterialCost
+        .plus(productLaborCost)
+        .plus(productOverheadCost)
+        .times(recipeWastagePct)
+        .div(100);
+      const productTotalCost = productMaterialCost
+        .plus(productLaborCost)
+        .plus(productOverheadCost)
+        .plus(recipeWastageCost);
 
-      totalMaterialCost += productMaterialCost;
-      totalLaborCost += productLaborCost;
-      totalOverheadCost += productOverheadCost;
-      totalWastageCost += recipeWastageCost;
-      grandTotalCost += productTotalCost;
+      totalMaterialCost = totalMaterialCost.plus(productMaterialCost);
+      totalLaborCost = totalLaborCost.plus(productLaborCost);
+      totalOverheadCost = totalOverheadCost.plus(productOverheadCost);
+      totalWastageCost = totalWastageCost.plus(recipeWastageCost);
+      grandTotalCost = grandTotalCost.plus(productTotalCost);
 
       productsList.push({
         productId: line.productId,
@@ -658,11 +668,11 @@ export class BomRecipesService {
         sku: recipe.product.sku,
         salesQty: qty,
         recipeVersion: recipe.version,
-        materialCost: Number(productMaterialCost.toFixed(4)),
-        laborCost: Number(productLaborCost.toFixed(4)),
-        overheadCost: Number(productOverheadCost.toFixed(4)),
-        recipeWastageCost: Number(recipeWastageCost.toFixed(4)),
-        totalCost: Number(productTotalCost.toFixed(4)),
+        materialCost: productMaterialCost.toNumber(),
+        laborCost: productLaborCost.toNumber(),
+        overheadCost: productOverheadCost.toNumber(),
+        recipeWastageCost: recipeWastageCost.toNumber(),
+        totalCost: productTotalCost.toNumber(),
       });
     }
 
@@ -671,11 +681,11 @@ export class BomRecipesService {
         materialId: id,
         name: val.name,
         code: val.code,
-        requiredQty: Number(val.requiredQty.toFixed(4)),
+        requiredQty: val.requiredQty.toNumber(),
         unitPrice: val.unitPrice,
-        totalCost: Number(val.totalCost.toFixed(4)),
-        wastageQty: Number(val.wastageQty.toFixed(4)),
-        wastageCost: Number(val.wastageCost.toFixed(4)),
+        totalCost: val.totalCost.toNumber(),
+        wastageQty: val.wastageQty.toNumber(),
+        wastageCost: val.wastageCost.toNumber(),
       }),
     );
 
@@ -688,11 +698,11 @@ export class BomRecipesService {
       products: productsList,
       materials: materialsList,
       totalSalesQty,
-      totalMaterialCost: Number(totalMaterialCost.toFixed(4)),
-      totalLaborCost: Number(totalLaborCost.toFixed(4)),
-      totalOverheadCost: Number(totalOverheadCost.toFixed(4)),
-      totalWastageCost: Number(totalWastageCost.toFixed(4)),
-      grandTotalCost: Number(grandTotalCost.toFixed(4)),
+      totalMaterialCost: totalMaterialCost.toNumber(),
+      totalLaborCost: totalLaborCost.toNumber(),
+      totalOverheadCost: totalOverheadCost.toNumber(),
+      totalWastageCost: totalWastageCost.toNumber(),
+      grandTotalCost: grandTotalCost.toNumber(),
       capacityUtilizationPct,
     };
   }

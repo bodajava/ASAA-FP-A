@@ -11,6 +11,7 @@ import {
   ForecastMethod,
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ForecastEngineService } from './forecast-engine.service';
 import { CreateForecastCycleDto } from './dto/create-forecast-cycle.dto';
 import { UpdateForecastCycleDto } from './dto/update-forecast-cycle.dto';
@@ -110,6 +111,7 @@ export class ForecastsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly forecastEngine: ForecastEngineService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async ensureCompanyBelongsToTenant(
@@ -629,6 +631,12 @@ export class ForecastsService {
         newValues: JSON.stringify(updatedCycle),
       },
     });
+
+    if (targetStatus === 'approved') {
+      await this.notificationsService
+        .triggerForecastApproval(companyId, tenantId, id, updatedCycle.name)
+        .catch(() => {});
+    }
 
     return mapForecastCycleToResponse(updatedCycle);
   }

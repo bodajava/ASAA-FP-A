@@ -1291,6 +1291,27 @@ export class ReportsService {
     }));
   }
 
+  getReportMetas() {
+    return [
+      { value: 'pl', label: 'Profit & Loss (P&L)', description: 'Summary of revenues, costs, and expenses over months', category: 'financial', paginated: false },
+      { value: 'cashflow', label: 'Cash Flow Statement', description: 'Analysis of cash inflows and outflows by month', category: 'financial', paginated: false },
+      { value: 'gross-margin', label: 'Gross Margin Analysis', description: 'Revenues, cost of goods sold, and gross margins', category: 'financial', paginated: false },
+      { value: 'net-profit', label: 'Net Profit Margin', description: 'Bottom-line net profit performance and margins', category: 'financial', paginated: false },
+      { value: 'budget-vs-actual', label: 'Budget vs Actuals', description: 'Itemized variances comparing budgets against actual data', category: 'performance', paginated: true },
+      { value: 'forecast-accuracy', label: 'Forecast Accuracy', description: 'Assessment of forecast variances and absolute errors', category: 'performance', paginated: false },
+      { value: 'product-profitability', label: 'Product Profitability', description: 'Margins, COGS, and sales performance by SKU', category: 'performance', paginated: true },
+      { value: 'branch-profitability', label: 'Branch / Site Profitability', description: 'Revenue and expense performance broken down by site', category: 'performance', paginated: true },
+      { value: 'customer-profitability', label: 'Customer Profitability', description: 'Top client margins and net profitability contribution', category: 'performance', paginated: true },
+      { value: 'factory-costing', label: 'Factory Cost Analysis', description: 'Direct materials, direct labor, and manufacturing overhead costs', category: 'operations', paginated: false },
+      { value: 'inventory-coverage', label: 'Inventory Coverage', description: 'Daily burn rate, stock quantities, and inventory value', category: 'operations', paginated: true },
+      { value: 'slow-moving-items', label: 'Slow Moving Stock', description: 'Items with slow movement speeds over the last 90 days', category: 'operations', paginated: true },
+      { value: 'wastage-analysis', label: 'Standard vs Actual Wastage', description: 'Raw material yield variances and product wastage', category: 'operations', paginated: false },
+      { value: 'product-cost-variance', label: 'Product Cost Variance', description: 'Planned vs actual cost comparison by product (material, labor, overhead)', category: 'operations', paginated: true },
+      { value: 'production-capacity', label: 'Production Capacity', description: 'Capacity utilization analysis by factory and product line', category: 'operations', paginated: true },
+      { value: 'cash-flow-forecast', label: 'Cash Flow Forecast', description: 'AR/AP-based cash flow forecasting with working capital analysis', category: 'financial', paginated: false },
+    ];
+  }
+
   // ============================================================
   // Export Report to CSV
   // ============================================================

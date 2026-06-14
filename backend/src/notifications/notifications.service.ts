@@ -561,6 +561,47 @@ export class NotificationsService {
     }
   }
 
+  async triggerForecastApproval(
+    companyId: bigint,
+    tenantId: bigint,
+    forecastCycleId: bigint,
+    forecastName: string,
+  ): Promise<void> {
+    const rules = await this.prisma.notificationRule.findMany({
+      where: {
+        companyId,
+        triggerType: TriggerType.forecast_approval,
+        isActive: true,
+      },
+    });
+
+    for (const rule of rules) {
+      const userIds = await this.getTargetUsers(rule, tenantId);
+      const title = 'Forecast Approved';
+      const body = `Forecast Cycle "${forecastName}" has been approved.`;
+
+      for (const uId of userIds) {
+        await this.prisma.notification.create({
+          data: {
+            companyId,
+            ruleId: rule.id,
+            userId: uId,
+            title,
+            body,
+            channel: NotificationChannel.system,
+            status: NotificationStatus.pending,
+            entityType: 'ForecastCycle',
+            entityId: forecastCycleId,
+            triggerData: JSON.stringify({
+              forecastCycleId: forecastCycleId.toString(),
+              name: forecastName,
+            }),
+          },
+        });
+      }
+    }
+  }
+
   async checkAndTriggerVarianceBreaches(
     companyId: bigint,
     tenantId: bigint,

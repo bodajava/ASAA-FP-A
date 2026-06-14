@@ -16,17 +16,13 @@ import { EmptyState, ErrorState } from '@/components/ui/feedback-states';
 import { Badge } from '@/components/ui/badge';
 import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
 import type {
   DashboardKpis,
   MonthlyTrendItem,
   RankedItem,
   UtilizationData,
 } from '@/types/api';
-
-const MONTH_NAMES = [
-  '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
 
 function fmt(n: number | null | undefined) {
   if (n === null || n === undefined) return '—';
@@ -50,7 +46,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [year, setYear] = useState<number>(2025);
+  const [year, setYear] = useState<number>(getCurrentFiscalYear());
 
   useEffect(() => {
     if (!activeCompanyId) return;

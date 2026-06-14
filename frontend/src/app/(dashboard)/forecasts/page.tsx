@@ -31,6 +31,7 @@ import { ImportModal } from '@/components/import-modal';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { getStatusVariant, MONTH_NAMES } from '@/lib/constants';
 import type {
   ForecastCycle,
   ForecastLine,
@@ -288,21 +289,6 @@ export default function ForecastsPage() {
       toastError(msg);
     } finally {
       setDeleteLoading(false);
-    }
-  }
-
-  function getStatusVariant(status: CycleStatus) {
-    switch (status) {
-      case 'approved':
-        return 'success';
-      case 'submitted':
-        return 'info';
-      case 'rejected':
-        return 'danger';
-      case 'locked':
-        return 'default';
-      default:
-        return 'warning';
     }
   }
 
@@ -1081,8 +1067,8 @@ function ForecastFormModal({
                         className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         required
                       >
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                          <option key={m} value={m}>Month {m}</option>
+                        {MONTH_NAMES.slice(1).map((name, i) => (
+                          <option key={i + 1} value={i + 1}>{name}</option>
                         ))}
                       </select>
                     </div>

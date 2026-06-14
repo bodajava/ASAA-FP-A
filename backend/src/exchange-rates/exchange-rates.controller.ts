@@ -80,7 +80,13 @@ export class ExchangeRatesController {
   }
 
   @Delete(':id')
-  remove(@CompanyId() companyId: bigint, @Param('id') id: string) {
-    return this.service.remove(companyId, BigInt(id));
+  remove(
+    @Request() req: any,
+    @CompanyId() companyId: bigint,
+    @Param('id') id: string,
+  ) {
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.remove(companyId, BigInt(id), tenantId, userId);
   }
 }

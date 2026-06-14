@@ -70,19 +70,28 @@ export class HeadcountPlansController {
   @Roles('admin', 'fpna_manager')
   @ApiOperation({ summary: 'Update a headcount plan' })
   update(
+    @Request() req: any,
     @CompanyId() companyId: bigint,
     @Param('id') id: string,
     @Body() dto: Partial<CreateHeadcountPlanDto>,
   ) {
     if (!id) throw new BadRequestException('id param is required');
-    return this.service.update(companyId, BigInt(id), dto);
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.update(companyId, BigInt(id), dto, tenantId, userId);
   }
 
   @Delete(':id')
   @Roles('admin', 'fpna_manager')
   @ApiOperation({ summary: 'Delete a headcount plan' })
-  remove(@CompanyId() companyId: bigint, @Param('id') id: string) {
+  remove(
+    @Request() req: any,
+    @CompanyId() companyId: bigint,
+    @Param('id') id: string,
+  ) {
     if (!id) throw new BadRequestException('id param is required');
-    return this.service.remove(companyId, BigInt(id));
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.remove(companyId, BigInt(id), tenantId, userId);
   }
 }

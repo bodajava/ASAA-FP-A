@@ -23,6 +23,7 @@ import type { Product, PaginatedResponse, Site } from '@/types/api';
 import { useAuth } from '@/lib/auth-context';
 import { LockedState } from '@/components/ui/feedback-states';
 import { Modal } from '@/components/ui/modal';
+import { MONTH_NAMES } from '@/lib/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -625,8 +626,8 @@ export default function ProductionPlanningPage() {
                 onChange={(e) => setSaveMonth(e.target.value)}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {Array.from({ length: 12 }, (_, i) => (
-                  <option key={i + 1} value={String(i + 1)}>Month {i + 1}</option>
+                {MONTH_NAMES.slice(1).map((name, i) => (
+                  <option key={i + 1} value={String(i + 1)}>{name}</option>
                 ))}
               </select>
             </div>

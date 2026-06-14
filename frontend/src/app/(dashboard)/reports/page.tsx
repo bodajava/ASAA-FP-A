@@ -18,13 +18,15 @@ import { TableWrapper, type Column } from '@/components/ui/table-wrapper';
 import { Pagination } from '@/components/ui/pagination';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-states';
 import { useAuth } from '@/lib/auth-context';
-import { apiGet } from '@/lib/api';
+import api, { apiGet } from '@/lib/api';
+import { MONTH_NAMES, getCurrentFiscalYear, REPORT_METAS as FALLBACK_REPORT_METAS } from '@/lib/constants';
 import type {
   Account,
   Site,
   Product,
   Customer,
   PaginatedResponse,
+  ReportMeta,
 } from '@/types/api';
 
 // Report Types Definitions
@@ -46,51 +48,20 @@ type ReportType =
   | 'production-capacity'
   | 'cash-flow-forecast';
 
-interface ReportMeta {
-  value: ReportType;
-  label: string;
-  description: string;
-  category: 'financial' | 'performance' | 'operations';
-  paginated: boolean;
-}
-
-const REPORT_METAS: ReportMeta[] = [
-  { value: 'pl', label: 'Profit & Loss (P&L)', description: 'Summary of revenues, costs, and expenses over months', category: 'financial', paginated: false },
-  { value: 'cashflow', label: 'Cash Flow Statement', description: 'Analysis of cash inflows and outflows by month', category: 'financial', paginated: false },
-  { value: 'gross-margin', label: 'Gross Margin Analysis', description: 'Revenues, cost of goods sold, and gross margins', category: 'financial', paginated: false },
-  { value: 'net-profit', label: 'Net Profit Margin', description: 'Bottom-line net profit performance and margins', category: 'financial', paginated: false },
-
-  { value: 'budget-vs-actual', label: 'Budget vs Actuals', description: 'Itemized variances comparing budgets against actual data', category: 'performance', paginated: true },
-  { value: 'forecast-accuracy', label: 'Forecast Accuracy', description: 'Assessment of forecast variances and absolute errors', category: 'performance', paginated: false },
-  { value: 'product-profitability', label: 'Product Profitability', description: 'Margins, COGS, and sales performance by SKU', category: 'performance', paginated: true },
-  { value: 'branch-profitability', label: 'Branch / Site Profitability', description: 'Revenue and expense performance broken down by site', category: 'performance', paginated: true },
-  { value: 'customer-profitability', label: 'Customer Profitability', description: 'Top client margins and net profitability contribution', category: 'performance', paginated: true },
-
-  { value: 'factory-costing', label: 'Factory Cost Analysis', description: 'Direct materials, direct labor, and manufacturing overhead costs', category: 'operations', paginated: false },
-  { value: 'inventory-coverage', label: 'Inventory Coverage', description: 'Daily burn rate, stock quantities, and inventory value', category: 'operations', paginated: true },
-  { value: 'slow-moving-items', label: 'Slow Moving Stock', description: 'Items with slow movement speeds over the last 90 days', category: 'operations', paginated: true },
-  { value: 'wastage-analysis', label: 'Standard vs Actual Wastage', description: 'Raw material yield variances and product wastage', category: 'operations', paginated: false },
-  { value: 'product-cost-variance', label: 'Product Cost Variance', description: 'Planned vs actual cost comparison by product (material, labor, overhead)', category: 'operations', paginated: true },
-  { value: 'production-capacity', label: 'Production Capacity', description: 'Capacity utilization analysis by factory and product line', category: 'operations', paginated: true },
-  { value: 'cash-flow-forecast', label: 'Cash Flow Forecast', description: 'AR/AP-based cash flow forecasting with working capital analysis', category: 'financial', paginated: false },
-];
-
-const MONTH_NAMES = [
-  '', 'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
 import { useToast } from '@/components/ui/toast';
 
 export default function ReportsPage() {
   const { activeCompanyId } = useAuth();
   const { error: toastError } = useToast();
 
+  // Report Metas (initialized with constants, overridden by API)
+  const [reportMetas, setReportMetas] = useState<ReportMeta[]>(FALLBACK_REPORT_METAS);
+
   // Selected Report
   const [selectedReport, setSelectedReport] = useState<ReportType>('pl');
 
   // Filter States
-  const [fiscalYear, setFiscalYear] = useState<string>('2025');
+  const [fiscalYear, setFiscalYear] = useState<string>(String(getCurrentFiscalYear()));
   const [periodMonth, setPeriodMonth] = useState<string>('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -110,24 +81,28 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load dropdown metadata
+  // Load dropdown metadata + report metas from API
   useEffect(() => {
     if (!activeCompanyId) return;
 
     async function loadMeta() {
       try {
-        const [sList, pList, cList, aList] = await Promise.all([
+        const [sList, pList, cList, aList, apiMetas] = await Promise.all([
           apiGet<PaginatedResponse<Site>>('/sites?limit=1000').then((r) => r.data),
           apiGet<PaginatedResponse<Product>>('/products?limit=1000').then((r) => r.data),
           apiGet<PaginatedResponse<Customer>>('/customers?limit=1000').then((r) => r.data),
           apiGet<PaginatedResponse<Account>>('/accounts?limit=1000').then((r) => r.data),
+          apiGet<ReportMeta[]>('/reports/meta'),
         ]);
         setSites(sList);
         setProducts(pList);
         setCustomers(cList);
         setAccounts(aList);
+        if (apiMetas && apiMetas.length > 0) {
+          setReportMetas(apiMetas);
+        }
       } catch {
-        // Silent failure for meta
+        // Silent failure for meta – keep using fallback constants
       }
     }
     void loadMeta();
@@ -139,7 +114,7 @@ export default function ReportsPage() {
     setIsLoading(true);
     setError(null);
 
-    const meta = REPORT_METAS.find((r) => r.value === selectedReport);
+    const meta = reportMetas.find((r) => r.value === selectedReport);
     if (!meta) return;
 
     try {
@@ -198,21 +173,11 @@ export default function ReportsPage() {
       if (selectedProductId) params.set('product_id', selectedProductId);
       if (selectedCustomerId) params.set('customer_id', selectedCustomerId);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/reports/export/${selectedReport}?${params.toString()}`,
-        {
-          credentials: 'include',
-          headers: {
-            'x-company-id': String(activeCompanyId),
-          },
-        },
-      );
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => '');
-        throw new Error(errBody || `Server responded with ${res.status}`);
-      }
+      const res = await api.get(`/reports/export/${selectedReport}?${params.toString()}`, {
+        responseType: 'blob',
+      });
 
-      const blob = await res.blob();
+      const blob = res.data as Blob;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -220,11 +185,18 @@ export default function ReportsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      toastError(`Failed to export report: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      let msg = 'Unknown error';
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } }; message?: string };
+        msg = axiosErr.response?.data?.message ?? axiosErr.message ?? msg;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      toastError(`Export failed: ${msg}`);
     }
   }, [activeCompanyId, selectedReport, fiscalYear, periodMonth, selectedSiteId, selectedProductId, selectedCustomerId, toastError]);
 
-  const activeMeta = REPORT_METAS.find((r) => r.value === selectedReport);
+  const activeMeta = reportMetas.find((r) => r.value === selectedReport);
 
   // Helper formatting functions
   function fmtVal(val: unknown) {
@@ -547,11 +519,11 @@ export default function ReportsPage() {
           <div>
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Financial Statements</h3>
             <ul className="space-y-0.5" role="menu">
-              {REPORT_METAS.filter((r) => r.category === 'financial').map((r) => (
+              {reportMetas.filter((r) => r.category === 'financial').map((r) => (
                 <li key={r.value} role="none">
                   <button
                     role="menuitem"
-                    onClick={() => setSelectedReport(r.value)}
+                    onClick={() => setSelectedReport(r.value as ReportType)}
                     className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
                       selectedReport === r.value
                         ? 'bg-emerald-50 text-emerald-700 font-bold'
@@ -568,11 +540,11 @@ export default function ReportsPage() {
           <div>
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Performance & Variances</h3>
             <ul className="space-y-0.5" role="menu">
-              {REPORT_METAS.filter((r) => r.category === 'performance').map((r) => (
+              {reportMetas.filter((r) => r.category === 'performance').map((r) => (
                 <li key={r.value} role="none">
                   <button
                     role="menuitem"
-                    onClick={() => setSelectedReport(r.value)}
+                    onClick={() => setSelectedReport(r.value as ReportType)}
                     className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
                       selectedReport === r.value
                         ? 'bg-emerald-50 text-emerald-700 font-bold'
@@ -589,11 +561,11 @@ export default function ReportsPage() {
           <div>
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Operations & Costing</h3>
             <ul className="space-y-0.5" role="menu">
-              {REPORT_METAS.filter((r) => r.category === 'operations').map((r) => (
+              {reportMetas.filter((r) => r.category === 'operations').map((r) => (
                 <li key={r.value} role="none">
                   <button
                     role="menuitem"
-                    onClick={() => setSelectedReport(r.value)}
+                    onClick={() => setSelectedReport(r.value as ReportType)}
                     className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
                       selectedReport === r.value
                         ? 'bg-emerald-50 text-emerald-700 font-bold'

@@ -22,6 +22,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
+import { TRIGGER_TYPES } from '@/lib/constants';
 import type {
   Notification,
   NotificationRule,
@@ -31,14 +32,6 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 import axios from 'axios';
-
-const TRIGGER_TYPES: { value: TriggerType; label: string }[] = [
-  { value: 'variance_pct', label: 'Variance Percentage Threshold' },
-  { value: 'variance_amount', label: 'Variance Absolute Amount Threshold' },
-  { value: 'kpi_breach', label: 'KPI Target Breach' },
-  { value: 'budget_approval', label: 'Budget Approval Required' },
-  { value: 'import_failed', label: 'Data Import Failed' },
-];
 
 export default function NotificationsPage() {
   const { activeCompanyId } = useAuth();

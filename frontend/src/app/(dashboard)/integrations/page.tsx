@@ -25,6 +25,7 @@ import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { CONNECTION_TYPES, SYNC_SCHEDULES, SOURCE_SYSTEMS, IMPORT_TYPES } from '@/lib/constants';
 import type {
   IntegrationConnection,
   ImportMapping,
@@ -35,45 +36,6 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 import axios from 'axios';
-
-const CONNECTION_TYPES: ConnectionType[] = [
-  'oracle',
-  'sap',
-  'erp',
-  'pms',
-  'odoo',
-  'pos',
-  'woocommerce',
-  'rest_api',
-  'sftp',
-  'custom',
-];
-
-const SYNC_SCHEDULES: SyncSchedule[] = ['manual', 'hourly', 'daily', 'weekly', 'monthly'];
-
-const SOURCE_SYSTEMS: ImportSourceSystem[] = [
-  'excel',
-  'oracle',
-  'sap',
-  'erp',
-  'pms',
-  'odoo',
-  'pos',
-  'woocommerce',
-  'manual',
-  'api',
-  'custom',
-];
-
-const IMPORT_TYPES: ImportType[] = [
-  'sales',
-  'expenses',
-  'production',
-  'inventory',
-  'gl',
-  'cashflow',
-  'payroll',
-];
 
 export default function IntegrationsPage() {
   const { activeCompanyId, tenant } = useAuth();
@@ -834,7 +796,7 @@ function ConnectionFormModal({ item, onClose, onSave, isLoading, error }: Connec
       const idcsUrl = process.env.NEXT_PUBLIC_ORACLE_IDCS_URL || 'https://identity.oraclecloud.com';
       const redirectUri = `${window.location.origin}/integrations?tab=connections&oracle_oauth=success`;
       window.location.href = `${idcsUrl}/oauth2/v1/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=urn:opc:resource:consumer::all`;
-    } else {
+    } else if (process.env.NODE_ENV === 'development') {
       // Simulate successful OAuth sign-in and redirect back with a mock code
       const redirectUri = `${window.location.origin}/integrations?tab=connections&oracle_oauth=success&code=mock_code_ords_${Math.random().toString(36).substring(7)}`;
       window.location.href = redirectUri;
@@ -1168,7 +1130,7 @@ function MappingFormModal({ item, connections, onClose, onSave, isLoading, error
               className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 font-semibold"
             >
               {IMPORT_TYPES.map((t) => (
-                <option key={t} value={t} className="capitalize">{t}</option>
+                <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
           </div>

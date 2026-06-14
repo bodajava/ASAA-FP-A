@@ -25,15 +25,8 @@ import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/ui/feedback-states';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPatch } from '@/lib/api';
-import type { Company, UpdateCompanyPayload } from '@/types/api';
-
-// ---------------------------------------------------------------------------
-// Month names helper
-// ---------------------------------------------------------------------------
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+import { MONTH_NAMES } from '@/lib/constants';
+import type { Company, UpdateCompanyPayload, Plan } from '@/types/api';
 
 // ---------------------------------------------------------------------------
 // Section Card wrapper
@@ -112,57 +105,30 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Subscription plans
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [plansError, setPlansError] = useState<string | null>(null);
+
   // Subscription upgrade state
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null);
 
-  const defaultPlans = [
-    {
-      id: '1',
-      name: 'Starter',
-      monthlyPrice: '0',
-      description: 'Ideal for basic budgeting and financial planning.',
-      maxCompanies: 1,
-      maxUsers: 5,
-      bullets: [
-        '1 Company Account',
-        'Up to 5 Users',
-        'Basic Budgeting & Forecasting',
-        'Standard KPI Monitoring',
-      ]
-    },
-    {
-      id: '2',
-      name: 'Business',
-      monthlyPrice: '49',
-      description: 'Perfect for growing companies with multiple entities and external tools.',
-      maxCompanies: 5,
-      maxUsers: 20,
-      bullets: [
-        'Up to 5 Companies',
-        'Up to 20 Users',
-        'Unlimited Scenarios (What-if Analysis)',
-        'External ERP Integrations (Oracle, SAP, Odoo)',
-        'BOM Recipes & Cost Calculation',
-      ]
-    },
-    {
-      id: '3',
-      name: 'Enterprise',
-      monthlyPrice: '149',
-      description: 'Full-featured enterprise suite with advanced manufacturing & forecasting.',
-      maxCompanies: 999,
-      maxUsers: 999,
-      bullets: [
-        'Unlimited Companies & Users',
-        'Complete BOM & Recipes Management',
-        'Production Planning & MRP',
-        'Inventory Snapshots & Slow Moving Analytics',
-        'Custom Roles & Priority Support',
-      ]
+  const fetchPlans = useCallback(async () => {
+    setIsLoadingPlans(true);
+    setPlansError(null);
+    try {
+      const data = await apiGet<Plan[]>('/plans');
+      setPlans(data);
+    } catch (err: unknown) {
+      setPlansError(
+        err instanceof Error ? err.message : 'Failed to load subscription plans.',
+      );
+    } finally {
+      setIsLoadingPlans(false);
     }
-  ];
+  }, []);
 
   const handleUpgradePlan = async (planId: string, planName: string) => {
     setUpgradingPlanId(planId);
@@ -208,6 +174,10 @@ export default function SettingsPage() {
   useEffect(() => {
     void Promise.resolve().then(() => void fetchCompany());
   }, [fetchCompany]);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => void fetchPlans());
+  }, [fetchPlans]);
 
   // Handle form submit
   const handleSave = async (e: React.FormEvent) => {
@@ -369,7 +339,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFiscalYearStart(Number(e.target.value))}
                   className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {MONTHS.map((month, idx) => (
+                  {MONTH_NAMES.slice(1).map((month, idx) => (
                     <option key={month} value={idx + 1}>
                       {idx + 1} – {month}
                     </option>
@@ -510,24 +480,38 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {isLoadingPlans ? (
+          <LoadingState rows={3} message="Loading subscription plans…" />
+        ) : plansError ? (
+          <ErrorState message={plansError} onRetry={fetchPlans} />
+        ) : plans.length === 0 ? (
+          <ErrorState message="No subscription plans available." />
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {defaultPlans.map((p) => {
+          {plans.map((p) => {
+            const code = p.code?.toLowerCase() ?? '';
             const isCurrent = tenant?.plan?.name?.toLowerCase() === p.name.toLowerCase() || 
-                             (!tenant?.plan && p.name === 'Starter');
+                             (!tenant?.plan && code === 'starter');
             
-            // Choose header visual based on plan
+            // Choose header visual based on plan code
             let headerBg = 'bg-slate-50 border-slate-200';
             let planIcon = <Building2 className="h-5 w-5 text-slate-500" />;
             let badgeText = '';
+            let badgeClasses = 'bg-slate-100 text-slate-800';
+            let accentColor = 'emerald';
             
-            if (p.name === 'Business') {
+            if (code === 'business') {
               headerBg = 'bg-emerald-50/50 border-emerald-100';
               planIcon = <Zap className="h-5 w-5 text-emerald-600" />;
               badgeText = 'Most Popular';
-            } else if (p.name === 'Enterprise') {
+              badgeClasses = 'bg-emerald-100 text-emerald-800';
+              accentColor = 'emerald';
+            } else if (code === 'enterprise') {
               headerBg = 'bg-indigo-50/50 border-indigo-100';
               planIcon = <Sparkles className="h-5 w-5 text-indigo-600" />;
               badgeText = 'Complete Suite';
+              badgeClasses = 'bg-indigo-100 text-indigo-800';
+              accentColor = 'indigo';
             }
 
             return (
@@ -542,11 +526,7 @@ export default function SettingsPage() {
                 {/* Plan Header */}
                 <div className={`p-5 rounded-t-xl border-b border-slate-100 ${headerBg} relative`}>
                   {badgeText && (
-                    <span className={`absolute top-4 right-4 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      p.name === 'Business' 
-                        ? 'bg-emerald-100 text-emerald-800' 
-                        : 'bg-indigo-100 text-indigo-800'
-                    }`}>
+                    <span className={`absolute top-4 right-4 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeClasses}`}>
                       {badgeText}
                     </span>
                   )}
@@ -561,30 +541,32 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Plan Limits & Bullets */}
+                {/* Plan Limits & Features */}
                 <div className="p-5 flex-1 flex flex-col justify-between gap-6">
                   <div className="space-y-4">
                     {/* Limits Info */}
                     <div className="grid grid-cols-2 gap-2 pb-4 border-b border-slate-100 text-[11px] text-slate-500 font-semibold">
                       <div className="flex items-center gap-1">
                         <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{p.maxCompanies === 999 ? 'Unlimited' : `${p.maxCompanies} ${p.maxCompanies === 1 ? 'Company' : 'Companies'}`}</span>
+                        <span>{p.maxCompanies >= 999 ? 'Unlimited' : `${p.maxCompanies} ${p.maxCompanies === 1 ? 'Company' : 'Companies'}`}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <User className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{p.maxUsers === 999 ? 'Unlimited Users' : `Up to ${p.maxUsers} Users`}</span>
+                        <span>{p.maxUsers >= 999 ? 'Unlimited Users' : `Up to ${p.maxUsers} Users`}</span>
                       </div>
                     </div>
 
                     {/* Features List */}
-                    <ul className="space-y-2.5">
-                      {p.bullets.map((bullet, index) => (
-                        <li key={index} className="flex items-start gap-2 text-xs font-medium text-slate-600">
-                          <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {p.features && p.features.length > 0 && (
+                      <ul className="space-y-2.5">
+                        {p.features.map((feature, index) => (
+                          <li key={index} className="flex items-start gap-2 text-xs font-medium text-slate-600">
+                            <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
 
                   {/* Actions Button */}
@@ -596,11 +578,11 @@ export default function SettingsPage() {
                       </div>
                     ) : (
                       <Button
-                        variant={p.name === 'Starter' ? 'outline' : 'primary'}
+                        variant={code === 'starter' ? 'outline' : 'primary'}
                         className={`w-full text-xs font-bold flex items-center justify-center gap-1.5 py-2.5 ${
-                          p.name === 'Business' 
+                          code === 'business' 
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-none' 
-                            : p.name === 'Enterprise'
+                            : code === 'enterprise'
                             ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-none'
                             : ''
                         }`}
@@ -623,6 +605,7 @@ export default function SettingsPage() {
             );
           })}
         </div>
+        )}
       </SectionCard>
     </div>
   );

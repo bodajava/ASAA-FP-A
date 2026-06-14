@@ -67,17 +67,26 @@ export class KpiTargetsController {
   @Roles('admin', 'fpna_manager')
   @ApiOperation({ summary: 'Update a KPI target' })
   update(
+    @Request() req: any,
     @CompanyId() companyId: bigint,
     @Param('id') id: string,
     @Body() dto: Partial<CreateKpiTargetDto>,
   ) {
-    return this.service.update(BigInt(id), companyId, dto);
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.update(BigInt(id), companyId, dto, tenantId, userId);
   }
 
   @Delete(':id')
   @Roles('admin')
   @ApiOperation({ summary: 'Delete a KPI target' })
-  remove(@CompanyId() companyId: bigint, @Param('id') id: string) {
-    return this.service.remove(BigInt(id), companyId);
+  remove(
+    @Request() req: any,
+    @CompanyId() companyId: bigint,
+    @Param('id') id: string,
+  ) {
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.remove(BigInt(id), companyId, tenantId, userId);
   }
 }

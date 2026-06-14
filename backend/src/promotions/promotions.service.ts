@@ -275,6 +275,8 @@ export class PromotionsService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<PromotionResponseDto> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     const oldPromotion = await this.prisma.promotion.findFirst({
       where: { id, companyId },
       include: {

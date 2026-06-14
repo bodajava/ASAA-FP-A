@@ -111,14 +111,10 @@ export function ImportModal({
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const base64 = btoa(
-        String.fromCharCode(
-          ...new Uint8Array(evt.target?.result as ArrayBuffer),
-        ),
-      );
+      const base64 = (evt.target?.result as string).split(',')[1];
       setFileContent(base64);
     };
-    reader.readAsArrayBuffer(file);
+    reader.readAsDataURL(file);
   }
 
   // -------------------------------------------------------------------------

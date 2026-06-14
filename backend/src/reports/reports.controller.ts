@@ -37,6 +37,7 @@ import {
   ExportResultDto,
   PaginatedReportResponseDto,
 } from './dto/report-response.dto';
+import { ReportMetaResponseDto } from './dto/report-meta-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CompanyId } from '../common/decorators/company.decorator';
@@ -58,6 +59,14 @@ interface RequestWithUser extends ExpressRequest {
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
+
+  @Get('meta')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get report type definitions/metadata' })
+  @ApiResponse({ status: 200, type: [ReportMetaResponseDto] })
+  getReportMetas(): ReportMetaResponseDto[] {
+    return this.reportsService.getReportMetas();
+  }
 
   @Get('pl')
   @ApiOperation({ summary: 'Profit & Loss (P&L) Report' })

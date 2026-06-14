@@ -13,6 +13,7 @@ import {
   BaseCycleType,
 } from './dto/preview-simulation.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import Decimal from 'decimal.js';
 
 export interface ScenarioResponseDto {
   id: string;
@@ -474,8 +475,8 @@ export class ScenariosService {
     }
 
     const simulatedLines: SimulatedLineDto[] = [];
-    let originalTotal = 0;
-    let simulatedTotal = 0;
+    let originalTotal = new Decimal(0);
+    let simulatedTotal = new Decimal(0);
 
     if (assumptions.subtype === 'increase_material_prices') {
       const recipes = await this.prisma.bomRecipe.findMany({
@@ -483,18 +484,20 @@ export class ScenariosService {
         include: { bomLines: { include: { material: true } } },
       });
 
-      const productCostFactors = new Map<bigint, number>();
+      const productCostFactors = new Map<bigint, InstanceType<typeof Decimal>>();
       for (const recipe of recipes) {
-        let originalMatCost = 0;
-        let simulatedMatCost = 0;
+        let originalMatCost = new Decimal(0);
+        let simulatedMatCost = new Decimal(0);
 
         for (const line of recipe.bomLines) {
           const rawPrice = Number(line.material.purchasePrice);
           const qty = Number(line.qtyPerOutput);
           const lineWastage = Number(line.wastagePct);
 
-          const originalLineCost = qty * rawPrice * (1 + lineWastage);
-          originalMatCost += originalLineCost;
+          const originalLineCost = new Decimal(qty)
+            .times(rawPrice)
+            .times(new Decimal(1).plus(lineWastage));
+          originalMatCost = originalMatCost.plus(originalLineCost);
 
           let isAffected = true;
           if (assumptions.materialIds && assumptions.materialIds.length > 0) {
@@ -504,31 +507,39 @@ export class ScenariosService {
           }
 
           const simPrice = isAffected
-            ? rawPrice * (1 + (assumptions.percentage ?? 0) / 100)
-            : rawPrice;
-          const simLineCost = qty * simPrice * (1 + lineWastage);
-          simulatedMatCost += simLineCost;
+            ? new Decimal(rawPrice).times(
+                new Decimal(1).plus(new Decimal(assumptions.percentage ?? 0).div(100)),
+              )
+            : new Decimal(rawPrice);
+          const simLineCost = new Decimal(qty)
+            .times(simPrice)
+            .times(new Decimal(1).plus(lineWastage));
+          simulatedMatCost = simulatedMatCost.plus(simLineCost);
         }
 
         const wastage = Number(recipe.wastagePct);
         const labor = Number(recipe.laborCost);
         const overhead = Number(recipe.overheadCost);
 
-        const originalTotalCost =
-          originalMatCost * (1 + wastage) + labor + overhead;
-        const simulatedTotalCost =
-          simulatedMatCost * (1 + wastage) + labor + overhead;
+        const originalTotalCost = originalMatCost
+          .times(new Decimal(1).plus(wastage))
+          .plus(labor)
+          .plus(overhead);
+        const simulatedTotalCost = simulatedMatCost
+          .times(new Decimal(1).plus(wastage))
+          .plus(labor)
+          .plus(overhead);
 
-        if (originalTotalCost > 0) {
+        if (originalTotalCost.gt(0)) {
           productCostFactors.set(
             recipe.productId,
-            simulatedTotalCost / originalTotalCost,
+            simulatedTotalCost.div(originalTotalCost),
           );
         }
       }
 
       for (const line of originalLines) {
-        const origAmt = Number(line.amount);
+        const origAmt = new Decimal(Number(line.amount));
         let simAmt = origAmt;
 
         if (line.materialId) {
@@ -539,18 +550,20 @@ export class ScenariosService {
             );
           }
           if (isAffected) {
-            simAmt = origAmt * (1 + (assumptions.percentage ?? 0) / 100);
+            simAmt = origAmt.times(
+              new Decimal(1).plus(new Decimal(assumptions.percentage ?? 0).div(100)),
+            );
           }
         } else if (line.productId) {
           const accType = accountMap.get(line.accountId);
           if (accType === 'cogs' || accType === 'expense') {
-            const factor = productCostFactors.get(line.productId) ?? 1;
-            simAmt = origAmt * factor;
+            const factor = productCostFactors.get(line.productId) ?? new Decimal(1);
+            simAmt = origAmt.times(factor);
           }
         }
 
-        originalTotal += origAmt;
-        simulatedTotal += simAmt;
+        originalTotal = originalTotal.plus(origAmt);
+        simulatedTotal = simulatedTotal.plus(simAmt);
 
         simulatedLines.push({
           accountId: line.accountId.toString(),
@@ -560,9 +573,9 @@ export class ScenariosService {
           materialId: line.materialId ? line.materialId.toString() : null,
           customerId: line.customerId ? line.customerId.toString() : null,
           periodMonth: line.periodMonth,
-          originalAmount: origAmt,
-          simulatedAmount: simAmt,
-          variance: simAmt - origAmt,
+          originalAmount: origAmt.toNumber(),
+          simulatedAmount: simAmt.toNumber(),
+          variance: simAmt.minus(origAmt).toNumber(),
         });
       }
     } else if (assumptions.subtype === 'currency_rate_change') {
@@ -575,7 +588,7 @@ export class ScenariosService {
         orderBy: { rateDate: 'desc' },
       });
       const oldRate = rateRecord ? Number(rateRecord.rate) : 1;
-      const rateMultiplier = (assumptions.newRate ?? oldRate) / oldRate;
+      const rateMultiplier = new Decimal(assumptions.newRate ?? oldRate).div(oldRate);
 
       const materials = await this.prisma.material.findMany({
         where: { companyId },
@@ -588,7 +601,7 @@ export class ScenariosService {
       }
 
       for (const line of originalLines) {
-        const origAmt = Number(line.amount);
+        const origAmt = new Decimal(Number(line.amount));
         let simAmt = origAmt;
 
         let isAffected = false;
@@ -615,11 +628,11 @@ export class ScenariosService {
         }
 
         if (isAffected) {
-          simAmt = origAmt * rateMultiplier;
+          simAmt = origAmt.times(rateMultiplier);
         }
 
-        originalTotal += origAmt;
-        simulatedTotal += simAmt;
+        originalTotal = originalTotal.plus(origAmt);
+        simulatedTotal = simulatedTotal.plus(simAmt);
 
         simulatedLines.push({
           accountId: line.accountId.toString(),
@@ -629,14 +642,14 @@ export class ScenariosService {
           materialId: line.materialId ? line.materialId.toString() : null,
           customerId: line.customerId ? line.customerId.toString() : null,
           periodMonth: line.periodMonth,
-          originalAmount: origAmt,
-          simulatedAmount: simAmt,
-          variance: simAmt - origAmt,
+          originalAmount: origAmt.toNumber(),
+          simulatedAmount: simAmt.toNumber(),
+          variance: simAmt.minus(origAmt).toNumber(),
         });
       }
     } else if (assumptions.subtype === 'demand_decrease') {
       for (const line of originalLines) {
-        const origAmt = Number(line.amount);
+        const origAmt = new Decimal(Number(line.amount));
         let simAmt = origAmt;
 
         const accType = accountMap.get(line.accountId);
@@ -648,12 +661,14 @@ export class ScenariosService {
               : false;
           }
           if (isAffected) {
-            simAmt = origAmt * (1 - (assumptions.percentage ?? 0) / 100);
+            simAmt = origAmt.times(
+              new Decimal(1).minus(new Decimal(assumptions.percentage ?? 0).div(100)),
+            );
           }
         }
 
-        originalTotal += origAmt;
-        simulatedTotal += simAmt;
+        originalTotal = originalTotal.plus(origAmt);
+        simulatedTotal = simulatedTotal.plus(simAmt);
 
         simulatedLines.push({
           accountId: line.accountId.toString(),
@@ -663,16 +678,16 @@ export class ScenariosService {
           materialId: line.materialId ? line.materialId.toString() : null,
           customerId: line.customerId ? line.customerId.toString() : null,
           periodMonth: line.periodMonth,
-          originalAmount: origAmt,
-          simulatedAmount: simAmt,
-          variance: simAmt - origAmt,
+          originalAmount: origAmt.toNumber(),
+          simulatedAmount: simAmt.toNumber(),
+          variance: simAmt.minus(origAmt).toNumber(),
         });
       }
     } else if (assumptions.subtype === 'branch_expansion') {
       for (const line of originalLines) {
-        const origAmt = Number(line.amount);
-        originalTotal += origAmt;
-        simulatedTotal += origAmt;
+        const origAmt = new Decimal(Number(line.amount));
+        originalTotal = originalTotal.plus(origAmt);
+        simulatedTotal = simulatedTotal.plus(origAmt);
 
         simulatedLines.push({
           accountId: line.accountId.toString(),
@@ -682,19 +697,19 @@ export class ScenariosService {
           materialId: line.materialId ? line.materialId.toString() : null,
           customerId: line.customerId ? line.customerId.toString() : null,
           periodMonth: line.periodMonth,
-          originalAmount: origAmt,
-          simulatedAmount: origAmt,
+          originalAmount: origAmt.toNumber(),
+          simulatedAmount: origAmt.toNumber(),
           variance: 0,
         });
       }
 
       // Add simulated branch lines distributed equally over 12 months
-      const simulatedRevenuePerMonth = (assumptions.revenueAmount ?? 0) / 12;
-      const simulatedExpensePerMonth = (assumptions.expenseAmount ?? 0) / 12;
+      const simulatedRevenuePerMonth = new Decimal(assumptions.revenueAmount ?? 0).div(12);
+      const simulatedExpensePerMonth = new Decimal(assumptions.expenseAmount ?? 0).div(12);
 
       for (let month = 1; month <= 12; month++) {
         // Simulated Revenue
-        simulatedTotal += simulatedRevenuePerMonth;
+        simulatedTotal = simulatedTotal.plus(simulatedRevenuePerMonth);
         simulatedLines.push({
           accountId: assumptions.revenueAccountId!,
           siteId: null, // Simulated branch (Alexander/siteName is not saved as DB site yet)
@@ -704,12 +719,12 @@ export class ScenariosService {
           customerId: null,
           periodMonth: month,
           originalAmount: 0,
-          simulatedAmount: simulatedRevenuePerMonth,
-          variance: simulatedRevenuePerMonth,
+          simulatedAmount: simulatedRevenuePerMonth.toNumber(),
+          variance: simulatedRevenuePerMonth.toNumber(),
         });
 
         // Simulated Expense
-        simulatedTotal += simulatedExpensePerMonth;
+        simulatedTotal = simulatedTotal.plus(simulatedExpensePerMonth);
         simulatedLines.push({
           accountId: assumptions.expenseAccountId!,
           siteId: null,
@@ -719,19 +734,19 @@ export class ScenariosService {
           customerId: null,
           periodMonth: month,
           originalAmount: 0,
-          simulatedAmount: simulatedExpensePerMonth,
-          variance: simulatedExpensePerMonth,
+          simulatedAmount: simulatedExpensePerMonth.toNumber(),
+          variance: simulatedExpensePerMonth.toNumber(),
         });
       }
     }
 
     return {
-      originalTotal,
-      simulatedTotal,
-      varianceAmount: simulatedTotal - originalTotal,
+      originalTotal: originalTotal.toNumber(),
+      simulatedTotal: simulatedTotal.toNumber(),
+      varianceAmount: simulatedTotal.minus(originalTotal).toNumber(),
       variancePercentage:
-        originalTotal > 0
-          ? ((simulatedTotal - originalTotal) / originalTotal) * 100
+        originalTotal.gt(0)
+          ? simulatedTotal.minus(originalTotal).div(originalTotal).times(100).toNumber()
           : 0,
       lines: simulatedLines,
     };

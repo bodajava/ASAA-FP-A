@@ -1,5 +1,9 @@
 import { encrypt, decrypt } from './crypto.util';
 
+beforeAll(() => {
+  process.env.ENCRYPTION_KEY = 'test-encryption-key-32-chars-for-testing!!';
+});
+
 describe('CryptoUtil', () => {
   it('should encrypt and decrypt a string correctly', () => {
     const text = 'my-secret-password-123';

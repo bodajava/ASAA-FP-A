@@ -10,6 +10,18 @@ import { CreateHeadcountPlanDto } from './dto/create-headcount-plan.dto';
 export class HeadcountPlansService {
   constructor(private prisma: PrismaService) {}
 
+  private async ensureCompanyBelongsToTenant(
+    companyId: bigint,
+    tenantId: bigint,
+  ) {
+    const company = await this.prisma.company.findFirst({
+      where: { id: companyId, tenantId },
+    });
+    if (!company) {
+      throw new NotFoundException(`Company not found under this tenant`);
+    }
+  }
+
   private toNumber(v: any) {
     return v == null ? 0 : Number(v);
   }
@@ -170,7 +182,11 @@ export class HeadcountPlansService {
     companyId: bigint,
     id: bigint,
     dto: Partial<CreateHeadcountPlanDto>,
+    tenantId: bigint,
+    userId: bigint,
   ) {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     const existing = await this.prisma.headcountPlan.findUnique({
       where: { id },
       include: { budgetCycle: { select: { companyId: true } } },
@@ -187,7 +203,7 @@ export class HeadcountPlansService {
       dto.socialInsurance ?? this.toNumber(existing.socialInsurance);
     const totalCost = (basicSalary + allowances + socialInsurance) * headcount;
 
-    return this.prisma.headcountPlan.update({
+    const updated = await this.prisma.headcountPlan.update({
       where: { id },
       data: {
         jobTitle: dto.jobTitle,
@@ -203,9 +219,30 @@ export class HeadcountPlansService {
         updatedAt: new Date(),
       },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entityType: 'HeadcountPlan',
+        entityId: id,
+        action: 'update',
+        oldValues: JSON.stringify(existing),
+        newValues: JSON.stringify(updated),
+      },
+    });
+
+    return updated;
   }
 
-  async remove(companyId: bigint, id: bigint) {
+  async remove(
+    companyId: bigint,
+    id: bigint,
+    tenantId: bigint,
+    userId: bigint,
+  ) {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
     const existing = await this.prisma.headcountPlan.findUnique({
       where: { id },
       include: { budgetCycle: { select: { companyId: true } } },
@@ -214,6 +251,20 @@ export class HeadcountPlansService {
     if (existing.budgetCycle.companyId !== companyId) {
       throw new NotFoundException('Headcount plan not found');
     }
-    return this.prisma.headcountPlan.delete({ where: { id } });
+
+    await this.prisma.headcountPlan.delete({ where: { id } });
+
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entityType: 'HeadcountPlan',
+        entityId: id,
+        action: 'delete',
+        oldValues: JSON.stringify(existing),
+      },
+    });
+
+    return existing;
   }
 }

@@ -21,6 +21,7 @@ import { MaterialsModule } from './materials/materials.module';
 import { BomRecipesModule } from './bom-recipes/bom-recipes.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { ActualImportsModule } from './actual-imports/actual-imports.module';
+import { ApprovalsModule } from './approvals/approvals.module';
 import { ForecastsModule } from './forecasts/forecasts.module';
 import { ScenariosModule } from './scenarios/scenarios.module';
 import { VarianceModule } from './variance/variance.module';
@@ -38,6 +39,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { RawMaterialPricesModule } from './raw-material-prices/raw-material-prices.module';
 import { UsersModule } from './users/users.module';
+import { PlansModule } from './plans/plans.module';
 
 @Module({
   imports: [
@@ -58,6 +60,7 @@ import { UsersModule } from './users/users.module';
     BomRecipesModule,
     BudgetsModule,
     ActualImportsModule,
+    ApprovalsModule,
     ForecastsModule,
     ScenariosModule,
     VarianceModule,
@@ -75,6 +78,7 @@ import { UsersModule } from './users/users.module';
     PromotionsModule,
     RawMaterialPricesModule,
     UsersModule,
+    PlansModule,
   ],
   controllers: [AppController],
   providers: [

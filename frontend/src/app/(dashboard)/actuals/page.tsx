@@ -25,6 +25,7 @@ import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { getStatusVariant, SOURCE_SYSTEMS, IMPORT_TYPES, getCurrentFiscalYear } from '@/lib/constants';
 import type {
   ActualImport,
   ImportSourceSystem,
@@ -43,30 +44,6 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 import axios from 'axios';
-
-const SOURCE_SYSTEMS: ImportSourceSystem[] = [
-  'excel',
-  'oracle',
-  'sap',
-  'erp',
-  'pms',
-  'odoo',
-  'pos',
-  'woocommerce',
-  'manual',
-  'api',
-  'custom',
-];
-
-const IMPORT_TYPES: { value: ImportType; label: string }[] = [
-  { value: 'sales', label: 'Sales Transactions' },
-  { value: 'expenses', label: 'Expenses / Ledger Transactions' },
-  { value: 'production', label: 'Production Records' },
-  { value: 'inventory', label: 'Inventory Snapshots' },
-  { value: 'gl', label: 'General Ledger' },
-  { value: 'cashflow', label: 'Cash Flow Transactions' },
-  { value: 'payroll', label: 'Payroll Summaries' },
-];
 
 export default function ActualsPage() {
   const { activeCompanyId } = useAuth();
@@ -102,64 +79,9 @@ export default function ActualsPage() {
   const [sourceSystem, setSourceSystem] = useState<ImportSourceSystem>('excel');
   const [importType, setImportType] = useState<ImportType>('expenses');
   const [mappingId, setMappingId] = useState('');
-  const [periodFrom, setPeriodFrom] = useState('2025-01-01');
-  const [periodTo, setPeriodTo] = useState('2025-01-31');
+  const [periodFrom, setPeriodFrom] = useState(`${getCurrentFiscalYear()}-01-01`);
+  const [periodTo, setPeriodTo] = useState(new Date().toISOString().split('T')[0]);
   const [rawText, setRawText] = useState('');
-
-  const SAMPLES = {
-    oracle_actuals: {
-      system: 'oracle' as ImportSourceSystem,
-      type: 'expenses' as ImportType,
-      mappingKeyword: 'oracle',
-      from: '2025-01-01',
-      to: '2025-01-31',
-      csv: `GL_Account_Code,Amount,Date,Quantity,UnitPrice,Reference_No
-4000,120000.00,2025-01-15,8000,15.00,REV-202501
-5000,70000.00,2025-01-15,8750,8.00,COGS-202501
-6000,10000.00,2025-01-01,1,10000.00,RENT-202501
-6100,21500.00,2025-01-28,1,21500.00,PAY-202501`
-    },
-    pos_sales: {
-      system: 'pos' as ImportSourceSystem,
-      type: 'sales' as ImportType,
-      mappingKeyword: 'pos',
-      from: '2025-01-01',
-      to: '2025-01-31',
-      csv: `SKU,Qty,Price,Total_Amount,Transaction_Date,Branch_Name,Customer_Code
-PROD-JUICE,150,15.00,2250.00,2025-01-16 14:30:00,Main Factory,CUST-001
-PROD-MILK,80,35.00,2800.00,2025-01-16 15:00:00,Main Factory,CUST-002
-PROD-JUICE,200,15.00,3000.00,2025-01-17 11:20:00,Main Factory,CUST-001
-PROD-MILK,50,35.00,1750.00,2025-01-17 12:45:00,Main Factory,CUST-002`
-    },
-    erp_expenses: {
-      system: 'erp' as ImportSourceSystem,
-      type: 'expenses' as ImportType,
-      mappingKeyword: 'erp',
-      from: '2025-01-01',
-      to: '2025-01-31',
-      csv: `GL_Account_Code,Cost_Center_Code,Expense_Amount,Expense_Date,Receipt_No
-6000,CC_ADMIN,10000.00,2025-01-01,RENT-202501
-6100,CC_PROD,15000.00,2025-01-28,PAY-PROD-202501
-6100,CC_SALES,6500.00,2025-01-28,PAY-SALES-202501`
-    }
-  };
-
-  const handleSelectSample = (key: string) => {
-    if (!key) return;
-    const sample = SAMPLES[key as keyof typeof SAMPLES];
-    if (sample) {
-      setSourceSystem(sample.system);
-      setImportType(sample.type);
-      setPeriodFrom(sample.from);
-      setPeriodTo(sample.to);
-      setRawText(sample.csv);
-      const matched = mappings.find((m) => m.name.toLowerCase().includes(sample.mappingKeyword));
-      if (matched) {
-        setMappingId(matched.id);
-      }
-      toastSuccess(`Pre-filled ${sample.system.toUpperCase()} mock data and defaults.`);
-    }
-  };
 
   // Preview States
   const [previewRows, setPreviewRows] = useState<MappedRowResult[]>([]);
@@ -419,19 +341,6 @@ PROD-MILK,50,35.00,1750.00,2025-01-17 12:45:00,Main Factory,CUST-002`
       toastError(err instanceof Error ? err.message : 'Delete failed.');
     } finally {
       setDeleteLoading(false);
-    }
-  }
-
-  function getStatusVariant(status: ImportStatus) {
-    switch (status) {
-      case 'posted':
-        return 'success';
-      case 'validated':
-        return 'info';
-      case 'failed':
-        return 'danger';
-      default:
-        return 'warning';
     }
   }
 
@@ -841,51 +750,7 @@ PROD-MILK,50,35.00,1750.00,2025-01-17 12:45:00,Main Factory,CUST-002`
             {/* STEP 2: PASTE DATA */}
             {wizardStep === 2 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="w-sample" className="text-xs font-semibold text-slate-500">Paste Predefined Sample Data</label>
-                    <select
-                      id="w-sample"
-                      defaultValue=""
-                      onChange={(e) => handleSelectSample(e.target.value)}
-                      className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none"
-                    >
-                      <option value="">-- Select Mock CSV Sample --</option>
-                      <option value="oracle_actuals">Oracle Actuals CSV (Expenses)</option>
-                      <option value="pos_sales">POS Sales CSV (Sales)</option>
-                      <option value="erp_expenses">ERP Expenses CSV (Expenses)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Download Template Files</span>
-                    <div className="flex gap-2">
-                      <a
-                        href="/oracle_actuals_sample.csv"
-                        download
-                        className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 underline cursor-pointer"
-                      >
-                        Oracle CSV
-                      </a>
-                      <span className="text-slate-300">|</span>
-                      <a
-                        href="/pos_sales_sample.csv"
-                        download
-                        className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 underline cursor-pointer"
-                      >
-                        POS CSV
-                      </a>
-                      <span className="text-slate-300">|</span>
-                      <a
-                        href="/erp_expenses_sample.csv"
-                        download
-                        className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 underline cursor-pointer"
-                      >
-                        ERP CSV
-                      </a>
-                    </div>
-                  </div>
-                </div>
+                {/* Sample data should be loaded from files */}
 
                 <div className="flex flex-col gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
                   <p className="text-xs font-semibold text-slate-500">Or Upload CSV File Directly</p>

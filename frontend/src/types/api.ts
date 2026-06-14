@@ -809,6 +809,7 @@ export type TriggerType =
   | 'variance_amount'
   | 'kpi_breach'
   | 'budget_approval'
+  | 'forecast_approval'
   | 'import_failed';
 
 export interface NotificationRule {
@@ -999,6 +1000,49 @@ export interface RawMaterialPrice {
   priceDate: string;
   source?: string;
   material?: { id: string; name: string; code: string } | null;
+}
+
+// ---------------------------------------------------------------------------
+// Report Metas (served from backend API)
+// ---------------------------------------------------------------------------
+export interface ReportMeta {
+  value: string;
+  label: string;
+  description: string;
+  category: 'financial' | 'performance' | 'operations';
+  paginated: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Approvals
+// ---------------------------------------------------------------------------
+export interface Approval {
+  id: string;
+  tenantId: string;
+  entityType: string;
+  entityId: string;
+  stepOrder: number | null;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  requestedBy: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  comments: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Plans / Subscriptions
+// ---------------------------------------------------------------------------
+export interface Plan {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  monthlyPrice: string;
+  maxCompanies: number;
+  maxUsers: number;
+  features: string[];
 }
 
 // ---------------------------------------------------------------------------

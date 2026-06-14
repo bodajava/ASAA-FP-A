@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -94,17 +95,26 @@ export class ProductionPlansController {
   @Roles('admin', 'fpna_manager', 'production_manager')
   @ApiOperation({ summary: 'Update a production plan' })
   update(
+    @Request() req: any,
     @CompanyId() companyId: bigint,
     @Param('id') id: string,
     @Body() dto: Partial<CreateProductionPlanDto>,
   ) {
-    return this.service.update(BigInt(id), companyId, dto);
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.update(BigInt(id), companyId, dto, tenantId, userId);
   }
 
   @Delete(':id')
   @Roles('admin', 'fpna_manager')
   @ApiOperation({ summary: 'Delete a production plan' })
-  remove(@CompanyId() companyId: bigint, @Param('id') id: string) {
-    return this.service.remove(BigInt(id), companyId);
+  remove(
+    @Request() req: any,
+    @CompanyId() companyId: bigint,
+    @Param('id') id: string,
+  ) {
+    const tenantId = BigInt(req.user.tenantId);
+    const userId = BigInt(req.user.id);
+    return this.service.remove(BigInt(id), companyId, tenantId, userId);
   }
 }

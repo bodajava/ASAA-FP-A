@@ -84,17 +84,18 @@ export class AuthController {
     const result = await this.authService.login(user, ipAddress, userAgent);
 
     if (res) {
+      const isProd = process.env.NODE_ENV === 'production';
       res.cookie('access_token', result.accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         path: '/',
       });
       res.cookie('refresh_token', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/',
       });
@@ -123,17 +124,18 @@ export class AuthController {
     const result = await this.authService.refresh(token);
 
     if (res) {
+      const isProd = process.env.NODE_ENV === 'production';
       res.cookie('access_token', result.accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000,
         path: '/',
       });
       res.cookie('refresh_token', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
       });
@@ -162,8 +164,17 @@ export class AuthController {
     );
 
     if (res) {
-      res.clearCookie('access_token', { path: '/' });
-      res.clearCookie('refresh_token', { path: '/' });
+      const isProd = process.env.NODE_ENV === 'production';
+      res.clearCookie('access_token', {
+        path: '/',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+      });
+      res.clearCookie('refresh_token', {
+        path: '/',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+      });
     }
 
     return result;

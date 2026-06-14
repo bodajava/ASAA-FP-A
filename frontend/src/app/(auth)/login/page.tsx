@@ -33,9 +33,18 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        const msg = err.response
-          ? (err.response.data as { message?: string } | undefined)?.message ?? 'Invalid credentials. Please try again.'
-          : 'Failed to connect to the backend server. Please verify your NEXT_PUBLIC_API_URL configuration and ensure the backend is running.';
+        let msg = 'An error occurred during sign in. Please try again.';
+        if (err.response) {
+          if (err.response.status === 401) {
+            msg = 'Invalid credentials. Please try again.';
+          } else if (err.response.status === 404) {
+            msg = 'Backend API endpoint not found (404). Please ensure your NEXT_PUBLIC_API_URL in Vercel ends with "/api".';
+          } else {
+            msg = (err.response.data as { message?: string } | undefined)?.message ?? msg;
+          }
+        } else {
+          msg = 'Failed to connect to the backend server. Please verify your NEXT_PUBLIC_API_URL configuration in Vercel and ensure the backend is running.';
+        }
         setError(msg);
       } else {
         setError('An unexpected error occurred. Please try again.');

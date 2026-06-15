@@ -32,20 +32,20 @@ export function Badge({ children, variant = 'default', className }: BadgeProps) 
   );
 }
 
-export function statusBadge(status: string): React.ReactElement {
+export function statusBadge(status: string, translateFn?: (s: string) => string): React.ReactElement {
   const s = status.toLowerCase();
   const variant: BadgeVariant =
     s === 'active' || s === 'approved' ? 'success'
     : s === 'inactive' || s === 'rejected' ? 'danger'
     : s === 'pending' || s === 'draft' ? 'warning'
     : 'default';
-  return <Badge variant={variant}>{status}</Badge>;
+  return <Badge variant={variant}>{translateFn ? translateFn(s) : status}</Badge>;
 }
 
-export function boolBadge(value: boolean): React.ReactElement {
+export function boolBadge(value: boolean, trueLabel?: string, falseLabel?: string): React.ReactElement {
   return (
     <Badge variant={value ? 'success' : 'muted'}>
-      {value ? 'Active' : 'Inactive'}
+      {value ? (trueLabel ?? 'Active') : (falseLabel ?? 'Inactive')}
     </Badge>
   );
 }

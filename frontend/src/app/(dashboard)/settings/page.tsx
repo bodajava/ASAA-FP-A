@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPatch } from '@/lib/api';
 import { MONTH_NAMES } from '@/lib/constants';
 import type { Company, UpdateCompanyPayload, Plan } from '@/types/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 // ---------------------------------------------------------------------------
 // Section Card wrapper
@@ -88,6 +89,7 @@ function ReadOnlyField({
 // Page
 // ---------------------------------------------------------------------------
 export default function SettingsPage() {
+  const { t } = useI18n();
   const { user, activeCompanyId, availableCompanies, tenant, refreshUser } = useAuth();
 
   // Active company full record
@@ -219,12 +221,12 @@ export default function SettingsPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Settings"
-          description="Manage company configuration and session preferences"
+          title={t('page.settings.title')}
+          description={t('page.settings.description')}
         />
         <ErrorState
-          title="No active company selected"
-          message="Please select a company from the sidebar before opening Settings."
+          title={t('common.noActiveCompany')}
+          message={t('common.noActiveCompany')}
         />
       </div>
     );
@@ -233,8 +235,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Settings"
-        description="Company configuration and active session information"
+        title={t('page.settings.title')}
+        description={t('page.settings.description')}
       />
 
       {/* ------------------------------------------------------------------ */}
@@ -242,11 +244,11 @@ export default function SettingsPage() {
       {/* ------------------------------------------------------------------ */}
       <SectionCard
         icon={<Building2 className="h-4 w-4" />}
-        title="Company Profile"
-        description={`Active company: ${activeCompanyName} · ID ${activeCompanyId}`}
+        title={t('page.settings.companyProfile')}
+        description={t('page.settings.companyProfileDesc', { name: activeCompanyName, id: activeCompanyId })}
       >
         {isLoadingCompany ? (
-          <LoadingState rows={4} message="Loading company details…" />
+          <LoadingState rows={4} message={t('common.loading')} />
         ) : companyError ? (
           <ErrorState message={companyError} onRetry={fetchCompany} />
         ) : (
@@ -258,7 +260,7 @@ export default function SettingsPage() {
                   htmlFor="company-name"
                   className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"
                 >
-                  <Building2 className="h-2.5 w-2.5" /> Company Name
+                  <Building2 className="h-2.5 w-2.5" /> {t('page.settings.companyName')}
                 </label>
                 <input
                   id="company-name"
@@ -277,7 +279,7 @@ export default function SettingsPage() {
                   htmlFor="company-code"
                   className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"
                 >
-                  <Hash className="h-2.5 w-2.5" /> Company Code
+                  <Hash className="h-2.5 w-2.5" /> {t('page.settings.companyCode')}
                 </label>
                 <input
                   id="company-code"
@@ -296,7 +298,7 @@ export default function SettingsPage() {
                   htmlFor="company-currency"
                   className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"
                 >
-                  <Globe className="h-2.5 w-2.5" /> Default Currency
+                  <Globe className="h-2.5 w-2.5" /> {t('page.settings.defaultCurrency')}
                 </label>
                 <select
                   id="company-currency"
@@ -304,7 +306,7 @@ export default function SettingsPage() {
                   onChange={(e) => setCurrency(e.target.value)}
                   className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="">— Select currency —</option>
+                  <option value="">{t('page.settings.selectCurrency')}</option>
                   <option value="USD">USD – US Dollar</option>
                   <option value="EUR">EUR – Euro</option>
                   <option value="GBP">GBP – British Pound</option>
@@ -333,7 +335,7 @@ export default function SettingsPage() {
                   htmlFor="company-fiscal"
                   className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"
                 >
-                  <Calendar className="h-2.5 w-2.5" /> Fiscal Year Start Month
+                  <Calendar className="h-2.5 w-2.5" /> {t('page.settings.fiscalYearStart')}
                 </label>
                 <select
                   id="company-fiscal"
@@ -354,12 +356,12 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
               <ReadOnlyField
                 icon={<Lock className="h-2.5 w-2.5" />}
-                label="Company ID"
+                label={t('page.settings.companyId')}
                 value={company?.id ?? activeCompanyId}
               />
               <ReadOnlyField
                 icon={<Shield className="h-2.5 w-2.5" />}
-                label="Tenant ID"
+                label={t('page.settings.tenantId')}
                 value={company?.tenantId ?? '—'}
               />
             </div>
@@ -368,7 +370,7 @@ export default function SettingsPage() {
             {saveSuccess && (
               <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-700 font-semibold">
                 <CheckCircle className="h-4 w-4 shrink-0" />
-                Company profile updated successfully.
+                {t('page.settings.savedSuccess')}
               </div>
             )}
             {saveError && (
@@ -388,7 +390,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-1.5"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isLoadingCompany ? 'animate-spin' : ''}`} />
-                Discard &amp; reload
+                {t('page.settings.discardReload')}
               </Button>
               <Button
                 type="submit"
@@ -401,7 +403,7 @@ export default function SettingsPage() {
                 ) : (
                   <Save className="h-3.5 w-3.5" />
                 )}
-                {isSaving ? 'Saving…' : 'Save Changes'}
+                {isSaving ? t('page.settings.saving') : t('page.settings.saveChanges')}
               </Button>
             </div>
           </form>
@@ -413,51 +415,49 @@ export default function SettingsPage() {
       {/* ------------------------------------------------------------------ */}
       <SectionCard
         icon={<User className="h-4 w-4" />}
-        title="Active Session"
-        description="Current authenticated user and tenant details — read only"
+        title={t('page.settings.activeSession')}
+        description={t('page.settings.activeSessionDesc')}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ReadOnlyField
             icon={<User className="h-2.5 w-2.5" />}
-            label="Full Name"
+            label={t('page.settings.fullName')}
             value={user ? `${user.firstName} ${user.lastName}` : '—'}
           />
           <ReadOnlyField
             icon={<Mail className="h-2.5 w-2.5" />}
-            label="Email Address"
+            label={t('page.settings.emailAddress')}
             value={user?.email ?? '—'}
           />
           <ReadOnlyField
             icon={<Shield className="h-2.5 w-2.5" />}
-            label="Role"
+            label={t('page.settings.role')}
             value={user?.role ?? '—'}
           />
           <ReadOnlyField
             icon={<Hash className="h-2.5 w-2.5" />}
-            label="User ID"
+            label={t('page.settings.userId')}
             value={user?.id ?? '—'}
           />
           <ReadOnlyField
             icon={<Lock className="h-2.5 w-2.5" />}
-            label="Tenant ID"
+            label={t('page.settings.tenantId')}
             value={user?.tenantId ?? '—'}
           />
           <ReadOnlyField
             icon={<Building2 className="h-2.5 w-2.5" />}
-            label="Active Company ID"
+            label={t('page.settings.activeCompanyId')}
             value={activeCompanyId ?? '—'}
           />
           <ReadOnlyField
             icon={<Shield className="h-2.5 w-2.5" />}
-            label="Subscription Plan"
+            label={t('page.settings.subscriptionPlan')}
             value={tenant?.plan?.name ?? 'Starter'}
           />
         </div>
 
         <p className="mt-4 text-[10px] text-slate-400 font-medium">
-          Session details are managed by the authentication system and cannot be
-          modified here. To change your password or email, contact your tenant
-          administrator.
+          {t('page.settings.sessionDisclaimer')}
         </p>
       </SectionCard>
 
@@ -466,8 +466,8 @@ export default function SettingsPage() {
       {/* ------------------------------------------------------------------ */}
       <SectionCard
         icon={<Shield className="h-4 w-4" />}
-        title="Subscription Plan & Billing"
-        description="Choose the right features and scale for your organization"
+        title={t('page.settings.subscriptionPlans')}
+        description={t('page.settings.subscriptionPlansDesc')}
       >
         {upgradeSuccess && (
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-700 font-semibold animate-in fade-in duration-200">
@@ -483,16 +483,16 @@ export default function SettingsPage() {
         )}
 
         {isLoadingPlans ? (
-          <LoadingState rows={3} message="Loading subscription plans…" />
+          <LoadingState rows={3} message={t('common.loading')} />
         ) : plansError ? (
           <ErrorState message={plansError} onRetry={fetchPlans} />
         ) : plans.length === 0 ? (
-          <ErrorState message="No subscription plans available." />
+          <ErrorState message={t('common.noData')} />
         ) : (
           <>
             {/* Billing Toggle */}
             <div className="flex items-center justify-center gap-3 mb-8">
-              <span className={`text-xs font-bold transition-colors ${!isYearly ? 'text-slate-800' : 'text-slate-400'}`}>Monthly</span>
+              <span className={`text-xs font-bold transition-colors ${!isYearly ? 'text-slate-800' : 'text-slate-400'}`}>{t('page.settings.monthly')}</span>
               <button
                 type="button"
                 role="switch"
@@ -503,8 +503,8 @@ export default function SettingsPage() {
                 <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition-transform ${isYearly ? 'translate-x-4' : 'translate-x-0'}`} />
               </button>
               <span className={`text-xs font-bold transition-colors ${isYearly ? 'text-slate-800' : 'text-slate-400'}`}>
-                Yearly
-                <span className="ml-1 text-[10px] text-emerald-600 font-bold">Save ~17%</span>
+                {t('page.settings.yearly')}
+                <span className="ml-1 text-[10px] text-emerald-600 font-bold">{t('page.settings.savePercent')}</span>
               </span>
             </div>
 
@@ -525,7 +525,7 @@ export default function SettingsPage() {
                 if (code === 'business') {
                   headerBg = 'bg-emerald-50/50 border-emerald-100';
                   planIcon = <Zap className="h-5 w-5 text-emerald-600" />;
-                  badgeText = 'Most Popular';
+                  badgeText = t('page.settings.mostPopular');
                   badgeClasses = 'bg-emerald-100 text-emerald-800';
                   accentColor = 'emerald';
                   borderAccent = 'border-emerald-500';
@@ -533,7 +533,7 @@ export default function SettingsPage() {
                 } else if (code === 'enterprise') {
                   headerBg = 'bg-indigo-50/50 border-indigo-100';
                   planIcon = <Sparkles className="h-5 w-5 text-indigo-600" />;
-                  badgeText = 'Complete Suite';
+                  badgeText = t('page.settings.completeSuite');
                   badgeClasses = 'bg-indigo-100 text-indigo-800';
                   accentColor = 'indigo';
                   borderAccent = 'border-indigo-500';
@@ -541,7 +541,7 @@ export default function SettingsPage() {
                 }
 
                 const price = isYearly ? p.yearlyPrice : p.monthlyPrice;
-                const periodLabel = isYearly ? '/ year' : '/ month';
+                const periodLabel = isYearly ? t('page.settings.perYear') : t('page.settings.perMonth');
 
                 return (
                   <div
@@ -572,7 +572,7 @@ export default function SettingsPage() {
                         </div>
                         {isYearly && p.monthlyPrice > 0 && (
                           <div className="text-[10px] text-slate-400 mt-0.5">
-                            ${(price / 12).toFixed(2)}/mo billed annually
+                            {t('page.settings.billedAnnually', { price: (price / 12).toFixed(2) })}
                           </div>
                         )}
                       </div>
@@ -585,22 +585,22 @@ export default function SettingsPage() {
                         <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 pb-4 border-b border-slate-100 text-[11px] font-semibold">
                           <div className="flex items-center gap-1.5 text-slate-500">
                             <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>Companies</span>
-                            <span className="ml-auto text-slate-800">{p.maxCompanies >= 999 ? 'Unlimited' : p.maxCompanies}</span>
+                            <span>{t('page.settings.companies')}</span>
+                            <span className="ml-auto text-slate-800">{p.maxCompanies >= 999 ? t('page.settings.unlimited') : p.maxCompanies}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-slate-500">
                             <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>Users</span>
-                            <span className="ml-auto text-slate-800">{p.maxUsers >= 999 ? 'Unlimited' : p.maxUsers}</span>
+                            <span>{t('page.settings.users')}</span>
+                            <span className="ml-auto text-slate-800">{p.maxUsers >= 999 ? t('page.settings.unlimited') : p.maxUsers}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-slate-500">
                             <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>Branches</span>
-                            <span className="ml-auto text-slate-800">{p.maxBranches >= 999 ? 'Unlimited' : p.maxBranches}</span>
+                            <span>{t('page.settings.branches')}</span>
+                            <span className="ml-auto text-slate-800">{p.maxBranches >= 999 ? t('page.settings.unlimited') : p.maxBranches}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-slate-500">
                             <BarChart3 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>Dashboard</span>
+                            <span>{t('page.settings.dashboardLabel')}</span>
                             <span className="ml-auto text-slate-800 capitalize">{p.dashboardLevel}</span>
                           </div>
                         </div>
@@ -626,7 +626,7 @@ export default function SettingsPage() {
                         {isCurrent ? (
                           <div className="flex items-center justify-center gap-1.5 w-full rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700">
                             <CheckCircle className="h-4 w-4 shrink-0" />
-                            Active Plan
+                            {t('page.settings.activePlan')}
                           </div>
                         ) : (
                           <Button
@@ -638,10 +638,10 @@ export default function SettingsPage() {
                             {upgradingPlanId === p.id ? (
                               <>
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Upgrading...
+                                {t('page.settings.upgrading')}
                               </>
                             ) : (
-                              `Select ${p.name}`
+                              t('page.settings.selectPlan', { name: p.name })
                             )}
                           </Button>
                         )}

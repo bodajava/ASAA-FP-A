@@ -18,6 +18,7 @@ import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useActiveCurrency } from '@/hooks/use-active-currency';
 import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type {
   DashboardKpis,
   MonthlyTrendItem,
@@ -31,6 +32,7 @@ function pct(n: number | null | undefined) {
 }
 
 export default function DashboardPage() {
+  const { t } = useI18n();
   const { activeCompanyId } = useAuth();
   const { format: fmt } = useActiveCurrency();
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
@@ -76,10 +78,10 @@ export default function DashboardPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Dashboard" description={`FY ${year} financial overview`} />
+        <PageHeader title={t('page.dashboard.title')} description={t('page.dashboard.financialOverview', { year })} />
         <EmptyState
-          title="No active company"
-          description="Select a company from the sidebar to view your dashboard."
+          title={t('page.dashboard.noCompanyTitle')}
+          description={t('page.dashboard.noCompanyDesc')}
         />
       </div>
     );
@@ -88,7 +90,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Dashboard" description={`FY ${year} financial overview`} />
+        <PageHeader title={t('page.dashboard.title')} description={t('page.dashboard.financialOverview', { year })} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
@@ -101,7 +103,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Dashboard" />
+        <PageHeader title={t('page.dashboard.title')} />
         <ErrorState message={error} />
       </div>
     );
@@ -110,12 +112,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
-        description={`FY ${year} financial overview`}
+        title={t('page.dashboard.title')}
+        description={t('page.dashboard.financialOverview', { year })}
       >
         <div className="flex items-center gap-2">
           <label htmlFor="dashboard-year" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Fiscal Year:
+            {t('common.fiscalYear')}:
           </label>
           <select
             id="dashboard-year"
@@ -135,31 +137,31 @@ export default function DashboardPage() {
       <section aria-label="KPI summary">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
-            title="Total Revenue"
+            title={t('page.dashboard.revenue')}
             value={kpis ? fmt(kpis.revenue) : '—'}
             icon={<DollarSign className="h-5 w-5" />}
-            description="Actual YTD"
+            description={t('page.dashboard.ytdLabel')}
           />
           <KpiCard
-            title="Gross Profit"
+            title={t('page.dashboard.grossProfit')}
             value={kpis ? fmt(kpis.gross_profit) : '—'}
             icon={<TrendingUp className="h-5 w-5" />}
-            description="Actual YTD"
+            description={t('page.dashboard.ytdLabel')}
           />
           <KpiCard
-            title="Net Profit"
+            title={t('page.dashboard.netProfit')}
             value={kpis ? fmt(kpis.net_profit) : '—'}
             icon={<BarChart3 className="h-5 w-5" />}
             trendDirection={
               kpis && kpis.net_profit > 0 ? 'up' : kpis && kpis.net_profit < 0 ? 'down' : 'neutral'
             }
-            description="Actual YTD"
+            description={t('page.dashboard.ytdLabel')}
           />
           <KpiCard
-            title="Cash Balance"
+            title={t('page.dashboard.cashBalance')}
             value={kpis ? fmt(kpis.cash_balance) : '—'}
             icon={<Wallet className="h-5 w-5" />}
-            description="Latest"
+            description={t('page.dashboard.latestLabel')}
           />
         </div>
       </section>
@@ -168,13 +170,13 @@ export default function DashboardPage() {
       <section aria-label="Budget and forecast metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard
-            title="Total Expenses"
+            title={t('page.dashboard.expenses')}
             value={kpis ? fmt(kpis.expenses) : '—'}
             icon={<TrendingDown className="h-5 w-5" />}
-            description="Actual YTD"
+            description={t('page.dashboard.ytdLabel')}
           />
           <KpiCard
-            title="Budget Utilization"
+            title={t('page.dashboard.budgetUtilization')}
             value={kpis ? pct(kpis.budget_utilization) : '—'}
             icon={<Target className="h-5 w-5" />}
             trendDirection={
@@ -182,13 +184,13 @@ export default function DashboardPage() {
                 : kpis && kpis.budget_utilization >= 80 ? 'up'
                   : 'neutral'
             }
-            description={`Revenue: ${pct(utilization?.revenue_utilization)} / Expense: ${pct(utilization?.expense_utilization)}`}
+            description={t('page.dashboard.budgetUtilDesc', { rev: pct(utilization?.revenue_utilization), exp: pct(utilization?.expense_utilization) })}
           />
           <KpiCard
-            title="Forecast Accuracy"
+            title={t('page.dashboard.forecastAccuracy')}
             value={kpis ? pct(kpis.forecast_accuracy) : '—'}
             trendDirection={kpis && kpis.forecast_accuracy >= 90 ? 'up' : 'neutral'}
-            description="vs. actuals"
+            description={t('page.dashboard.forecastAccDesc')}
           />
         </div>
       </section>
@@ -198,23 +200,23 @@ export default function DashboardPage() {
         {/* Revenue trend */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
+            <CardTitle>{t('page.dashboard.revenueTrend')}</CardTitle>
           </CardHeader>
           <CardContent>
             {revenue.length === 0 ? (
               <EmptyState
-                title="No trend data"
-                description="Actual, budget and forecast data will appear here."
+                title={t('page.dashboard.trendDataEmptyTitle')}
+                description={t('page.dashboard.trendDataEmptyDesc')}
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                      <th className="pb-2 text-left font-medium">Month</th>
-                      <th className="pb-2 text-right font-medium">Actual</th>
-                      <th className="pb-2 text-right font-medium">Budget</th>
-                      <th className="pb-2 text-right font-medium">Forecast</th>
+                      <th className="pb-2 text-left font-medium">{t('common.month')}</th>
+                      <th className="pb-2 text-right font-medium">{t('page.dashboard.actualLabel')}</th>
+                      <th className="pb-2 text-right font-medium">{t('page.dashboard.budgetLabel')}</th>
+                      <th className="pb-2 text-right font-medium">{t('page.dashboard.forecastLabel')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -245,11 +247,11 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-5">
           <Card>
             <CardHeader>
-              <CardTitle>Top Products</CardTitle>
+              <CardTitle>{t('page.dashboard.topProducts')}</CardTitle>
             </CardHeader>
             <CardContent>
               {topProducts.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-slate-500">No data yet.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">{t('page.dashboard.noDataYet')}</p>
               ) : (
                 <ul className="space-y-2">
                   {topProducts.slice(0, 5).map((p, i) => (
@@ -273,11 +275,11 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Top Customers</CardTitle>
+              <CardTitle>{t('page.dashboard.topCustomers')}</CardTitle>
             </CardHeader>
             <CardContent>
               {topCustomers.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-slate-500">No data yet.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">{t('page.dashboard.noDataYet')}</p>
               ) : (
                 <ul className="space-y-2">
                   {topCustomers.slice(0, 5).map((c, i) => (

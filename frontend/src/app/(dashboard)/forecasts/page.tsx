@@ -29,6 +29,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { ImportModal } from '@/components/import-modal';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { useTranslateApi } from '@/lib/i18n/translate-api';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { getStatusVariant, MONTH_NAMES } from '@/lib/constants';
@@ -101,6 +103,8 @@ function buildAccountTree(accounts: Account[], lines: ForecastLine[]): AccountNo
 
 export default function ForecastsPage() {
   const { activeCompanyId } = useAuth();
+  const { t } = useI18n();
+  const { tStatus, tForecastMethod } = useTranslateApi();
   const { success: toastSuccess, error: toastError } = useToast();
 
   // List view states
@@ -239,7 +243,7 @@ export default function ForecastsPage() {
     setIsTransitioning(true);
     try {
       await apiPatch<ForecastCycle>(`/forecasts/${id}/status`, { status: targetStatus });
-      toastSuccess(`Forecast status updated to ${targetStatus} successfully.`);
+      toastSuccess(t('page.forecasts.statusUpdated', { status: targetStatus }));
       void fetchCycles();
       if (selectedCycleId === id) {
         void fetchCycleDetail(id);
@@ -258,7 +262,7 @@ export default function ForecastsPage() {
     setIsGenerating(true);
     try {
       await apiPost<ForecastCycle>(`/forecasts/${id}/generate`, {});
-      toastSuccess('Forecast lines generated successfully.');
+      toastSuccess(t('common.success'));
       void fetchCycles();
       void fetchCycleDetail(id);
     } catch (err: unknown) {
@@ -276,7 +280,7 @@ export default function ForecastsPage() {
     setDeleteLoading(true);
     try {
       await apiDelete<ForecastCycle>(`/forecasts/${deleteConfirmCycle.id}`);
-      toastSuccess('Forecast deleted successfully.');
+      toastSuccess(t('common.deletedSuccess'));
       setDeleteConfirmCycle(null);
       void fetchCycles();
       if (selectedCycleId === deleteConfirmCycle.id) {
@@ -344,15 +348,15 @@ export default function ForecastsPage() {
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase">
                     <tr>
-                      <th className="px-3 py-2 text-left">Month</th>
-                      <th className="px-3 py-2 text-left">Site</th>
-                      <th className="px-3 py-2 text-left">Cost Center</th>
-                      <th className="px-3 py-2 text-left">Product / Customer / Material</th>
-                      <th className="px-3 py-2 text-left">Driver Type</th>
-                      <th className="px-3 py-2 text-right">Quantity</th>
-                      <th className="px-3 py-2 text-right">Unit Price</th>
-                      <th className="px-3 py-2 text-right">Amount</th>
-                      <th className="px-3 py-2 text-left">Notes</th>
+                      <th className="px-3 py-2 text-left">{t('common.month')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.site')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.costCenter')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.productCustomerMaterial')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.forecasts.driverType')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.quantity')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.unitPrice')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.amount')}</th>
+                      <th className="px-3 py-2 text-left">{t('common.notes')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -366,11 +370,11 @@ export default function ForecastsPage() {
 
                       return (
                         <tr key={line.id} className="hover:bg-slate-50/50">
-                          <td className="px-3 py-2 font-medium">Month {line.periodMonth}</td>
+                          <td className="px-3 py-2 font-medium">{t('common.month')} {line.periodMonth}</td>
                           <td className="px-3 py-2 text-slate-600">{siteName}</td>
                           <td className="px-3 py-2 text-slate-600">{ccName}</td>
                           <td className="px-3 py-2 text-slate-600 max-w-[180px] truncate" title={refStr}>{refStr}</td>
-                          <td className="px-3 py-2 text-slate-500 capitalize">{line.driverType ? line.driverType.replace('_', ' ') : '—'}</td>
+                          <td className="px-3 py-2 text-slate-500">{line.driverType ? line.driverType.replace('_', ' ') : '—'}</td>
                           <td className="px-3 py-2 text-right font-mono">{line.quantity > 0 ? line.quantity.toLocaleString() : '—'}</td>
                           <td className="px-3 py-2 text-right font-mono">{line.unitPrice > 0 ? `$${line.unitPrice.toFixed(2)}` : '—'}</td>
                           <td className="px-3 py-2 text-right font-mono font-semibold text-emerald-700">${line.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
@@ -394,17 +398,17 @@ export default function ForecastsPage() {
   // Columns for List view
   // ---------------------------------------------------------------------------
   const columns: Column<ForecastCycle>[] = [
-    { key: 'name', header: 'Name', render: (v, row) => (
+    { key: 'name', header: t('common.name'), render: (v, row) => (
       <button onClick={() => setSelectedCycleId(row.id)} className="font-semibold text-slate-800 hover:text-emerald-600 text-left transition-colors">
         {row.name}
       </button>
     )},
-    { key: 'fiscalYear', header: 'Fiscal Year', className: 'font-semibold' },
-    { key: 'basePeriod', header: 'Base Period', render: (v) => v ? new Date(String(v)).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) : '—' },
-    { key: 'method', header: 'Method', render: (v) => <span className="capitalize">{String(v).replace('_', ' ')}</span> },
-    { key: 'status', header: 'Status', render: (v) => (
-      <Badge variant={getStatusVariant(v as CycleStatus)} className="capitalize">
-        {String(v)}
+    { key: 'fiscalYear', header: t('common.fiscalYear'), className: 'font-semibold' },
+    { key: 'basePeriod', header: t('page.forecasts.basePeriodLabel'), render: (v) => v ? new Date(String(v)).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) : '—' },
+    { key: 'method', header: t('page.forecasts.methodLabel'), render: (v) => <span>{tForecastMethod(String(v))}</span> },
+    { key: 'status', header: t('common.status'), render: (v) => (
+      <Badge variant={getStatusVariant(v as CycleStatus)}>
+        {tStatus(String(v))}
       </Badge>
     )},
     {
@@ -418,7 +422,7 @@ export default function ForecastsPage() {
             <button
               onClick={() => setSelectedCycleId(row.id)}
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              aria-label="View Details"
+              aria-label={t('common.viewDetails')}
             >
               <Eye className="h-4 w-4" />
             </button>
@@ -452,10 +456,10 @@ export default function ForecastsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Forecasts" description="Create and manage rolling and driver-based forecasts" />
+        <PageHeader title={t('page.forecasts.title')} description={t('page.forecasts.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar before viewing forecasts."
+          title={t('common.noActiveCompany')}
+          message={t('common.selectCompanyFromSidebar')}
         />
       </div>
     );
@@ -473,13 +477,13 @@ export default function ForecastsPage() {
             <button
               onClick={() => setSelectedCycleId(null)}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-sm"
-              aria-label="Back to List"
+              aria-label={t('common.back')}
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
             <h1 className="text-xl font-bold text-slate-900">{selectedCycle.name}</h1>
             <Badge variant={getStatusVariant(selectedCycle.status)} className="capitalize ml-2">
-              {selectedCycle.status}
+              {tStatus(selectedCycle.status)}
             </Badge>
           </div>
 
@@ -489,7 +493,7 @@ export default function ForecastsPage() {
                 <Calendar className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Fiscal Year / Base Period</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('common.fiscalYear')} / {t('page.forecasts.basePeriodLabel')}</p>
                 <p className="text-sm font-bold text-slate-700">
                   {selectedCycle.fiscalYear} ({new Date(selectedCycle.basePeriod).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })})
                 </p>
@@ -500,8 +504,8 @@ export default function ForecastsPage() {
                 <Layers className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Method</p>
-                <p className="text-sm font-bold text-slate-700 capitalize">{selectedCycle.method.replace('_', ' ')}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.forecasts.methodLabel')}</p>
+                <p className="text-sm font-bold text-slate-700">{tForecastMethod(selectedCycle.method)}</p>
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
@@ -509,9 +513,9 @@ export default function ForecastsPage() {
                 <Settings className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Linked Scenario</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.forecasts.linkedScenario')}</p>
                 <p className="text-sm font-bold text-slate-700">
-                  {scenarios.find((s) => s.id === selectedCycle.scenarioId)?.name ?? 'None'}
+                  {scenarios.find((s) => s.id === selectedCycle.scenarioId)?.name ?? t('page.forecasts.none')}
                 </p>
               </div>
             </div>
@@ -520,7 +524,7 @@ export default function ForecastsPage() {
                 <DollarSign className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total forecasted</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.forecasts.totalForecasted')}</p>
                 <p className="text-sm font-bold text-slate-700">
                   ${(selectedCycle.forecastLines ?? []).reduce((sum, l) => sum + Number(l.amount), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
@@ -531,7 +535,7 @@ export default function ForecastsPage() {
           {/* Status actions panel */}
           <div className="flex flex-wrap gap-2 items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-500 font-medium">Transition Status:</span>
+              <span className="text-sm text-slate-500 font-medium">{t('page.budgets.transitionStatus')}</span>
               <div className="flex gap-2">
                 {selectedCycle.status === 'draft' && (
                   <Button
@@ -541,7 +545,7 @@ export default function ForecastsPage() {
                     disabled={isTransitioning}
                   >
                     {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    Submit for Approval
+                    {t('page.budgets.submitForApproval')}
                   </Button>
                 )}
                 {selectedCycle.status === 'submitted' && (
@@ -553,7 +557,7 @@ export default function ForecastsPage() {
                       disabled={isTransitioning}
                     >
                       {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                      اعتماد (Approve)
+                      {t('page.budgets.approve')}
                     </Button>
                     <Button
                       size="sm"
@@ -562,7 +566,7 @@ export default function ForecastsPage() {
                       disabled={isTransitioning}
                     >
                       {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                      Reject
+                      {t('page.budgets.reject')}
                     </Button>
                   </>
                 )}
@@ -572,13 +576,13 @@ export default function ForecastsPage() {
                     <div>
                       <span className="text-xs font-bold text-emerald-800 block">
                         {selectedCycle.status === 'approved'
-                          ? 'تم الاعتماد — النسخة نهائية'
-                          : 'مقفول — النسخة نهائية'}
+                          ? t('page.forecasts.approvedDone')
+                          : t('status.locked')}
                       </span>
                       <span className="text-[10px] text-emerald-600">
                         {selectedCycle.status === 'approved'
-                          ? 'تم اعتماد الفوركاست من المدير المالي. النسخة المعتمدة نهائية ولا يمكن تعديلها.'
-                          : 'الفوركاست مقفول ولا يمكن تعديله.'}
+                          ? t('page.forecasts.approvedDesc')
+                          : t('page.forecasts.lockedDesc')}
                       </span>
                     </div>
                   </div>
@@ -591,7 +595,7 @@ export default function ForecastsPage() {
                     disabled={isTransitioning}
                   >
                     {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    Revert to Draft
+                    {t('page.budgets.revertToDraft')}
                   </Button>
                 )}
               </div>
@@ -604,30 +608,30 @@ export default function ForecastsPage() {
                 disabled={isGenerating}
               >
                 {isGenerating && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                Generate Forecast Lines
+                {t('page.forecasts.generateLines')}
               </Button>
             )}
           </div>
 
           {/* Hierarchical Lines UI */}
           <div className="space-y-3">
-            <h3 className="text-base font-bold text-slate-900">Chart of Accounts &amp; Forecast Lines</h3>
+            <h3 className="text-base font-bold text-slate-900">{t('page.forecasts.forecastLines')}</h3>
             {isLoadingDetail ? (
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
               </div>
             ) : selectedCycle.forecastLines?.length === 0 ? (
-              <EmptyState title="No lines defined" description="Edit this cycle to add forecast lines." />
+              <EmptyState title={t('page.forecasts.noLinesDetail')} description={t('page.budgets.noLinesDetailDesc')} />
             ) : (
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                     <tr>
-                      <th className="px-4 py-3 text-left">Account Code</th>
-                      <th className="px-4 py-3 text-left">Account Name</th>
-                      <th className="px-4 py-3 text-left">Type</th>
-                      <th className="px-4 py-3 text-right">Rolled Up Total</th>
-                      <th className="px-4 py-3 text-right">Direct Total</th>
+                      <th className="px-4 py-3 text-left">{t('page.budgets.accountCode')}</th>
+                      <th className="px-4 py-3 text-left">{t('page.budgets.accountName')}</th>
+                      <th className="px-4 py-3 text-left">{t('common.type')}</th>
+                      <th className="px-4 py-3 text-right">{t('page.budgets.rolledUpTotal')}</th>
+                      <th className="px-4 py-3 text-right">{t('page.budgets.directTotal')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -643,16 +647,16 @@ export default function ForecastsPage() {
       ) : (
         // LIST VIEW
         <div className="space-y-5">
-          <PageHeader title="Forecasts" description="Create and manage forecast cycles.">
+          <PageHeader title={t('page.forecasts.title')} description={t('page.forecasts.description')}>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} id="forecast-lines-import-btn">
-                <Upload className="h-4 w-4" /> Import Forecast Lines
+                <Upload className="h-4 w-4" /> {t('page.forecasts.importLines')}
               </Button>
               <Button size="sm" onClick={() => {
                 setEditCycle(null);
                 setFormOpen(true);
               }} id="forecasts-create-btn">
-                <Plus className="h-4 w-4" /> Add Forecast
+                <Plus className="h-4 w-4" /> {t('page.forecasts.addForecast')}
               </Button>
             </div>
           </PageHeader>
@@ -663,30 +667,30 @@ export default function ForecastsPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
-                placeholder="Search forecasts…"
+                placeholder={t('page.forecasts.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            <p className="text-sm text-slate-400">{total} records</p>
+            <p className="text-sm text-slate-400">{t('common.recordsFound', { n: total })}</p>
           </div>
 
           {/* List Table */}
           {isLoading ? (
-            <LoadingState rows={6} message="Loading forecasts..." />
+            <LoadingState rows={6} message={t('common.loading')} />
           ) : error ? (
             <ErrorState message={error} onRetry={fetchCycles} />
           ) : cycles.length === 0 ? (
             <EmptyState
-              title="No forecasts yet"
-              description="Create a new forecast cycle to start rolling analysis."
+              title={t('page.forecasts.emptyTitle')}
+              description={t('page.forecasts.emptyDesc')}
               action={
                 <Button size="sm" onClick={() => {
                   setEditCycle(null);
                   setFormOpen(true);
                 }}>
-                  <Plus className="h-4 w-4" /> Add Forecast
+                  <Plus className="h-4 w-4" /> {t('page.forecasts.addForecast')}
                 </Button>
               }
             />
@@ -759,7 +763,7 @@ export default function ForecastsPage() {
       {/* DELETE CONFIRM DIALOG */}
       <ConfirmDialog
         open={deleteConfirmCycle !== null}
-        message={`Are you sure you want to delete the forecast cycle "${deleteConfirmCycle?.name}"? All associated lines will be deleted. This action cannot be undone.`}
+        message={t('page.forecasts.deleteConfirmMsg', { name: deleteConfirmCycle?.name ?? '' })}
         isLoading={deleteLoading}
         onConfirm={handleDeleteCycle}
         onCancel={() => setDeleteConfirmCycle(null)}
@@ -769,7 +773,7 @@ export default function ForecastsPage() {
       {importOpen && (
         <ImportModal
           module="forecast-lines"
-          moduleLabel="Forecast Lines"
+          moduleLabel={t('page.forecasts.forecastLines')}
           onClose={() => setImportOpen(false)}
           onSuccess={() => {
             void fetchCycles();
@@ -812,6 +816,8 @@ function ForecastFormModal({
   isLoading,
   error,
 }: ForecastFormModalProps) {
+  const { t } = useI18n();
+  const { tForecastMethod } = useTranslateApi();
   const [name, setName] = useState(item?.name ?? '');
   const [fiscalYear, setFiscalYear] = useState(item?.fiscalYear?.toString() ?? '2026');
   const [basePeriod, setBasePeriod] = useState(
@@ -939,8 +945,8 @@ function ForecastFormModal({
     <Modal
       open
       onClose={onClose}
-      title={item ? 'Edit Forecast Cycle' : 'Create Forecast Cycle'}
-      description="Define forecasting parameters and set monthly forecast items."
+      title={t(item ? 'page.forecasts.editTitle' : 'page.forecasts.createTitle')}
+      description={t('page.forecasts.description')}
       size="lg"
       className="max-h-[90vh] flex flex-col"
     >
@@ -954,15 +960,15 @@ function ForecastFormModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             id="forecast-name"
-            label="Forecast Name"
+            label={t('common.name')}
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Q3 Rolling Forecast 2026"
+            placeholder={t('page.forecasts.createTitle')}
           />
           <Input
             id="forecast-year"
-            label="Fiscal Year"
+            label={t('common.fiscalYear')}
             type="number"
             required
             value={fiscalYear}
@@ -974,37 +980,37 @@ function ForecastFormModal({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             id="forecast-base-period"
-            label="Base Period Start"
+            label={t('page.forecasts.basePeriodLabel')}
             type="date"
             required
             value={basePeriod}
             onChange={(e) => setBasePeriod(e.target.value)}
           />
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="forecast-method" className="text-sm font-medium text-slate-700">Method</label>
+            <label htmlFor="forecast-method" className="text-sm font-medium text-slate-700">{t('page.forecasts.methodLabel')}</label>
             <select
               id="forecast-method"
               value={method}
               onChange={(e) => setMethod(e.target.value as ForecastMethod)}
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="manual">Manual</option>
-              <option value="rolling">Rolling (Budget Carry)</option>
-              <option value="driver_based">Driver Based (Growth)</option>
-              <option value="ai_assisted">AI Statistical Engine</option>
-              <option value="seasonal_adjusted">Seasonal Adjusted (Egypt Market)</option>
-              <option value="hybrid">Hybrid Ensemble (Most Accurate)</option>
+              <option value="manual">{t('forecastMethod.manual')}</option>
+              <option value="rolling">{t('forecastMethod.rolling')}</option>
+              <option value="driver_based">{t('forecastMethod.driverBased')}</option>
+              <option value="ai_assisted">{t('forecastMethod.aiAssisted')}</option>
+              <option value="seasonal_adjusted">{t('forecastMethod.seasonalAdjusted')}</option>
+              <option value="hybrid">{t('forecastMethod.hybrid')}</option>
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="forecast-scenario" className="text-sm font-medium text-slate-700">Link Scenario</label>
+            <label htmlFor="forecast-scenario" className="text-sm font-medium text-slate-700">{t('page.forecasts.linkedScenario')}</label>
             <select
               id="forecast-scenario"
               value={scenarioId}
               onChange={(e) => setScenarioId(e.target.value)}
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="">None</option>
+              <option value="">{t('page.forecasts.none')}</option>
               {scenarios.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -1015,9 +1021,9 @@ function ForecastFormModal({
         {/* Dynamic lines subform */}
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-700">Forecast Lines</span>
+            <span className="text-sm font-bold text-slate-700">{t('page.forecasts.forecastLines')}</span>
             <Button variant="outline" size="sm" type="button" onClick={addLine}>
-              <Plus className="h-3.5 w-3.5" /> Add Line
+              <Plus className="h-3.5 w-3.5" /> {t('page.forecasts.addLine')}
             </Button>
           </div>
 
@@ -1026,7 +1032,7 @@ function ForecastFormModal({
               <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
             </div>
           ) : lines.length === 0 ? (
-            <p className="text-center text-xs text-slate-400 py-4">No lines added yet. Click &ldquo;Add Line&rdquo;.</p>
+            <p className="text-center text-xs text-slate-400 py-4">{t('page.forecasts.noLines')}</p>
           ) : (
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
               {lines.map((line, idx) => (
@@ -1035,14 +1041,14 @@ function ForecastFormModal({
                     type="button"
                     onClick={() => removeLine(idx)}
                     className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    aria-label="Remove line"
+                    aria-label={t('common.remove')}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pr-6">
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-acc-${idx}`} className="text-xs font-semibold text-slate-500">Account *</label>
+                      <label htmlFor={`f-line-acc-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.scenarios.account')} *</label>
                       <select
                         id={`f-line-acc-${idx}`}
                         value={line.accountId}
@@ -1059,7 +1065,7 @@ function ForecastFormModal({
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-month-${idx}`} className="text-xs font-semibold text-slate-500">Month *</label>
+                      <label htmlFor={`f-line-month-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.month')} *</label>
                       <select
                         id={`f-line-month-${idx}`}
                         value={line.periodMonth}
@@ -1074,7 +1080,7 @@ function ForecastFormModal({
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-site-${idx}`} className="text-xs font-semibold text-slate-500">Site</label>
+                      <label htmlFor={`f-line-site-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.budgets.site')}</label>
                       <select
                         id={`f-line-site-${idx}`}
                         value={line.siteId ?? ''}
@@ -1091,7 +1097,7 @@ function ForecastFormModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-qty-${idx}`} className="text-xs font-semibold text-slate-500">Quantity</label>
+                      <label htmlFor={`f-line-qty-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.quantity')}</label>
                       <input
                         id={`f-line-qty-${idx}`}
                         type="number"
@@ -1102,7 +1108,7 @@ function ForecastFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-price-${idx}`} className="text-xs font-semibold text-slate-500">Unit Price</label>
+                      <label htmlFor={`f-line-price-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.unitPrice')}</label>
                       <input
                         id={`f-line-price-${idx}`}
                         type="number"
@@ -1114,7 +1120,7 @@ function ForecastFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-amt-${idx}`} className="text-xs font-semibold text-slate-500">Amount *</label>
+                      <label htmlFor={`f-line-amt-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.amount')} *</label>
                       <input
                         id={`f-line-amt-${idx}`}
                         type="number"
@@ -1126,7 +1132,7 @@ function ForecastFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-cc-${idx}`} className="text-xs font-semibold text-slate-500">Cost Center</label>
+                      <label htmlFor={`f-line-cc-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.budgets.costCenter')}</label>
                       <select
                         id={`f-line-cc-${idx}`}
                         value={line.costCenterId ?? ''}
@@ -1143,18 +1149,18 @@ function ForecastFormModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div className="flex flex-col gap-1 col-span-2">
-                      <label htmlFor={`f-line-notes-${idx}`} className="text-xs font-semibold text-slate-500">Notes</label>
+                      <label htmlFor={`f-line-notes-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.notes')}</label>
                       <input
                         id={`f-line-notes-${idx}`}
                         type="text"
-                        placeholder="Additional details..."
+                        placeholder={t('common.notes')}
                         value={line.notes ?? ''}
                         onChange={(e) => updateLineField(idx, 'notes', e.target.value)}
                         className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-driver-${idx}`} className="text-xs font-semibold text-slate-500">Driver Type</label>
+                      <label htmlFor={`f-line-driver-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.forecasts.driverType')}</label>
                       <input
                         id={`f-line-driver-${idx}`}
                         type="text"
@@ -1165,7 +1171,7 @@ function ForecastFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`f-line-prod-${idx}`} className="text-xs font-semibold text-slate-500">Product</label>
+                      <label htmlFor={`f-line-prod-${idx}`} className="text-xs font-semibold text-slate-500">{t('nav.products')}</label>
                       <select
                         id={`f-line-prod-${idx}`}
                         value={line.productId ?? ''}
@@ -1186,9 +1192,9 @@ function ForecastFormModal({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-          <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" size="sm" type="button" onClick={onClose}>{t('common.cancel')}</Button>
           <Button size="sm" type="submit" isLoading={isLoading} disabled={isLoadingLines}>
-            {item ? 'Save Changes' : 'Create Forecast'}
+            {item ? t('page.scenarios.saveChanges') : t('page.forecasts.addForecast')}
           </Button>
         </div>
       </form>

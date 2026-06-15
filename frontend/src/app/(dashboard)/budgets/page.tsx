@@ -30,6 +30,8 @@ import { ImportModal } from '@/components/import-modal';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { useTranslateApi } from '@/lib/i18n/translate-api';
 import { getStatusVariant, MONTH_NAMES } from '@/lib/constants';
 import type {
   BudgetCycle,
@@ -100,6 +102,8 @@ function buildAccountTree(accounts: Account[], lines: BudgetLine[]): AccountNode
 export default function BudgetsPage() {
   const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useI18n();
+  const { tStatus, tPeriodType } = useTranslateApi();
 
   // List view states
   const [cycles, setCycles] = useState<BudgetCycle[]>([]);
@@ -242,7 +246,7 @@ export default function BudgetsPage() {
     setIsTransitioning(true);
     try {
       await apiPatch<BudgetCycle>(`/budgets/${id}/status`, { status: targetStatus });
-      toastSuccess(`Cycle status updated to ${targetStatus} successfully.`);
+      toastSuccess(t('page.budgets.statusUpdated', { status: targetStatus }));
       void fetchCycles();
       if (selectedCycleId === id) {
         void fetchCycleDetail(id);
@@ -262,7 +266,7 @@ export default function BudgetsPage() {
     setDeleteLoading(true);
     try {
       await apiDelete<BudgetCycle>(`/budgets/${deleteConfirmCycle.id}`);
-      toastSuccess('Budget cycle deleted successfully.');
+      toastSuccess(t('common.deletedSuccess'));
       setDeleteConfirmCycle(null);
       void fetchCycles();
       if (selectedCycleId === deleteConfirmCycle.id) {
@@ -330,14 +334,14 @@ export default function BudgetsPage() {
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase">
                     <tr>
-                      <th className="px-3 py-2 text-left">Month</th>
-                      <th className="px-3 py-2 text-left">Site</th>
-                      <th className="px-3 py-2 text-left">Cost Center</th>
-                      <th className="px-3 py-2 text-left">Product / Customer / Material</th>
-                      <th className="px-3 py-2 text-right">Quantity</th>
-                      <th className="px-3 py-2 text-right">Unit Price</th>
-                      <th className="px-3 py-2 text-right">Amount</th>
-                      <th className="px-3 py-2 text-left">Notes</th>
+                      <th className="px-3 py-2 text-left">{t('common.month')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.site')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.costCenter')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.productCustomerMaterial')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.quantity')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.unitPrice')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.amount')}</th>
+                      <th className="px-3 py-2 text-left">{t('common.notes')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -351,7 +355,7 @@ export default function BudgetsPage() {
 
                       return (
                         <tr key={line.id} className="hover:bg-slate-50/50">
-                          <td className="px-3 py-2 font-medium">Month {line.periodMonth}</td>
+                          <td className="px-3 py-2 font-medium">{t('common.month')} {line.periodMonth}</td>
                           <td className="px-3 py-2 text-slate-600">{siteName}</td>
                           <td className="px-3 py-2 text-slate-600">{ccName}</td>
                           <td className="px-3 py-2 text-slate-600 max-w-[200px] truncate" title={refStr}>{refStr}</td>
@@ -378,17 +382,17 @@ export default function BudgetsPage() {
   // Columns for List view
   // ---------------------------------------------------------------------------
   const columns: Column<BudgetCycle>[] = [
-    { key: 'name', header: 'Name', render: (v, row) => (
+    { key: 'name', header: t('common.name'), render: (v, row) => (
       <button onClick={() => setSelectedCycleId(row.id)} className="font-semibold text-slate-800 hover:text-emerald-600 text-left transition-colors">
         {row.name}
       </button>
     )},
-    { key: 'fiscalYear', header: 'Fiscal Year', className: 'font-semibold' },
-    { key: 'periodType', header: 'Period Type', render: (v) => <span className="capitalize">{String(v)}</span> },
-    { key: 'version', header: 'Version', render: (v) => `v${String(v)}` },
-    { key: 'status', header: 'Status', render: (v) => (
+    { key: 'fiscalYear', header: t('common.fiscalYear'), className: 'font-semibold' },
+    { key: 'periodType', header: t('common.periodType'), render: (v) => <span className="capitalize">{tPeriodType(String(v))}</span> },
+    { key: 'version', header: t('common.version'), render: (v) => `v${String(v)}` },
+    { key: 'status', header: t('common.status'), render: (v) => (
       <Badge variant={getStatusVariant(v as CycleStatus)} className="capitalize">
-        {String(v)}
+        {tStatus(String(v))}
       </Badge>
     )},
     {
@@ -402,7 +406,7 @@ export default function BudgetsPage() {
             <button
               onClick={() => setSelectedCycleId(row.id)}
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              aria-label="View Details"
+              aria-label={t('common.viewDetails')}
             >
               <Eye className="h-4 w-4" />
             </button>
@@ -414,14 +418,14 @@ export default function BudgetsPage() {
                     setFormOpen(true);
                   }}
                   className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                  aria-label="Edit"
+                  aria-label={t('common.edit')}
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setDeleteConfirmCycle(row)}
                   className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                  aria-label="Delete"
+                  aria-label={t('common.delete')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -436,10 +440,10 @@ export default function BudgetsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Budget Cycles" description="Create and manage company financial budget cycles" />
+        <PageHeader title={t('page.budgets.title')} description={t('page.budgets.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar before viewing budgets."
+          title={t('common.noActiveCompany')}
+          message={t('common.selectCompanyFromSidebar')}
         />
       </div>
     );
@@ -457,13 +461,13 @@ export default function BudgetsPage() {
             <button
               onClick={() => setSelectedCycleId(null)}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-sm"
-              aria-label="Back to List"
+              aria-label={t('common.back')}
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
             <h1 className="text-xl font-bold text-slate-900">{selectedCycle.name}</h1>
             <Badge variant={getStatusVariant(selectedCycle.status)} className="capitalize ml-2">
-              {selectedCycle.status}
+              {tStatus(selectedCycle.status)}
             </Badge>
           </div>
 
@@ -473,7 +477,7 @@ export default function BudgetsPage() {
                 <Calendar className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Fiscal Year</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.budgets.fiscalYearLabel')}</p>
                 <p className="text-sm font-bold text-slate-700">{selectedCycle.fiscalYear}</p>
               </div>
             </div>
@@ -482,8 +486,8 @@ export default function BudgetsPage() {
                 <Layers className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Period Type</p>
-                <p className="text-sm font-bold text-slate-700 capitalize">{selectedCycle.periodType}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('common.periodType')}</p>
+                <p className="text-sm font-bold text-slate-700 capitalize">{tPeriodType(selectedCycle.periodType)}</p>
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
@@ -491,7 +495,7 @@ export default function BudgetsPage() {
                 <Settings className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Version</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('common.version')}</p>
                 <p className="text-sm font-bold text-slate-700">v{selectedCycle.version}</p>
               </div>
             </div>
@@ -500,7 +504,7 @@ export default function BudgetsPage() {
                 <DollarSign className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total budgeted</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.budgets.totalBudgetedLabel')}</p>
                 <p className="text-sm font-bold text-slate-700">
                   ${(selectedCycle.budgetLines ?? []).reduce((sum, l) => sum + Number(l.amount), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
@@ -510,7 +514,7 @@ export default function BudgetsPage() {
 
           {/* Status actions panel */}
           <div className="flex flex-wrap gap-2 items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
-            <span className="text-sm text-slate-500 font-medium">Transition Status:</span>
+            <span className="text-sm text-slate-500 font-medium">{t('page.budgets.transitionStatus')}</span>
             <div className="flex gap-2">
               {selectedCycle.status === 'draft' && (
                 <Button
@@ -520,7 +524,7 @@ export default function BudgetsPage() {
                   disabled={isTransitioning}
                 >
                   {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                  Submit for Approval
+                  {t('page.budgets.submitForApproval')}
                 </Button>
               )}
               {selectedCycle.status === 'submitted' && (
@@ -532,7 +536,7 @@ export default function BudgetsPage() {
                     disabled={isTransitioning}
                   >
                     {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    Approve
+                    {t('page.budgets.approve')}
                   </Button>
                   <Button
                     size="sm"
@@ -541,7 +545,7 @@ export default function BudgetsPage() {
                     disabled={isTransitioning}
                   >
                     {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    Reject
+                    {t('page.budgets.reject')}
                   </Button>
                 </>
               )}
@@ -553,7 +557,7 @@ export default function BudgetsPage() {
                   disabled={isTransitioning}
                 >
                   {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                  Lock Cycle
+                  {t('page.budgets.lockCycle')}
                 </Button>
               )}
               {selectedCycle.status === 'rejected' && (
@@ -564,11 +568,11 @@ export default function BudgetsPage() {
                   disabled={isTransitioning}
                 >
                   {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                  Revert to Draft
+                  {t('page.budgets.revertToDraft')}
                 </Button>
               )}
               {selectedCycle.status === 'locked' && (
-                <span className="text-xs text-slate-400 italic">This cycle is locked and cannot be modified further.</span>
+                <span className="text-xs text-slate-400 italic">{t('page.budgets.cycleLocked')}</span>
               )}
             </div>
           </div>
@@ -581,17 +585,17 @@ export default function BudgetsPage() {
                 <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
               </div>
             ) : selectedCycle.budgetLines?.length === 0 ? (
-              <EmptyState title="No lines defined" description="Edit this cycle to add budget lines." />
+              <EmptyState title={t('page.budgets.noLinesDetail')} description={t('page.budgets.noLinesDetailDesc')} />
             ) : (
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                     <tr>
-                      <th className="px-4 py-3 text-left">Account Code</th>
-                      <th className="px-4 py-3 text-left">Account Name</th>
-                      <th className="px-4 py-3 text-left">Type</th>
-                      <th className="px-4 py-3 text-right">Rolled Up Total</th>
-                      <th className="px-4 py-3 text-right">Direct Total</th>
+                      <th className="px-4 py-3 text-left">{t('page.budgets.accountCode')}</th>
+                      <th className="px-4 py-3 text-left">{t('page.budgets.accountName')}</th>
+                      <th className="px-4 py-3 text-left">{t('common.type')}</th>
+                      <th className="px-4 py-3 text-right">{t('page.budgets.rolledUpTotal')}</th>
+                      <th className="px-4 py-3 text-right">{t('page.budgets.directTotal')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -607,16 +611,16 @@ export default function BudgetsPage() {
       ) : (
         // LIST VIEW
         <div className="space-y-5">
-          <PageHeader title="Budget Cycles" description="Track and plan financial budgets.">
+          <PageHeader title={t('page.budgets.title')} description={t('page.budgets.description')}>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} id="budget-lines-import-btn">
-                <Upload className="h-4 w-4" /> Import Budget Lines
+                <Upload className="h-4 w-4" /> {t('page.budgets.importLines')}
               </Button>
               <Button size="sm" onClick={() => {
                 setEditCycle(null);
                 setFormOpen(true);
               }} id="budgets-create-btn">
-                <Plus className="h-4 w-4" /> Add Budget
+                <Plus className="h-4 w-4" /> {t('page.budgets.addBudget')}
               </Button>
             </div>
           </PageHeader>
@@ -627,30 +631,30 @@ export default function BudgetsPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
-                placeholder="Search budgets…"
+                placeholder={t('page.budgets.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            <p className="text-sm text-slate-400">{total} records</p>
+            <p className="text-sm text-slate-400">{t('common.recordsFound', { n: total })}</p>
           </div>
 
           {/* List Table */}
           {isLoading ? (
-            <LoadingState rows={6} message="Loading budgets..." />
+            <LoadingState rows={6} message={t('common.loading')} />
           ) : error ? (
             <ErrorState message={error} onRetry={fetchCycles} />
           ) : cycles.length === 0 ? (
             <EmptyState
-              title="No budgets yet"
-              description="Create a new budget cycle to start financial planning."
+              title={t('page.budgets.emptyTitle')}
+              description={t('page.budgets.emptyDesc')}
               action={
                 <Button size="sm" onClick={() => {
                   setEditCycle(null);
                   setFormOpen(true);
                 }}>
-                  <Plus className="h-4 w-4" /> Add Budget
+                  <Plus className="h-4 w-4" /> {t('page.budgets.addBudget')}
                 </Button>
               }
             />
@@ -693,10 +697,10 @@ export default function BudgetsPage() {
             try {
               if (editCycle) {
                 await apiPatch<BudgetCycle>(`/budgets/${editCycle.id}`, payload);
-                toastSuccess('Budget cycle updated successfully.');
+                toastSuccess(t('common.updatedSuccess'));
               } else {
                 await apiPost<BudgetCycle>('/budgets', payload);
-                toastSuccess('Budget cycle created successfully.');
+                toastSuccess(t('common.createdSuccess'));
               }
               setFormOpen(false);
               setEditCycle(null);
@@ -722,7 +726,7 @@ export default function BudgetsPage() {
       {/* DELETE CONFIRM DIALOG */}
       <ConfirmDialog
         open={deleteConfirmCycle !== null}
-        message={`Are you sure you want to delete the budget cycle "${deleteConfirmCycle?.name}"? All associated budget lines will be deleted. This action cannot be undone.`}
+        message={t('page.budgets.deleteConfirmMsg', { name: deleteConfirmCycle?.name ?? '' })}
         isLoading={deleteLoading}
         onConfirm={handleDeleteCycle}
         onCancel={() => setDeleteConfirmCycle(null)}
@@ -732,7 +736,7 @@ export default function BudgetsPage() {
       {importOpen && (
         <ImportModal
           module="budget-lines"
-          moduleLabel="Budget Lines"
+          moduleLabel={t('page.budgets.budgetLinesLabel')}
           onClose={() => setImportOpen(false)}
           onSuccess={() => {
             void fetchCycles();
@@ -773,6 +777,7 @@ function BudgetFormModal({
   isLoading,
   error,
 }: BudgetFormModalProps) {
+  const { t } = useI18n();
   const [name, setName] = useState(item?.name ?? '');
   const [fiscalYear, setFiscalYear] = useState(item?.fiscalYear?.toString() ?? '2026');
   const [periodType, setPeriodType] = useState<PeriodType>(item?.periodType ?? 'annual');
@@ -893,8 +898,8 @@ function BudgetFormModal({
     <Modal
       open
       onClose={onClose}
-      title={item ? 'Edit Budget Cycle' : 'Create Budget Cycle'}
-      description="Fill in budget parameters and add detailed line items."
+      title={t(item ? 'page.budgets.editTitle' : 'page.budgets.createTitle')}
+      description={t('page.budgets.detailDescription')}
       size="lg"
       className="max-h-[90vh] flex flex-col"
     >
@@ -908,7 +913,7 @@ function BudgetFormModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             id="budget-name"
-            label="Budget Name"
+            label={t('page.budgets.nameLabel')}
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -916,7 +921,7 @@ function BudgetFormModal({
           />
           <Input
             id="budget-year"
-            label="Fiscal Year"
+            label={t('page.budgets.fiscalYearLabel')}
             type="number"
             required
             value={fiscalYear}
@@ -927,21 +932,21 @@ function BudgetFormModal({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="budget-period-type" className="text-sm font-medium text-slate-700">Period Type</label>
+            <label htmlFor="budget-period-type" className="text-sm font-medium text-slate-700">{t('common.periodType')}</label>
             <select
               id="budget-period-type"
               value={periodType}
               onChange={(e) => setPeriodType(e.target.value as PeriodType)}
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="annual">Annual</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="monthly">Monthly</option>
+              <option value="annual">{t('periodType.annual')}</option>
+              <option value="quarterly">{t('periodType.quarterly')}</option>
+              <option value="monthly">{t('periodType.monthly')}</option>
             </select>
           </div>
           <Input
             id="budget-version"
-            label="Version"
+            label={t('common.version')}
             type="number"
             required
             value={version}
@@ -953,9 +958,9 @@ function BudgetFormModal({
         {/* Dynamic lines subform */}
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-700">Budget Lines</span>
+            <span className="text-sm font-bold text-slate-700">{t('page.budgets.budgetLinesLabel')}</span>
             <Button variant="outline" size="sm" type="button" onClick={addLine}>
-              <Plus className="h-3.5 w-3.5" /> Add Line
+              <Plus className="h-3.5 w-3.5" /> {t('page.budgets.addLine')}
             </Button>
           </div>
 
@@ -964,7 +969,7 @@ function BudgetFormModal({
               <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
             </div>
           ) : lines.length === 0 ? (
-            <p className="text-center text-xs text-slate-400 py-4">No budget lines added yet. Click &ldquo;Add Line&rdquo;.</p>
+            <p className="text-center text-xs text-slate-400 py-4">{t('page.budgets.noLines')}</p>
           ) : (
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
               {lines.map((line, idx) => (
@@ -980,7 +985,7 @@ function BudgetFormModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pr-6">
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-acc-${idx}`} className="text-xs font-semibold text-slate-500">Account *</label>
+                      <label htmlFor={`line-acc-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.budgets.accountName')} *</label>
                       <select
                         id={`line-acc-${idx}`}
                         value={line.accountId}
@@ -997,7 +1002,7 @@ function BudgetFormModal({
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-month-${idx}`} className="text-xs font-semibold text-slate-500">Month *</label>
+                      <label htmlFor={`line-month-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.month')} *</label>
                       <select
                         id={`line-month-${idx}`}
                         value={line.periodMonth}
@@ -1012,7 +1017,7 @@ function BudgetFormModal({
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-site-${idx}`} className="text-xs font-semibold text-slate-500">Site</label>
+                      <label htmlFor={`line-site-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.budgets.site')}</label>
                       <select
                         id={`line-site-${idx}`}
                         value={line.siteId ?? ''}
@@ -1029,7 +1034,7 @@ function BudgetFormModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-qty-${idx}`} className="text-xs font-semibold text-slate-500">Quantity</label>
+                      <label htmlFor={`line-qty-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.quantity')}</label>
                       <input
                         id={`line-qty-${idx}`}
                         type="number"
@@ -1040,7 +1045,7 @@ function BudgetFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-price-${idx}`} className="text-xs font-semibold text-slate-500">Unit Price</label>
+                      <label htmlFor={`line-price-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.unitPrice')}</label>
                       <input
                         id={`line-price-${idx}`}
                         type="number"
@@ -1052,7 +1057,7 @@ function BudgetFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-amt-${idx}`} className="text-xs font-semibold text-slate-500">Amount *</label>
+                      <label htmlFor={`line-amt-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.amount')} *</label>
                       <input
                         id={`line-amt-${idx}`}
                         type="number"
@@ -1064,7 +1069,7 @@ function BudgetFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-cc-${idx}`} className="text-xs font-semibold text-slate-500">Cost Center</label>
+                      <label htmlFor={`line-cc-${idx}`} className="text-xs font-semibold text-slate-500">{t('page.budgets.costCenter')}</label>
                       <select
                         id={`line-cc-${idx}`}
                         value={line.costCenterId ?? ''}
@@ -1081,7 +1086,7 @@ function BudgetFormModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div className="flex flex-col gap-1 col-span-2">
-                      <label htmlFor={`line-notes-${idx}`} className="text-xs font-semibold text-slate-500">Notes</label>
+                      <label htmlFor={`line-notes-${idx}`} className="text-xs font-semibold text-slate-500">{t('common.notes')}</label>
                       <input
                         id={`line-notes-${idx}`}
                         type="text"
@@ -1092,7 +1097,7 @@ function BudgetFormModal({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-prod-${idx}`} className="text-xs font-semibold text-slate-500">Product</label>
+                      <label htmlFor={`line-prod-${idx}`} className="text-xs font-semibold text-slate-500">{t('nav.products')}</label>
                       <select
                         id={`line-prod-${idx}`}
                         value={line.productId ?? ''}
@@ -1106,7 +1111,7 @@ function BudgetFormModal({
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label htmlFor={`line-cust-${idx}`} className="text-xs font-semibold text-slate-500">Customer</label>
+                      <label htmlFor={`line-cust-${idx}`} className="text-xs font-semibold text-slate-500">{t('nav.customers')}</label>
                       <select
                         id={`line-cust-${idx}`}
                         value={line.customerId ?? ''}
@@ -1127,9 +1132,9 @@ function BudgetFormModal({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-          <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" size="sm" type="button" onClick={onClose}>{t('common.cancel')}</Button>
           <Button size="sm" type="submit" isLoading={isLoading} disabled={isLoadingLines}>
-            {item ? 'Save Changes' : 'Create Budget'}
+            {t(item ? 'page.scenarios.saveChanges' : 'page.budgets.addBudget')}
           </Button>
         </div>
       </form>

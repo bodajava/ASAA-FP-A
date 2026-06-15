@@ -20,6 +20,8 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-s
 import { useAuth } from '@/lib/auth-context';
 import api, { apiGet } from '@/lib/api';
 import { MONTH_NAMES, getCurrentFiscalYear, REPORT_METAS as FALLBACK_REPORT_METAS } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { useTranslateApi } from '@/lib/i18n/translate-api';
 import type {
   Account,
   Site,
@@ -53,6 +55,8 @@ import { useToast } from '@/components/ui/toast';
 export default function ReportsPage() {
   const { activeCompanyId } = useAuth();
   const { error: toastError } = useToast();
+  const { t } = useI18n();
+  const { tReportType, tReportCategory } = useTranslateApi();
 
   // Report Metas (initialized with constants, overridden by API)
   const [reportMetas, setReportMetas] = useState<ReportMeta[]>(FALLBACK_REPORT_METAS);
@@ -497,10 +501,10 @@ export default function ReportsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Reports & Financials" description="Run financial, performance and operational reports" />
+        <PageHeader title={t('page.reports.title')} description={t('page.reports.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar before viewing reports."
+          title={t('page.reports.noCompanyTitle')}
+          message={t('page.reports.noCompanyDesc')}
         />
       </div>
     );
@@ -509,15 +513,15 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Reports & Analytics"
-        description="Run real-time intelligence reports generated from ledgers, BOMs, and forecasts"
+        title={t('page.reports.title')}
+        description={t('page.reports.description')}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left Sidebar - Report Type Selector */}
         <div className="lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm h-fit space-y-4">
           <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Financial Statements</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">{t('page.reports.financialStatements')}</h3>
             <ul className="space-y-0.5" role="menu">
               {reportMetas.filter((r) => r.category === 'financial').map((r) => (
                 <li key={r.value} role="none">
@@ -530,7 +534,7 @@ export default function ReportsPage() {
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <DollarSign className="h-3.5 w-3.5" /> {r.label}
+                    <DollarSign className="h-3.5 w-3.5" /> {tReportType(r.value)}
                   </button>
                 </li>
               ))}
@@ -538,7 +542,7 @@ export default function ReportsPage() {
           </div>
 
           <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Performance & Variances</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">{t('page.reports.performanceVariances')}</h3>
             <ul className="space-y-0.5" role="menu">
               {reportMetas.filter((r) => r.category === 'performance').map((r) => (
                 <li key={r.value} role="none">
@@ -551,7 +555,7 @@ export default function ReportsPage() {
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <TrendingUp className="h-3.5 w-3.5" /> {r.label}
+                    <TrendingUp className="h-3.5 w-3.5" /> {tReportType(r.value)}
                   </button>
                 </li>
               ))}
@@ -559,7 +563,7 @@ export default function ReportsPage() {
           </div>
 
           <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Operations & Costing</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">{t('page.reports.operationsCosting')}</h3>
             <ul className="space-y-0.5" role="menu">
               {reportMetas.filter((r) => r.category === 'operations').map((r) => (
                 <li key={r.value} role="none">
@@ -572,7 +576,7 @@ export default function ReportsPage() {
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <Activity className="h-3.5 w-3.5" /> {r.label}
+                    <Activity className="h-3.5 w-3.5" /> {tReportType(r.value)}
                   </button>
                 </li>
               ))}
@@ -584,7 +588,7 @@ export default function ReportsPage() {
         <div className="lg:col-span-3 space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
             <div>
-              <h2 className="text-base font-bold text-slate-900">{activeMeta?.label}</h2>
+              <h2 className="text-base font-bold text-slate-900">{tReportType(activeMeta?.value ?? selectedReport)}</h2>
               <p className="text-xs text-slate-500 mt-0.5">{activeMeta?.description}</p>
             </div>
 
@@ -592,7 +596,7 @@ export default function ReportsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="filter-fy" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Filter className="h-2.5 w-2.5" /> Fiscal Year
+                  <Filter className="h-2.5 w-2.5" /> {t('page.reports.filterFiscalYear')}
                 </label>
                 <input
                   id="filter-fy"
@@ -606,14 +610,14 @@ export default function ReportsPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="filter-month" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Month</label>
+                <label htmlFor="filter-month" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('page.reports.filterMonth')}</label>
                 <select
                   id="filter-month"
                   value={periodMonth}
                   onChange={(e) => setPeriodMonth(e.target.value)}
                   className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none"
                 >
-                  <option value="">All Months</option>
+                  <option value="">{t('common.allMonths')}</option>
                   {MONTH_NAMES.map((name, idx) =>
                     idx > 0 ? (
                       <option key={idx} value={idx}>
@@ -626,7 +630,7 @@ export default function ReportsPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="filter-site" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Building className="h-2.5 w-2.5" /> Target Site
+                  <Building className="h-2.5 w-2.5" /> {t('page.reports.filterSite')}
                 </label>
                 <select
                   id="filter-site"
@@ -634,7 +638,7 @@ export default function ReportsPage() {
                   onChange={(e) => setSelectedSiteId(e.target.value)}
                   className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none"
                 >
-                  <option value="">All Sites</option>
+                  <option value="">{t('common.allSites')}</option>
                   {sites.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -645,7 +649,7 @@ export default function ReportsPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="filter-product" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Layers className="h-2.5 w-2.5" /> Product SKU
+                  <Layers className="h-2.5 w-2.5" /> {t('page.reports.filterProduct')}
                 </label>
                 <select
                   id="filter-product"
@@ -653,7 +657,7 @@ export default function ReportsPage() {
                   onChange={(e) => setSelectedProductId(e.target.value)}
                   className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none"
                 >
-                  <option value="">All Products</option>
+                  <option value="">{t('common.allProducts')}</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       [{p.sku}] {p.name}
@@ -664,7 +668,7 @@ export default function ReportsPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="filter-customer" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Users className="h-2.5 w-2.5" /> Customer
+                  <Users className="h-2.5 w-2.5" /> {t('page.reports.filterCustomer')}
                 </label>
                 <select
                   id="filter-customer"
@@ -672,7 +676,7 @@ export default function ReportsPage() {
                   onChange={(e) => setSelectedCustomerId(e.target.value)}
                   className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none"
                 >
-                  <option value="">All Customers</option>
+                  <option value="">{t('common.allCustomers')}</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -685,27 +689,27 @@ export default function ReportsPage() {
             {/* Main Action buttons */}
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <span className="text-xs font-semibold text-slate-500">
-                {total} Records Retrieved
+                {t('page.reports.recordsRetrieved', { n: total })}
               </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={handleExport} className="flex items-center gap-1">
-                  <Download className="h-3.5 w-3.5" /> Export CSV
+                  <Download className="h-3.5 w-3.5" /> {t('page.reports.exportCsv')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={fetchReport} className="flex items-center gap-1">
-                  <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /> {t('page.reports.refresh')}
                 </Button>
               </div>
             </div>
 
             {/* Data Table */}
             {isLoading ? (
-              <LoadingState rows={8} message={`Running ${activeMeta?.label} query...`} />
+              <LoadingState rows={8} message={t('common.loading')} />
             ) : error ? (
               <ErrorState message={error} onRetry={fetchReport} />
             ) : reportData.length === 0 ? (
               <EmptyState
-                title="No report entries found"
-                description="Adjust your filters or ensure ledger actuals and forecast periods are loaded."
+                title={t('page.reports.emptyTitle')}
+                description={t('page.reports.emptyDesc')}
               />
             ) : (
               <div className="space-y-4">

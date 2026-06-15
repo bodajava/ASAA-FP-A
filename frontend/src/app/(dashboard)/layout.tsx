@@ -6,6 +6,9 @@ import { useAuth } from '@/lib/auth-context';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import { LoadingState } from '@/components/ui/feedback-states';
+import { PwaInstallPrompt } from '@/components/layout/pwa-install-prompt';
+import { ServiceWorkerRegistration } from '@/components/layout/service-worker-registration';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { Building2 } from 'lucide-react';
 
 /**
@@ -23,6 +26,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading, activeCompanyId } = useAuth();
+  const { t } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Redirect to login if not authenticated (once loading resolves)
@@ -55,7 +59,7 @@ export default function DashboardLayout({
   const showNoBanner = !activeCompanyId && !isCompanyFreePage;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -68,17 +72,16 @@ export default function DashboardLayout({
 
         {/* Company selection banner – shown when no company is active */}
         {showNoBanner && (
-          <div className="flex items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 sm:px-6">
-            <Building2 className="h-4 w-4 shrink-0 text-amber-600" />
-            <p className="flex-1 text-sm text-amber-800">
-              No company selected. Please{' '}
+          <div className="flex items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 sm:px-6 dark:border-amber-800 dark:bg-amber-900/20">
+            <Building2 className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="flex-1 text-sm text-amber-800 dark:text-amber-200">
+              {t('common.noCompany')}.{' '}
               <button
                 onClick={() => router.push('/companies')}
-                className="font-semibold underline underline-offset-2 hover:text-amber-900"
+                className="font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
               >
-                select or create a company
-              </button>{' '}
-              to continue.
+                {t('nav.companies')}
+              </button>
             </p>
           </div>
         )}
@@ -91,6 +94,10 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* PWA install prompt */}
+      <PwaInstallPrompt />
+      <ServiceWorkerRegistration />
     </div>
   );
 }

@@ -2,27 +2,19 @@ import * as React from 'react';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 export type TrendDirection = 'up' | 'down' | 'neutral';
 
 export interface KpiCardProps {
   title: string;
   value: string | number;
-  /** e.g. "+12.5%" or "−3.2%" */
   change?: string;
   trendDirection?: TrendDirection;
-  /** Icon or illustration placed at top-right */
   icon?: React.ReactNode;
   description?: string;
   className?: string;
   isLoading?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 function KpiCard({
   title,
   value,
@@ -35,10 +27,10 @@ function KpiCard({
 }: KpiCardProps) {
   const trendColour =
     trendDirection === 'up'
-      ? 'text-emerald-600'
+      ? 'text-emerald-600 dark:text-emerald-400'
       : trendDirection === 'down'
-        ? 'text-red-500'
-        : 'text-slate-500';
+        ? 'text-red-500 dark:text-red-400'
+        : 'text-muted-foreground';
 
   const TrendIcon =
     trendDirection === 'up'
@@ -50,29 +42,26 @@ function KpiCard({
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-slate-200 bg-white p-5 shadow-sm',
+        'relative rounded-xl border border-border bg-card p-5 shadow-sm',
         'transition-shadow duration-200 hover:shadow-md',
         className,
       )}
     >
-      {/* Top row: title + icon */}
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
         {icon && (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
             {icon}
           </span>
         )}
       </div>
 
-      {/* Value */}
       {isLoading ? (
-        <div className="mt-2 h-8 w-32 animate-pulse rounded bg-slate-200" />
+        <div className="mt-2 h-8 w-32 animate-pulse rounded bg-secondary" />
       ) : (
-        <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
+        <p className="mt-2 text-2xl font-bold text-card-foreground">{value}</p>
       )}
 
-      {/* Trend / description */}
       <div className="mt-1 flex items-center gap-1.5">
         {change && TrendIcon && (
           <TrendIcon
@@ -86,7 +75,7 @@ function KpiCard({
           </span>
         )}
         {description && (
-          <span className="text-xs text-slate-400">{description}</span>
+          <span className="text-xs text-muted-foreground">{description}</span>
         )}
       </div>
     </div>

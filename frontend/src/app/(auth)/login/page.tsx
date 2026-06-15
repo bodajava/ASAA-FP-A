@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import axios from 'axios';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t, locale } = useI18n();
 
   const [tenantId, setTenantId] = useState('');
   const [email, setEmail] = useState('');
@@ -22,7 +24,7 @@ export default function LoginPage() {
     setError(null);
 
     if (!tenantId.trim()) {
-      setError('Tenant ID is required.');
+      setError(t('common.required'));
       return;
     }
 
@@ -33,17 +35,17 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        let msg = 'An error occurred during sign in. Please try again.';
+        let msg: string;
         if (err.response) {
           if (err.response.status === 401) {
             msg = 'Invalid credentials. Please try again.';
           } else if (err.response.status === 404) {
             msg = 'Backend API endpoint not found (404). Please ensure your NEXT_PUBLIC_API_URL in Vercel ends with "/api".';
           } else {
-            msg = (err.response.data as { message?: string } | undefined)?.message ?? msg;
+            msg = (err.response.data as { message?: string } | undefined)?.message ?? 'An unexpected error occurred.';
           }
         } else {
-          msg = 'Failed to connect to the backend server. Please verify your NEXT_PUBLIC_API_URL configuration in Vercel and ensure the backend is running.';
+          msg = 'Failed to connect to the backend server. Please verify your NEXT_PUBLIC_API_URL configuration.';
         }
         setError(msg);
       } else {
@@ -55,17 +57,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
+    <div className="rounded-2xl border border-border bg-card p-8 shadow-md">
       {/* Logo area */}
       <div className="mb-8 flex flex-col items-center gap-2 text-center">
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-xl font-bold text-white shadow-sm">
           A
         </span>
-        <h1 className="text-xl font-semibold text-slate-900">
-          ASAA FP&amp;A
+        <h1 className="text-xl font-semibold text-card-foreground">
+          {t('app.name')}
         </h1>
-        <p className="text-sm text-slate-500">
-          Sign in to your account to continue
+        <p className="text-sm text-muted-foreground">
+          {t('app.tagline')}
         </p>
       </div>
 
@@ -73,7 +75,7 @@ export default function LoginPage() {
       {error && (
         <div
           role="alert"
-          className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
         >
           {error}
         </div>
@@ -84,20 +86,20 @@ export default function LoginPage() {
         <Input
           id="login-tenant-id"
           type="text"
-          label="Tenant ID"
+          label={t('common.tenantId')}
           placeholder="e.g. 1"
           autoComplete="off"
           required
           value={tenantId}
           onChange={(e) => setTenantId(e.target.value)}
-          hint="Your organisation's numeric tenant identifier"
+          hint={t('common.tenantIdHint')}
         />
 
         <Input
           id="login-email"
           type="email"
-          label="Email address"
-          placeholder="you@company.com"
+          label={t('common.email')}
+          placeholder={t('common.emailPlaceholder')}
           autoComplete="email"
           required
           value={email}
@@ -107,8 +109,8 @@ export default function LoginPage() {
         <Input
           id="login-password"
           type="password"
-          label="Password"
-          placeholder="••••••••"
+          label={t('common.password')}
+          placeholder={t('common.passwordPlaceholder')}
           autoComplete="current-password"
           required
           value={password}
@@ -122,11 +124,11 @@ export default function LoginPage() {
           className="mt-2 w-full"
           isLoading={isLoading}
         >
-          {isLoading ? 'Signing in…' : 'Sign in'}
+          {isLoading ? `${t('common.signIn')}…` : t('common.signIn')}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-slate-400">
+      <p className="mt-6 text-center text-xs text-muted-foreground">
         Protected by JWT authentication &amp; multi-tenant isolation
       </p>
     </div>

@@ -84,7 +84,12 @@ export class IntegrationsService implements OnApplicationBootstrap {
     private readonly prisma: PrismaService,
     private readonly actualImportsService: ActualImportsService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) {
+    console.log('IntegrationsService constructor called!');
+    console.log('prisma param:', prisma);
+    console.log('actualImportsService param:', actualImportsService);
+    console.log('notificationsService param:', notificationsService);
+  }
 
   private async ensureCompanyBelongsToTenant(
     companyId: bigint,
@@ -209,10 +214,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
       companyId,
       ...(paginationDto.search
         ? {
-            name: {
-              contains: paginationDto.search,
-            },
-          }
+          name: {
+            contains: paginationDto.search,
+          },
+        }
         : {}),
     };
 
@@ -433,10 +438,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
       companyId,
       ...(paginationDto.search
         ? {
-            name: {
-              contains: paginationDto.search,
-            },
-          }
+          name: {
+            contains: paginationDto.search,
+          },
+        }
         : {}),
     };
 
@@ -832,7 +837,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
   }
 
   async syncMasterData(connInstance: any, companyId: bigint): Promise<void> {
-    if (this.isHostingerDb()) {
+    if (this.isHostingerDb() && process.env.ALLOW_HEAVY_SYNC !== 'true') {
       throw new BadRequestException(
         'Heavy sync jobs cannot be run directly against the production Hostinger shared database to prevent connection/resource exhaustion. Please run them locally on a development database.',
       );
@@ -975,7 +980,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
     // 4. Sync Products
     const productsResult = await connInstance.execute(
-      `SELECT PRODUCT_CODE, PRODUCT_NAME, CATEGORY_CODE AS CATEGORY, UNIT_CODE AS UNIT, SALE_PRICE, STANDARD_COST FROM FP_PRODUCTS WHERE COMPANY_CODE = :companyCode`,
+      `SELECT PRODUCT_CODE, PRODUCT_NAME, CATEGORY, UNIT, SALE_PRICE, STANDARD_COST FROM FP_PRODUCTS WHERE COMPANY_CODE = :companyCode`,
       [companyCode],
       { outFormat: oracledb.OUT_FORMAT_OBJECT },
     );
@@ -1039,7 +1044,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
     // 5. Sync Materials
     const materialsResult = await connInstance.execute(
-      `SELECT MATERIAL_CODE, MATERIAL_NAME, UNIT_CODE AS UNIT, PURCHASE_PRICE, SUPPLIER_CODE FROM FP_MATERIALS WHERE COMPANY_CODE = :companyCode`,
+      `SELECT MATERIAL_CODE, MATERIAL_NAME, UNIT, PURCHASE_PRICE, SUPPLIER_CODE FROM FP_MATERIALS WHERE COMPANY_CODE = :companyCode`,
       [companyCode],
       { outFormat: oracledb.OUT_FORMAT_OBJECT },
     );
@@ -1190,7 +1195,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
     // 9. Sync Suppliers (standalone)
     const suppliersResult = await connInstance.execute(
-      `SELECT SUPPLIER_CODE, SUPPLIER_NAME, PHONE AS SUPPLIER_PHONE, EMAIL AS SUPPLIER_EMAIL FROM FP_SUPPLIERS WHERE COMPANY_CODE = :companyCode`,
+      `SELECT SUPPLIER_CODE, SUPPLIER_NAME, SUPPLIER_PHONE, SUPPLIER_EMAIL FROM FP_SUPPLIERS WHERE COMPANY_CODE = :companyCode`,
       [companyCode],
       { outFormat: oracledb.OUT_FORMAT_OBJECT },
     );
@@ -1721,7 +1726,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       console.error('Failed to sync companies during connection event:', err);
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch(() => { });
       }
     }
   }
@@ -1982,8 +1987,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
         : mapping.connectionId;
       const connection = connectionId
         ? await this.prisma.integrationConnection.findFirst({
-            where: { id: connectionId, companyId },
-          })
+          where: { id: connectionId, companyId },
+        })
         : null;
 
       if (connection) {
@@ -2109,7 +2114,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
             } finally {
               if (connInstance) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                await (connInstance.close() as Promise<void>).catch(() => {});
+                await (connInstance.close() as Promise<void>).catch(() => { });
               }
             }
           }
@@ -2328,7 +2333,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           createdImport.id,
           createdImport.errorLog ?? 'Validation failed',
         )
-        .catch(() => {});
+        .catch(() => { });
     } else if (
       createdImport.status === 'validated' ||
       createdImport.status === 'posted'
@@ -2339,7 +2344,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           tenantId,
           periodFrom.getFullYear(),
         )
-        .catch(() => {});
+        .catch(() => { });
     }
 
     return {
@@ -2583,10 +2588,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
           const initialStatus = hasErrors ? 'failed' : 'validated';
           const errorLog = hasErrors
             ? JSON.stringify(
-                resolvedLines
-                  .filter((r) => !r.success)
-                  .map((r) => `Row \${r.rowIdx}: \${r.errors.join(', ')}`),
-              )
+              resolvedLines
+                .filter((r) => !r.success)
+                .map((r) => `Row \${r.rowIdx}: \${r.errors.join(', ')}`),
+            )
             : null;
 
           await this.prisma.$transaction(async (tx) => {
@@ -2724,7 +2729,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       return { success: false, message: `Full sync failed: ${errorMsg}` };
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch(() => { });
       }
     }
   }

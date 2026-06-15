@@ -4,17 +4,14 @@ import * as React from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 export interface ModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
   description?: string;
   children: React.ReactNode;
-  /** Footer slot – if omitted renders nothing */
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -26,9 +23,6 @@ const sizeMap = {
   lg: 'max-w-2xl',
 };
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 export function Modal({
   open,
   onClose,
@@ -39,7 +33,6 @@ export function Modal({
   size = 'md',
   className,
 }: ModalProps) {
-  // Close on Escape
   React.useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -57,49 +50,44 @@ export function Modal({
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         aria-hidden="true"
         onClick={onClose}
       />
 
-      {/* Panel */}
       <div
         className={cn(
-          'relative z-10 w-full rounded-2xl border border-slate-200 bg-white shadow-xl',
+          'relative z-10 w-full rounded-2xl border border-border bg-card shadow-xl',
           sizeMap[size],
           className,
         )}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-start justify-between border-b border-border px-6 py-4">
           <div>
             <h2
               id="modal-title"
-              className="text-base font-semibold text-slate-900"
+              className="text-base font-semibold text-card-foreground"
             >
               {title}
             </h2>
             {description && (
-              <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="ml-4 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="ml-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground cursor-pointer"
             aria-label="Close modal"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-6 py-5">{children}</div>
 
-        {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+          <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
             {footer}
           </div>
         )}
@@ -108,9 +96,6 @@ export function Modal({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Convenience: Modal Form Footer
-// ---------------------------------------------------------------------------
 export interface ModalFooterProps {
   onCancel: () => void;
   submitLabel?: string;
@@ -120,14 +105,15 @@ export interface ModalFooterProps {
 
 export function ModalFooter({
   onCancel,
-  submitLabel = 'Save',
+  submitLabel,
   isLoading = false,
   isDisabled = false,
 }: ModalFooterProps) {
+  const { t } = useI18n();
   return (
     <>
       <Button variant="outline" size="sm" onClick={onCancel} type="button">
-        Cancel
+        {t('common.cancel')}
       </Button>
       <Button
         variant="primary"
@@ -136,7 +122,7 @@ export function ModalFooter({
         isLoading={isLoading}
         disabled={isDisabled}
       >
-        {submitLabel}
+        {submitLabel ?? t('common.save')}
       </Button>
     </>
   );

@@ -16,6 +16,7 @@ import { EmptyState, ErrorState } from '@/components/ui/feedback-states';
 import { Badge } from '@/components/ui/badge';
 import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useActiveCurrency } from '@/hooks/use-active-currency';
 import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
 import type {
   DashboardKpis,
@@ -24,13 +25,6 @@ import type {
   UtilizationData,
 } from '@/types/api';
 
-function fmt(n: number | null | undefined) {
-  if (n === null || n === undefined) return '—';
-  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(n) >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toFixed(2);
-}
-
 function pct(n: number | null | undefined) {
   if (n === null || n === undefined) return '—';
   return `${n.toFixed(1)}%`;
@@ -38,6 +32,7 @@ function pct(n: number | null | undefined) {
 
 export default function DashboardPage() {
   const { activeCompanyId } = useAuth();
+  const { format: fmt } = useActiveCurrency();
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [revenue, setRevenue] = useState<MonthlyTrendItem[]>([]);
   const [topProducts, setTopProducts] = useState<RankedItem[]>([]);
@@ -96,7 +91,7 @@ export default function DashboardPage() {
         <PageHeader title="Dashboard" description={`FY ${year} financial overview`} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100" />
+            <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
           ))}
         </div>
       </div>
@@ -119,14 +114,14 @@ export default function DashboardPage() {
         description={`FY ${year} financial overview`}
       >
         <div className="flex items-center gap-2">
-          <label htmlFor="dashboard-year" className="text-xs font-semibold text-slate-500">
+          <label htmlFor="dashboard-year" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Fiscal Year:
           </label>
           <select
             id="dashboard-year"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
           >
             <option value={2024}>2024</option>
             <option value={2025}>2025</option>
@@ -215,26 +210,26 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 text-xs text-slate-500">
+                    <tr className="border-b border-slate-100 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
                       <th className="pb-2 text-left font-medium">Month</th>
                       <th className="pb-2 text-right font-medium">Actual</th>
                       <th className="pb-2 text-right font-medium">Budget</th>
                       <th className="pb-2 text-right font-medium">Forecast</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
                     {revenue.map((row) => (
                       <tr key={row.period_month}>
-                        <td className="py-2 text-slate-700">
+                        <td className="py-2 text-slate-700 dark:text-slate-300">
                           {MONTH_NAMES[row.period_month]}
                         </td>
-                        <td className="py-2 text-right font-medium text-emerald-700">
+                        <td className="py-2 text-right font-medium text-emerald-700 dark:text-emerald-400">
                           {fmt(row.actual)}
                         </td>
                         <td className="py-2 text-right text-slate-500">
                           {fmt(row.budget)}
                         </td>
-                        <td className="py-2 text-right text-slate-500">
+                        <td className="py-2 text-right text-slate-500 dark:text-slate-400">
                           {fmt(row.forecast)}
                         </td>
                       </tr>
@@ -254,7 +249,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {topProducts.length === 0 ? (
-                <p className="text-sm text-slate-400">No data yet.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">No data yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {topProducts.slice(0, 5).map((p, i) => (
@@ -262,8 +257,8 @@ export default function DashboardPage() {
                       key={p.id}
                       className="flex items-center justify-between gap-2"
                     >
-                      <span className="flex items-center gap-2 text-sm text-slate-700">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-600">
+                      <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
                           {i + 1}
                         </span>
                         <span className="truncate max-w-[120px]">{p.name}</span>
@@ -282,7 +277,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {topCustomers.length === 0 ? (
-                <p className="text-sm text-slate-400">No data yet.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">No data yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {topCustomers.slice(0, 5).map((c, i) => (
@@ -290,8 +285,8 @@ export default function DashboardPage() {
                       key={c.id}
                       className="flex items-center justify-between gap-2"
                     >
-                      <span className="flex items-center gap-2 text-sm text-slate-700">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-600">
+                      <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
                           {i + 1}
                         </span>
                         <span className="truncate max-w-[120px]">{c.name}</span>

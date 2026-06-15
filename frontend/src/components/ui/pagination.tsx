@@ -1,6 +1,9 @@
+'use client';
+
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface PaginationProps {
   page: number;
@@ -19,6 +22,7 @@ export function Pagination({
   onPageChange,
   className,
 }: PaginationProps) {
+  const { t } = useI18n();
   if (totalPages <= 1) return null;
 
   const from = (page - 1) * limit + 1;
@@ -31,29 +35,29 @@ export function Pagination({
         className,
       )}
     >
-      <p className="text-xs text-slate-500">
-        Showing {from}–{to} of {total} results
+      <p className="text-xs text-muted-foreground">
+        {t('common.showing')} {from}–{to} {t('common.of')} {total} {t('common.entries')}
       </p>
 
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Previous page"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+          aria-label={t('common.previous')}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <span className="px-2 text-sm font-medium text-slate-700">
+        <span className="px-2 text-sm font-medium text-foreground">
           {page} / {totalPages}
         </span>
 
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Next page"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+          aria-label={t('common.next')}
         >
           <ChevronRight className="h-4 w-4" />
         </button>

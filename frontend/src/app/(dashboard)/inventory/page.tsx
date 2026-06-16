@@ -9,6 +9,7 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-s
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { Box, Calendar, Clock, AlertTriangle, ShieldAlert, Plus } from 'lucide-react';
 import type { InventorySnapshot, Site, Product, Material } from '@/types/api';
 
@@ -32,6 +33,7 @@ interface SlowMovingItem extends CoverageItem {
 export default function InventoryPage() {
   const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState<'coverage' | 'slow-moving' | 'snapshots'>('coverage');
   
@@ -122,11 +124,11 @@ export default function InventoryPage() {
 
     try {
       await apiPost('/inventory/snapshots', payload);
-      toastSuccess('Snapshot recorded successfully.');
+      toastSuccess(t('page.inventory.snapshotRecorded'));
       setSnapshotModalOpen(false);
       void fetchData();
     } catch (err) {
-      toastError('Failed to record snapshot.');
+      toastError(t('page.inventory.snapshotFailed'));
     } finally {
       setFormLoading(false);
     }
@@ -134,75 +136,75 @@ export default function InventoryPage() {
 
   // Columns Definitions
   const coverageColumns: Column<CoverageItem>[] = [
-    { key: 'siteName', header: 'Site / Warehouse' },
-    { key: 'name', header: 'Item Name', className: 'font-semibold text-slate-700' },
-    { key: 'codeOrSku', header: 'SKU/Code', className: 'font-mono text-xs text-slate-500' },
-    { key: 'type', header: 'Type', render: (v) => String(v).toUpperCase(), className: 'text-xs text-slate-400 font-mono' },
-    { key: 'qtyOnHand', header: 'Qty On Hand', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
-    { key: 'value', header: 'Value (EGP)', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono text-slate-600' },
-    { key: 'avgDailyUsage', header: 'Avg Daily Outflow', render: (v) => Number(v).toFixed(2), className: 'text-right font-mono text-slate-500' },
+    { key: 'siteName', header: t('page.inventory.siteWarehouse') },
+    { key: 'name', header: t('page.inventory.itemName'), className: 'font-semibold text-slate-700' },
+    { key: 'codeOrSku', header: t('page.inventory.skuCode'), className: 'font-mono text-xs text-slate-500' },
+    { key: 'type', header: t('page.inventory.type'), render: (v) => String(v).toUpperCase(), className: 'text-xs text-slate-400 font-mono' },
+    { key: 'qtyOnHand', header: t('page.inventory.qtyOnHand'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
+    { key: 'value', header: t('page.inventory.value'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono text-slate-600' },
+    { key: 'avgDailyUsage', header: t('page.inventory.avgDailyOutflow'), render: (v) => Number(v).toFixed(2), className: 'text-right font-mono text-slate-500' },
     {
       key: 'coverageDays',
-      header: 'Coverage (Days)',
+      header: t('page.inventory.coverageDays'),
       className: 'text-right font-mono font-bold',
       render: (v) => {
         const days = Number(v);
         let color = 'text-emerald-600';
         if (days < 15) color = 'text-red-600';
         else if (days > 90) color = 'text-amber-600';
-        return <span className={color}>{days === 365 ? '365+ Days' : `${days} Days`}</span>;
+        return <span className={color}>{days === 365 ? t('page.inventory.365plusDays') : t('page.inventory.nDays', { days })}</span>;
       },
     },
   ];
 
   const slowMovingColumns: Column<SlowMovingItem>[] = [
-    { key: 'siteName', header: 'Site / Warehouse' },
-    { key: 'name', header: 'Item Name', className: 'font-semibold text-slate-700' },
-    { key: 'codeOrSku', header: 'SKU/Code', className: 'font-mono text-xs text-slate-500' },
-    { key: 'qtyOnHand', header: 'Qty On Hand', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
-    { key: 'value', header: 'Value (EGP)', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
-    { key: 'coverageDays', header: 'Coverage Days', render: (v) => `${Number(v).toFixed(0)} Days`, className: 'text-right font-mono text-slate-600' },
+    { key: 'siteName', header: t('page.inventory.siteWarehouse') },
+    { key: 'name', header: t('page.inventory.itemName'), className: 'font-semibold text-slate-700' },
+    { key: 'codeOrSku', header: t('page.inventory.skuCode'), className: 'font-mono text-xs text-slate-500' },
+    { key: 'qtyOnHand', header: t('page.inventory.qtyOnHand'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
+    { key: 'value', header: t('page.inventory.value'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
+    { key: 'coverageDays', header: t('page.inventory.coverageDays'), render: (v) => t('page.inventory.nDays', { days: Number(v).toFixed(0) }), className: 'text-right font-mono text-slate-600' },
     {
       key: 'status',
-      header: 'Risk Level',
+      header: t('page.inventory.riskLevel'),
       className: 'text-center font-semibold text-xs',
       render: (v) =>
         v === 'critical' ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-red-700">
-            <ShieldAlert className="h-3 w-3" /> Critical (180d+)
+            <ShieldAlert className="h-3 w-3" /> {t('page.inventory.critical')}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-700">
-            <AlertTriangle className="h-3 w-3" /> Warning (90d+)
+            <AlertTriangle className="h-3 w-3" /> {t('page.inventory.warning')}
           </span>
         ),
     },
   ];
 
   const snapshotColumns: Column<InventorySnapshot>[] = [
-    { key: 'snapshotDate', header: 'Date', render: (v) => new Date(v as string).toLocaleDateString() },
-    { key: 'site', header: 'Site', render: (v) => (v as any)?.name ?? '—' },
-    { key: 'product', header: 'Product', render: (v) => (v as any)?.name ? `[${(v as any).sku}] ${(v as any).name}` : '—' },
-    { key: 'material', header: 'Material', render: (v) => (v as any)?.name ? `[${(v as any).code}] ${(v as any).name}` : '—' },
-    { key: 'qtyOnHand', header: 'Qty Recorded', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
-    { key: 'inventoryValue', header: 'Valuation (EGP)', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono text-slate-600 font-bold' },
+    { key: 'snapshotDate', header: t('page.inventory.date'), render: (v) => new Date(v as string).toLocaleDateString() },
+    { key: 'site', header: t('page.inventory.siteCol'), render: (v) => (v as any)?.name ?? '—' },
+    { key: 'product', header: t('page.inventory.product'), render: (v) => (v as any)?.name ? `[${(v as any).sku}] ${(v as any).name}` : '—' },
+    { key: 'material', header: t('page.inventory.material'), render: (v) => (v as any)?.name ? `[${(v as any).code}] ${(v as any).name}` : '—' },
+    { key: 'qtyOnHand', header: t('page.inventory.qtyRecorded'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono' },
+    { key: 'inventoryValue', header: t('page.inventory.valuation'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono text-slate-600 font-bold' },
   ];
 
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Inventory Management" />
-        <ErrorState title="No active company" message="Please select a company from the sidebar." />
+        <PageHeader title={t('page.inventory.title')} />
+        <ErrorState title={t('common.noCompany')} message={t('common.selectCompany')} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inventory Management" description="Monitor inventory balances, calculate stock coverage days, and identify slow moving raw materials or goods">
+      <PageHeader title={t('page.inventory.title')} description={t('page.inventory.description')}>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => setSnapshotModalOpen(true)}>
-            <Plus className="h-4 w-4" /> Record Snapshot
+            <Plus className="h-4 w-4" /> {t('page.inventory.recordSnapshot')}
           </Button>
         </div>
       </PageHeader>
@@ -215,7 +217,7 @@ export default function InventoryPage() {
               <Box className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400">Total Items in Stock</p>
+              <p className="text-xs font-medium text-slate-400">{t('page.inventory.totalItemsInStock')}</p>
               <h3 className="text-xl font-bold text-slate-800">{coverage.length}</h3>
             </div>
           </div>
@@ -224,9 +226,9 @@ export default function InventoryPage() {
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400">Average Stock Coverage</p>
+              <p className="text-xs font-medium text-slate-400">{t('page.inventory.avgStockCoverage')}</p>
               <h3 className="text-xl font-bold text-slate-800">
-                {(coverage.reduce((s, c) => s + c.coverageDays, 0) / coverage.length).toFixed(0)} Days
+                {t('page.inventory.nDays', { days: (coverage.reduce((s, c) => s + c.coverageDays, 0) / coverage.length).toFixed(0) })}
               </h3>
             </div>
           </div>
@@ -235,9 +237,9 @@ export default function InventoryPage() {
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400">Low Stock Alerts (&lt;15 days)</p>
+              <p className="text-xs font-medium text-slate-400">{t('page.inventory.lowStockAlerts')}</p>
               <h3 className="text-xl font-bold text-slate-800">
-                {coverage.filter((c) => c.coverageDays < 15).length} Items
+                {t('page.inventory.nItems', { count: coverage.filter((c) => c.coverageDays < 15).length })}
               </h3>
             </div>
           </div>
@@ -247,20 +249,20 @@ export default function InventoryPage() {
       {/* Tabs */}
       <div className="flex border-b border-slate-200 gap-0">
         {[
-          { key: 'coverage', label: 'Inventory Coverage Analysis' },
-          { key: 'slow-moving', label: 'Slow-Moving Stock Warning' },
-          { key: 'snapshots', label: 'Inventory Snapshots Log' },
-        ].map((t) => (
+          { key: 'coverage', label: t('page.inventory.coverageAnalysis') },
+          { key: 'slow-moving', label: t('page.inventory.slowMovingWarning') },
+          { key: 'snapshots', label: t('page.inventory.snapshotsLog') },
+        ].map((tab) => (
           <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key as any)}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as any)}
             className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              activeTab === t.key
+              activeTab === tab.key
                 ? 'border-emerald-500 text-emerald-700'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -272,7 +274,7 @@ export default function InventoryPage() {
         <ErrorState message={error} onRetry={fetchData} />
       ) : activeTab === 'coverage' ? (
         coverage.length === 0 ? (
-          <EmptyState title="No inventory data found" description="Record an inventory snapshot to compute stock coverage days." />
+          <EmptyState title={t('page.inventory.noCoverageData')} description={t('page.inventory.noCoverageDataDesc')} />
         ) : (
           <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
             <TableWrapper<CoverageItem> data={coverage} columns={coverageColumns} keyExtractor={(r) => r.id} />
@@ -280,7 +282,7 @@ export default function InventoryPage() {
         )
       ) : activeTab === 'slow-moving' ? (
         slowMoving.length === 0 ? (
-          <EmptyState title="No slow-moving inventory detected" description="All items show healthy daily utilization/sales volumes." />
+          <EmptyState title={t('page.inventory.noSlowMoving')} description={t('page.inventory.noSlowMovingDesc')} />
         ) : (
           <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
             <TableWrapper<SlowMovingItem> data={slowMoving} columns={slowMovingColumns} keyExtractor={(r) => r.id} />
@@ -288,7 +290,7 @@ export default function InventoryPage() {
         )
       ) : (
         snapshots.length === 0 ? (
-          <EmptyState title="No snapshot history" description="Record daily/monthly inventory valuations to capture snapshots." />
+          <EmptyState title={t('page.inventory.noSnapshots')} description={t('page.inventory.noSnapshotsDesc')} />
         ) : (
           <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
             <TableWrapper<InventorySnapshot> data={snapshots} columns={snapshotColumns} keyExtractor={(r) => r.id} />
@@ -302,12 +304,12 @@ export default function InventoryPage() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSnapshotModalOpen(false)} />
           <div className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Record Inventory Snapshot</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t('page.inventory.recordSnapshot')}</h2>
             </div>
             <form onSubmit={handleCreateSnapshot} className="px-6 py-5 flex flex-col gap-4">
               
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-500">Warehouse / Site</label>
+                <label className="text-xs font-medium text-slate-500">{t('page.inventory.warehouseSite')}</label>
                 <select
                   value={siteId}
                   onChange={(e) => setSiteId(e.target.value)}
@@ -320,22 +322,22 @@ export default function InventoryPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-500">Item Type</label>
+                <label className="text-xs font-medium text-slate-500">{t('page.inventory.itemType')}</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-1.5 text-sm">
                     <input type="radio" checked={itemType === 'product'} onChange={() => setItemType('product')} />
-                    Finished Good Product
+                    {t('page.inventory.finishedGoodProduct')}
                   </label>
                   <label className="flex items-center gap-1.5 text-sm">
                     <input type="radio" checked={itemType === 'material'} onChange={() => setItemType('material')} />
-                    Raw Material Ingredient
+                    {t('page.inventory.rawMaterialIngredient')}
                   </label>
                 </div>
               </div>
 
               {itemType === 'product' ? (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-slate-500">Product</label>
+                  <label className="text-xs font-medium text-slate-500">{t('page.inventory.product')}</label>
                   <select
                     value={productId}
                     onChange={(e) => setProductId(e.target.value)}
@@ -348,7 +350,7 @@ export default function InventoryPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-slate-500">Material</label>
+                  <label className="text-xs font-medium text-slate-500">{t('page.inventory.material')}</label>
                   <select
                     value={materialId}
                     onChange={(e) => setMaterialId(e.target.value)}
@@ -361,16 +363,16 @@ export default function InventoryPage() {
                 </div>
               )}
 
-              <Input id="snap-date" type="date" label="Snapshot Date" value={snapshotDate} onChange={(e) => setSnapshotDate(e.target.value)} />
+              <Input id="snap-date" type="date" label={t('page.inventory.snapshotDate')} value={snapshotDate} onChange={(e) => setSnapshotDate(e.target.value)} />
               
               <div className="grid grid-cols-2 gap-4">
-                <Input id="snap-qty" type="number" label="Quantity On Hand" value={qtyOnHand} onChange={(e) => setQtyOnHand(e.target.value)} />
-                <Input id="snap-val" type="number" label="Total Valuation (EGP)" value={inventoryValue} onChange={(e) => setInventoryValue(e.target.value)} />
+                <Input id="snap-qty" type="number" label={t('page.inventory.qtyOnHand')} value={qtyOnHand} onChange={(e) => setQtyOnHand(e.target.value)} />
+                <Input id="snap-val" type="number" label={t('page.inventory.totalValuation')} value={inventoryValue} onChange={(e) => setInventoryValue(e.target.value)} />
               </div>
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
-                <Button variant="outline" size="sm" type="button" onClick={() => setSnapshotModalOpen(false)}>Cancel</Button>
-                <Button size="sm" type="submit" isLoading={formLoading}>Record</Button>
+                <Button variant="outline" size="sm" type="button" onClick={() => setSnapshotModalOpen(false)}>{t('common.cancel')}</Button>
+                <Button size="sm" type="submit" isLoading={formLoading}>{t('page.inventory.record')}</Button>
               </div>
             </form>
           </div>

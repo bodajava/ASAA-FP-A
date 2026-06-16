@@ -13,8 +13,15 @@ import { useToast } from '@/components/ui/toast';
 import type { HeadcountPlan, BudgetCycle, Site, CostCenter } from '@/types/api';
 import { Plus, Users, DollarSign, Briefcase, Pencil, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import { useI18n } from '@/lib/i18n/i18n-context';
+
 
 export default function HeadcountPlansPage() {
+  const { t } = useI18n();
+  const tEmploymentType = (v: string) => {
+    const map: Record<string, string> = { full_time: 'employmentType.fullTime', part_time: 'employmentType.partTime', contract: 'employmentType.contract', seasonal: 'employmentType.seasonal' };
+    return t(map[v] as any || v);
+  };
   const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -181,10 +188,10 @@ export default function HeadcountPlansPage() {
     try {
       if (editItem) {
         await apiPatch(`/headcount-plans/${editItem.id}`, payload);
-        toastSuccess('Position updated successfully.');
+        toastSuccess(t('page.headcount.positionUpdated'));
       } else {
         await apiPost('/headcount-plans', payload);
-        toastSuccess('Position added successfully.');
+        toastSuccess(t('page.headcount.positionAdded'));
       }
       setFormOpen(false);
       void loadPlans();
@@ -204,24 +211,24 @@ export default function HeadcountPlansPage() {
     setDeleteLoading(true);
     try {
       await apiDelete(`/headcount-plans/${deleteItem.id}`);
-      toastSuccess('Position deleted successfully.');
+      toastSuccess(t('page.headcount.positionDeleted'));
       setDeleteItem(null);
       void loadPlans();
     } catch (err) {
-      toastError('Delete failed.');
+      toastError(t('common.deleteFailed'));
     } finally {
       setDeleteLoading(false);
     }
   }
 
   const columns: Column<HeadcountPlan>[] = [
-    { key: 'jobTitle', header: 'Job Title', className: 'font-semibold text-slate-700' },
-    { key: 'department', header: 'Department', render: (v) => String(v ?? '—') },
-    { key: 'employmentType', header: 'Type', render: (v) => String(v).replace('_', ' ').toUpperCase(), className: 'text-xs text-slate-500 font-mono' },
-    { key: 'headcount', header: 'Count', className: 'text-right font-mono' },
-    { key: 'periodMonth', header: 'Month', render: (v) => `M${v}`, className: 'text-center font-mono text-xs' },
-    { key: 'basicSalary', header: 'Basic', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono text-slate-600' },
-    { key: 'totalCost', header: 'Total Cost (EGP)', render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono font-bold text-slate-900' },
+    { key: 'jobTitle', header: t('page.headcount.jobTitle'), className: 'font-semibold text-slate-700' },
+    { key: 'department', header: t('page.headcount.department'), render: (v) => String(v ?? '—') },
+    { key: 'employmentType', header: t('page.headcount.type'), render: (v) => tEmploymentType(v as string), className: 'text-xs text-slate-500 font-mono' },
+    { key: 'headcount', header: t('page.headcount.count'), className: 'text-right font-mono' },
+    { key: 'periodMonth', header: t('page.headcount.month'), render: (v) => `${t('page.headcount.month')} ${v}`, className: 'text-center font-mono text-xs' },
+    { key: 'basicSalary', header: t('page.headcount.basic'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono text-slate-600' },
+    { key: 'totalCost', header: t('page.headcount.totalCost'), render: (v) => Number(v).toLocaleString(), className: 'text-right font-mono font-bold text-slate-900' },
     {
       key: '_actions',
       header: '',
@@ -231,14 +238,14 @@ export default function HeadcountPlansPage() {
           <button
             onClick={() => openEdit(row)}
             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
-            title="Edit"
+            title={t('common.edit')}
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setDeleteItem(row)}
             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 cursor-pointer"
-            title="Delete"
+            title={t('common.delete')}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -250,7 +257,7 @@ export default function HeadcountPlansPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Headcount Planning" />
+        <PageHeader title={t('page.headcount.title')} />
         <ErrorState title="No active company" message="Please select a company from the sidebar." />
       </div>
     );
@@ -258,17 +265,17 @@ export default function HeadcountPlansPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Headcount Planning" description="Forecast workforce levels, salaries, and associated benefits by department or site">
+      <PageHeader title={t('page.headcount.title')} description={t('page.headcount.description')}>
         <div className="flex items-center gap-3">
           {loadingCycles ? (
-            <p className="text-sm text-slate-400">Loading cycles...</p>
+            <p className="text-sm text-slate-400">{t('common.loading')}</p>
           ) : (
             <select
               value={selectedCycleId}
               onChange={(e) => setSelectedCycleId(e.target.value)}
               className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="">Select Budget Cycle...</option>
+              <option value="">{t('page.headcount.selectBudgetCycle')}</option>
               {cycles.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.fiscalYear})
@@ -278,7 +285,7 @@ export default function HeadcountPlansPage() {
           )}
           {selectedCycleId && (
             <Button size="sm" onClick={openCreate} id="add-headcount-btn">
-              <Plus className="h-4 w-4" /> Add Position
+              <Plus className="h-4 w-4" /> {t('page.headcount.addPosition')}
             </Button>
           )}
         </div>
@@ -291,7 +298,7 @@ export default function HeadcountPlansPage() {
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400">Total Positions</p>
+              <p className="text-xs font-medium text-slate-400">{t('page.headcount.totalPositions')}</p>
               <h3 className="text-xl font-bold text-slate-800">{summary.grandHeadcount}</h3>
             </div>
           </div>
@@ -300,7 +307,7 @@ export default function HeadcountPlansPage() {
               <DollarSign className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400">Total Workforce Cost</p>
+              <p className="text-xs font-medium text-slate-400">{t('page.headcount.totalWorkforceCost')}</p>
               <h3 className="text-xl font-bold text-slate-800">EGP {summary.grandTotalCost.toLocaleString()}</h3>
             </div>
           </div>
@@ -309,7 +316,7 @@ export default function HeadcountPlansPage() {
               <Briefcase className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400">Departments Configured</p>
+              <p className="text-xs font-medium text-slate-400">{t('page.headcount.departmentsConfigured')}</p>
               <h3 className="text-xl font-bold text-slate-800">{summary.byDepartment.length}</h3>
             </div>
           </div>
@@ -317,7 +324,7 @@ export default function HeadcountPlansPage() {
       )}
 
       {!selectedCycleId ? (
-        <EmptyState title="No cycle selected" description="Select a budget cycle from the top menu to view and plan workforce headcount." />
+        <EmptyState title={t('page.headcount.noCycleSelected')} description={t('page.headcount.noCycleSelectedDesc')} />
       ) : loadingPlans ? (
         <LoadingState rows={8} />
       ) : error ? (
@@ -326,7 +333,7 @@ export default function HeadcountPlansPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
             <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-700 mb-4">Workforce Budget Table</h3>
+              <h3 className="text-sm font-semibold text-slate-700 mb-4">{t('page.headcount.workforceBudgetTable')}</h3>
               <TableWrapper<HeadcountPlan>
                 data={plans}
                 columns={columns}
@@ -338,7 +345,7 @@ export default function HeadcountPlansPage() {
           <div className="space-y-6">
             {summary && summary.byDepartment.length > 0 && (
               <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-700 mb-4">Cost by Department</h3>
+                <h3 className="text-sm font-semibold text-slate-700 mb-4">{t('page.headcount.costByDepartment')}</h3>
                 <div className="space-y-3">
                   {summary.byDepartment.map((d) => {
                     const pct = summary.grandTotalCost > 0 ? (d.cost / summary.grandTotalCost) * 100 : 0;
@@ -363,7 +370,7 @@ export default function HeadcountPlansPage() {
 
             {summary && (
               <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-700 mb-4">Monthly Distribution</h3>
+                <h3 className="text-sm font-semibold text-slate-700 mb-4">{t('page.headcount.monthlyDistribution')}</h3>
                 <div className="flex h-32 items-end justify-between gap-1 pt-4">
                   {summary.monthly.map((m) => {
                     const maxCost = Math.max(...summary.monthly.map((x) => x.totalCost)) || 1;
@@ -374,11 +381,11 @@ export default function HeadcountPlansPage() {
                           className="w-full bg-indigo-500 rounded-t hover:bg-indigo-600 transition-all cursor-pointer"
                           style={{ height: `${height}%`, minHeight: m.totalCost > 0 ? '4px' : '0px' }}
                         />
-                        <span className="text-[10px] text-slate-400 font-mono">M{m.month}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{t('page.headcount.month')}{m.month}</span>
                         {/* Tooltip */}
                         <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-slate-800 text-white text-[10px] rounded p-1.5 shadow font-mono whitespace-nowrap">
-                          Cost: EGP {m.totalCost.toLocaleString()}<br />
-                          Count: {m.headcount}
+                          {t('page.headcount.totalCost')}: EGP {m.totalCost.toLocaleString()}<br />
+                          {t('page.headcount.count')}: {m.headcount}
                         </div>
                       </div>
                     );
@@ -397,7 +404,7 @@ export default function HeadcountPlansPage() {
           <div className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-100 px-6 py-4">
               <h2 className="text-base font-semibold text-slate-900">
-                {editItem ? 'Edit Workforce Position' : 'Add New Workforce Position'}
+                {editItem ? t('page.headcount.editPosition') : t('page.headcount.addNewPosition')}
               </h2>
             </div>
             <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
@@ -407,48 +414,48 @@ export default function HeadcountPlansPage() {
                 </div>
               )}
 
-              <Input id="job-title" label="Job Title" required value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Senior Production Engineer" />
-              <Input id="dept-name" label="Department" required value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g. Production" />
+              <Input id="job-title" label={t('page.headcount.jobTitle')} required value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Senior Production Engineer" />
+              <Input id="dept-name" label={t('page.headcount.department')} required value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g. Production" />
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="employment-type" className="text-xs font-medium text-slate-500">Employment Type</label>
+                  <label htmlFor="employment-type" className="text-xs font-medium text-slate-500">{t('page.headcount.employmentType')}</label>
                   <select
                     id="employment-type"
                     value={employmentType}
                     onChange={(e) => setEmploymentType(e.target.value as any)}
                     className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="full_time">Full Time</option>
-                    <option value="part_time">Part Time</option>
-                    <option value="contract">Contract</option>
-                    <option value="seasonal">Seasonal</option>
+                    <option value="full_time">{t('employmentType.fullTime')}</option>
+                    <option value="part_time">{t('employmentType.partTime')}</option>
+                    <option value="contract">{t('employmentType.contract')}</option>
+                    <option value="seasonal">{t('employmentType.seasonal')}</option>
                   </select>
                 </div>
 
-                <Input id="period-month" type="number" label="Planning Month (1-12)" required value={periodMonth} onChange={(e) => setPeriodMonth(e.target.value)} min={1} max={12} />
+                <Input id="period-month" type="number" label={t('page.headcount.planningMonth')} required value={periodMonth} onChange={(e) => setPeriodMonth(e.target.value)} min={1} max={12} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Input id="headcount-count" type="number" label="Headcount" required value={headcount} onChange={(e) => setHeadcount(e.target.value)} min={1} />
-                <Input id="basic-sal" type="number" label="Monthly Basic Salary" required value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} />
+                <Input id="headcount-count" type="number" label={t('page.headcount.headcount')} required value={headcount} onChange={(e) => setHeadcount(e.target.value)} min={1} />
+                <Input id="basic-sal" type="number" label={t('page.headcount.monthlyBasicSalary')} required value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Input id="allowance" type="number" label="Monthly Allowances" required value={allowances} onChange={(e) => setAllowances(e.target.value)} />
-                <Input id="insurance" type="number" label="Social Insurance Cost" required value={socialInsurance} onChange={(e) => setSocialInsurance(e.target.value)} />
+                <Input id="allowance" type="number" label={t('page.headcount.monthlyAllowances')} required value={allowances} onChange={(e) => setAllowances(e.target.value)} />
+                <Input id="insurance" type="number" label={t('page.headcount.socialInsurance')} required value={socialInsurance} onChange={(e) => setSocialInsurance(e.target.value)} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="site-scope" className="text-xs font-medium text-slate-500">Site (Optional)</label>
+                  <label htmlFor="site-scope" className="text-xs font-medium text-slate-500">{t('page.headcount.siteOptional')}</label>
                   <select
                     id="site-scope"
                     value={siteId}
                     onChange={(e) => setSiteId(e.target.value)}
                     className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="">All Sites</option>
+                    <option value="">{t('page.headcount.allSites')}</option>
                     {sites.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -456,14 +463,14 @@ export default function HeadcountPlansPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="cc-scope" className="text-xs font-medium text-slate-500">Cost Center (Optional)</label>
+                  <label htmlFor="cc-scope" className="text-xs font-medium text-slate-500">{t('page.headcount.costCenterOptional')}</label>
                   <select
                     id="cc-scope"
                     value={costCenterId}
                     onChange={(e) => setCostCenterId(e.target.value)}
                     className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="">None</option>
+                    <option value="">{t('page.headcount.none')}</option>
                     {costCenters.map((cc) => (
                       <option key={cc.id} value={cc.id}>[{cc.code}] {cc.name}</option>
                     ))}
@@ -472,7 +479,7 @@ export default function HeadcountPlansPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="notes-field" className="text-xs font-medium text-slate-500">Notes</label>
+                <label htmlFor="notes-field" className="text-xs font-medium text-slate-500">{t('common.notes')}</label>
                 <textarea
                   id="notes-field"
                   value={notes}
@@ -484,8 +491,8 @@ export default function HeadcountPlansPage() {
               </div>
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
-                <Button variant="outline" size="sm" type="button" onClick={() => setFormOpen(false)}>Cancel</Button>
-                <Button size="sm" type="submit" isLoading={formLoading}>{editItem ? 'Save Changes' : 'Add Position'}</Button>
+                <Button variant="outline" size="sm" type="button" onClick={() => setFormOpen(false)}>{t('common.cancel')}</Button>
+                <Button size="sm" type="submit" isLoading={formLoading}>{editItem ? t('common.saveChanges') : t('page.headcount.addPosition')}</Button>
               </div>
             </form>
           </div>
@@ -495,7 +502,7 @@ export default function HeadcountPlansPage() {
       {/* Delete Confirmation */}
       <ConfirmDialog
         open={deleteItem !== null}
-        message="Are you sure you want to delete this position from headcount plans? This will update cycle summaries."
+        message={t('page.headcount.deleteConfirmMsg')}
         isLoading={deleteLoading}
         onConfirm={handleDelete}
         onCancel={() => setDeleteItem(null)}

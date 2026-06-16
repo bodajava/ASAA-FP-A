@@ -11,6 +11,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Promotion, Product } from '@/types/api';
 import { Plus, Tag, DollarSign, Percent, Pencil, Trash2, Calendar, TrendingUp } from 'lucide-react';
 import axios from 'axios';
@@ -18,6 +19,7 @@ import axios from 'axios';
 export default function PromotionsPage() {
   const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useI18n();
 
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -143,10 +145,10 @@ export default function PromotionsPage() {
       };
       if (editItem) {
         await apiPatch(`/promotions/${editItem.id}`, payload);
-        toastSuccess('Promotion updated successfully');
+        toastSuccess(t('page.promotions.promotionUpdated'));
       } else {
         await apiPost('/promotions', payload);
-        toastSuccess('Promotion created successfully');
+        toastSuccess(t('page.promotions.promotionCreated'));
       }
       setFormOpen(false);
       void loadPromotions();
@@ -167,46 +169,46 @@ export default function PromotionsPage() {
     setDeleteLoading(true);
     try {
       await apiDelete(`/promotions/${deleteItem.id}`);
-      toastSuccess('Promotion deleted successfully');
+      toastSuccess(t('page.promotions.promotionDeleted'));
       setDeleteItem(null);
       void loadPromotions();
     } catch (err) {
-      toastError('Failed to delete promotion');
+      toastError(t('page.promotions.promotionDeleteFailed'));
     } finally {
       setDeleteLoading(false);
     }
   }
 
   const columns: Column<Promotion>[] = [
-    { key: 'name', header: 'Name' },
+    { key: 'name', header: t('page.promotions.name') },
     {
       key: 'discount',
-      header: 'Discount',
+      header: t('page.promotions.discount'),
       render: (_, p: Promotion) => p.discountPct ? `${p.discountPct}%` : p.discountAmt ? `${Number(p.discountAmt).toFixed(2)} EGP` : '-'
     },
     {
       key: 'period',
-      header: 'Period',
+      header: t('page.promotions.period'),
       render: (_, p: Promotion) => `${p.startDate?.slice(0, 10) ?? ''} - ${p.endDate?.slice(0, 10) ?? '∞'}`
     },
     {
       key: 'budgetAmt',
-      header: 'Budget',
+      header: t('page.promotions.budget'),
       render: (_, p: Promotion) => p.budgetAmt ? `${Number(p.budgetAmt).toLocaleString()} EGP` : '-'
     },
     {
       key: 'incrementalRevenue',
-      header: 'Revenue Impact',
+      header: t('page.promotions.revenueImpact'),
       render: (_, p: Promotion) => p.incrementalRevenue ? `${Number(p.incrementalRevenue).toLocaleString()} EGP` : '-'
     },
     {
       key: 'roi',
-      header: 'ROI',
+      header: t('page.promotions.roi'),
       render: (_, p: Promotion) => p.roi ? `${p.roi}%` : '-'
     },
     {
       key: 'isActive',
-      header: 'Status',
+      header: t('page.promotions.status'),
       render: (_, p: Promotion) => (
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -215,7 +217,7 @@ export default function PromotionsPage() {
               : 'bg-slate-100 text-slate-600'
           }`}
         >
-          {p.isActive ? 'Active' : 'Inactive'}
+          {p.isActive ? t('page.promotions.active') : t('page.promotions.inactive')}
         </span>
       )
     },
@@ -249,19 +251,19 @@ export default function PromotionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Retail Promotions"
-        description="Plan, track, and analyze promotional campaigns and discount impacts"
+        title={t('page.promotions.title')}
+        description={t('page.promotions.description')}
       >
         <Button onClick={openCreateForm}>
           <Plus className="mr-1.5 h-4 w-4" />
-          New Promotion
+          {t('page.promotions.newPromotion')}
         </Button>
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-64">
           <Input
-            placeholder="Search promotions..."
+            placeholder={t('page.promotions.search')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
@@ -272,9 +274,9 @@ export default function PromotionsPage() {
         <LoadingState />
       ) : promotions.length === 0 ? (
         <EmptyState
-          title="No promotions yet"
-          description="Create your first promotional campaign to start tracking retail discounts"
-          action={<Button onClick={openCreateForm}>Create Promotion</Button>}
+          title={t('page.promotions.noPromotions')}
+          description={t('page.promotions.noPromotionsDesc')}
+          action={<Button onClick={openCreateForm}>{t('page.promotions.newPromotion')}</Button>}
         />
       ) : (
         <>
@@ -297,7 +299,7 @@ export default function PromotionsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
             <h2 className="mb-4 text-lg font-semibold text-slate-800">
-              {editItem ? 'Edit Promotion' : 'New Promotion'}
+              {editItem ? t('page.promotions.editPromotion') : t('page.promotions.newPromotion')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               {formError && (
@@ -307,12 +309,12 @@ export default function PromotionsPage() {
               )}
 
               <div>
-                <label htmlFor="promo-name" className="mb-1 block text-xs font-medium text-slate-600">Name *</label>
+                <label htmlFor="promo-name" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.name')} *</label>
                 <Input id="promo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Summer Sale 2025" />
               </div>
 
               <div>
-                <label htmlFor="promo-desc" className="mb-1 block text-xs font-medium text-slate-600">Description</label>
+                <label htmlFor="promo-desc" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.description')}</label>
                 <textarea
                   id="promo-desc"
                   value={description}
@@ -324,76 +326,76 @@ export default function PromotionsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="promo-product" className="mb-1 block text-xs font-medium text-slate-600">Product</label>
+                  <label htmlFor="promo-product" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.product')}</label>
                   <select
                     id="promo-product"
                     value={productId}
                     onChange={(e) => setProductId(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="">All Products</option>
+                    <option value="">{t('page.promotions.allProducts')}</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="promo-active" className="mb-1 block text-xs font-medium text-slate-600">Status</label>
+                  <label htmlFor="promo-active" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.status')}</label>
                   <select
                     id="promo-active"
                     value={isActive ? 'active' : 'inactive'}
                     onChange={(e) => setIsActive(e.target.value === 'active')}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">{t('page.promotions.active')}</option>
+                    <option value="inactive">{t('page.promotions.inactive')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="promo-disc-pct" className="mb-1 block text-xs font-medium text-slate-600">Discount %</label>
+                  <label htmlFor="promo-disc-pct" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.discountPct')}</label>
                   <Input id="promo-disc-pct" type="number" step="0.1" value={discountPct} onChange={(e) => setDiscountPct(e.target.value)} placeholder="e.g. 10" />
                 </div>
                 <div>
-                  <label htmlFor="promo-disc-amt" className="mb-1 block text-xs font-medium text-slate-600">Discount Amount (EGP)</label>
+                  <label htmlFor="promo-disc-amt" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.discountAmount')}</label>
                   <Input id="promo-disc-amt" type="number" step="0.01" value={discountAmt} onChange={(e) => setDiscountAmt(e.target.value)} placeholder="e.g. 50" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="promo-start" className="mb-1 block text-xs font-medium text-slate-600">Start Date *</label>
+                  <label htmlFor="promo-start" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.startDate')} *</label>
                   <Input id="promo-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </div>
                 <div>
-                  <label htmlFor="promo-end" className="mb-1 block text-xs font-medium text-slate-600">End Date</label>
+                  <label htmlFor="promo-end" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.endDate')}</label>
                   <Input id="promo-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="promo-budget" className="mb-1 block text-xs font-medium text-slate-600">Budget</label>
+                  <label htmlFor="promo-budget" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.budget')}</label>
                   <Input id="promo-budget" type="number" step="0.01" value={budgetAmt} onChange={(e) => setBudgetAmt(e.target.value)} />
                 </div>
                 <div>
-                  <label htmlFor="promo-actual" className="mb-1 block text-xs font-medium text-slate-600">Actual Cost</label>
+                  <label htmlFor="promo-actual" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.actualCost')}</label>
                   <Input id="promo-actual" type="number" step="0.01" value={actualCost} onChange={(e) => setActualCost(e.target.value)} />
                 </div>
                 <div>
-                  <label htmlFor="promo-rev" className="mb-1 block text-xs font-medium text-slate-600">Incremental Revenue</label>
+                  <label htmlFor="promo-rev" className="mb-1 block text-xs font-medium text-slate-600">{t('page.promotions.incrementalRevenue')}</label>
                   <Input id="promo-rev" type="number" step="0.01" value={incrementalRevenue} onChange={(e) => setIncrementalRevenue(e.target.value)} />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => setFormOpen(false)} disabled={formLoading}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" disabled={formLoading}>
-                  {formLoading ? 'Saving...' : editItem ? 'Update' : 'Create'}
+                  {formLoading ? t('common.saving') : editItem ? t('common.update') : t('common.create')}
                 </Button>
               </div>
             </form>
@@ -404,7 +406,7 @@ export default function PromotionsPage() {
       {deleteItem && (
         <ConfirmDialog
           open={deleteItem !== null}
-          message={`Are you sure you want to delete "${deleteItem.name}"? This action cannot be undone.`}
+          message={t('page.promotions.deleteConfirmMsg', { name: deleteItem.name })}
           isLoading={deleteLoading}
           onConfirm={() => void handleDelete()}
           onCancel={() => setDeleteItem(null)}

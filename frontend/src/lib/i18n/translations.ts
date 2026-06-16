@@ -49,6 +49,7 @@ export type TranslationKey =
   /* ── Common ──────────────────────────────────────────────────────────── */
   | 'common.search'
   | 'common.save'
+  | 'common.saveChanges'
   | 'common.cancel'
   | 'common.delete'
   | 'common.edit'
@@ -61,6 +62,7 @@ export type TranslationKey =
   | 'common.loading'
   | 'common.error'
   | 'common.success'
+  | 'common.saving'
   | 'common.retry'
   | 'common.noData'
   | 'common.noResults'
@@ -146,6 +148,7 @@ export type TranslationKey =
   | 'common.allProducts'
   | 'common.allCustomers'
   | 'common.allAccounts'
+  | 'common.unknown'
   | 'common.noActiveCompany'
   | 'common.noActiveCompanyDesc'
   | 'common.selectCompanyFromSidebar'
@@ -855,7 +858,160 @@ export type TranslationKey =
   | 'page.suppliers.create'
   | 'page.suppliers.emptyTitle'
   | 'page.suppliers.emptyDesc'
-  | 'page.suppliers.saveChanges';
+  | 'page.suppliers.saveChanges'
+  /* ── Page: Production Planning ───────────────────────────────────────── */
+  | 'page.productionPlanning.addProduct'
+  | 'page.productionPlanning.allProductionCosts'
+  | 'page.productionPlanning.capacityThreshold'
+  | 'page.productionPlanning.capacityUtilization'
+  | 'page.productionPlanning.description'
+  | 'page.productionPlanning.explosionResults'
+  | 'page.productionPlanning.fiscalYear'
+  | 'page.productionPlanning.grandTotal'
+  | 'page.productionPlanning.laborCost'
+  | 'page.productionPlanning.lockedDescription'
+  | 'page.productionPlanning.lockedTitle'
+  | 'page.productionPlanning.material'
+  | 'page.productionPlanning.materialCost'
+  | 'page.productionPlanning.materialWastage'
+  | 'page.productionPlanning.materialsTab'
+  | 'page.productionPlanning.noMaterialsFound'
+  | 'page.productionPlanning.noProductsMatch'
+  | 'page.productionPlanning.overheadCost'
+  | 'page.productionPlanning.product'
+  | 'page.productionPlanning.productsTab'
+  | 'page.productionPlanning.qty'
+  | 'page.productionPlanning.quantity'
+  | 'page.productionPlanning.removeLine'
+  | 'page.productionPlanning.requiredQty'
+  | 'page.productionPlanning.runBomExplosion'
+  | 'page.productionPlanning.salesPlanLines'
+  | 'page.productionPlanning.saveAsPlan'
+  | 'page.productionPlanning.savePlanModalTitle'
+  | 'page.productionPlanning.selectProduct'
+  | 'page.productionPlanning.selectSite'
+  | 'page.productionPlanning.sku'
+  | 'page.productionPlanning.targetFactorySite'
+  | 'page.productionPlanning.targetMonth'
+  | 'page.productionPlanning.totalCost'
+  | 'page.productionPlanning.totalQty'
+  | 'page.productionPlanning.totalWastage'
+  | 'page.productionPlanning.totals'
+  | 'page.productionPlanning.unitPrice'
+  | 'page.productionPlanning.unitsPlanned'
+  | 'page.productionPlanning.version'
+  | 'page.productionPlanning.wastageCost'
+  | 'page.productionPlanning.wastageQty'
+  /* ── Page: Headcount Plans ──────────────────────────────────────────── */
+  | 'page.headcount.addNewPosition'
+  | 'page.headcount.addPosition'
+  | 'page.headcount.allSites'
+  | 'page.headcount.basic'
+  | 'page.headcount.costByDepartment'
+  | 'page.headcount.costCenterOptional'
+  | 'page.headcount.count'
+  | 'page.headcount.deleteConfirmMsg'
+  | 'page.headcount.department'
+  | 'page.headcount.departmentsConfigured'
+  | 'page.headcount.description'
+  | 'page.headcount.editPosition'
+  | 'page.headcount.employmentType'
+  | 'page.headcount.headcount'
+  | 'page.headcount.jobTitle'
+  | 'page.headcount.month'
+  | 'page.headcount.monthlyAllowances'
+  | 'page.headcount.monthlyBasicSalary'
+  | 'page.headcount.monthlyDistribution'
+  | 'page.headcount.noCycleSelected'
+  | 'page.headcount.noCycleSelectedDesc'
+  | 'page.headcount.none'
+  | 'page.headcount.planningMonth'
+  | 'page.headcount.positionAdded'
+  | 'page.headcount.positionDeleted'
+  | 'page.headcount.positionUpdated'
+  | 'page.headcount.selectBudgetCycle'
+  | 'page.headcount.siteOptional'
+  | 'page.headcount.socialInsurance'
+  | 'page.headcount.title'
+  | 'page.headcount.totalCost'
+  | 'page.headcount.totalPositions'
+  | 'page.headcount.totalWorkforceCost'
+  | 'page.headcount.type'
+  | 'page.headcount.workforceBudgetTable'
+  /* ── Page: Inventory ────────────────────────────────────────────────── */
+  | 'page.inventory.365plusDays'
+  | 'page.inventory.avgDailyOutflow'
+  | 'page.inventory.avgStockCoverage'
+  | 'page.inventory.coverageAnalysis'
+  | 'page.inventory.coverageDays'
+  | 'page.inventory.critical'
+  | 'page.inventory.date'
+  | 'page.inventory.description'
+  | 'page.inventory.finishedGoodProduct'
+  | 'page.inventory.itemName'
+  | 'page.inventory.itemType'
+  | 'page.inventory.lowStockAlerts'
+  | 'page.inventory.material'
+  | 'page.inventory.nDays'
+  | 'page.inventory.nItems'
+  | 'page.inventory.noCoverageData'
+  | 'page.inventory.noCoverageDataDesc'
+  | 'page.inventory.noSlowMoving'
+  | 'page.inventory.noSlowMovingDesc'
+  | 'page.inventory.noSnapshots'
+  | 'page.inventory.noSnapshotsDesc'
+  | 'page.inventory.product'
+  | 'page.inventory.qtyOnHand'
+  | 'page.inventory.qtyRecorded'
+  | 'page.inventory.rawMaterialIngredient'
+  | 'page.inventory.record'
+  | 'page.inventory.recordSnapshot'
+  | 'page.inventory.riskLevel'
+  | 'page.inventory.siteCol'
+  | 'page.inventory.siteWarehouse'
+  | 'page.inventory.skuCode'
+  | 'page.inventory.slowMovingWarning'
+  | 'page.inventory.snapshotDate'
+  | 'page.inventory.snapshotFailed'
+  | 'page.inventory.snapshotRecorded'
+  | 'page.inventory.snapshotsLog'
+  | 'page.inventory.totalItemsInStock'
+  | 'page.inventory.totalValuation'
+  | 'page.inventory.type'
+  | 'page.inventory.valuation'
+  | 'page.inventory.value'
+  | 'page.inventory.warehouseSite'
+  | 'page.inventory.warning'
+  /* ── Page: Promotions ───────────────────────────────────────────────── */
+  | 'page.promotions.active'
+  | 'page.promotions.actualCost'
+  | 'page.promotions.allProducts'
+  | 'page.promotions.budget'
+  | 'page.promotions.deleteConfirmMsg'
+  | 'page.promotions.description'
+  | 'page.promotions.discount'
+  | 'page.promotions.discountAmount'
+  | 'page.promotions.discountPct'
+  | 'page.promotions.editPromotion'
+  | 'page.promotions.endDate'
+  | 'page.promotions.inactive'
+  | 'page.promotions.incrementalRevenue'
+  | 'page.promotions.name'
+  | 'page.promotions.newPromotion'
+  | 'page.promotions.noPromotions'
+  | 'page.promotions.noPromotionsDesc'
+  | 'page.promotions.period'
+  | 'page.promotions.product'
+  | 'page.promotions.promotionCreated'
+  | 'page.promotions.promotionDeleteFailed'
+  | 'page.promotions.promotionDeleted'
+  | 'page.promotions.promotionUpdated'
+  | 'page.promotions.revenueImpact'
+  | 'page.promotions.roi'
+  | 'page.promotions.search'
+  | 'page.promotions.startDate'
+  | 'page.promotions.status'
+;
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -909,6 +1065,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     /* Common */
     'common.search': 'Search',
     'common.save': 'Save',
+    'common.saveChanges': 'Save Changes',
     'common.cancel': 'Cancel',
     'common.delete': 'Delete',
     'common.edit': 'Edit',
@@ -979,8 +1136,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.confirmDeleteMessage': 'Are you sure you want to delete this item? This action cannot be undone.',
     'common.cancelDelete': 'Cancel',
     'common.createdSuccess': 'Created successfully.',
+    'common.unknown': 'Unknown',
     'common.updatedSuccess': 'Updated successfully.',
     'common.deletedSuccess': 'Deleted successfully.',
+    'common.saving': 'Saving...',
     'common.deleteFailed': 'Delete failed.',
     'common.importSuccess': 'Imported successfully.',
     'common.required': 'This field is required',
@@ -1757,6 +1916,162 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.suppliers.emptyTitle': 'No suppliers yet',
     'page.suppliers.emptyDesc': 'Add suppliers to link to your materials and purchase orders.',
     'page.suppliers.saveChanges': 'Save Changes',
+
+    /* Production Planning */
+    'page.productionPlanning.description': 'Plan production by exploding sales plan lines into BOM requirements.',
+    'page.productionPlanning.lockedTitle': 'Production Planning Locked',
+    'page.productionPlanning.lockedDescription': 'Production planning & BOM explosion is available on the Business and Enterprise tiers.',
+    'page.productionPlanning.salesPlanLines': 'Sales Plan Lines',
+    'page.productionPlanning.addProduct': 'Add Product',
+    'page.productionPlanning.product': 'Product',
+    'page.productionPlanning.quantity': 'Quantity',
+    'page.productionPlanning.selectProduct': 'Select product…',
+    'page.productionPlanning.removeLine': 'Remove line',
+    'page.productionPlanning.runBomExplosion': 'Run BOM Explosion',
+    'page.productionPlanning.explosionResults': 'Explosion Results',
+    'page.productionPlanning.saveAsPlan': 'Save as Production Plan',
+    'page.productionPlanning.grandTotal': 'Grand Total',
+    'page.productionPlanning.allProductionCosts': 'All production costs',
+    'page.productionPlanning.materialCost': 'Material Cost',
+    'page.productionPlanning.laborCost': 'Labor Cost',
+    'page.productionPlanning.overheadCost': 'Overhead Cost',
+    'page.productionPlanning.totalWastage': 'Total Wastage',
+    'page.productionPlanning.materialWastage': 'Material + recipe wastage',
+    'page.productionPlanning.totalQty': 'Total Qty',
+    'page.productionPlanning.unitsPlanned': 'Units planned',
+    'page.productionPlanning.capacityUtilization': 'Capacity Utilization',
+    'page.productionPlanning.capacityThreshold': 'Based on 50,000 unit capacity threshold',
+    'page.productionPlanning.productsTab': 'Products',
+    'page.productionPlanning.materialsTab': 'Materials',
+    'page.productionPlanning.noProductsMatch': 'No products matched active BOM recipes.',
+    'page.productionPlanning.noMaterialsFound': 'No material requirements found.',
+    'page.productionPlanning.totalCost': 'Total Cost',
+    'page.productionPlanning.wastageCost': 'Wastage Cost',
+    'page.productionPlanning.material': 'Material',
+    'page.productionPlanning.requiredQty': 'Required Qty',
+    'page.productionPlanning.wastageQty': 'Wastage Qty',
+    'page.productionPlanning.unitPrice': 'Unit Price',
+    'page.productionPlanning.totals': 'Totals',
+    'page.productionPlanning.savePlanModalTitle': 'Save Production Plan',
+    'page.productionPlanning.targetFactorySite': 'Target Factory/Site',
+    'page.productionPlanning.selectSite': 'Select Site…',
+    'page.productionPlanning.fiscalYear': 'Fiscal Year',
+    'page.productionPlanning.targetMonth': 'Target Month',
+    'page.productionPlanning.sku': 'SKU',
+    'page.productionPlanning.version': 'Version',
+    'page.productionPlanning.qty': 'Qty',
+
+    /* Headcount Plans */
+    'page.headcount.title': 'Headcount Planning',
+    'page.headcount.description': 'Forecast workforce levels and plan headcount across departments.',
+    'page.headcount.selectBudgetCycle': 'Select Budget Cycle…',
+    'page.headcount.addPosition': 'Add Position',
+    'page.headcount.totalPositions': 'Total Positions',
+    'page.headcount.totalWorkforceCost': 'Total Workforce Cost',
+    'page.headcount.departmentsConfigured': 'Departments Configured',
+    'page.headcount.workforceBudgetTable': 'Workforce Budget Table',
+    'page.headcount.costByDepartment': 'Cost by Department',
+    'page.headcount.monthlyDistribution': 'Monthly Distribution',
+    'page.headcount.month': 'Month',
+    'page.headcount.noCycleSelected': 'No cycle selected',
+    'page.headcount.noCycleSelectedDesc': 'Select a budget cycle from the top menu to view headcount plans.',
+    'page.headcount.editPosition': 'Edit Workforce Position',
+    'page.headcount.addNewPosition': 'Add New Workforce Position',
+    'page.headcount.jobTitle': 'Job Title',
+    'page.headcount.department': 'Department',
+    'page.headcount.employmentType': 'Employment Type',
+    'page.headcount.planningMonth': 'Planning Month (1-12)',
+    'page.headcount.headcount': 'Headcount',
+    'page.headcount.monthlyBasicSalary': 'Monthly Basic Salary',
+    'page.headcount.monthlyAllowances': 'Monthly Allowances',
+    'page.headcount.socialInsurance': 'Social Insurance Cost',
+    'page.headcount.siteOptional': 'Site (Optional)',
+    'page.headcount.costCenterOptional': 'Cost Center (Optional)',
+    'page.headcount.none': 'None',
+    'page.headcount.positionUpdated': 'Position updated successfully.',
+    'page.headcount.positionAdded': 'Position added successfully.',
+    'page.headcount.positionDeleted': 'Position deleted successfully.',
+    'page.headcount.type': 'Type',
+    'page.headcount.count': 'Count',
+    'page.headcount.basic': 'Basic',
+    'page.headcount.totalCost': 'Total Cost (EGP)',
+    'page.headcount.deleteConfirmMsg': 'Are you sure you want to delete this position?',
+    'page.headcount.allSites': 'All Sites',
+
+    /* Inventory */
+    'page.inventory.description': 'Monitor inventory balances, coverage, and slow-moving stock.',
+    'page.inventory.recordSnapshot': 'Record Snapshot',
+    'page.inventory.totalItemsInStock': 'Total Items in Stock',
+    'page.inventory.avgStockCoverage': 'Avg. Stock Coverage',
+    'page.inventory.lowStockAlerts': 'Low Stock Alerts (<15 days)',
+    'page.inventory.coverageAnalysis': 'Coverage Analysis',
+    'page.inventory.slowMovingWarning': 'Slow-Moving Warning',
+    'page.inventory.snapshotsLog': 'Snapshots Log',
+    'page.inventory.noCoverageData': 'No coverage data',
+    'page.inventory.noCoverageDataDesc': 'Coverage analysis will appear here after recording snapshots.',
+    'page.inventory.noSlowMoving': 'No slow-moving items',
+    'page.inventory.noSlowMovingDesc': 'No slow-moving inventory items detected.',
+    'page.inventory.noSnapshots': 'No snapshots recorded',
+    'page.inventory.noSnapshotsDesc': 'Record your first inventory snapshot to start tracking.',
+    'page.inventory.siteWarehouse': 'Site / Warehouse',
+    'page.inventory.itemName': 'Item Name',
+    'page.inventory.skuCode': 'SKU/Code',
+    'page.inventory.type': 'Type',
+    'page.inventory.qtyOnHand': 'Qty On Hand',
+    'page.inventory.value': 'Value (EGP)',
+    'page.inventory.avgDailyOutflow': 'Avg Daily Outflow',
+    'page.inventory.coverageDays': 'Coverage (Days)',
+    'page.inventory.riskLevel': 'Risk Level',
+    'page.inventory.date': 'Date',
+    'page.inventory.siteCol': 'Site',
+    'page.inventory.product': 'Product',
+    'page.inventory.material': 'Material',
+    'page.inventory.qtyRecorded': 'Qty Recorded',
+    'page.inventory.valuation': 'Valuation (EGP)',
+    'page.inventory.critical': 'Critical (180d+)',
+    'page.inventory.warning': 'Warning (90d+)',
+    'page.inventory.warehouseSite': 'Warehouse / Site',
+    'page.inventory.itemType': 'Item Type',
+    'page.inventory.finishedGoodProduct': 'Finished Good / Product',
+    'page.inventory.rawMaterialIngredient': 'Raw Material / Ingredient',
+    'page.inventory.snapshotDate': 'Snapshot Date',
+    'page.inventory.totalValuation': 'Total Valuation (EGP)',
+    'page.inventory.record': 'Record',
+    'page.inventory.snapshotRecorded': 'Snapshot recorded successfully.',
+    'page.inventory.snapshotFailed': 'Failed to record snapshot.',
+    'page.inventory.365plusDays': '365+ Days',
+    'page.inventory.nDays': '{days} Days',
+    'page.inventory.nItems': '{count} Items',
+
+    /* Promotions */
+    'page.promotions.description': 'Plan, track, and analyze retail promotions.',
+    'page.promotions.newPromotion': 'New Promotion',
+    'page.promotions.search': 'Search promotions…',
+    'page.promotions.noPromotions': 'No promotions yet',
+    'page.promotions.noPromotionsDesc': 'Create your first promotion to start tracking revenue impact.',
+    'page.promotions.name': 'Name',
+    'page.promotions.discount': 'Discount',
+    'page.promotions.period': 'Period',
+    'page.promotions.budget': 'Budget',
+    'page.promotions.revenueImpact': 'Revenue Impact',
+    'page.promotions.roi': 'ROI',
+    'page.promotions.status': 'Status',
+    'page.promotions.active': 'Active',
+    'page.promotions.inactive': 'Inactive',
+    'page.promotions.editPromotion': 'Edit Promotion',
+    'page.promotions.discountPct': 'Discount %',
+    'page.promotions.discountAmount': 'Discount Amount (EGP)',
+    'page.promotions.startDate': 'Start Date',
+    'page.promotions.endDate': 'End Date',
+    'page.promotions.actualCost': 'Actual Cost',
+    'page.promotions.incrementalRevenue': 'Incremental Revenue',
+    'page.promotions.product': 'Product',
+    'page.promotions.allProducts': 'All Products',
+    'page.promotions.deleteConfirmMsg': 'Are you sure you want to delete "{name}"?',
+    'page.promotions.promotionUpdated': 'Promotion updated successfully.',
+    'page.promotions.promotionCreated': 'Promotion created successfully.',
+    'page.promotions.promotionDeleted': 'Promotion deleted successfully.',
+    'page.promotions.promotionDeleteFailed': 'Failed to delete promotion.',
   },
 
   ar: {
@@ -1810,6 +2125,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     /* Common */
     'common.search': 'بحث',
     'common.save': 'حفظ',
+    'common.saveChanges': 'حفظ التغييرات',
     'common.cancel': 'إلغاء',
     'common.delete': 'حذف',
     'common.edit': 'تعديل',
@@ -1880,8 +2196,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.confirmDeleteMessage': 'هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.',
     'common.cancelDelete': 'إلغاء',
     'common.createdSuccess': 'تم الإنشاء بنجاح.',
+    'common.unknown': 'غير معروف',
     'common.updatedSuccess': 'تم التحديث بنجاح.',
     'common.deletedSuccess': 'تم الحذف بنجاح.',
+    'common.saving': 'جارٍ الحفظ...',
     'common.deleteFailed': 'فشل الحذف.',
     'common.importSuccess': 'تم الاستيراد بنجاح.',
     'common.required': 'هذا الحقل مطلوب',
@@ -2658,5 +2976,162 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.suppliers.emptyTitle': 'لا توجد موردين بعد',
     'page.suppliers.emptyDesc': 'أضف موردين لربطهم بالمواد وأوامر الشراء الخاصة بك.',
     'page.suppliers.saveChanges': 'حفظ التغييرات',
+
+    /* Production Planning */
+    'page.productionPlanning.description': 'خطط للإنتاج عن طريق تحليل بنود خطة المبيعات إلى متطلبات هيكل المنتج.',
+    'page.productionPlanning.lockedTitle': 'تخطيط الإنتاج مقفول',
+    'page.productionPlanning.lockedDescription': 'تخطيط الإنتاج وتحليل هيكل المنتج متاحان في باقات الأعمال والمؤسسات.',
+    'page.productionPlanning.salesPlanLines': 'بنود خطة المبيعات',
+    'page.productionPlanning.addProduct': 'إضافة منتج',
+    'page.productionPlanning.product': 'المنتج',
+    'page.productionPlanning.quantity': 'الكمية',
+    'page.productionPlanning.selectProduct': 'اختر منتجاً…',
+    'page.productionPlanning.removeLine': 'إزالة البند',
+    'page.productionPlanning.runBomExplosion': 'تشغيل تحليل هيكل المنتج',
+    'page.productionPlanning.explosionResults': 'نتائج التحليل',
+    'page.productionPlanning.saveAsPlan': 'حفظ كخطة إنتاج',
+    'page.productionPlanning.grandTotal': 'الإجمالي الكلي',
+    'page.productionPlanning.allProductionCosts': 'جميع تكاليف الإنتاج',
+    'page.productionPlanning.materialCost': 'تكلفة المواد',
+    'page.productionPlanning.laborCost': 'تكلفة العمالة',
+    'page.productionPlanning.overheadCost': 'التكاليف العامة',
+    'page.productionPlanning.totalWastage': 'إجمالي الهدر',
+    'page.productionPlanning.materialWastage': 'هدر المواد والوصفات',
+    'page.productionPlanning.totalQty': 'الكمية الإجمالية',
+    'page.productionPlanning.unitsPlanned': 'الوحدات المخططة',
+    'page.productionPlanning.capacityUtilization': 'استغلال الطاقة',
+    'page.productionPlanning.capacityThreshold': 'حد الطاقة الإنتاجية 50,000 وحدة',
+    'page.productionPlanning.productsTab': 'المنتجات',
+    'page.productionPlanning.materialsTab': 'المواد',
+    'page.productionPlanning.noProductsMatch': 'لا توجد منتجات تطابق وصفات هيكل المنتج النشطة.',
+    'page.productionPlanning.noMaterialsFound': 'لم يتم العثور على متطلبات مواد.',
+    'page.productionPlanning.totalCost': 'التكلفة الإجمالية',
+    'page.productionPlanning.wastageCost': 'تكلفة الهدر',
+    'page.productionPlanning.material': 'المادة',
+    'page.productionPlanning.requiredQty': 'الكمية المطلوبة',
+    'page.productionPlanning.wastageQty': 'كمية الهدر',
+    'page.productionPlanning.unitPrice': 'سعر الوحدة',
+    'page.productionPlanning.totals': 'الإجماليات',
+    'page.productionPlanning.savePlanModalTitle': 'حفظ خطة الإنتاج',
+    'page.productionPlanning.targetFactorySite': 'المصنع / الموقع المستهدف',
+    'page.productionPlanning.selectSite': 'اختر موقعاً…',
+    'page.productionPlanning.fiscalYear': 'السنة المالية',
+    'page.productionPlanning.targetMonth': 'الشهر المستهدف',
+    'page.productionPlanning.sku': 'رمز المنتج',
+    'page.productionPlanning.version': 'الإصدار',
+    'page.productionPlanning.qty': 'الكمية',
+
+    /* Headcount Plans */
+    'page.headcount.title': 'خطط التوظيف',
+    'page.headcount.description': 'توقع مستويات القوى العاملة وخطط عدد الموظفين عبر الأقسام.',
+    'page.headcount.selectBudgetCycle': 'اختر دورة الميزانية…',
+    'page.headcount.addPosition': 'إضافة وظيفة',
+    'page.headcount.totalPositions': 'إجمالي الوظائف',
+    'page.headcount.totalWorkforceCost': 'إجمالي تكلفة القوى العاملة',
+    'page.headcount.departmentsConfigured': 'الأقسام المكونة',
+    'page.headcount.workforceBudgetTable': 'جدول ميزانية القوى العاملة',
+    'page.headcount.costByDepartment': 'التكلفة حسب القسم',
+    'page.headcount.monthlyDistribution': 'التوزيع الشهري',
+    'page.headcount.month': 'الشهر',
+    'page.headcount.noCycleSelected': 'لم يتم اختيار دورة',
+    'page.headcount.noCycleSelectedDesc': 'اختر دورة ميزانية من القائمة العلوية لعرض خطط التوظيف.',
+    'page.headcount.editPosition': 'تعديل الوظيفة',
+    'page.headcount.addNewPosition': 'إضافة وظيفة جديدة',
+    'page.headcount.jobTitle': 'المسمى الوظيفي',
+    'page.headcount.department': 'القسم',
+    'page.headcount.employmentType': 'نوع التوظيف',
+    'page.headcount.planningMonth': 'شهر التخطيط (1-12)',
+    'page.headcount.headcount': 'عدد الموظفين',
+    'page.headcount.monthlyBasicSalary': 'الراتب الأساسي الشهري',
+    'page.headcount.monthlyAllowances': 'البدلات الشهرية',
+    'page.headcount.socialInsurance': 'التأمينات الاجتماعية',
+    'page.headcount.siteOptional': 'الموقع (اختياري)',
+    'page.headcount.costCenterOptional': 'مركز التكلفة (اختياري)',
+    'page.headcount.none': 'لا يوجد',
+    'page.headcount.positionUpdated': 'تم تحديث الوظيفة بنجاح.',
+    'page.headcount.positionAdded': 'تم إضافة الوظيفة بنجاح.',
+    'page.headcount.positionDeleted': 'تم حذف الوظيفة بنجاح.',
+    'page.headcount.type': 'النوع',
+    'page.headcount.count': 'العدد',
+    'page.headcount.basic': 'أساسي',
+    'page.headcount.totalCost': 'التكلفة الإجمالية',
+    'page.headcount.deleteConfirmMsg': 'هل أنت متأكد من حذف هذه الوظيفة؟',
+    'page.headcount.allSites': 'جميع المواقع',
+
+    /* Inventory */
+    'page.inventory.description': 'مراقبة أرصدة المخزون والتغطية والمواد بطيئة الحركة.',
+    'page.inventory.recordSnapshot': 'تسجيل لقطة',
+    'page.inventory.totalItemsInStock': 'إجمالي العناصر في المخزون',
+    'page.inventory.avgStockCoverage': 'متوسط تغطية المخزون',
+    'page.inventory.lowStockAlerts': 'تنبيهات انخفاض المخزون (أقل من 15 يوم)',
+    'page.inventory.coverageAnalysis': 'تحليل التغطية',
+    'page.inventory.slowMovingWarning': 'تحذير بطيء الحركة',
+    'page.inventory.snapshotsLog': 'سجل اللقطات',
+    'page.inventory.noCoverageData': 'لا توجد بيانات تغطية',
+    'page.inventory.noCoverageDataDesc': 'سيظهر تحليل التغطية هنا بعد تسجيل اللقطات.',
+    'page.inventory.noSlowMoving': 'لا توجد مواد بطيئة الحركة',
+    'page.inventory.noSlowMovingDesc': 'لم يتم اكتشاف عناصر مخزون بطيئة الحركة.',
+    'page.inventory.noSnapshots': 'لم يتم تسجيل لقطات',
+    'page.inventory.noSnapshotsDesc': 'سجل أول لقطة مخزون لبدء التتبع.',
+    'page.inventory.siteWarehouse': 'الموقع / المخزن',
+    'page.inventory.itemName': 'اسم العنصر',
+    'page.inventory.skuCode': 'رمز SKU',
+    'page.inventory.type': 'النوع',
+    'page.inventory.qtyOnHand': 'الكمية المتاحة',
+    'page.inventory.value': 'القيمة (ج.م)',
+    'page.inventory.avgDailyOutflow': 'متوسط التدفق اليومي',
+    'page.inventory.coverageDays': 'أيام التغطية',
+    'page.inventory.riskLevel': 'مستوى المخاطرة',
+    'page.inventory.date': 'التاريخ',
+    'page.inventory.siteCol': 'الموقع',
+    'page.inventory.product': 'المنتج',
+    'page.inventory.material': 'المادة',
+    'page.inventory.qtyRecorded': 'الكمية المسجلة',
+    'page.inventory.valuation': 'التقييم (ج.م)',
+    'page.inventory.critical': 'حرج (أكثر من 180 يوم)',
+    'page.inventory.warning': 'تحذير (أكثر من 90 يوم)',
+    'page.inventory.warehouseSite': 'المخزن / الموقع',
+    'page.inventory.itemType': 'نوع العنصر',
+    'page.inventory.finishedGoodProduct': 'سلعة تامة / منتج',
+    'page.inventory.rawMaterialIngredient': 'مادة خام / مكون',
+    'page.inventory.snapshotDate': 'تاريخ اللقطة',
+    'page.inventory.totalValuation': 'إجمالي التقييم (ج.م)',
+    'page.inventory.record': 'تسجيل',
+    'page.inventory.snapshotRecorded': 'تم تسجيل اللقطة بنجاح.',
+    'page.inventory.snapshotFailed': 'فشل تسجيل اللقطة.',
+    'page.inventory.365plusDays': 'أكثر من 365 يوم',
+    'page.inventory.nDays': '{days} يوم',
+    'page.inventory.nItems': '{count} عنصر',
+
+    /* Promotions */
+    'page.promotions.newPromotion': 'عرض ترويجي جديد',
+    'page.promotions.search': 'بحث في العروض الترويجية…',
+    'page.promotions.noPromotions': 'لا توجد عروض ترويجية بعد',
+    'page.promotions.noPromotionsDesc': 'أنشئ أول عرض ترويجي لبدء تتبع الأثر على الإيرادات.',
+    'page.promotions.name': 'الاسم',
+    'page.promotions.discount': 'الخصم',
+    'page.promotions.period': 'الفترة',
+    'page.promotions.budget': 'الميزانية',
+    'page.promotions.revenueImpact': 'الأثر على الإيرادات',
+    'page.promotions.roi': 'العائد على الاستثمار',
+    'page.promotions.description': 'خطط وتتبع وحلل العروض الترويجية.',
+    'page.promotions.status': 'الحالة',
+    'page.promotions.active': 'نشط',
+    'page.promotions.inactive': 'غير نشط',
+    'page.promotions.editPromotion': 'تعديل العرض الترويجي',
+    'page.promotions.discountPct': 'نسبة الخصم',
+    'page.promotions.discountAmount': 'قيمة الخصم (ج.م)',
+    'page.promotions.startDate': 'تاريخ البداية',
+    'page.promotions.endDate': 'تاريخ النهاية',
+    'page.promotions.actualCost': 'التكلفة الفعلية',
+    'page.promotions.incrementalRevenue': 'الإيرادات الإضافية',
+    'page.promotions.product': 'المنتج',
+    'page.promotions.allProducts': 'جميع المنتجات',
+    'page.promotions.deleteConfirmMsg': 'هل أنت متأكد من حذف "{name}"؟',
+    'page.promotions.promotionUpdated': 'تم تحديث العرض الترويجي بنجاح.',
+    'page.promotions.promotionCreated': 'تم إنشاء العرض الترويجي بنجاح.',
+    'page.promotions.promotionDeleted': 'تم حذف العرض الترويجي بنجاح.',
+    'page.promotions.promotionDeleteFailed': 'فشل حذف العرض الترويجي.',
+
   },
 };

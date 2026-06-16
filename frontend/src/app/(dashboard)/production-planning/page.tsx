@@ -24,6 +24,8 @@ import { useAuth } from '@/lib/auth-context';
 import { LockedState } from '@/components/ui/feedback-states';
 import { Modal } from '@/components/ui/modal';
 import { MONTH_NAMES } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import type { TranslationKey } from '@/lib/i18n/translations';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,7 +116,7 @@ function KpiCard({
 // ---------------------------------------------------------------------------
 // Capacity bar
 // ---------------------------------------------------------------------------
-function CapacityBar({ pct }: { pct: number }) {
+function CapacityBar({ pct, t }: { pct: number; t: (key: TranslationKey, params?: Record<string, string | number>) => string }) {
   const clamped = Math.min(pct, 100);
   const color =
     clamped < 60
@@ -125,7 +127,7 @@ function CapacityBar({ pct }: { pct: number }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Capacity Utilization</p>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.capacityUtilization')}</p>
         <span
           className={`text-sm font-bold ${clamped < 60 ? 'text-emerald-600' : clamped < 85 ? 'text-amber-600' : 'text-red-600'}`}
         >
@@ -138,7 +140,7 @@ function CapacityBar({ pct }: { pct: number }) {
           style={{ width: `${clamped}%` }}
         />
       </div>
-      <p className="text-xs text-slate-400 mt-2">Based on 50,000 unit capacity threshold</p>
+      <p className="text-xs text-slate-400 mt-2">{t('page.productionPlanning.capacityThreshold')}</p>
     </div>
   );
 }
@@ -146,7 +148,7 @@ function CapacityBar({ pct }: { pct: number }) {
 // ---------------------------------------------------------------------------
 // Product breakdown row
 // ---------------------------------------------------------------------------
-function ProductRow({ p }: { p: ProductExplosionResult }) {
+function ProductRow({ p, t }: { p: ProductExplosionResult; t: (key: TranslationKey, params?: Record<string, string | number>) => string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-xl border border-slate-100 bg-white overflow-hidden shadow-sm">
@@ -164,26 +166,26 @@ function ProductRow({ p }: { p: ProductExplosionResult }) {
           <div>
             <p className="text-sm font-semibold text-slate-800">{p.name}</p>
             <p className="text-xs text-slate-400">
-              SKU: {p.sku} &bull; Version: {p.recipeVersion ?? 'N/A'} &bull; Qty:{' '}
+              {t('page.productionPlanning.sku')}: {p.sku} &bull; {t('page.productionPlanning.version')}: {p.recipeVersion ?? 'N/A'} &bull; {t('page.productionPlanning.qty')}:{' '}
               <span className="font-semibold text-slate-600">{fmt(p.salesQty, 0)}</span>
             </p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-sm font-bold text-slate-900">{fmtCurrency(p.totalCost)}</p>
-          <p className="text-xs text-slate-400">Total Cost</p>
+          <p className="text-xs text-slate-400">{t('page.productionPlanning.totalCost')}</p>
         </div>
       </button>
 
       {open && (
         <div className="border-t border-slate-100 px-4 pb-4 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50">
           {[
-            { label: 'Material Cost', value: fmtCurrency(p.materialCost), color: 'text-blue-600' },
-            { label: 'Labor Cost', value: fmtCurrency(p.laborCost), color: 'text-violet-600' },
-            { label: 'Overhead Cost', value: fmtCurrency(p.overheadCost), color: 'text-amber-600' },
-            { label: 'Wastage Cost', value: fmtCurrency(p.recipeWastageCost), color: 'text-red-500' },
-          ].map((item) => (
-            <div key={item.label}>
+            { label: t('page.productionPlanning.materialCost'), value: fmtCurrency(p.materialCost), color: 'text-blue-600' },
+            { label: t('page.productionPlanning.laborCost'), value: fmtCurrency(p.laborCost), color: 'text-violet-600' },
+            { label: t('page.productionPlanning.overheadCost'), value: fmtCurrency(p.overheadCost), color: 'text-amber-600' },
+            { label: t('page.productionPlanning.wastageCost'), value: fmtCurrency(p.recipeWastageCost), color: 'text-red-500' },
+          ].map((item, idx) => (
+            <div key={idx}>
               <p className="text-xs text-slate-500">{item.label}</p>
               <p className={`text-sm font-bold ${item.color}`}>{item.value}</p>
             </div>
@@ -197,18 +199,18 @@ function ProductRow({ p }: { p: ProductExplosionResult }) {
 // ---------------------------------------------------------------------------
 // Materials table
 // ---------------------------------------------------------------------------
-function MaterialsTable({ materials }: { materials: MaterialRequirement[] }) {
+function MaterialsTable({ materials, t }: { materials: MaterialRequirement[]; t: (key: TranslationKey, params?: Record<string, string | number>) => string }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-slate-50 border-b border-slate-100">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Material</th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Required Qty</th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Wastage Qty</th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit Price</th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Cost</th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Wastage Cost</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.material')}</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.requiredQty')}</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.wastageQty')}</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.unitPrice')}</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.totalCost')}</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.wastageCost')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
@@ -229,7 +231,7 @@ function MaterialsTable({ materials }: { materials: MaterialRequirement[] }) {
         <tfoot>
           <tr className="bg-slate-50 border-t border-slate-200">
             <td className="px-4 py-3 text-xs font-bold text-slate-700 uppercase" colSpan={4}>
-              Totals
+              {t('page.productionPlanning.totals')}
             </td>
             <td className="px-4 py-3 text-right font-mono text-sm font-bold text-emerald-700">
               {fmtCurrency(materials.reduce((s, m) => s + m.totalCost, 0))}
@@ -249,6 +251,7 @@ function MaterialsTable({ materials }: { materials: MaterialRequirement[] }) {
 // ---------------------------------------------------------------------------
 export default function ProductionPlanningPage() {
   const { tenant } = useAuth();
+  const { t } = useI18n();
   const { error: toastError, success: toastSuccess } = useToast();
 
   const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
@@ -381,12 +384,12 @@ export default function ProductionPlanningPage() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Production Planning</h1>
-          <p className="text-sm text-slate-500">BOM explosion & raw material requirement calculations</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('page.productionPlanning.title')}</h1>
+          <p className="text-sm text-slate-500">{t('page.productionPlanning.description')}</p>
         </div>
         <LockedState
-          title="Production Planning is Locked"
-          description="Production planning and BOM explosion are exclusive to the Enterprise tier. Unlock full access to raw material requirement planning, wastage tracking, capacity utilization, and cost breakdowns."
+          title={t('page.productionPlanning.lockedTitle')}
+          description={t('page.productionPlanning.lockedDescription')}
           requiredPlan="Enterprise"
         />
       </div>
@@ -402,10 +405,10 @@ export default function ProductionPlanningPage() {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-sm">
               <Factory className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Production Planning</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('page.productionPlanning.title')}</h1>
           </div>
           <p className="text-sm text-slate-500 ml-10">
-            Enter your sales plan to explode it into raw material requirements, wastage, and total production cost.
+            {t('page.productionPlanning.description')}
           </p>
         </div>
       </div>
@@ -415,18 +418,18 @@ export default function ProductionPlanningPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-violet-500" />
-            <h2 className="text-sm font-bold text-slate-800">Sales Plan Lines</h2>
+            <h2 className="text-sm font-bold text-slate-800">{t('page.productionPlanning.salesPlanLines')}</h2>
           </div>
           <Button size="sm" variant="outline" onClick={addLine} id="btn-add-plan-line">
-            <Plus className="h-3.5 w-3.5 mr-1" /> Add Product
+            <Plus className="h-3.5 w-3.5 mr-1" /> {t('page.productionPlanning.addProduct')}
           </Button>
         </div>
 
         <div className="space-y-3">
           {/* Header row */}
           <div className="grid grid-cols-[1fr_130px_40px] gap-3 px-1">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Product</span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Quantity</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.product')}</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('page.productionPlanning.quantity')}</span>
             <span />
           </div>
 
@@ -438,7 +441,7 @@ export default function ProductionPlanningPage() {
                 onChange={(e) => updateLine(line.id, 'productId', e.target.value)}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
               >
-                <option value="">Select product…</option>
+                <option value="">{t('page.productionPlanning.selectProduct')}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     [{p.sku}] {p.name}
@@ -459,7 +462,7 @@ export default function ProductionPlanningPage() {
                 onClick={() => removeLine(line.id)}
                 disabled={planLines.length === 1}
                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:border-red-200 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                aria-label={`Remove line ${idx + 1}`}
+                aria-label={t('page.productionPlanning.removeLine')}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -475,7 +478,7 @@ export default function ProductionPlanningPage() {
             className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold shadow-lg shadow-violet-200 transition-all"
           >
             <Zap className="h-4 w-4 mr-2" />
-            Run BOM Explosion
+            {t('page.productionPlanning.runBomExplosion')}
           </Button>
         </div>
       </div>
@@ -484,61 +487,61 @@ export default function ProductionPlanningPage() {
       {result && (
         <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h2 className="text-base font-bold text-slate-800">Explosion Results</h2>
+            <h2 className="text-base font-bold text-slate-800">{t('page.productionPlanning.explosionResults')}</h2>
             <Button
               id="btn-save-production-plan"
               size="sm"
               onClick={() => setSaveModalOpen(true)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
             >
-              Save as Production Plan
+              {t('page.productionPlanning.saveAsPlan')}
             </Button>
           </div>
           {/* KPI summary */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <KpiCard
-              label="Grand Total"
+              label={t('page.productionPlanning.grandTotal')}
               value={fmtCurrency(result.grandTotalCost)}
               icon={DollarSign}
               color="bg-gradient-to-br from-violet-500 to-indigo-600"
-              sub="All production costs"
+              sub={t('page.productionPlanning.allProductionCosts')}
             />
             <KpiCard
-              label="Material Cost"
+              label={t('page.productionPlanning.materialCost')}
               value={fmtCurrency(result.totalMaterialCost)}
               icon={Package}
               color="bg-gradient-to-br from-blue-500 to-cyan-500"
             />
             <KpiCard
-              label="Labor Cost"
+              label={t('page.productionPlanning.laborCost')}
               value={fmtCurrency(result.totalLaborCost)}
               icon={TrendingUp}
               color="bg-gradient-to-br from-emerald-500 to-teal-500"
             />
             <KpiCard
-              label="Overhead Cost"
+              label={t('page.productionPlanning.overheadCost')}
               value={fmtCurrency(result.totalOverheadCost)}
               icon={BarChart3}
               color="bg-gradient-to-br from-amber-500 to-orange-500"
             />
             <KpiCard
-              label="Total Wastage"
+              label={t('page.productionPlanning.totalWastage')}
               value={fmtCurrency(result.totalWastageCost)}
               icon={AlertTriangle}
               color="bg-gradient-to-br from-red-500 to-rose-600"
-              sub="Material + recipe wastage"
+              sub={t('page.productionPlanning.materialWastage')}
             />
             <KpiCard
-              label="Total Qty"
+              label={t('page.productionPlanning.totalQty')}
               value={fmt(result.totalSalesQty, 0)}
               icon={Factory}
               color="bg-gradient-to-br from-slate-600 to-slate-800"
-              sub="Units planned"
+              sub={t('page.productionPlanning.unitsPlanned')}
             />
           </div>
 
           {/* Capacity bar */}
-          <CapacityBar pct={result.capacityUtilizationPct} />
+          <CapacityBar pct={result.capacityUtilizationPct} t={t} />
 
           {/* Tabs */}
           <div>
@@ -554,7 +557,9 @@ export default function ProductionPlanningPage() {
                       : 'border-transparent text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  {tab === 'products' ? `Products (${result.products.length})` : `Materials (${result.materials.length})`}
+                  {tab === 'products'
+                    ? t('page.productionPlanning.productsTab', { count: result.products.length })
+                    : t('page.productionPlanning.materialsTab', { count: result.materials.length })}
                 </button>
               ))}
             </div>
@@ -563,10 +568,10 @@ export default function ProductionPlanningPage() {
               <div className="space-y-3">
                 {result.products.length === 0 ? (
                   <p className="text-sm text-slate-400 text-center py-8">
-                    No products matched active BOM recipes. Make sure each product has an active BOM recipe configured.
+                    {t('page.productionPlanning.noProductsMatch')}
                   </p>
                 ) : (
-                  result.products.map((p) => <ProductRow key={p.productId} p={p} />)
+                  result.products.map((p) => <ProductRow key={p.productId} p={p} t={t} />)
                 )}
               </div>
             )}
@@ -574,10 +579,10 @@ export default function ProductionPlanningPage() {
             {activeTab === 'materials' && (
               result.materials.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-8">
-                  No material requirements found. Ensure BOM recipes have at least one material line.
+                  {t('page.productionPlanning.noMaterialsFound')}
                 </p>
               ) : (
-                <MaterialsTable materials={result.materials} />
+                <MaterialsTable materials={result.materials} t={t} />
               )
             )}
           </div>
@@ -588,23 +593,23 @@ export default function ProductionPlanningPage() {
       <Modal
         open={saveModalOpen}
         onClose={() => setSaveModalOpen(false)}
-        title="Save Production Plan"
+        title={t('page.productionPlanning.savePlanModalTitle')}
         footer={
           <>
-            <Button variant="outline" size="sm" type="button" onClick={() => setSaveModalOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSavePlan} isLoading={saveLoading}>Save Plan</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setSaveModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button size="sm" onClick={handleSavePlan} isLoading={saveLoading}>{t('common.save')}</Button>
           </>
         }
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-500">Target Factory/Site</label>
+            <label className="text-xs font-medium text-slate-500">{t('page.productionPlanning.targetFactorySite')}</label>
             <select
               value={saveSiteId}
               onChange={(e) => setSaveSiteId(e.target.value)}
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="">Select Site...</option>
+              <option value="">{t('page.productionPlanning.selectSite')}</option>
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -615,12 +620,12 @@ export default function ProductionPlanningPage() {
             <Input
               id="save-year"
               type="number"
-              label="Fiscal Year"
+              label={t('page.productionPlanning.fiscalYear')}
               value={saveYear}
               onChange={(e) => setSaveYear(e.target.value)}
             />
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-500">Target Month</label>
+              <label className="text-xs font-medium text-slate-500">{t('page.productionPlanning.targetMonth')}</label>
               <select
                 value={saveMonth}
                 onChange={(e) => setSaveMonth(e.target.value)}

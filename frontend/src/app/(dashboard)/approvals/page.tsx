@@ -12,16 +12,11 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-s
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ui/toast';
 import { apiGet, apiPatch } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { useTranslateApi } from '@/lib/i18n/translate-api';
 import type { PaginatedResponse, Approval } from '@/types/api';
 
 type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
-
-const STATUS_TABS: { label: string; value: ApprovalStatus | 'all' }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Approved', value: 'approved' },
-  { label: 'Rejected', value: 'rejected' },
-];
 
 function approvalBadge(status: string) {
   const s = status.toLowerCase();
@@ -36,6 +31,15 @@ function approvalBadge(status: string) {
 export default function ApprovalsPage() {
   const { activeCompanyId } = useAuth();
   const { error: toastError } = useToast();
+  const { t } = useI18n();
+  const { tStatus } = useTranslateApi();
+
+  const STATUS_TABS: { label: string; value: ApprovalStatus | 'all' }[] = [
+    { label: t('page.approvals.all'), value: 'all' },
+    { label: t('page.approvals.pending'), value: 'pending' },
+    { label: t('page.approvals.approved'), value: 'approved' },
+    { label: t('page.approvals.rejected'), value: 'rejected' },
+  ];
 
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [total, setTotal] = useState(0);
@@ -110,7 +114,7 @@ export default function ApprovalsPage() {
   const columns: Column<Approval>[] = [
     {
       key: 'entityType',
-      header: 'Entity Type',
+      header: t('page.approvals.entityType'),
       className: 'font-semibold',
       render: (v) => {
         const type = String(v);
@@ -118,20 +122,20 @@ export default function ApprovalsPage() {
         return <span>{icon} {type}</span>;
       },
     },
-    { key: 'entityId', header: 'Entity ID', className: 'font-mono text-slate-500' },
+    { key: 'entityId', header: t('page.approvals.entityId'), className: 'font-mono text-slate-500' },
     {
       key: 'status',
-      header: 'Status',
+      header: t('page.approvals.status'),
       render: (v) => approvalBadge(String(v)),
     },
     {
       key: 'requestedBy',
-      header: 'Requested By',
+      header: t('page.approvals.requestedBy'),
       render: (v) => String(v || '—'),
     },
     {
       key: 'createdAt',
-      header: 'Created At',
+      header: t('page.approvals.createdAt'),
       render: (v) => new Date(String(v)).toLocaleDateString(),
     },
     {
@@ -145,14 +149,14 @@ export default function ApprovalsPage() {
             <button
               onClick={() => { setActionModal({ approval: row, action: 'approve' }); setActionComment(''); }}
               className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"
-              title="Approve"
+              title={t('page.approvals.approve')}
             >
               <CheckCircle className="h-4 w-4" />
             </button>
             <button
               onClick={() => { setActionModal({ approval: row, action: 'reject' }); setActionComment(''); }}
               className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
-              title="Reject"
+              title={t('page.approvals.reject')}
             >
               <XCircle className="h-4 w-4" />
             </button>
@@ -165,10 +169,10 @@ export default function ApprovalsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Approvals" description="Review and manage approval requests" />
+        <PageHeader title={t('page.approvals.title')} description={t('page.approvals.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar."
+          title={t('common.noCompany')}
+          message={t('common.selectCompany')}
         />
       </div>
     );
@@ -177,11 +181,11 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Approvals"
-        description="Review budget cycle, forecast cycle, and other pending approval requests"
+        title={t('page.approvals.title')}
+        description={t('page.approvals.description')}
       >
         <Button size="sm" variant="outline" onClick={fetchApprovals} className="flex items-center gap-1">
-          <AlertTriangle className="h-3.5 w-3.5" /> Refresh
+          <AlertTriangle className="h-3.5 w-3.5" /> {t('page.approvals.refresh')}
         </Button>
       </PageHeader>
 
@@ -203,17 +207,17 @@ export default function ApprovalsPage() {
       </div>
 
       {isLoading ? (
-        <LoadingState rows={6} message="Loading approvals..." />
+        <LoadingState rows={6} message={`${t('page.approvals.noApprovals')}...`} />
       ) : error ? (
         <ErrorState message={error} onRetry={fetchApprovals} />
       ) : approvals.length === 0 ? (
         <EmptyState
           icon={<Shield className="h-6 w-6 text-slate-300" />}
-          title="No approvals found"
+          title={t('page.approvals.noApprovals')}
           description={
             statusFilter === 'all'
-              ? 'No approval requests have been created yet.'
-              : `No ${statusFilter} approval requests.`
+              ? t('page.approvals.noApprovalsDesc')
+              : t('page.approvals.noFilteredResults', { status: tStatus(statusFilter) })
           }
         />
       ) : (
@@ -240,16 +244,16 @@ export default function ApprovalsPage() {
         <Modal
           open
           onClose={() => { setActionModal(null); setActionComment(''); }}
-          title={actionModal.action === 'approve' ? 'Confirm Approval' : 'Reject Request'}
+          title={actionModal.action === 'approve' ? t('page.approvals.confirmApproval') : t('page.approvals.rejectRequest')}
           description={
             actionModal.action === 'approve'
-              ? `Approve the ${actionModal.approval.entityType} request (ID: ${actionModal.approval.entityId})?`
-              : `Provide a reason for rejecting the ${actionModal.approval.entityType} request (ID: ${actionModal.approval.entityId}).`
+              ? t('page.approvals.confirmApprovalDesc', { entityType: actionModal.approval.entityType, entityId: actionModal.approval.entityId })
+              : t('page.approvals.rejectRequestDesc', { entityType: actionModal.approval.entityType, entityId: actionModal.approval.entityId })
           }
           footer={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => { setActionModal(null); setActionComment(''); }}>
-                Cancel
+                {t('page.approvals.cancel')}
               </Button>
               <Button
                 variant={actionModal.action === 'approve' ? 'primary' : 'danger'}
@@ -258,7 +262,7 @@ export default function ApprovalsPage() {
                 onClick={handleAction}
                 disabled={actionModal.action === 'reject' && !actionComment.trim()}
               >
-                {actionModal.action === 'approve' ? 'Approve' : 'Reject'}
+                {actionModal.action === 'approve' ? t('page.approvals.approve') : t('page.approvals.reject')}
               </Button>
             </div>
           }
@@ -266,7 +270,7 @@ export default function ApprovalsPage() {
           {actionModal.action === 'reject' && (
             <div className="flex flex-col gap-1.5">
               <label htmlFor="reject-comment" className="text-xs font-semibold text-slate-500">
-                Reason (required)
+                {t('page.approvals.reasonRequired')}
               </label>
               <textarea
                 id="reject-comment"
@@ -274,14 +278,14 @@ export default function ApprovalsPage() {
                 onChange={(e) => setActionComment(e.target.value)}
                 rows={3}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 resize-none"
-                placeholder="Explain why this request is being rejected..."
+                placeholder={t('page.approvals.rejectPlaceholder')}
               />
             </div>
           )}
           {actionModal.action === 'approve' && (
             <div className="flex flex-col gap-1.5">
               <label htmlFor="approve-comment" className="text-xs font-semibold text-slate-500">
-                Comment (optional)
+                {t('page.approvals.commentOptional')}
               </label>
               <textarea
                 id="approve-comment"
@@ -289,7 +293,7 @@ export default function ApprovalsPage() {
                 onChange={(e) => setActionComment(e.target.value)}
                 rows={2}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
-                placeholder="Add a note..."
+                placeholder={t('page.approvals.commentPlaceholder')}
               />
             </div>
           )}

@@ -44,10 +44,14 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 import axios from 'axios';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { useTranslateApi } from '@/lib/i18n/translate-api';
 
 export default function ActualsPage() {
   const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError, validation: toastValidation } = useToast();
+  const { t } = useI18n();
+  const { tSourceSystem, tImportType } = useTranslateApi();
 
   // List view states
   const [imports, setImports] = useState<ActualImport[]>([]);
@@ -114,11 +118,11 @@ export default function ActualsPage() {
       setTotal(res.total);
       setTotalPages(res.totalPages);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch actual imports.');
+      setError(err instanceof Error ? err.message : t('page.actualImports.fetchFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [activeCompanyId, page, search]);
+  }, [activeCompanyId, page, search, t]);
 
   useEffect(() => {
     let active = true;
@@ -176,11 +180,11 @@ export default function ActualsPage() {
       const res = await apiGet<ActualImport>(`/actual-imports/${id}`);
       setSelectedImport(res);
     } catch (err: unknown) {
-      setDetailError(err instanceof Error ? err.message : 'Failed to fetch detail.');
+      setDetailError(err instanceof Error ? err.message : t('page.actualImports.fetchFailed'));
     } finally {
       setIsLoadingDetail(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let active = true;
@@ -226,7 +230,7 @@ export default function ActualsPage() {
   async function handlePreview() {
     const rows = parseRawText(rawText);
     if (rows.length === 0) {
-      setPreviewError('Could not parse spreadsheet rows. Ensure headers are present.');
+      setPreviewError(t('page.actualImports.pasteValidationError'));
       return;
     }
     setIsPreviewing(true);
@@ -241,8 +245,8 @@ export default function ActualsPage() {
       setPreviewRows(res);
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Preview failed.')
-        : 'Preview failed.';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.actualImports.fetchFailed'))
+        : t('page.actualImports.fetchFailed');
       setPreviewError(msg);
     } finally {
       setIsPreviewing(false);
@@ -255,7 +259,7 @@ export default function ActualsPage() {
   async function handleCreateImport() {
     const rows = parseRawText(rawText);
     if (rows.length === 0) {
-      toastValidation('Ensure you paste valid spreadsheet rows.');
+      toastValidation(t('page.actualImports.pasteValidationError'));
       return;
     }
     setWizardLoading(true);
@@ -274,11 +278,11 @@ export default function ActualsPage() {
       setPreviewRows([]);
       void fetchImports();
       setSelectedImportId(res.id);
-      toastSuccess('Actuals import created successfully.');
+      toastSuccess(t('page.actualImports.importCreated'));
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Import upload failed.')
-        : 'Import upload failed.';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.actualImports.fetchFailed'))
+        : t('page.actualImports.fetchFailed');
       toastError(msg);
     } finally {
       setWizardLoading(false);
@@ -295,14 +299,14 @@ export default function ActualsPage() {
       void fetchImportDetail(id);
       void fetchImports();
       if (res.status === 'failed') {
-        toastError('Validation failed. Please review error logs.');
+        toastError(t('page.actualImports.validateFailed'));
       } else {
-        toastSuccess('Validation completed successfully.');
+        toastSuccess(t('page.actualImports.validateSuccess'));
       }
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Validation failed.')
-        : 'Validation failed.';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.actualImports.validateFailed'))
+        : t('page.actualImports.validateFailed');
       toastError(msg);
     } finally {
       setActionLoading(false);
@@ -315,11 +319,11 @@ export default function ActualsPage() {
       await apiPost<ActualImport>(`/actual-imports/${id}/post`);
       void fetchImportDetail(id);
       void fetchImports();
-      toastSuccess('Ledger lines posted successfully.');
+      toastSuccess(t('page.actualImports.postSuccess'));
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Posting failed.')
-        : 'Posting failed.';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.actualImports.fetchFailed'))
+        : t('page.actualImports.fetchFailed');
       toastError(msg);
     } finally {
       setActionLoading(false);
@@ -331,14 +335,14 @@ export default function ActualsPage() {
     setDeleteLoading(true);
     try {
       await apiDelete(`/actual-imports/${deleteConfirmImport.id}`);
-      toastSuccess('Actuals import deleted successfully.');
+      toastSuccess(t('page.actualImports.deleteSuccess'));
       setDeleteConfirmImport(null);
       void fetchImports();
       if (selectedImportId === deleteConfirmImport.id) {
         setSelectedImportId(null);
       }
     } catch (err: unknown) {
-      toastError(err instanceof Error ? err.message : 'Delete failed.');
+      toastError(err instanceof Error ? err.message : t('page.actualImports.fetchFailed'));
     } finally {
       setDeleteLoading(false);
     }
@@ -347,17 +351,17 @@ export default function ActualsPage() {
   const columns: Column<ActualImport>[] = [
     {
       key: 'importType',
-      header: 'Type / Source',
+      header: t('page.actualImports.colTypeSource'),
       render: (_, row) => (
         <div>
-          <p className="font-semibold text-slate-800 capitalize">{row.importType}</p>
-          <p className="font-mono text-[10px] text-slate-400 uppercase">{row.sourceSystem}</p>
+          <p className="font-semibold text-slate-800 capitalize">{tImportType(row.importType)}</p>
+          <p className="font-mono text-[10px] text-slate-400 uppercase">{tSourceSystem(row.sourceSystem)}</p>
         </div>
       ),
     },
     {
       key: 'periodFrom',
-      header: 'Period Cover',
+      header: t('page.actualImports.colPeriodCover'),
       render: (_, row) => {
         const from = new Date(row.periodFrom).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         const to = new Date(row.periodTo).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -366,12 +370,12 @@ export default function ActualsPage() {
     },
     {
       key: 'createdAt',
-      header: 'Uploaded At',
+      header: t('page.actualImports.colUploadedAt'),
       render: (v) => v ? new Date(String(v)).toLocaleString() : '—',
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (v) => (
         <Badge variant={getStatusVariant(v as ImportStatus)} className="capitalize">
           {String(v)}
@@ -389,8 +393,8 @@ export default function ActualsPage() {
             <button
               onClick={() => setSelectedImportId(row.id)}
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              aria-label="View Details"
-              title="View Details"
+              aria-label={t('common.viewDetails')}
+              title={t('common.viewDetails')}
             >
               <Eye className="h-4 w-4" />
             </button>
@@ -398,8 +402,8 @@ export default function ActualsPage() {
               <button
                 onClick={() => setDeleteConfirmImport(row)}
                 className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                aria-label="Delete"
-                title="Delete"
+                aria-label={t('common.delete')}
+                title={t('common.delete')}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -413,10 +417,10 @@ export default function ActualsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Actual Data Imports" description="Validate and post actual accounting transactions" />
+        <PageHeader title={t('page.actualImports.title')} description={t('page.actualImports.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar before importing actual data."
+          title={t('common.noActiveCompany')}
+          message={t('page.actualImports.noCompanyDesc')}
         />
       </div>
     );
@@ -436,11 +440,11 @@ export default function ActualsPage() {
             <button
               onClick={() => setSelectedImportId(null)}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-sm"
-              aria-label="Back to List"
+              aria-label={t('page.actualImports.backToList')}
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <h1 className="text-xl font-bold text-slate-900">Import #{selectedImport.id}</h1>
+            <h1 className="text-xl font-bold text-slate-900">{t('page.actualImports.detailTitle', { id: selectedImport.id })}</h1>
             <Badge variant={getStatusVariant(selectedImport.status)} className="capitalize ml-2">
               {selectedImport.status}
             </Badge>
@@ -452,8 +456,8 @@ export default function ActualsPage() {
                 <FileSpreadsheet className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Import Type / Source</p>
-                <p className="text-sm font-bold text-slate-700 capitalize">{selectedImport.importType} ({selectedImport.sourceSystem})</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.actualImports.cardImportTypeSource')}</p>
+                <p className="text-sm font-bold text-slate-700 capitalize">{tImportType(selectedImport.importType)} ({tSourceSystem(selectedImport.sourceSystem)})</p>
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
@@ -461,7 +465,7 @@ export default function ActualsPage() {
                 <Calendar className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Import Period</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.actualImports.cardImportPeriod')}</p>
                 <p className="text-sm font-bold text-slate-700">
                   {new Date(selectedImport.periodFrom).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
                 </p>
@@ -472,7 +476,7 @@ export default function ActualsPage() {
                 <Clock className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Uploaded Date</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.actualImports.cardUploadedDate')}</p>
                 <p className="text-sm font-bold text-slate-700">{new Date(selectedImport.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
@@ -481,28 +485,28 @@ export default function ActualsPage() {
                 <Layers className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lines Imported</p>
-                <p className="text-sm font-bold text-slate-700">{(selectedImport.actualLines ?? []).length} items</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('page.actualImports.cardLinesImported')}</p>
+                <p className="text-sm font-bold text-slate-700">{(selectedImport.actualLines ?? []).length} {t('common.items')}</p>
               </div>
             </div>
           </div>
 
           {/* Action Triggers panel (Validate / Post) */}
           <div className="flex flex-wrap gap-2 items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
-            <span className="text-sm text-slate-500 font-medium">Verify &amp; Finalize:</span>
+            <span className="text-sm text-slate-500 font-medium">{t('page.actualImports.verifyFinalize')}</span>
             <div className="flex gap-2">
               {(selectedImport.status === 'uploaded' || selectedImport.status === 'failed') && (
-                <Button size="sm" variant="outline" onClick={() => handleValidate(selectedImport.id)} isLoading={actionLoading} title="Run Validation check">
-                  Run Validation check
+                <Button size="sm" variant="outline" onClick={() => handleValidate(selectedImport.id)} isLoading={actionLoading} title={t('page.actualImports.runValidation')}>
+                  {t('page.actualImports.runValidation')}
                 </Button>
               )}
               {selectedImport.status === 'validated' && (
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handlePost(selectedImport.id)} isLoading={actionLoading} title="Post Ledger Lines">
-                  Post Ledger Lines
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handlePost(selectedImport.id)} isLoading={actionLoading} title={t('page.actualImports.postLedgerLines')}>
+                  {t('page.actualImports.postLedgerLines')}
                 </Button>
               )}
               {selectedImport.status === 'posted' && (
-                <span className="text-xs text-slate-400 italic">Lines posted to ledger. Transaction locked.</span>
+                <span className="text-xs text-slate-400 italic">{t('page.actualImports.linesPosted')}</span>
               )}
             </div>
           </div>
@@ -511,7 +515,7 @@ export default function ActualsPage() {
           {selectedImport.errorLog && (
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 space-y-1">
               <div className="flex items-center gap-1.5 font-semibold">
-                <AlertTriangle className="h-4 w-4 text-red-500" /> Validation Failure Log
+                <AlertTriangle className="h-4 w-4 text-red-500" /> {t('page.actualImports.validationErrorLog')}
               </div>
               <ul className="list-disc list-inside space-y-1 mt-1.5 font-mono text-[11px]">
                 {(() => {
@@ -528,27 +532,27 @@ export default function ActualsPage() {
 
           {/* Itemized Lines Viewer */}
           <div className="space-y-3">
-            <h3 className="text-base font-bold text-slate-900">Imported Actual Lines</h3>
+            <h3 className="text-base font-bold text-slate-900">{t('page.actualImports.importedLines')}</h3>
             {isLoadingDetail ? (
               <div className="flex items-center justify-center py-8">
                 <Clock className="h-5 w-5 animate-spin text-emerald-500" />
               </div>
             ) : (selectedImport.actualLines ?? []).length === 0 ? (
-              <EmptyState title="No lines loaded" description="No valid items loaded in this import cycle." />
+              <EmptyState title={t('page.actualImports.noLines')} description={t('page.actualImports.noLinesDesc')} />
             ) : (
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm max-h-[400px] overflow-y-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase sticky top-0">
                     <tr>
-                      <th className="px-4 py-2 text-left">Date</th>
-                      <th className="px-4 py-2 text-left">Account</th>
-                      <th className="px-4 py-2 text-left">Site</th>
-                      <th className="px-4 py-2 text-left">CC</th>
-                      <th className="px-4 py-2 text-left">Dimension</th>
-                      <th className="px-4 py-2 text-left">Ref No</th>
-                      <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Price</th>
-                      <th className="px-4 py-2 text-right">Amount</th>
+                      <th className="px-4 py-2 text-left">{t('page.actualImports.lineDate')}</th>
+                      <th className="px-4 py-2 text-left">{t('page.actualImports.lineAccount')}</th>
+                      <th className="px-4 py-2 text-left">{t('page.actualImports.lineSite')}</th>
+                      <th className="px-4 py-2 text-left">{t('page.actualImports.lineCC')}</th>
+                      <th className="px-4 py-2 text-left">{t('page.actualImports.lineDimension')}</th>
+                      <th className="px-4 py-2 text-left">{t('page.actualImports.lineRefNo')}</th>
+                      <th className="px-4 py-2 text-right">{t('page.actualImports.lineQty')}</th>
+                      <th className="px-4 py-2 text-right">{t('page.actualImports.linePrice')}</th>
+                      <th className="px-4 py-2 text-right">{t('page.actualImports.lineAmount')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -565,7 +569,7 @@ export default function ActualsPage() {
                           <td className="px-4 py-2">{new Date(line.transactionDate).toLocaleDateString()}</td>
                           <td className="px-4 py-2">
                             <p className="font-semibold text-slate-800">{acc?.name ?? '—'}</p>
-                            <p className="text-[9px] font-mono text-slate-400">Code: {acc?.code ?? '—'}</p>
+                            <p className="text-[9px] font-mono text-slate-400">{t('page.actualImports.codePrefix', { code: acc?.code ?? '—' })}</p>
                           </td>
                           <td className="px-4 py-2 text-slate-600">{site?.name ?? '—'}</td>
                           <td className="px-4 py-2 text-slate-600">{cc?.code ?? '—'}</td>
@@ -586,9 +590,9 @@ export default function ActualsPage() {
       ) : (
         // LIST VIEW
         <div className="space-y-5">
-          <PageHeader title="Actual Imports" description="Import accounting transactions from ERP or spreadsheets.">
+          <PageHeader title={t('page.actualImports.title')} description={t('page.actualImports.description')}>
             <Button size="sm" onClick={() => { setWizardStep(1); setWizardOpen(true); }} id="actuals-import-btn">
-              <Upload className="h-4 w-4" /> Import actuals
+              <Upload className="h-4 w-4" /> {t('page.actualImports.importButton')}
             </Button>
           </PageHeader>
 
@@ -598,27 +602,27 @@ export default function ActualsPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
-                placeholder="Search imports…"
+                placeholder={t('page.actualImports.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            <p className="text-sm text-slate-400">{total} records</p>
+            <p className="text-sm text-slate-400">{t('common.recordsFound', { n: total })}</p>
           </div>
 
           {/* Table list */}
           {isLoading ? (
-            <LoadingState rows={6} message="Retrieving actual imports..." />
+            <LoadingState rows={6} message={t('page.actualImports.retrieving')} />
           ) : error ? (
             <ErrorState message={error} onRetry={fetchImports} />
           ) : imports.length === 0 ? (
             <EmptyState
-              title="No data imported"
-              description="Begin by pasting transaction rows to map actual expenditures and sales."
+              title={t('page.actualImports.emptyTitle')}
+              description={t('page.actualImports.emptyDesc')}
               action={
                 <Button size="sm" onClick={() => { setWizardStep(1); setWizardOpen(true); }}>
-                  <Upload className="h-4 w-4" /> Import actuals
+                  <Upload className="h-4 w-4" /> {t('page.actualImports.importButton')}
                 </Button>
               }
             />
@@ -646,17 +650,17 @@ export default function ActualsPage() {
         <Modal
           open
           onClose={() => setWizardOpen(false)}
-          title="Import Actual Ledger Data"
-          description="Configure actual ledger import and paste spreadsheet cells."
+          title={t('page.actualImports.wizardTitle')}
+          description={t('page.actualImports.wizardDesc')}
           size="lg"
           className="max-h-[90vh] flex flex-col"
         >
           {/* Stepper progress indicator */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
             {[
-              { step: 1, label: 'Setup Source' },
-              { step: 2, label: 'Paste Ledger Data' },
-              { step: 3, label: 'Preview & Upload' },
+              { step: 1, label: t('page.actualImports.step1Label') },
+              { step: 2, label: t('page.actualImports.step2Label') },
+              { step: 3, label: t('page.actualImports.step3Label') },
             ].map((s) => (
               <div key={s.step} className="flex items-center gap-2">
                 <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
@@ -684,7 +688,7 @@ export default function ActualsPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="w-source" className="text-xs font-semibold text-slate-500">Source System</label>
+                    <label htmlFor="w-source" className="text-xs font-semibold text-slate-500">{t('page.actualImports.sourceSystem')}</label>
                     <select
                       id="w-source"
                       value={sourceSystem}
@@ -692,38 +696,38 @@ export default function ActualsPage() {
                       className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none"
                     >
                       {SOURCE_SYSTEMS.map((sys) => (
-                        <option key={sys} value={sys} className="uppercase">{sys}</option>
+                        <option key={sys} value={sys}>{tSourceSystem(sys)}</option>
                       ))}
                     </select>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="w-type" className="text-xs font-semibold text-slate-500">Import Type</label>
+                    <label htmlFor="w-type" className="text-xs font-semibold text-slate-500">{t('page.actualImports.importType')}</label>
                     <select
                       id="w-type"
                       value={importType}
                       onChange={(e) => setImportType(e.target.value as ImportType)}
                       className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none"
                     >
-                      {IMPORT_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
+                      {IMPORT_TYPES.map((it) => (
+                        <option key={it.value} value={it.value}>{tImportType(it.value)}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input id="w-from" label="Period From" type="date" value={periodFrom} onChange={(e) => setPeriodFrom(e.target.value)} />
-                  <Input id="w-to" label="Period To" type="date" value={periodTo} onChange={(e) => setPeriodTo(e.target.value)} />
+                  <Input id="w-from" label={t('page.actualImports.periodFrom')} type="date" value={periodFrom} onChange={(e) => setPeriodFrom(e.target.value)} />
+                  <Input id="w-to" label={t('page.actualImports.periodTo')} type="date" value={periodTo} onChange={(e) => setPeriodTo(e.target.value)} />
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="w-mapping" className="text-xs font-semibold text-slate-500">Mapping Template</label>
+                    <label htmlFor="w-mapping" className="text-xs font-semibold text-slate-500">{t('page.actualImports.mappingTemplate')}</label>
                     <select
                       id="w-mapping"
                       value={mappingId}
                       onChange={(e) => setMappingId(e.target.value)}
                       className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none"
                     >
-                      <option value="">Select template...</option>
+                      <option value="">{t('page.actualImports.selectTemplate')}</option>
                       {mappings.map((m) => (
                         <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
@@ -733,7 +737,7 @@ export default function ActualsPage() {
 
                 <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                   <Button variant="outline" size="sm" type="button" onClick={() => setWizardOpen(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     size="sm"
@@ -741,7 +745,7 @@ export default function ActualsPage() {
                     onClick={() => setWizardStep(2)}
                     disabled={!mappingId}
                   >
-                    Next: Paste Data
+                    {t('page.actualImports.nextPasteData')}
                   </Button>
                 </div>
               </div>
@@ -753,7 +757,7 @@ export default function ActualsPage() {
                 {/* Sample data should be loaded from files */}
 
                 <div className="flex flex-col gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
-                  <p className="text-xs font-semibold text-slate-500">Or Upload CSV File Directly</p>
+                  <p className="text-xs font-semibold text-slate-500">{t('page.actualImports.orUploadCsv')}</p>
                   <div className="flex items-center gap-3">
                     <input
                       type="file"
@@ -766,7 +770,7 @@ export default function ActualsPage() {
                         reader.onload = (evt) => {
                           if (evt.target?.result) {
                             setRawText(evt.target.result as string);
-                            toastSuccess(`Loaded ${file.name} successfully.`);
+                            toastSuccess(t('page.actualImports.fileLoaded', { name: file.name }));
                           }
                         };
                         reader.readAsText(file);
@@ -778,21 +782,21 @@ export default function ActualsPage() {
 
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="w-data" className="text-xs font-semibold text-slate-500">
-                    Pasted Grid Cells (Tab/Comma separated, including headers)
+                    {t('page.actualImports.pastedGridCells')}
                   </label>
                   <textarea
                     id="w-data"
                     rows={6}
                     value={rawText}
                     onChange={(e) => setRawText(e.target.value)}
-                    placeholder="e.g.&#10;Account Code,Amount,Date,Reference&#10;6010,4500,2025-01-12,REF-001"
+                    placeholder={t('page.actualImports.csvPlaceholder')}
                     className="w-full rounded-lg border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                   <Button variant="outline" size="sm" type="button" onClick={() => setWizardStep(1)}>
-                    Back: Setup
+                    {t('page.actualImports.backSetup')}
                   </Button>
                   <Button
                     size="sm"
@@ -803,7 +807,7 @@ export default function ActualsPage() {
                     }}
                     disabled={rawText.trim() === ''}
                   >
-                    Next: Preview Mapping
+                    {t('page.actualImports.nextPreview')}
                   </Button>
                 </div>
               </div>
@@ -815,7 +819,7 @@ export default function ActualsPage() {
                 {isPreviewing ? (
                   <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                     <Clock className="h-8 w-8 animate-spin text-emerald-500 mb-2" />
-                    <p className="text-xs font-semibold text-slate-500">Analyzing schema and mapping translations...</p>
+                    <p className="text-xs font-semibold text-slate-500">{t('page.actualImports.analyzingSchema')}</p>
                   </div>
                 ) : (
                   <>
@@ -828,29 +832,29 @@ export default function ActualsPage() {
                     {previewRows.length > 0 ? (
                       <div className="space-y-2">
                         <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
-                          Preview Resolution ({previewRows.filter(r => r.success).length} / {previewRows.length} Valid)
+                          {t('page.actualImports.previewResolution', { valid: previewRows.filter(r => r.success).length, total: previewRows.length })}
                         </span>
                         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm max-h-[200px] overflow-y-auto">
                           <table className="w-full text-[10px]">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold sticky top-0">
                               <tr>
-                                <th className="px-2 py-1.5 text-left">Row</th>
-                                <th className="px-2 py-1.5 text-left">Account ID</th>
-                                <th className="px-2 py-1.5 text-right">Amount</th>
-                                <th className="px-2 py-1.5 text-left">Date</th>
-                                <th className="px-2 py-1.5 text-left">Status / Error Logs</th>
+                                <th className="px-2 py-1.5 text-left">{t('page.actualImports.previewRow')}</th>
+                                <th className="px-2 py-1.5 text-left">{t('page.actualImports.previewAccountId')}</th>
+                                <th className="px-2 py-1.5 text-right">{t('page.actualImports.previewAmount')}</th>
+                                <th className="px-2 py-1.5 text-left">{t('page.actualImports.previewDate')}</th>
+                                <th className="px-2 py-1.5 text-left">{t('page.actualImports.previewStatus')}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-mono">
                               {previewRows.map((p, idx) => (
                                 <tr key={idx} className={p.success ? 'hover:bg-slate-50' : 'bg-red-50/30'}>
-                                  <td className="px-2 py-1.5 font-bold">Row {p.rowIdx + 1}</td>
+                                  <td className="px-2 py-1.5 font-bold">{t('page.actualImports.previewRow')} {p.rowIdx + 1}</td>
                                   <td className="px-2 py-1.5">{p.line?.accountId ? accounts.find(a => a.id === p.line?.accountId)?.name ?? p.line.accountId : '—'}</td>
                                   <td className="px-2 py-1.5 text-right">{p.line ? `$${p.line.amount}` : '—'}</td>
                                   <td className="px-2 py-1.5">{p.line ? new Date(p.line.transactionDate).toLocaleDateString() : '—'}</td>
                                   <td className="px-2 py-1.5">
                                     {p.success ? (
-                                      <Badge variant="success" className="text-[9px] px-1 py-0 shadow-none">Resolved</Badge>
+                                      <Badge variant="success" className="text-[9px] px-1 py-0 shadow-none">{t('page.actualImports.resolved')}</Badge>
                                     ) : (
                                       <span className="text-red-600 block text-[9px] max-w-[250px] truncate" title={p.errors.join(', ')}>
                                         {p.errors.join(', ')}
@@ -864,12 +868,12 @@ export default function ActualsPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-6 text-slate-400 text-xs">No preview lines resolved. Check mapping template.</div>
+                      <div className="text-center py-6 text-slate-400 text-xs">{t('page.actualImports.noPreviewResolved')}</div>
                     )}
 
                     <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                       <Button variant="outline" size="sm" type="button" onClick={() => setWizardStep(2)}>
-                        Back: Paste Data
+                        {t('page.actualImports.backPasteData')}
                       </Button>
                       <Button
                         size="sm"
@@ -878,7 +882,7 @@ export default function ActualsPage() {
                         isLoading={wizardLoading}
                         disabled={previewRows.length === 0 || previewRows.some(r => !r.success)}
                       >
-                        Upload &amp; Validate
+                        {t('page.actualImports.uploadValidate')}
                       </Button>
                     </div>
                   </>
@@ -892,7 +896,7 @@ export default function ActualsPage() {
       {/* DELETE CONFIRM DIALOG */}
       <ConfirmDialog
         open={deleteConfirmImport !== null}
-        message="Are you sure you want to delete this import? Pasted lines will be removed. This cannot be undone."
+        message={t('page.actualImports.deleteConfirm')}
         isLoading={deleteLoading}
         onConfirm={handleDeleteImport}
         onCancel={() => setDeleteConfirmImport(null)}

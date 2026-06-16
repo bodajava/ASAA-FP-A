@@ -109,6 +109,12 @@ export type TranslationKey =
   | 'common.dark'
   | 'common.system'
   | 'common.currency'
+  | 'common.notifications'
+  | 'common.unread'
+  | 'common.noUnreadAlerts'
+  | 'common.everythingRunning'
+  | 'common.markAsRead'
+  | 'common.viewAllAlerts'
   | 'common.confirmDelete'
   | 'common.confirmDeleteMessage'
   | 'common.cancelDelete'
@@ -152,6 +158,16 @@ export type TranslationKey =
   | 'common.month'
   | 'common.year'
   | 'common.recordsFound'
+  | 'common.days'
+  | 'common.items'
+  | 'common.period'
+  | 'common.region'
+  | 'common.address'
+  | 'common.startDate'
+  | 'common.endDate'
+  | 'common.budget'
+  | 'common.cost'
+  | 'common.revenue'
   /* ── Status ──────────────────────────────────────────────────────────── */
   | 'status.success'
   | 'status.warning'
@@ -176,6 +192,50 @@ export type TranslationKey =
   | 'accountType.asset'
   | 'accountType.liability'
   | 'accountType.equity'
+  /* ── Entity types ────────────────────────────────────────────────────── */
+  | 'entityType.user'
+  | 'entityType.company'
+  | 'entityType.tenant'
+  | 'entityType.bomRecipe'
+  | 'entityType.budgetCycle'
+  | 'entityType.forecastCycle'
+  | 'entityType.scenario'
+  | 'entityType.actualImport'
+  | 'entityType.account'
+  | 'entityType.site'
+  /* ── Actions ──────────────────────────────────────────────────────────── */
+  | 'action.login'
+  | 'action.update'
+  | 'action.delete'
+  | 'action.create'
+  | 'action.statusChange'
+  /* ── Site types ───────────────────────────────────────────────────────── */
+  | 'siteType.factory'
+  | 'siteType.branch'
+  | 'siteType.warehouse'
+  | 'siteType.office'
+  | 'siteType.other'
+  /* ── Source values ────────────────────────────────────────────────────── */
+  | 'source.manual'
+  | 'source.api'
+  | 'source.import'
+  /* ── Employment types ─────────────────────────────────────────────────── */
+  | 'employmentType.fullTime'
+  | 'employmentType.partTime'
+  | 'employmentType.contract'
+  | 'employmentType.seasonal'
+  /* ── Unit names ───────────────────────────────────────────────────────── */
+  | 'unit.kilogram'
+  | 'unit.liter'
+  | 'unit.metricTon'
+  | 'unit.piece'
+  /* ── Known names ──────────────────────────────────────────────────────── */
+  | 'company.nileFreshRetailChain'
+  | 'company.iDiibiManufacturingCo'
+  | 'company.foodCompany'
+  | 'costCenter.administration'
+  | 'costCenter.productionDept'
+  | 'costCenter.salesAndMarketing'
   /* ── Forecast methods ───────────────────────────────────────────────── */
   | 'forecastMethod.manual'
   | 'forecastMethod.rolling'
@@ -505,6 +565,31 @@ export type TranslationKey =
   | 'page.variance.title'
   | 'page.inventory.title'
   | 'page.approvals.title'
+  | 'page.approvals.description'
+  | 'page.approvals.all'
+  | 'page.approvals.pending'
+  | 'page.approvals.approved'
+  | 'page.approvals.rejected'
+  | 'page.approvals.refresh'
+  | 'page.approvals.entityType'
+  | 'page.approvals.entityId'
+  | 'page.approvals.status'
+  | 'page.approvals.requestedBy'
+  | 'page.approvals.createdAt'
+  | 'page.approvals.noApprovals'
+  | 'page.approvals.noApprovalsDesc'
+  | 'page.approvals.noFilteredResults'
+  | 'page.approvals.confirmApproval'
+  | 'page.approvals.rejectRequest'
+  | 'page.approvals.confirmApprovalDesc'
+  | 'page.approvals.rejectRequestDesc'
+  | 'page.approvals.cancel'
+  | 'page.approvals.approve'
+  | 'page.approvals.reject'
+  | 'page.approvals.reasonRequired'
+  | 'page.approvals.rejectPlaceholder'
+  | 'page.approvals.commentOptional'
+  | 'page.approvals.commentPlaceholder'
   | 'page.promotions.title'
   | 'page.rawMaterialPrices.title'
   | 'page.actualImports.title'
@@ -530,12 +615,247 @@ export type TranslationKey =
   | 'page.headcountPlans.title'
   | 'page.modules.title'
   | 'page.notifications.title'
+  /* ── Actual Imports page ──────────────────────────────────────────────── */
+  | 'page.actualImports.description'
+  | 'page.actualImports.importButton'
+  | 'page.actualImports.searchPlaceholder'
+  | 'page.actualImports.colTypeSource'
+  | 'page.actualImports.colPeriodCover'
+  | 'page.actualImports.colUploadedAt'
+  | 'page.actualImports.emptyTitle'
+  | 'page.actualImports.emptyDesc'
+  | 'page.actualImports.detailTitle'
+  | 'page.actualImports.cardImportTypeSource'
+  | 'page.actualImports.cardImportPeriod'
+  | 'page.actualImports.cardUploadedDate'
+  | 'page.actualImports.cardLinesImported'
+  | 'page.actualImports.verifyFinalize'
+  | 'page.actualImports.runValidation'
+  | 'page.actualImports.postLedgerLines'
+  | 'page.actualImports.linesPosted'
+  | 'page.actualImports.validationErrorLog'
+  | 'page.actualImports.importedLines'
+  | 'page.actualImports.noLines'
+  | 'page.actualImports.noLinesDesc'
+  | 'page.actualImports.lineDate'
+  | 'page.actualImports.lineAccount'
+  | 'page.actualImports.lineSite'
+  | 'page.actualImports.lineCC'
+  | 'page.actualImports.lineDimension'
+  | 'page.actualImports.lineRefNo'
+  | 'page.actualImports.lineQty'
+  | 'page.actualImports.linePrice'
+  | 'page.actualImports.lineAmount'
+  | 'page.actualImports.codePrefix'
+  | 'page.actualImports.wizardTitle'
+  | 'page.actualImports.wizardDesc'
+  | 'page.actualImports.step1Label'
+  | 'page.actualImports.step2Label'
+  | 'page.actualImports.step3Label'
+  | 'page.actualImports.sourceSystem'
+  | 'page.actualImports.importType'
+  | 'page.actualImports.periodFrom'
+  | 'page.actualImports.periodTo'
+  | 'page.actualImports.mappingTemplate'
+  | 'page.actualImports.selectTemplate'
+  | 'page.actualImports.nextPasteData'
+  | 'page.actualImports.orUploadCsv'
+  | 'page.actualImports.pastedGridCells'
+  | 'page.actualImports.csvPlaceholder'
+  | 'page.actualImports.backSetup'
+  | 'page.actualImports.nextPreview'
+  | 'page.actualImports.previewRow'
+  | 'page.actualImports.previewAccountId'
+  | 'page.actualImports.previewAmount'
+  | 'page.actualImports.previewDate'
+  | 'page.actualImports.previewStatus'
+  | 'page.actualImports.analyzingSchema'
+  | 'page.actualImports.resolved'
+  | 'page.actualImports.noPreviewResolved'
+  | 'page.actualImports.uploadValidate'
+  | 'page.actualImports.backPasteData'
+  | 'page.actualImports.previewResolution'
+  | 'page.actualImports.deleteConfirm'
+  | 'page.actualImports.backToList'
+  | 'page.actualImports.retrieving'
+  | 'page.actualImports.fetchFailed'
+  | 'page.actualImports.validateFailed'
+  | 'page.actualImports.validateSuccess'
+  | 'page.actualImports.postSuccess'
+  | 'page.actualImports.deleteSuccess'
+  | 'page.actualImports.importCreated'
+  | 'page.actualImports.fileLoaded'
+  | 'page.actualImports.noCompanyDesc'
+  | 'page.actualImports.pasteValidationError'
+  /* ── Audit Logs page ──────────────────────────────────────────────────── */
+  | 'page.auditLogs.description'
+  | 'page.auditLogs.searchFilter'
+  | 'page.auditLogs.searchPlaceholder'
+  | 'page.auditLogs.entityType'
+  | 'page.auditLogs.action'
+  | 'page.auditLogs.allEntities'
+  | 'page.auditLogs.allActions'
+  | 'page.auditLogs.recordsTracked'
+  | 'page.auditLogs.refreshLogs'
+  | 'page.auditLogs.emptyTitle'
+  | 'page.auditLogs.emptyDesc'
+  | 'page.auditLogs.colTimestamp'
+  | 'page.auditLogs.colOperator'
+  | 'page.auditLogs.colAction'
+  | 'page.auditLogs.colEntityType'
+  | 'page.auditLogs.colEntityId'
+  | 'page.auditLogs.colIpAddress'
+  | 'page.auditLogs.viewDiff'
+  | 'page.auditLogs.modalTitle'
+  | 'page.auditLogs.logRecordId'
+  | 'page.auditLogs.operator'
+  | 'page.auditLogs.ipAddress'
+  | 'page.auditLogs.timestamp'
+  | 'page.auditLogs.userLabel'
+  | 'page.auditLogs.system'
+  | 'page.auditLogs.oldValues'
+  | 'page.auditLogs.newValues'
+  | 'page.auditLogs.noOldValues'
+  | 'page.auditLogs.noNewValues'
+  | 'page.auditLogs.closeDetail'
+  | 'page.auditLogs.noCompanyDesc'
+  | 'page.auditLogs.fetchFailed'
+  | 'page.auditLogs.fetching'
+  | 'page.auditLogs.noCompanyTitle'
+  /* ── Import Modal component ────────────────────────────────────────────── */
+  | 'component.importModal.title'
+  | 'component.importModal.howItWorks'
+  | 'component.importModal.instruction1'
+  | 'component.importModal.instruction2'
+  | 'component.importModal.instruction3'
+  | 'component.importModal.instruction4'
+  | 'component.importModal.instruction5'
+  | 'component.importModal.downloadTemplate'
+  | 'component.importModal.uploadFile'
+  | 'component.importModal.dragDrop'
+  | 'component.importModal.validatePreview'
+  | 'component.importModal.validCount'
+  | 'component.importModal.errorCount'
+  | 'component.importModal.clearReUpload'
+  | 'component.importModal.status'
+  | 'component.importModal.importRows'
+  | 'component.importModal.previewFailed'
+  | 'component.importModal.importFailed'
+  | 'component.importModal.downloadFailed'
+  | 'component.importModal.noValidRows'
+  | 'component.importModal.importSuccess'
+  | 'component.importModal.close'
+  | 'component.importModal.fileName'
+  | 'component.importModal.noCommit'
+  | 'component.importModal.rowFail'
   /* ── Auth page ──────────────────────────────────────────────────────── */
   | 'auth.signInTitle'
   | 'auth.signInSubtitle'
   | 'auth.noAccount'
   | 'auth.forgotPassword'
-  | 'auth.invalidCredentials';
+  | 'auth.invalidCredentials'
+  /* ── Companies page ──────────────────────────────────────────────────── */
+  | 'page.companies.description'
+  | 'page.companies.addCompany'
+  | 'page.companies.selectCompanyCallout'
+  | 'page.companies.selectCompanyCalloutDesc'
+  | 'page.companies.emptyTitle'
+  | 'page.companies.emptyDescription'
+  | 'page.companies.loading'
+  | 'page.companies.fiscalYearStart'
+  | 'page.companies.editTitle'
+  | 'page.companies.createTitle'
+  | 'page.companies.companyName'
+  | 'page.companies.fiscalYearMonth'
+  | 'page.companies.createCompany'
+  | 'page.companies.saveChanges'
+  | 'page.companies.deleteConfirmMsg'
+  | 'page.companies.deletedSuccess'
+  | 'page.companies.deleteFailed'
+  | 'page.companies.unexpectedDeleteError'
+  /* ── Exchange rates page ─────────────────────────────────────────────── */
+  | 'page.exchangeRates.description'
+  | 'page.exchangeRates.fromCurrency'
+  | 'page.exchangeRates.toCurrency'
+  | 'page.exchangeRates.exchangeRate'
+  | 'page.exchangeRates.effectiveDate'
+  | 'page.exchangeRates.source'
+  | 'page.exchangeRates.addRate'
+  | 'page.exchangeRates.syncUsd'
+  | 'page.exchangeRates.syncSuccess'
+  | 'page.exchangeRates.syncSuccessScenario'
+  | 'page.exchangeRates.syncFailed'
+  | 'page.exchangeRates.emptyTitle'
+  | 'page.exchangeRates.emptyDesc'
+  | 'page.exchangeRates.saveChanges'
+  /* ── Raw material prices page ────────────────────────────────────────── */
+  | 'page.rawMaterialPrices.description'
+  | 'page.rawMaterialPrices.materialName'
+  | 'page.rawMaterialPrices.price'
+  | 'page.rawMaterialPrices.priceDate'
+  | 'page.rawMaterialPrices.source'
+  | 'page.rawMaterialPrices.material'
+  | 'page.rawMaterialPrices.selectMaterial'
+  | 'page.rawMaterialPrices.addPrice'
+  | 'page.rawMaterialPrices.emptyTitle'
+  | 'page.rawMaterialPrices.emptyDesc'
+  | 'page.rawMaterialPrices.saveChanges'
+  /* ── Sites page ──────────────────────────────────────────────────────── */
+  | 'page.sites.description'
+  | 'page.sites.siteName'
+  | 'page.sites.type'
+  | 'page.sites.status'
+  | 'page.sites.region'
+  | 'page.sites.address'
+  | 'page.sites.create'
+  | 'page.sites.emptyTitle'
+  | 'page.sites.emptyDesc'
+  | 'page.sites.saveChanges'
+  /* ── Units page ──────────────────────────────────────────────────────── */
+  | 'page.units.description'
+  | 'page.units.unitName'
+  | 'page.units.symbol'
+  | 'page.units.create'
+  | 'page.units.emptyTitle'
+  | 'page.units.emptyDesc'
+  | 'page.units.saveChanges'
+  /* ── Accounts page ───────────────────────────────────────────────────── */
+  | 'page.accounts.description'
+  | 'page.accounts.accountCode'
+  | 'page.accounts.accountName'
+  | 'page.accounts.accountType'
+  | 'page.accounts.parentId'
+  | 'page.accounts.create'
+  | 'page.accounts.emptyTitle'
+  | 'page.accounts.emptyDesc'
+  | 'page.accounts.saveChanges'
+  /* ── Cost centers page ───────────────────────────────────────────────── */
+  | 'page.costCenters.description'
+  | 'page.costCenters.siteId'
+  | 'page.costCenters.siteIdOptional'
+  | 'page.costCenters.parentId'
+  | 'page.costCenters.create'
+  | 'page.costCenters.emptyTitle'
+  | 'page.costCenters.emptyDesc'
+  | 'page.costCenters.saveChanges'
+  /* ── Product categories page ─────────────────────────────────────────── */
+  | 'page.productCategories.description'
+  | 'page.productCategories.categoryName'
+  | 'page.productCategories.parentId'
+  | 'page.productCategories.create'
+  | 'page.productCategories.emptyTitle'
+  | 'page.productCategories.emptyDesc'
+  | 'page.productCategories.saveChanges'
+  /* ── Suppliers page ──────────────────────────────────────────────────── */
+  | 'page.suppliers.description'
+  | 'page.suppliers.supplierCode'
+  | 'page.suppliers.supplierName'
+  | 'page.suppliers.contactEmail'
+  | 'page.suppliers.contactPhone'
+  | 'page.suppliers.create'
+  | 'page.suppliers.emptyTitle'
+  | 'page.suppliers.emptyDesc'
+  | 'page.suppliers.saveChanges';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -649,6 +969,12 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.dark': 'Dark',
     'common.system': 'System',
     'common.currency': 'Currency',
+    'common.notifications': 'Notifications',
+    'common.unread': 'unread',
+    'common.noUnreadAlerts': 'No unread alerts',
+    'common.everythingRunning': 'Everything is running smoothly.',
+    'common.markAsRead': 'Mark as Read',
+    'common.viewAllAlerts': 'View All Alerts',
     'common.confirmDelete': 'Confirm Delete',
     'common.confirmDeleteMessage': 'Are you sure you want to delete this item? This action cannot be undone.',
     'common.cancelDelete': 'Cancel',
@@ -692,6 +1018,16 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.month': 'Month',
     'common.year': 'Year',
     'common.recordsFound': '{n} records',
+    'common.days': 'Days',
+    'common.items': 'Items',
+    'common.period': 'Period',
+    'common.region': 'Region',
+    'common.address': 'Address',
+    'common.startDate': 'Start Date',
+    'common.endDate': 'End Date',
+    'common.budget': 'Budget',
+    'common.cost': 'Cost',
+    'common.revenue': 'Revenue',
 
     /* Status */
     'status.success': 'Success',
@@ -718,6 +1054,57 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'accountType.asset': 'Asset',
     'accountType.liability': 'Liability',
     'accountType.equity': 'Equity',
+
+    /* Entity types */
+    'entityType.user': 'User',
+    'entityType.company': 'Company',
+    'entityType.tenant': 'Tenant',
+    'entityType.bomRecipe': 'BOM Recipe',
+    'entityType.budgetCycle': 'Budget Cycle',
+    'entityType.forecastCycle': 'Forecast Cycle',
+    'entityType.scenario': 'Scenario',
+    'entityType.actualImport': 'Actual Import',
+    'entityType.account': 'Account',
+    'entityType.site': 'Site',
+
+    /* Actions */
+    'action.login': 'Login',
+    'action.update': 'Update',
+    'action.delete': 'Delete',
+    'action.create': 'Create',
+    'action.statusChange': 'Status Change',
+
+    /* Site types */
+    'siteType.factory': 'Factory',
+    'siteType.branch': 'Branch',
+    'siteType.warehouse': 'Warehouse',
+    'siteType.office': 'Office',
+    'siteType.other': 'Other',
+
+    /* Source values */
+    'source.manual': 'Manual',
+    'source.api': 'API',
+    'source.import': 'Imported',
+
+    /* Employment types */
+    'employmentType.fullTime': 'Full Time',
+    'employmentType.partTime': 'Part Time',
+    'employmentType.contract': 'Contract',
+    'employmentType.seasonal': 'Seasonal',
+
+    /* Unit names */
+    'unit.kilogram': 'Kilogram',
+    'unit.liter': 'Liter',
+    'unit.metricTon': 'Metric Ton',
+    'unit.piece': 'Piece',
+
+    /* Known names */
+    'company.nileFreshRetailChain': 'Nile Fresh Retail Chain',
+    'company.iDiibiManufacturingCo': 'iDiibi Manufacturing Co',
+    'company.foodCompany': 'Food Company',
+    'costCenter.administration': 'Administration',
+    'costCenter.productionDept': 'Production Dept',
+    'costCenter.salesAndMarketing': 'Sales & Marketing',
 
     /* Forecast methods */
     'forecastMethod.manual': 'Manual',
@@ -1066,6 +1453,31 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.variance.title': 'Variance Analysis',
     'page.inventory.title': 'Inventory',
     'page.approvals.title': 'Approvals',
+    'page.approvals.description': 'Review and manage approval requests',
+    'page.approvals.all': 'All',
+    'page.approvals.pending': 'Pending',
+    'page.approvals.approved': 'Approved',
+    'page.approvals.rejected': 'Rejected',
+    'page.approvals.refresh': 'Refresh',
+    'page.approvals.entityType': 'Entity Type',
+    'page.approvals.entityId': 'Entity ID',
+    'page.approvals.status': 'Status',
+    'page.approvals.requestedBy': 'Requested By',
+    'page.approvals.createdAt': 'Created At',
+    'page.approvals.noApprovals': 'No approvals found',
+    'page.approvals.noApprovalsDesc': 'No approval requests have been created yet.',
+    'page.approvals.noFilteredResults': 'No {status} approval requests.',
+    'page.approvals.confirmApproval': 'Confirm Approval',
+    'page.approvals.rejectRequest': 'Reject Request',
+    'page.approvals.confirmApprovalDesc': 'Approve the {entityType} request (ID: {entityId})?',
+    'page.approvals.rejectRequestDesc': 'Provide a reason for rejecting the {entityType} request (ID: {entityId}).',
+    'page.approvals.cancel': 'Cancel',
+    'page.approvals.approve': 'Approve',
+    'page.approvals.reject': 'Reject',
+    'page.approvals.reasonRequired': 'Reason (required)',
+    'page.approvals.rejectPlaceholder': 'Explain why this request is being rejected...',
+    'page.approvals.commentOptional': 'Comment (optional)',
+    'page.approvals.commentPlaceholder': 'Add a note...',
     'page.promotions.title': 'Promotions',
     'page.rawMaterialPrices.title': 'Raw Material Prices',
     'page.actualImports.title': 'Actual Imports',
@@ -1092,12 +1504,259 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.modules.title': 'Modules',
     'page.notifications.title': 'Notifications',
 
+    /* Actual Imports */
+    'page.actualImports.description': 'Import accounting transactions from ERP or spreadsheets.',
+    'page.actualImports.importButton': 'Import actuals',
+    'page.actualImports.searchPlaceholder': 'Search imports…',
+    'page.actualImports.colTypeSource': 'Type / Source',
+    'page.actualImports.colPeriodCover': 'Period Cover',
+    'page.actualImports.colUploadedAt': 'Uploaded At',
+    'page.actualImports.emptyTitle': 'No data imported',
+    'page.actualImports.emptyDesc': 'Begin by pasting transaction rows to map actual expenditures and sales.',
+    'page.actualImports.detailTitle': 'Import #{id}',
+    'page.actualImports.cardImportTypeSource': 'Import Type / Source',
+    'page.actualImports.cardImportPeriod': 'Import Period',
+    'page.actualImports.cardUploadedDate': 'Uploaded Date',
+    'page.actualImports.cardLinesImported': 'Lines Imported',
+    'page.actualImports.verifyFinalize': 'Verify & Finalize:',
+    'page.actualImports.runValidation': 'Run Validation check',
+    'page.actualImports.postLedgerLines': 'Post Ledger Lines',
+    'page.actualImports.linesPosted': 'Lines posted to ledger. Transaction locked.',
+    'page.actualImports.validationErrorLog': 'Validation Failure Log',
+    'page.actualImports.importedLines': 'Imported Actual Lines',
+    'page.actualImports.noLines': 'No lines loaded',
+    'page.actualImports.noLinesDesc': 'No valid items loaded in this import cycle.',
+    'page.actualImports.lineDate': 'Date',
+    'page.actualImports.lineAccount': 'Account',
+    'page.actualImports.lineSite': 'Site',
+    'page.actualImports.lineCC': 'CC',
+    'page.actualImports.lineDimension': 'Dimension',
+    'page.actualImports.lineRefNo': 'Ref No',
+    'page.actualImports.lineQty': 'Qty',
+    'page.actualImports.linePrice': 'Price',
+    'page.actualImports.lineAmount': 'Amount',
+    'page.actualImports.codePrefix': 'Code: {code}',
+    'page.actualImports.wizardTitle': 'Import Actual Ledger Data',
+    'page.actualImports.wizardDesc': 'Configure actual ledger import and paste spreadsheet cells.',
+    'page.actualImports.step1Label': 'Setup Source',
+    'page.actualImports.step2Label': 'Paste Ledger Data',
+    'page.actualImports.step3Label': 'Preview & Upload',
+    'page.actualImports.sourceSystem': 'Source System',
+    'page.actualImports.importType': 'Import Type',
+    'page.actualImports.periodFrom': 'Period From',
+    'page.actualImports.periodTo': 'Period To',
+    'page.actualImports.mappingTemplate': 'Mapping Template',
+    'page.actualImports.selectTemplate': 'Select template...',
+    'page.actualImports.nextPasteData': 'Next: Paste Data',
+    'page.actualImports.orUploadCsv': 'Or Upload CSV File Directly',
+    'page.actualImports.pastedGridCells': 'Pasted Grid Cells (Tab/Comma separated, including headers)',
+    'page.actualImports.csvPlaceholder': 'e.g.\nAccount Code,Amount,Date,Reference\n6010,4500,2025-01-12,REF-001',
+    'page.actualImports.backSetup': 'Back: Setup',
+    'page.actualImports.nextPreview': 'Next: Preview Mapping',
+    'page.actualImports.previewRow': 'Row',
+    'page.actualImports.previewAccountId': 'Account ID',
+    'page.actualImports.previewAmount': 'Amount',
+    'page.actualImports.previewDate': 'Date',
+    'page.actualImports.previewStatus': 'Status / Error Logs',
+    'page.actualImports.analyzingSchema': 'Analyzing schema and mapping translations...',
+    'page.actualImports.resolved': 'Resolved',
+    'page.actualImports.noPreviewResolved': 'No preview lines resolved. Check mapping template.',
+    'page.actualImports.uploadValidate': 'Upload & Validate',
+    'page.actualImports.backPasteData': 'Back: Paste Data',
+    'page.actualImports.previewResolution': 'Preview Resolution ({valid} / {total} Valid)',
+    'page.actualImports.deleteConfirm': 'Are you sure you want to delete this import? Pasted lines will be removed. This cannot be undone.',
+    'page.actualImports.backToList': 'Back to List',
+    'page.actualImports.retrieving': 'Retrieving actual imports...',
+    'page.actualImports.fetchFailed': 'Failed to fetch actual imports.',
+    'page.actualImports.validateFailed': 'Validation failed.',
+    'page.actualImports.validateSuccess': 'Validation completed successfully.',
+    'page.actualImports.postSuccess': 'Ledger lines posted successfully.',
+    'page.actualImports.deleteSuccess': 'Actuals import deleted successfully.',
+    'page.actualImports.importCreated': 'Actuals import created successfully.',
+    'page.actualImports.fileLoaded': 'Loaded {name} successfully.',
+    'page.actualImports.noCompanyDesc': 'Please select a company from the sidebar before importing actual data.',
+    'page.actualImports.pasteValidationError': 'Ensure you paste valid spreadsheet rows.',
+
+    /* Audit Logs */
+    'page.auditLogs.description': 'Read-only compliance logging of all model calculations, scenario saves, and manual ledger adjustments',
+    'page.auditLogs.searchFilter': 'Search Description / User ID',
+    'page.auditLogs.searchPlaceholder': 'Search by keywords...',
+    'page.auditLogs.entityType': 'Entity Type',
+    'page.auditLogs.action': 'Action',
+    'page.auditLogs.allEntities': 'All Entities',
+    'page.auditLogs.allActions': 'All Actions',
+    'page.auditLogs.recordsTracked': '{n} Records Tracked',
+    'page.auditLogs.refreshLogs': 'Refresh logs',
+    'page.auditLogs.emptyTitle': 'No logs retrieved',
+    'page.auditLogs.emptyDesc': 'Adjust your search keywords or entity filters.',
+    'page.auditLogs.colTimestamp': 'Timestamp',
+    'page.auditLogs.colOperator': 'Operator',
+    'page.auditLogs.colAction': 'Action',
+    'page.auditLogs.colEntityType': 'Entity Type',
+    'page.auditLogs.colEntityId': 'Entity ID',
+    'page.auditLogs.colIpAddress': 'IP Address',
+    'page.auditLogs.viewDiff': 'View Diff',
+    'page.auditLogs.modalTitle': 'Audit Log Detail View',
+    'page.auditLogs.logRecordId': 'Log Record ID',
+    'page.auditLogs.operator': 'Operator',
+    'page.auditLogs.ipAddress': 'IP Address',
+    'page.auditLogs.timestamp': 'Timestamp',
+    'page.auditLogs.userLabel': 'User #{id}',
+    'page.auditLogs.system': 'System',
+    'page.auditLogs.oldValues': 'Before Change (Old Values)',
+    'page.auditLogs.newValues': 'After Change (New Values)',
+    'page.auditLogs.noOldValues': 'No attributes recorded (Create operation)',
+    'page.auditLogs.noNewValues': 'No attributes recorded (Delete operation)',
+    'page.auditLogs.closeDetail': 'Close Detail',
+    'page.auditLogs.noCompanyDesc': 'Please select a company from the sidebar before viewing audit logs.',
+    'page.auditLogs.fetchFailed': 'Failed to retrieve audit log records.',
+    'page.auditLogs.fetching': 'Fetching audit logs history...',
+    'page.auditLogs.noCompanyTitle': 'No active company',
+
+    /* Import Modal */
+    'component.importModal.title': 'Import {module}',
+    'component.importModal.howItWorks': 'How it works',
+    'component.importModal.instruction1': 'Download the sample CSV template below',
+    'component.importModal.instruction2': 'Fill in your data following the column headers',
+    'component.importModal.instruction3': 'Upload the completed file',
+    'component.importModal.instruction4': 'Preview and validate — fix any errors shown',
+    'component.importModal.instruction5': 'Click "Import Valid Rows" to commit',
+    'component.importModal.downloadTemplate': 'Download Sample Template',
+    'component.importModal.uploadFile': 'Upload CSV or Excel file',
+    'component.importModal.dragDrop': 'Drag & drop or click to select a .csv or .xlsx file',
+    'component.importModal.validatePreview': 'Validate & Preview',
+    'component.importModal.validCount': '{n} valid',
+    'component.importModal.errorCount': '{n} with errors',
+    'component.importModal.clearReUpload': 'Clear & re-upload',
+    'component.importModal.status': 'Status',
+    'component.importModal.importRows': 'Import {n} Valid Row{s}',
+    'component.importModal.previewFailed': 'Preview failed.',
+    'component.importModal.importFailed': 'Import failed.',
+    'component.importModal.downloadFailed': 'Failed to download template.',
+    'component.importModal.noValidRows': 'No valid rows to import.',
+    'component.importModal.importSuccess': 'Imported {count} record{plural} successfully.{failMsg}',
+    'component.importModal.noCommit': 'Import completed, but no records were committed.',
+    'component.importModal.rowFail': '{n} row(s) failed.',
+    'component.importModal.close': 'Close',
+    'component.importModal.fileName': 'Loaded {name} successfully.',
+
     /* Auth */
     'auth.signInTitle': 'Sign in to your account',
     'auth.signInSubtitle': 'Enter your credentials to access the platform',
     'auth.noAccount': 'Don\'t have an account?',
     'auth.forgotPassword': 'Forgot password?',
     'auth.invalidCredentials': 'Invalid credentials. Please check your Tenant ID, email and password.',
+
+    /* Companies page */
+    'page.companies.description': 'Manage companies in your tenant',
+    'page.companies.addCompany': 'Add Company',
+    'page.companies.selectCompanyCallout': 'Select a company',
+    'page.companies.selectCompanyCalloutDesc': 'Click the {action} button next to the company you want to work with.',
+    'page.companies.emptyTitle': 'No companies yet',
+    'page.companies.emptyDescription': 'Add your first company to get started.',
+    'page.companies.loading': 'Loading companies…',
+    'page.companies.fiscalYearStart': 'Fiscal Year Start',
+    'page.companies.editTitle': 'Edit Company',
+    'page.companies.createTitle': 'New Company',
+    'page.companies.companyName': 'Company Name',
+    'page.companies.fiscalYearMonth': 'Fiscal Year Start (month)',
+    'page.companies.createCompany': 'Create Company',
+    'page.companies.saveChanges': 'Save Changes',
+    'page.companies.deleteConfirmMsg': 'This action cannot be undone. Are you sure you want to delete this company?',
+    'page.companies.deletedSuccess': 'Company deleted successfully.',
+    'page.companies.deleteFailed': 'Failed to delete company.',
+    'page.companies.unexpectedDeleteError': 'An unexpected error occurred while deleting the company.',
+
+    /* Exchange rates page */
+    'page.exchangeRates.description': 'Manage exchange rates for currency conversion and reporting',
+    'page.exchangeRates.fromCurrency': 'From Currency',
+    'page.exchangeRates.toCurrency': 'To Currency',
+    'page.exchangeRates.exchangeRate': 'Exchange Rate',
+    'page.exchangeRates.effectiveDate': 'Effective Date',
+    'page.exchangeRates.source': 'Source',
+    'page.exchangeRates.addRate': 'Add Rate',
+    'page.exchangeRates.syncUsd': 'Sync USD Rate (API)',
+    'page.exchangeRates.syncSuccess': 'USD rate synced successfully at {rate} EGP.',
+    'page.exchangeRates.syncSuccessScenario': 'USD rate synced successfully at {rate} EGP. A simulation scenario has been automatically created!',
+    'page.exchangeRates.syncFailed': 'Failed to sync USD rate.',
+    'page.exchangeRates.emptyTitle': 'No exchange rates set',
+    'page.exchangeRates.emptyDesc': 'Add exchange rates to support multi-currency financial forecasts.',
+    'page.exchangeRates.saveChanges': 'Save Changes',
+
+    /* Raw material prices page */
+    'page.rawMaterialPrices.description': 'Track purchase prices of raw materials over time',
+    'page.rawMaterialPrices.materialName': 'Material Name',
+    'page.rawMaterialPrices.price': 'Price',
+    'page.rawMaterialPrices.priceDate': 'Price Date',
+    'page.rawMaterialPrices.source': 'Source',
+    'page.rawMaterialPrices.material': 'Material',
+    'page.rawMaterialPrices.selectMaterial': 'Select material...',
+    'page.rawMaterialPrices.addPrice': 'Add Price',
+    'page.rawMaterialPrices.emptyTitle': 'No raw material prices recorded',
+    'page.rawMaterialPrices.emptyDesc': 'Add price records to track raw material cost trends.',
+    'page.rawMaterialPrices.saveChanges': 'Save Changes',
+
+    /* Sites page */
+    'page.sites.description': 'Manage branches, factories, warehouses, and offices',
+    'page.sites.siteName': 'Site Name',
+    'page.sites.type': 'Type',
+    'page.sites.status': 'Status',
+    'page.sites.region': 'Region',
+    'page.sites.address': 'Address',
+    'page.sites.create': 'Create Site',
+    'page.sites.emptyTitle': 'No sites yet',
+    'page.sites.emptyDesc': 'Add your first site to get started.',
+    'page.sites.saveChanges': 'Save Changes',
+
+    /* Units page */
+    'page.units.description': 'Units of measurement used across products and materials',
+    'page.units.unitName': 'Unit Name',
+    'page.units.symbol': 'Symbol',
+    'page.units.create': 'Create Unit',
+    'page.units.emptyTitle': 'No units yet',
+    'page.units.emptyDesc': 'Add measurement units such as kg, litre, or piece.',
+    'page.units.saveChanges': 'Save Changes',
+
+    /* Accounts page */
+    'page.accounts.description': 'Chart of accounts for financial planning',
+    'page.accounts.accountCode': 'Account Code',
+    'page.accounts.accountName': 'Account Name',
+    'page.accounts.accountType': 'Account Type',
+    'page.accounts.parentId': 'Parent Account ID (optional)',
+    'page.accounts.create': 'Create Account',
+    'page.accounts.emptyTitle': 'No accounts yet',
+    'page.accounts.emptyDesc': 'Set up your chart of accounts to start budgeting.',
+    'page.accounts.saveChanges': 'Save Changes',
+
+    /* Cost centers page */
+    'page.costCenters.description': 'Organizational cost centers for financial allocation',
+    'page.costCenters.siteId': 'Site ID',
+    'page.costCenters.siteIdOptional': 'Site ID (optional)',
+    'page.costCenters.parentId': 'Parent Cost Center ID (optional)',
+    'page.costCenters.create': 'Create Cost Center',
+    'page.costCenters.emptyTitle': 'No cost centers yet',
+    'page.costCenters.emptyDesc': 'Add cost centers to allocate budgets and expenses.',
+    'page.costCenters.saveChanges': 'Save Changes',
+
+    /* Product categories page */
+    'page.productCategories.description': 'Hierarchical product categorization',
+    'page.productCategories.categoryName': 'Category Name',
+    'page.productCategories.parentId': 'Parent Category ID (optional)',
+    'page.productCategories.create': 'Create Category',
+    'page.productCategories.emptyTitle': 'No categories yet',
+    'page.productCategories.emptyDesc': 'Add categories to organize your products.',
+    'page.productCategories.saveChanges': 'Save Changes',
+
+    /* Suppliers page */
+    'page.suppliers.description': 'Manage your material and service suppliers',
+    'page.suppliers.supplierCode': 'Supplier Code',
+    'page.suppliers.supplierName': 'Supplier Name',
+    'page.suppliers.contactEmail': 'Contact Email',
+    'page.suppliers.contactPhone': 'Contact Phone',
+    'page.suppliers.create': 'Create Supplier',
+    'page.suppliers.emptyTitle': 'No suppliers yet',
+    'page.suppliers.emptyDesc': 'Add suppliers to link to your materials and purchase orders.',
+    'page.suppliers.saveChanges': 'Save Changes',
   },
 
   ar: {
@@ -1211,6 +1870,12 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.dark': 'داكن',
     'common.system': 'النظام',
     'common.currency': 'العملة',
+    'common.notifications': 'الإشعارات',
+    'common.unread': 'غير مقروء',
+    'common.noUnreadAlerts': 'لا توجد إشعارات غير مقروءة',
+    'common.everythingRunning': 'كل شيء يعمل بسلاسة.',
+    'common.markAsRead': 'تحديد كمقروء',
+    'common.viewAllAlerts': 'عرض كل الإشعارات',
     'common.confirmDelete': 'تأكيد الحذف',
     'common.confirmDeleteMessage': 'هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.',
     'common.cancelDelete': 'إلغاء',
@@ -1254,6 +1919,16 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.month': 'الشهر',
     'common.year': 'السنة',
     'common.recordsFound': '{n} سجل',
+    'common.days': 'يوم',
+    'common.items': 'عناصر',
+    'common.period': 'الفترة',
+    'common.region': 'المنطقة',
+    'common.address': 'العنوان',
+    'common.startDate': 'تاريخ البداية',
+    'common.endDate': 'تاريخ النهاية',
+    'common.budget': 'الميزانية',
+    'common.cost': 'التكلفة',
+    'common.revenue': 'الإيرادات',
 
     /* Status */
     'status.success': 'نجاح',
@@ -1280,6 +1955,57 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'accountType.asset': 'أصل',
     'accountType.liability': 'خصم',
     'accountType.equity': 'حقوق ملكية',
+
+    /* Entity types */
+    'entityType.user': 'مستخدم',
+    'entityType.company': 'شركة',
+    'entityType.tenant': 'مستأجر',
+    'entityType.bomRecipe': 'وصفة تصنيع',
+    'entityType.budgetCycle': 'دورة ميزانية',
+    'entityType.forecastCycle': 'دورة توقعات',
+    'entityType.scenario': 'سيناريو',
+    'entityType.actualImport': 'استيراد فعلي',
+    'entityType.account': 'حساب',
+    'entityType.site': 'موقع',
+
+    /* Actions */
+    'action.login': 'تسجيل دخول',
+    'action.update': 'تحديث',
+    'action.delete': 'حذف',
+    'action.create': 'إنشاء',
+    'action.statusChange': 'تغيير حالة',
+
+    /* Site types */
+    'siteType.factory': 'مصنع',
+    'siteType.branch': 'فرع',
+    'siteType.warehouse': 'مخزن',
+    'siteType.office': 'مكتب',
+    'siteType.other': 'أخرى',
+
+    /* Source values */
+    'source.manual': 'يدوي',
+    'source.api': 'API',
+    'source.import': 'مستورد',
+
+    /* Employment types */
+    'employmentType.fullTime': 'دوام كامل',
+    'employmentType.partTime': 'دوام جزئي',
+    'employmentType.contract': 'عقد',
+    'employmentType.seasonal': 'موسمي',
+
+    /* Unit names */
+    'unit.kilogram': 'كيلوجرام',
+    'unit.liter': 'لتر',
+    'unit.metricTon': 'طن متري',
+    'unit.piece': 'قطعة',
+
+    /* Known names */
+    'company.nileFreshRetailChain': 'سلسلة نايل فريش للتجزئة',
+    'company.iDiibiManufacturingCo': 'شركة آي ديبي للتصنيع',
+    'company.foodCompany': 'شركة أغذية',
+    'costCenter.administration': 'الإدارة',
+    'costCenter.productionDept': 'قسم الإنتاج',
+    'costCenter.salesAndMarketing': 'المبيعات والتسويق',
 
     /* Forecast methods */
     'forecastMethod.manual': 'يدوي',
@@ -1628,6 +2354,31 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.variance.title': 'تحليل الانحراف',
     'page.inventory.title': 'المخزون',
     'page.approvals.title': 'الموافقات',
+    'page.approvals.description': 'مراجعة وإدارة طلبات الموافقة',
+    'page.approvals.all': 'الجميع',
+    'page.approvals.pending': 'قيد الانتظار',
+    'page.approvals.approved': 'معتمد',
+    'page.approvals.rejected': 'مرفوض',
+    'page.approvals.refresh': 'تحديث',
+    'page.approvals.entityType': 'نوع الكيان',
+    'page.approvals.entityId': 'معرف الكيان',
+    'page.approvals.status': 'الحالة',
+    'page.approvals.requestedBy': 'قدم بواسطة',
+    'page.approvals.createdAt': 'تاريخ الإنشاء',
+    'page.approvals.noApprovals': 'لم يتم العثور على موافقات',
+    'page.approvals.noApprovalsDesc': 'لم يتم إنشاء أي طلبات موافقة بعد.',
+    'page.approvals.noFilteredResults': 'لا توجد طلبات موافقة {status}.',
+    'page.approvals.confirmApproval': 'تأكيد الموافقة',
+    'page.approvals.rejectRequest': 'رفض الطلب',
+    'page.approvals.confirmApprovalDesc': 'هل تريد الموافقة على طلب {entityType} (المعرف: {entityId})؟',
+    'page.approvals.rejectRequestDesc': 'يرجى تقديم سبب رفض طلب {entityType} (المعرف: {entityId}).',
+    'page.approvals.cancel': 'إلغاء',
+    'page.approvals.approve': 'موافقة',
+    'page.approvals.reject': 'رفض',
+    'page.approvals.reasonRequired': 'السبب (مطلوب)',
+    'page.approvals.rejectPlaceholder': 'اشرح سبب رفض هذا الطلب...',
+    'page.approvals.commentOptional': 'تعليق (اختياري)',
+    'page.approvals.commentPlaceholder': 'أضف ملاحظة...',
     'page.promotions.title': 'العروض الترويجية',
     'page.rawMaterialPrices.title': 'أسعار المواد الخام',
     'page.actualImports.title': 'استيراد الفعلي',
@@ -1654,11 +2405,258 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.modules.title': 'الوحدات',
     'page.notifications.title': 'الإشعارات',
 
+    /* Actual Imports */
+    'page.actualImports.description': 'استيراد معاملات المحاسبة من ERP أو جداول البيانات.',
+    'page.actualImports.importButton': 'استيراد الفعلي',
+    'page.actualImports.searchPlaceholder': 'بحث في الواردات...',
+    'page.actualImports.colTypeSource': 'النوع / المصدر',
+    'page.actualImports.colPeriodCover': 'تغطية الفترة',
+    'page.actualImports.colUploadedAt': 'تاريخ الرفع',
+    'page.actualImports.emptyTitle': 'لم يتم استيراد بيانات',
+    'page.actualImports.emptyDesc': 'ابدأ بلصق صفوف المعاملات لتعيين النفقات والمبيعات الفعلية.',
+    'page.actualImports.detailTitle': 'استيراد #{id}',
+    'page.actualImports.cardImportTypeSource': 'نوع الاستيراد / المصدر',
+    'page.actualImports.cardImportPeriod': 'فترة الاستيراد',
+    'page.actualImports.cardUploadedDate': 'تاريخ الرفع',
+    'page.actualImports.cardLinesImported': 'البنود المستوردة',
+    'page.actualImports.verifyFinalize': 'التحقق والإنهاء:',
+    'page.actualImports.runValidation': 'تشغيل فحص التحقق',
+    'page.actualImports.postLedgerLines': 'ترحيل قيود الأستاذ',
+    'page.actualImports.linesPosted': 'تم ترحيل البنود إلى الأستاذ. المعاملة مقفلة.',
+    'page.actualImports.validationErrorLog': 'سجل أخطاء التحقق',
+    'page.actualImports.importedLines': 'بنود الفعلي المستوردة',
+    'page.actualImports.noLines': 'لم يتم تحميل بنود',
+    'page.actualImports.noLinesDesc': 'لم يتم تحميل عناصر صالحة في دورة الاستيراد هذه.',
+    'page.actualImports.lineDate': 'التاريخ',
+    'page.actualImports.lineAccount': 'الحساب',
+    'page.actualImports.lineSite': 'الموقع',
+    'page.actualImports.lineCC': 'مركز التكلفة',
+    'page.actualImports.lineDimension': 'البعد',
+    'page.actualImports.lineRefNo': 'رقم المرجع',
+    'page.actualImports.lineQty': 'الكمية',
+    'page.actualImports.linePrice': 'السعر',
+    'page.actualImports.lineAmount': 'المبلغ',
+    'page.actualImports.codePrefix': 'الكود: {code}',
+    'page.actualImports.wizardTitle': 'استيراد بيانات الأستاذ الفعلية',
+    'page.actualImports.wizardDesc': 'تكوين استيراد الأستاذ الفعلي ولصق خلايا جدول البيانات.',
+    'page.actualImports.step1Label': 'إعداد المصدر',
+    'page.actualImports.step2Label': 'لصق بيانات الأستاذ',
+    'page.actualImports.step3Label': 'معاينة ورفع',
+    'page.actualImports.sourceSystem': 'النظام المصدر',
+    'page.actualImports.importType': 'نوع الاستيراد',
+    'page.actualImports.periodFrom': 'من فترة',
+    'page.actualImports.periodTo': 'إلى فترة',
+    'page.actualImports.mappingTemplate': 'قالب التعيين',
+    'page.actualImports.selectTemplate': 'اختر قالبًا...',
+    'page.actualImports.nextPasteData': 'التالي: لصق البيانات',
+    'page.actualImports.orUploadCsv': 'أو رفع ملف CSV مباشرة',
+    'page.actualImports.pastedGridCells': 'خلايا الجدول الملصقة (مفصولة بعلامة تبويب أو فاصلة، تشمل الرؤوس)',
+    'page.actualImports.csvPlaceholder': 'مثال:\nAccount Code,Amount,Date,Reference\n6010,4500,2025-01-12,REF-001',
+    'page.actualImports.backSetup': 'رجوع: الإعداد',
+    'page.actualImports.nextPreview': 'التالي: معاينة التعيين',
+    'page.actualImports.previewRow': 'الصف',
+    'page.actualImports.previewAccountId': 'معرف الحساب',
+    'page.actualImports.previewAmount': 'المبلغ',
+    'page.actualImports.previewDate': 'التاريخ',
+    'page.actualImports.previewStatus': 'الحالة / سجل الأخطاء',
+    'page.actualImports.analyzingSchema': 'تحليل المخطط وترجمات التعيين...',
+    'page.actualImports.resolved': 'تم الحل',
+    'page.actualImports.noPreviewResolved': 'لم يتم حل بنود المعاينة. تحقق من قالب التعيين.',
+    'page.actualImports.uploadValidate': 'رفع وتحقق',
+    'page.actualImports.backPasteData': 'رجوع: لصق البيانات',
+    'page.actualImports.previewResolution': 'دقة المعاينة ({valid} / {total} صالح)',
+    'page.actualImports.deleteConfirm': 'هل أنت متأكد من حذف هذا الاستيراد؟ ستتم إزالة البنود الملصقة. لا يمكن التراجع عن هذا.',
+    'page.actualImports.backToList': 'رجوع إلى القائمة',
+    'page.actualImports.retrieving': 'جاري استرداد الواردات الفعلية...',
+    'page.actualImports.fetchFailed': 'فشل في جلب الواردات الفعلية.',
+    'page.actualImports.validateFailed': 'فشل التحقق.',
+    'page.actualImports.validateSuccess': 'اكتمل التحقق بنجاح.',
+    'page.actualImports.postSuccess': 'تم ترحيل بنود الأستاذ بنجاح.',
+    'page.actualImports.deleteSuccess': 'تم حذف استيراد الفعلي بنجاح.',
+    'page.actualImports.importCreated': 'تم إنشاء استيراد الفعلي بنجاح.',
+    'page.actualImports.fileLoaded': 'تم تحميل {name} بنجاح.',
+    'page.actualImports.noCompanyDesc': 'يرجى اختيار شركة من الشريط الجانبي قبل استيراد البيانات الفعلية.',
+    'page.actualImports.pasteValidationError': 'تأكد من لصق صفوف جدول بيانات صالحة.',
+
+    /* Audit Logs */
+    'page.auditLogs.description': 'سجل امتثال للقراءة فقط لجميع حسابات النماذج وحفظ السيناريوهات وتعديلات الأستاذ اليدوية',
+    'page.auditLogs.searchFilter': 'بحث في الوصف / معرف المستخدم',
+    'page.auditLogs.searchPlaceholder': 'بحث بالكلمات المفتاحية...',
+    'page.auditLogs.entityType': 'نوع الكيان',
+    'page.auditLogs.action': 'الإجراء',
+    'page.auditLogs.allEntities': 'كل الكيانات',
+    'page.auditLogs.allActions': 'كل الإجراءات',
+    'page.auditLogs.recordsTracked': '{n} سجل متتبع',
+    'page.auditLogs.refreshLogs': 'تحديث السجلات',
+    'page.auditLogs.emptyTitle': 'لم يتم استرداد سجلات',
+    'page.auditLogs.emptyDesc': 'اضبط كلمات البحث أو مرشحات الكيان.',
+    'page.auditLogs.colTimestamp': 'الطابع الزمني',
+    'page.auditLogs.colOperator': 'المشغل',
+    'page.auditLogs.colAction': 'الإجراء',
+    'page.auditLogs.colEntityType': 'نوع الكيان',
+    'page.auditLogs.colEntityId': 'معرف الكيان',
+    'page.auditLogs.colIpAddress': 'عنوان IP',
+    'page.auditLogs.viewDiff': 'عرض الفرق',
+    'page.auditLogs.modalTitle': 'عرض تفاصيل سجل التدقيق',
+    'page.auditLogs.logRecordId': 'معرف سجل التدقيق',
+    'page.auditLogs.operator': 'المشغل',
+    'page.auditLogs.ipAddress': 'عنوان IP',
+    'page.auditLogs.timestamp': 'الطابع الزمني',
+    'page.auditLogs.userLabel': 'المستخدم #{id}',
+    'page.auditLogs.system': 'النظام',
+    'page.auditLogs.oldValues': 'قبل التغيير (القيم القديمة)',
+    'page.auditLogs.newValues': 'بعد التغيير (القيم الجديدة)',
+    'page.auditLogs.noOldValues': 'لا توجد سمات مسجلة (عملية إنشاء)',
+    'page.auditLogs.noNewValues': 'لا توجد سمات مسجلة (عملية حذف)',
+    'page.auditLogs.closeDetail': 'إغلاق التفاصيل',
+    'page.auditLogs.noCompanyDesc': 'يرجى اختيار شركة من الشريط الجانبي قبل عرض سجلات التدقيق.',
+    'page.auditLogs.fetchFailed': 'فشل في استرداد سجلات التدقيق.',
+    'page.auditLogs.fetching': 'جاري جلب سجل التدقيق...',
+    'page.auditLogs.noCompanyTitle': 'لا توجد شركة نشطة',
+
+    /* Import Modal */
+    'component.importModal.title': 'استيراد {module}',
+    'component.importModal.howItWorks': 'كيف يعمل',
+    'component.importModal.instruction1': 'قم بتنزيل قالب CSV النموذجي أدناه',
+    'component.importModal.instruction2': 'املأ بياناتك باتباع رؤوس الأعمدة',
+    'component.importModal.instruction3': 'قم برفع الملف المكتمل',
+    'component.importModal.instruction4': 'معاينة والتحقق — أصلح أي أخطاء تظهر',
+    'component.importModal.instruction5': 'انقر "استيراد الصفوف الصالحة" للتنفيذ',
+    'component.importModal.downloadTemplate': 'تنزيل القالب النموذجي',
+    'component.importModal.uploadFile': 'رفع ملف CSV أو Excel',
+    'component.importModal.dragDrop': 'اسحب وأفلت أو انقر لاختيار ملف .csv أو .xlsx',
+    'component.importModal.validatePreview': 'تحقق ومعاينة',
+    'component.importModal.validCount': '{n} صالح',
+    'component.importModal.errorCount': '{n} مع أخطاء',
+    'component.importModal.clearReUpload': 'مسح وإعادة الرفع',
+    'component.importModal.status': 'الحالة',
+    'component.importModal.importRows': 'استيراد {n} صف صالح',
+    'component.importModal.previewFailed': 'فشلت المعاينة.',
+    'component.importModal.importFailed': 'فشل الاستيراد.',
+    'component.importModal.downloadFailed': 'فشل تنزيل القالب.',
+    'component.importModal.noValidRows': 'لا توجد صفوف صالحة للاستيراد.',
+    'component.importModal.importSuccess': 'تم استيراد {count} سجل بنجاح.{failMsg}',
+    'component.importModal.noCommit': 'اكتمل الاستيراد، ولكن لم يتم تنفيذ أي سجلات.',
+    'component.importModal.rowFail': 'فشل {n} صف.',
+    'component.importModal.close': 'إغلاق',
+    'component.importModal.fileName': 'تم تحميل {name} بنجاح.',
+
     /* Auth */
     'auth.signInTitle': 'تسجيل الدخول إلى حسابك',
     'auth.signInSubtitle': 'أدخل بيانات الاعتماد الخاصة بك للوصول إلى المنصة',
     'auth.noAccount': 'ليس لديك حساب؟',
     'auth.forgotPassword': 'نسيت كلمة المرور؟',
     'auth.invalidCredentials': 'بيانات الاعتماد غير صالحة. يرجى التحقق من معرف المؤسسة والبريد الإلكتروني وكلمة المرور.',
+
+    /* Companies page */
+    'page.companies.description': 'إدارة الشركات في مؤسستك',
+    'page.companies.addCompany': 'إضافة شركة',
+    'page.companies.selectCompanyCallout': 'اختر شركة',
+    'page.companies.selectCompanyCalloutDesc': 'انقر على زر {action} بجانب الشركة التي تريد العمل بها.',
+    'page.companies.emptyTitle': 'لا توجد شركات بعد',
+    'page.companies.emptyDescription': 'أضف شركتك الأولى للبدء.',
+    'page.companies.loading': 'جارٍ تحميل الشركات...',
+    'page.companies.fiscalYearStart': 'بداية السنة المالية',
+    'page.companies.editTitle': 'تعديل الشركة',
+    'page.companies.createTitle': 'شركة جديدة',
+    'page.companies.companyName': 'اسم الشركة',
+    'page.companies.fiscalYearMonth': 'بداية السنة المالية (الشهر)',
+    'page.companies.createCompany': 'إنشاء شركة',
+    'page.companies.saveChanges': 'حفظ التغييرات',
+    'page.companies.deleteConfirmMsg': 'لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد من حذف هذه الشركة؟',
+    'page.companies.deletedSuccess': 'تم حذف الشركة بنجاح.',
+    'page.companies.deleteFailed': 'فشل حذف الشركة.',
+    'page.companies.unexpectedDeleteError': 'حدث خطأ غير متوقع أثناء حذف الشركة.',
+
+    /* Exchange rates page */
+    'page.exchangeRates.description': 'إدارة أسعار الصرف لتحويل العملات والتقارير',
+    'page.exchangeRates.fromCurrency': 'من عملة',
+    'page.exchangeRates.toCurrency': 'إلى عملة',
+    'page.exchangeRates.exchangeRate': 'سعر الصرف',
+    'page.exchangeRates.effectiveDate': 'تاريخ السريان',
+    'page.exchangeRates.source': 'المصدر',
+    'page.exchangeRates.addRate': 'إضافة سعر',
+    'page.exchangeRates.syncUsd': 'مزامنة سعر USD (API)',
+    'page.exchangeRates.syncSuccess': 'تمت مزامنة سعر USD بنجاح بسعر {rate} EGP.',
+    'page.exchangeRates.syncSuccessScenario': 'تمت مزامنة سعر USD بنجاح بسعر {rate} EGP. تم إنشاء سيناريو محاكاة تلقائياً!',
+    'page.exchangeRates.syncFailed': 'فشلت مزامنة سعر USD.',
+    'page.exchangeRates.emptyTitle': 'لم يتم تعيين أسعار صرف',
+    'page.exchangeRates.emptyDesc': 'أضف أسعار صرف لدعم التوقعات المالية متعددة العملات.',
+    'page.exchangeRates.saveChanges': 'حفظ التغييرات',
+
+    /* Raw material prices page */
+    'page.rawMaterialPrices.description': 'تتبع أسعار شراء المواد الخام بمرور الوقت',
+    'page.rawMaterialPrices.materialName': 'اسم المادة',
+    'page.rawMaterialPrices.price': 'السعر',
+    'page.rawMaterialPrices.priceDate': 'تاريخ السعر',
+    'page.rawMaterialPrices.source': 'المصدر',
+    'page.rawMaterialPrices.material': 'المادة',
+    'page.rawMaterialPrices.selectMaterial': 'اختر مادة...',
+    'page.rawMaterialPrices.addPrice': 'إضافة سعر',
+    'page.rawMaterialPrices.emptyTitle': 'لم يتم تسجيل أسعار مواد خام',
+    'page.rawMaterialPrices.emptyDesc': 'أضف سجلات أسعار لتتبع اتجاهات تكلفة المواد الخام.',
+    'page.rawMaterialPrices.saveChanges': 'حفظ التغييرات',
+
+    /* Sites page */
+    'page.sites.description': 'إدارة الفروع والمصانع والمستودعات والمكاتب',
+    'page.sites.siteName': 'اسم الموقع',
+    'page.sites.type': 'النوع',
+    'page.sites.status': 'الحالة',
+    'page.sites.region': 'المنطقة',
+    'page.sites.address': 'العنوان',
+    'page.sites.create': 'إنشاء موقع',
+    'page.sites.emptyTitle': 'لا توجد مواقع بعد',
+    'page.sites.emptyDesc': 'أضف موقعك الأول للبدء.',
+    'page.sites.saveChanges': 'حفظ التغييرات',
+
+    /* Units page */
+    'page.units.description': 'وحدات القياس المستخدمة عبر المنتجات والمواد',
+    'page.units.unitName': 'اسم الوحدة',
+    'page.units.symbol': 'الرمز',
+    'page.units.create': 'إنشاء وحدة',
+    'page.units.emptyTitle': 'لا توجد وحدات بعد',
+    'page.units.emptyDesc': 'أضف وحدات قياس مثل كجم، لتر، أو قطعة.',
+    'page.units.saveChanges': 'حفظ التغييرات',
+
+    /* Accounts page */
+    'page.accounts.description': 'دليل الحسابات للتخطيط المالي',
+    'page.accounts.accountCode': 'كود الحساب',
+    'page.accounts.accountName': 'اسم الحساب',
+    'page.accounts.accountType': 'نوع الحساب',
+    'page.accounts.parentId': 'معرف الحساب الأب (اختياري)',
+    'page.accounts.create': 'إنشاء حساب',
+    'page.accounts.emptyTitle': 'لا توجد حسابات بعد',
+    'page.accounts.emptyDesc': 'قم بإعداد دليل الحسابات الخاص بك لبدء إعداد الميزانية.',
+    'page.accounts.saveChanges': 'حفظ التغييرات',
+
+    /* Cost centers page */
+    'page.costCenters.description': 'مراكز التكلفة التنظيمية للتخصيص المالي',
+    'page.costCenters.siteId': 'معرف الموقع',
+    'page.costCenters.siteIdOptional': 'معرف الموقع (اختياري)',
+    'page.costCenters.parentId': 'معرف مركز التكلفة الأب (اختياري)',
+    'page.costCenters.create': 'إنشاء مركز تكلفة',
+    'page.costCenters.emptyTitle': 'لا توجد مراكز تكلفة بعد',
+    'page.costCenters.emptyDesc': 'أضف مراكز تكلفة لتخصيص الميزانيات والمصروفات.',
+    'page.costCenters.saveChanges': 'حفظ التغييرات',
+
+    /* Product categories page */
+    'page.productCategories.description': 'تصنيف هرمي للمنتجات',
+    'page.productCategories.categoryName': 'اسم التصنيف',
+    'page.productCategories.parentId': 'معرف التصنيف الأب (اختياري)',
+    'page.productCategories.create': 'إنشاء تصنيف',
+    'page.productCategories.emptyTitle': 'لا توجد تصنيفات بعد',
+    'page.productCategories.emptyDesc': 'أضف تصنيفات لتنظيم منتجاتك.',
+    'page.productCategories.saveChanges': 'حفظ التغييرات',
+
+    /* Suppliers page */
+    'page.suppliers.description': 'إدارة موردي المواد والخدمات',
+    'page.suppliers.supplierCode': 'كود المورد',
+    'page.suppliers.supplierName': 'اسم المورد',
+    'page.suppliers.contactEmail': 'البريد الإلكتروني للاتصال',
+    'page.suppliers.contactPhone': 'هاتف الاتصال',
+    'page.suppliers.create': 'إنشاء مورد',
+    'page.suppliers.emptyTitle': 'لا توجد موردين بعد',
+    'page.suppliers.emptyDesc': 'أضف موردين لربطهم بالمواد وأوامر الشراء الخاصة بك.',
+    'page.suppliers.saveChanges': 'حفظ التغييرات',
   },
 };

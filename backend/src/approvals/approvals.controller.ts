@@ -20,7 +20,7 @@ import {
 import { ApprovalsService, ApprovalResponseDto } from './approvals.service';
 import { CreateApprovalDto } from './dto/create-approval.dto';
 import { UpdateApprovalStatusDto } from './dto/update-approval-status.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { ApprovalQueryDto } from './dto/approval-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -66,16 +66,13 @@ export class ApprovalsController {
   @ApiResponse({ status: 200, description: 'List of approvals.' })
   findAll(
     @CompanyId() companyId: bigint,
-    @Query() paginationDto: PaginationDto,
-    @Query('entityType') entityType?: string,
-    @Query('entityId') entityId?: string,
-    @Query('status') status?: string,
+    @Query() queryDto: ApprovalQueryDto,
     @Request() req?: RequestWithUser,
   ) {
     return this.approvalsService.findAll(
       companyId,
       req!.user.tenantId,
-      { ...paginationDto, entityType, entityId, status },
+      queryDto,
     );
   }
 

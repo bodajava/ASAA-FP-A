@@ -8,8 +8,8 @@ import { Topbar } from '@/components/layout/topbar';
 import { LoadingState } from '@/components/ui/feedback-states';
 import { PwaInstallPrompt } from '@/components/layout/pwa-install-prompt';
 import { ServiceWorkerRegistration } from '@/components/layout/service-worker-registration';
-import { useI18n } from '@/lib/i18n/i18n-context';
 import { Building2 } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 /**
  * Pages that do NOT require an active company selection.
@@ -26,8 +26,16 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading, activeCompanyId } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Suppress native browser validation tooltips (English-only) in Arabic mode
+  useEffect(() => {
+    if (locale !== 'ar') return;
+    const handler = (e: Event) => e.preventDefault();
+    document.addEventListener('invalid', handler, true);
+    return () => document.removeEventListener('invalid', handler, true);
+  }, [locale]);
 
   // Redirect to login if not authenticated (once loading resolves)
   useEffect(() => {

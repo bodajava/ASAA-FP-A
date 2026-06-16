@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import axios from 'axios';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,6 +62,7 @@ export function ImportModal({
 }: ImportModalProps) {
   const { activeCompanyId, isAuthenticated } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useI18n();
   const token = isAuthenticated;
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -94,7 +96,7 @@ export function ImportModal({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toastError('Failed to download template.');
+      toastError(t('component.importModal.downloadFailed'));
     } finally {
       setIsDownloading(false);
     }
@@ -133,8 +135,8 @@ export function ImportModal({
       const msg =
         axios.isAxiosError(err)
           ? ((err.response?.data as { message?: string })?.message ??
-            'Preview failed.')
-          : 'Preview failed.';
+            t('component.importModal.previewFailed'))
+          : t('component.importModal.previewFailed');
       toastError(msg);
     } finally {
       setIsPreviewing(false);
@@ -148,7 +150,7 @@ export function ImportModal({
     if (!previewRows || !token || !activeCompanyId) return;
     const validRows = previewRows.filter((r) => r.isValid).map((r) => r.data);
     if (validRows.length === 0) {
-      toastError('No valid rows to import.');
+      toastError(t('component.importModal.noValidRows'));
       return;
     }
     setIsCommitting(true);
@@ -159,20 +161,22 @@ export function ImportModal({
       );
       const { successCount, failCount } = res.data;
       if (successCount > 0) {
-        toastSuccess(
-          `Imported ${successCount} record${successCount !== 1 ? 's' : ''} successfully.${failCount > 0 ? ` ${failCount} row(s) failed.` : ''}`,
-        );
+        let msg = t('component.importModal.importSuccess', { count: successCount });
+        if (failCount > 0) {
+          msg += ` ${t('component.importModal.rowFail', { n: failCount })}`;
+        }
+        toastSuccess(msg);
         onSuccess();
         onClose();
       } else {
-        toastError('Import completed, but no records were committed.');
+        toastError(t('component.importModal.noCommit'));
       }
     } catch (err: unknown) {
       const msg =
         axios.isAxiosError(err)
           ? ((err.response?.data as { message?: string })?.message ??
-            'Import failed.')
-          : 'Import failed.';
+            t('component.importModal.importFailed'))
+          : t('component.importModal.importFailed');
       toastError(msg);
     } finally {
       setIsCommitting(false);
@@ -203,13 +207,13 @@ export function ImportModal({
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-emerald-600" />
             <h2 className="text-base font-semibold text-slate-900">
-              Import {moduleLabel}
+              {t('component.importModal.title', { module: moduleLabel })}
             </h2>
           </div>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-            aria-label="Close"
+            aria-label={t('component.importModal.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -220,14 +224,14 @@ export function ImportModal({
           {/* Step 1: Instructions + Download */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 space-y-2">
             <p className="text-sm font-medium text-slate-700">
-              How it works
+              {t('component.importModal.howItWorks')}
             </p>
             <ol className="list-decimal list-inside text-sm text-slate-500 space-y-1">
-              <li>Download the sample CSV template below</li>
-              <li>Fill in your data following the column headers</li>
-              <li>Upload the completed file</li>
-              <li>Preview and validate — fix any errors shown</li>
-              <li>Click &quot;Import Valid Rows&quot; to commit</li>
+              <li>{t('component.importModal.instruction1')}</li>
+              <li>{t('component.importModal.instruction2')}</li>
+              <li>{t('component.importModal.instruction3')}</li>
+              <li>{t('component.importModal.instruction4')}</li>
+              <li>{t('component.importModal.instruction5')}</li>
             </ol>
             <Button
               size="sm"
@@ -238,14 +242,14 @@ export function ImportModal({
               id={`${module}-download-template-btn`}
             >
               <Download className="h-3.5 w-3.5" />
-              Download Sample Template
+              {t('component.importModal.downloadTemplate')}
             </Button>
           </div>
 
           {/* Step 2: Upload */}
           <div>
             <p className="text-sm font-medium text-slate-700 mb-2">
-              Upload CSV or Excel file
+              {t('component.importModal.uploadFile')}
             </p>
             <div
               className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-white px-6 py-8 cursor-pointer hover:border-emerald-400 transition-colors"
@@ -272,7 +276,7 @@ export function ImportModal({
                 </p>
               ) : (
                 <p className="text-sm text-slate-400">
-                  Drag &amp; drop or click to select a .csv or .xlsx file
+                  {t('component.importModal.dragDrop')}
                 </p>
               )}
               <input
@@ -291,7 +295,7 @@ export function ImportModal({
                   onClick={handlePreview}
                   id={`${module}-preview-btn`}
                 >
-                  Validate &amp; Preview
+                  {t('component.importModal.validatePreview')}
                 </Button>
               </div>
             )}
@@ -304,12 +308,12 @@ export function ImportModal({
               <div className="mb-3 flex items-center gap-4">
                 <span className="flex items-center gap-1 text-sm text-emerald-700">
                   <CheckCircle className="h-4 w-4" />
-                  {validCount} valid
+                  {t('component.importModal.validCount', { n: validCount })}
                 </span>
                 {invalidCount > 0 && (
                   <span className="flex items-center gap-1 text-sm text-red-600">
                     <AlertCircle className="h-4 w-4" />
-                    {invalidCount} with errors
+                    {t('component.importModal.errorCount', { n: invalidCount })}
                   </span>
                 )}
                 <button
@@ -321,7 +325,7 @@ export function ImportModal({
                     if (fileRef.current) fileRef.current.value = '';
                   }}
                 >
-                  Clear &amp; re-upload
+                  {t('component.importModal.clearReUpload')}
                 </button>
               </div>
 
@@ -334,7 +338,7 @@ export function ImportModal({
                         #
                       </th>
                       <th className="px-3 py-2 text-left font-medium text-slate-500">
-                        Status
+                        {t('component.importModal.status')}
                       </th>
                       {Object.keys(previewRows[0]?.data ?? {}).map((col) => (
                         <th
@@ -400,7 +404,7 @@ export function ImportModal({
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4 flex-shrink-0">
           <Button variant="outline" size="sm" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           {previewRows && validCount > 0 && (
             <Button
@@ -409,7 +413,7 @@ export function ImportModal({
               onClick={handleCommit}
               id={`${module}-commit-btn`}
             >
-              Import {validCount} Valid Row{validCount !== 1 ? 's' : ''}
+              {t('component.importModal.importRows', { n: validCount, s: validCount !== 1 ? 's' : '' })}
             </Button>
           )}
         </div>

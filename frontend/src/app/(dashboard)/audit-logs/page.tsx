@@ -21,9 +21,13 @@ import type {
   AuditLogRecord,
   PaginatedResponse,
 } from '@/types/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { useTranslateApi } from '@/lib/i18n/translate-api';
 
 export default function AuditLogsPage() {
   const { activeCompanyId } = useAuth();
+  const { t } = useI18n();
+  const { tAction, tEntityType } = useTranslateApi();
 
   // Audit Logs State
   const [logs, setLogs] = useState<AuditLogRecord[]>([]);
@@ -60,12 +64,12 @@ export default function AuditLogsPage() {
       setTotal(res.total ?? 0);
       setTotalPages(res.totalPages ?? 1);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to retrieve audit log records.');
+      setError(err instanceof Error ? err.message : t('page.auditLogs.fetchFailed'));
       setLogs([]);
     } finally {
       setIsLoading(false);
     }
-  }, [activeCompanyId, page, searchTerm, entityTypeFilter, actionFilter]);
+  }, [activeCompanyId, page, searchTerm, entityTypeFilter, actionFilter, t]);
 
   useEffect(() => {
     void Promise.resolve().then(() => void fetchLogs());
@@ -75,34 +79,36 @@ export default function AuditLogsPage() {
   const columns: Column<AuditLogRecord>[] = [
     {
       key: 'createdAt',
-      header: 'Timestamp',
+      header: t('page.auditLogs.colTimestamp'),
       className: 'font-mono text-slate-500',
       render: (v) => (v ? new Date(String(v)).toLocaleString() : '—'),
     },
     {
       key: 'userId',
-      header: 'Operator',
-      render: (v) => (v ? `User #${v}` : 'System'),
+      header: t('page.auditLogs.colOperator'),
+      render: (v) => (v ? t('page.auditLogs.userLabel', { id: String(v) }) : t('page.auditLogs.system')),
     },
     {
       key: 'action',
-      header: 'Action',
+      header: t('page.auditLogs.colAction'),
       className: 'capitalize font-bold text-slate-700',
+      render: (v) => tAction(String(v)),
     },
     {
       key: 'entityType',
-      header: 'Entity Type',
+      header: t('page.auditLogs.colEntityType'),
       className: 'font-mono text-slate-500 font-semibold',
+      render: (v) => tEntityType(String(v)),
     },
     {
       key: 'entityId',
-      header: 'Entity ID',
+      header: t('page.auditLogs.colEntityId'),
       className: 'font-mono text-slate-400',
       render: (v) => (v ? `#${v}` : '—'),
     },
     {
       key: 'ipAddress',
-      header: 'IP Address',
+      header: t('page.auditLogs.colIpAddress'),
       className: 'font-mono text-slate-400',
       render: (v) => String(v || '—'),
     },
@@ -118,7 +124,7 @@ export default function AuditLogsPage() {
             className="h-8 text-[10px] font-bold"
             onClick={() => setSelectedLog(row)}
           >
-            <Eye className="h-3.5 w-3.5 mr-1" /> View Diff
+            <Eye className="h-3.5 w-3.5 mr-1" /> {t('page.auditLogs.viewDiff')}
           </Button>
         </div>
       ),
@@ -128,10 +134,10 @@ export default function AuditLogsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Audit Logs" description="Read-only compliance audit history of database manipulations" />
+        <PageHeader title={t('page.auditLogs.title')} description={t('page.auditLogs.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar before viewing audit logs."
+          title={t('page.auditLogs.noCompanyTitle')}
+          message={t('page.auditLogs.noCompanyDesc')}
         />
       </div>
     );
@@ -140,8 +146,8 @@ export default function AuditLogsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Audit Logs"
-        description="Read-only compliance logging of all model calculations, scenario saves, and manual ledger adjustments"
+        title={t('page.auditLogs.title')}
+        description={t('page.auditLogs.description')}
       />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
@@ -149,12 +155,12 @@ export default function AuditLogsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <label htmlFor="log-search" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Search className="h-2.5 w-2.5" /> Search Description / User ID
+              <Search className="h-2.5 w-2.5" /> {t('page.auditLogs.searchFilter')}
             </label>
             <input
               id="log-search"
               type="search"
-              placeholder="Search by keywords..."
+              placeholder={t('page.auditLogs.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="h-8 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
@@ -162,36 +168,36 @@ export default function AuditLogsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="log-entity" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entity Type</label>
+            <label htmlFor="log-entity" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('page.auditLogs.entityType')}</label>
             <select
               id="log-entity"
               value={entityTypeFilter}
               onChange={(e) => setEntityTypeFilter(e.target.value)}
               className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none font-semibold"
             >
-              <option value="">All Entities</option>
-              <option value="BudgetCycle">Budget Cycle</option>
-              <option value="ForecastCycle">Forecast Cycle</option>
-              <option value="Scenario">Scenario Model</option>
-              <option value="ActualImport">Actual Data Import</option>
-              <option value="Account">Chart Account</option>
-              <option value="Site">Company Site</option>
+              <option value="">{t('page.auditLogs.allEntities')}</option>
+              <option value="BudgetCycle">{tEntityType('BudgetCycle')}</option>
+              <option value="ForecastCycle">{tEntityType('ForecastCycle')}</option>
+              <option value="Scenario">{tEntityType('Scenario')}</option>
+              <option value="ActualImport">{tEntityType('ActualImport')}</option>
+              <option value="Account">{tEntityType('Account')}</option>
+              <option value="Site">{tEntityType('Site')}</option>
             </select>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="log-action" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Action</label>
+            <label htmlFor="log-action" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('page.auditLogs.action')}</label>
             <select
               id="log-action"
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
               className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none font-semibold"
             >
-              <option value="">All Actions</option>
-              <option value="create">Create</option>
-              <option value="update">Update</option>
-              <option value="delete">Delete</option>
-              <option value="status_change">Status Change</option>
+              <option value="">{t('page.auditLogs.allActions')}</option>
+              <option value="create">{tAction('create')}</option>
+              <option value="update">{tAction('update')}</option>
+              <option value="delete">{tAction('delete')}</option>
+              <option value="status_change">{tAction('status_change')}</option>
             </select>
           </div>
         </div>
@@ -199,23 +205,23 @@ export default function AuditLogsPage() {
         {/* Action Buttons */}
         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
           <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-            <History className="h-4 w-4 text-emerald-600" /> {total} Records Tracked
+            <History className="h-4 w-4 text-emerald-600" /> {t('page.auditLogs.recordsTracked', { n: total })}
           </span>
           <Button size="sm" variant="outline" onClick={fetchLogs} className="flex items-center gap-1">
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /> Refresh logs
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /> {t('page.auditLogs.refreshLogs')}
           </Button>
         </div>
 
         {/* Data Table */}
         {isLoading ? (
-          <LoadingState rows={8} message="Fetching audit logs history..." />
+          <LoadingState rows={8} message={t('page.auditLogs.fetching')} />
         ) : error ? (
           <ErrorState message={error} onRetry={fetchLogs} />
         ) : logs.length === 0 ? (
           <EmptyState
             icon={<History className="h-6 w-6 text-slate-300" />}
-            title="No logs retrieved"
-            description="Adjust your search keywords or entity filters."
+            title={t('page.auditLogs.emptyTitle')}
+            description={t('page.auditLogs.emptyDesc')}
           />
         ) : (
           <div className="space-y-4">
@@ -242,25 +248,25 @@ export default function AuditLogsPage() {
         <Modal
           open
           onClose={() => setSelectedLog(null)}
-          title="Audit Log Detail View"
+          title={t('page.auditLogs.modalTitle')}
           size="lg"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs">
               <div>
-                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">Log Record ID</span>
+                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">{t('page.auditLogs.logRecordId')}</span>
                 <span className="font-semibold text-slate-700 font-mono">#{selectedLog.id}</span>
               </div>
               <div>
-                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">Operator</span>
-                <span className="font-semibold text-slate-700">{selectedLog.userId ? `User #${selectedLog.userId}` : 'System'}</span>
+                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">{t('page.auditLogs.operator')}</span>
+                <span className="font-semibold text-slate-700">{selectedLog.userId ? t('page.auditLogs.userLabel', { id: selectedLog.userId }) : t('page.auditLogs.system')}</span>
               </div>
               <div>
-                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">IP Address</span>
+                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">{t('page.auditLogs.ipAddress')}</span>
                 <span className="font-semibold text-slate-700 font-mono">{selectedLog.ipAddress || '—'}</span>
               </div>
               <div>
-                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">Timestamp</span>
+                <span className="font-bold text-slate-400 block uppercase text-[9px] tracking-wider">{t('page.auditLogs.timestamp')}</span>
                 <span className="font-semibold text-slate-700 font-mono">{selectedLog.createdAt ? new Date(selectedLog.createdAt).toLocaleString() : '—'}</span>
               </div>
             </div>
@@ -276,13 +282,13 @@ export default function AuditLogsPage() {
               {/* Old Values */}
               <div className="space-y-1.5">
                 <h4 className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                  <FileText className="h-3.5 w-3.5" /> Before Change (Old Values)
+                  <FileText className="h-3.5 w-3.5" /> {t('page.auditLogs.oldValues')}
                 </h4>
                 <div className="border border-slate-200 rounded-xl bg-slate-900 p-4 h-[250px] overflow-y-auto font-mono text-[10px] text-emerald-400">
                   {selectedLog.oldValues ? (
                     <pre className="whitespace-pre-wrap">{JSON.stringify(selectedLog.oldValues, null, 2)}</pre>
                   ) : (
-                    <span className="text-slate-500 italic">No attributes recorded (Create operation)</span>
+                    <span className="text-slate-500 italic">{t('page.auditLogs.noOldValues')}</span>
                   )}
                 </div>
               </div>
@@ -290,13 +296,13 @@ export default function AuditLogsPage() {
               {/* New Values */}
               <div className="space-y-1.5">
                 <h4 className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                  <FileText className="h-3.5 w-3.5" /> After Change (New Values)
+                  <FileText className="h-3.5 w-3.5" /> {t('page.auditLogs.newValues')}
                 </h4>
                 <div className="border border-slate-200 rounded-xl bg-slate-900 p-4 h-[250px] overflow-y-auto font-mono text-[10px] text-emerald-400">
                   {selectedLog.newValues ? (
                     <pre className="whitespace-pre-wrap">{JSON.stringify(selectedLog.newValues, null, 2)}</pre>
                   ) : (
-                    <span className="text-slate-500 italic">No attributes recorded (Delete operation)</span>
+                    <span className="text-slate-500 italic">{t('page.auditLogs.noNewValues')}</span>
                   )}
                 </div>
               </div>
@@ -304,7 +310,7 @@ export default function AuditLogsPage() {
 
             <div className="border-t border-slate-100 pt-4 flex justify-end">
               <Button size="sm" onClick={() => setSelectedLog(null)}>
-                Close Detail
+                {t('page.auditLogs.closeDetail')}
               </Button>
             </div>
           </div>

@@ -229,6 +229,32 @@ export function translateMonth(monthIdx: number, locale: string): string {
   return locale === 'ar' ? (monthNamesAr[monthIdx] ?? '') : (MONTH_NAMES[monthIdx] ?? '');
 }
 
+/* ── Entity types ──────────────────────────────────────────────────────── */
+const ENTITY_TYPE_MAP: Record<string, string> = {
+  budgetcycle:   'entityType.budgetCycle',
+  forecastcycle: 'entityType.forecastCycle',
+  scenario:      'entityType.scenario',
+  actualimport:  'entityType.actualImport',
+  account:       'entityType.account',
+  site:          'entityType.site',
+};
+
+export function translateEntityType(type: string): string {
+  return ENTITY_TYPE_MAP[type.toLowerCase().replace(/\s/g, '')] ?? type;
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────── */
+const ACTION_MAP: Record<string, string> = {
+  create:        'action.create',
+  update:        'action.update',
+  delete:        'action.delete',
+  status_change: 'action.statusChange',
+};
+
+export function translateAction(action: string): string {
+  return ACTION_MAP[action.toLowerCase()] ?? action;
+}
+
 /* ── Boolean → status badge ────────────────────────────────────────────── */
 export function boolLabel(value: boolean): string {
   return value ? 'common.active' : 'common.inactive';
@@ -252,6 +278,8 @@ export function useTranslateApi() {
     tDriverType:  (s: string) => { const key = translateDriverType(s); return key.startsWith('driverType.') ? t(key as any) : key; },
     tReportType:  (s: string) => { const key = translateReportType(s); return key.startsWith('reportType.') ? t(key as any) : key; },
     tReportCategory: (s: string) => { const key = translateReportCategory(s); return key.startsWith('reportCategory.') ? t(key as any) : key; },
+    tEntityType:  (s: string) => { const key = translateEntityType(s); return key.startsWith('entityType.') ? t(key as any) : key; },
+    tAction:      (s: string) => { const key = translateAction(s); return key.startsWith('action.') ? t(key as any) : key; },
     tMonth:       (idx: number) => translateMonth(idx, locale),
     boolLabel:    (v: boolean) => t(v ? 'common.active' : 'common.inactive'),
   };

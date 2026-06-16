@@ -187,8 +187,8 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="relative rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary cursor-pointer"
-            aria-label="Notifications"
-            title="Notifications"
+            aria-label={t('common.notifications')}
+            title={t('common.notifications')}
           >
             <Bell className="h-5 w-5" />
             {unreadNotifs.length > 0 && (
@@ -201,16 +201,16 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border bg-card py-2 shadow-xl z-50">
               <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-                <span className="text-xs font-bold text-card-foreground">Alerts &amp; Notifications</span>
-                <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-semibold">{unreadNotifs.length} unread</span>
+                <span className="text-xs font-bold text-card-foreground">{t('common.notifications')}</span>
+                <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-semibold">{unreadNotifs.length} {t('common.unread')}</span>
               </div>
 
               <div className="max-h-[280px] overflow-y-auto divide-y divide-border">
                 {latestUnread.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-muted-foreground">
                     <span className="text-xl">🎉</span>
-                    <p className="text-xs font-semibold mt-1">No unread alerts</p>
-                    <p className="text-[10px] text-muted-foreground">Everything is running smoothly.</p>
+                    <p className="text-xs font-semibold mt-1">{t('common.noUnreadAlerts')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('common.everythingRunning')}</p>
                   </div>
                 ) : (
                   latestUnread.map((n) => (
@@ -225,7 +225,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
                       <button
                         onClick={(e) => handleMarkRead(n.id, e)}
                         className="rounded p-1 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 shrink-0 transition-colors cursor-pointer"
-                        title="Mark as Read"
+                        title={t('common.markAsRead')}
                       >
                         <Check className="h-3 w-3" />
                       </button>
@@ -240,7 +240,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
                   onClick={() => setDropdownOpen(false)}
                   className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline"
                 >
-                  View All Alerts <ExternalLink className="h-3 w-3" />
+                  {t('common.viewAllAlerts')} <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
             </div>

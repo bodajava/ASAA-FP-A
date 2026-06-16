@@ -48,7 +48,7 @@ export default function AccountsPage() {
   const columns: Column<Account>[] = [
     { key: 'code', header: t('common.code'), className: 'font-mono text-xs' },
     { key: 'name', header: t('common.name') },
-    { key: 'accountType', header: t('common.type'), render: (v) => <span className="capitalize">{t(`accountType.${(v as string).replace('_', '')}` as any)}</span> },
+    { key: 'accountType', header: t('common.type'), render: (v) => <span className="capitalize">{t(`accountType.${((v as string) || '').replace('_', '')}` as any)}</span> },
   ];
 
   return (

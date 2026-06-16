@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { KpiTarget, Site } from '@/types/api';
 import { apiGet } from '@/lib/api';
@@ -158,14 +159,15 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function KpiTargetsPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<KpiTarget>
-      title="KPI Targets"
-      description="Define and track target objectives for key financial and operational metrics"
+      title={t('page.kpiTargets.title')}
+      description={t('page.kpiTargets.description')}
       endpoint="/kpi-targets"
       columns={columns}
-      emptyTitle="No KPI targets defined"
-      emptyDescription="Set yearly or monthly KPI targets to benchmark actual results against plan."
+      emptyTitle={t('page.kpiTargets.emptyTitle')}
+      emptyDescription={t('page.kpiTargets.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <KpiTargetForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

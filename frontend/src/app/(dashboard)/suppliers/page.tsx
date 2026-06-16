@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { Supplier } from '@/types/api';
 
@@ -42,15 +43,16 @@ function SupplierForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function SuppliersPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<Supplier>
-      title="Suppliers"
+      title={t('page.suppliers.title')}
       importModule="suppliers"
-      description="Manage your material and service suppliers"
+      description={t('page.suppliers.description')}
       endpoint="/suppliers"
       columns={columns}
-      emptyTitle="No suppliers yet"
-      emptyDescription="Add suppliers to link to your materials and purchase orders."
+      emptyTitle={t('page.suppliers.emptyTitle')}
+      emptyDescription={t('page.suppliers.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <SupplierForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

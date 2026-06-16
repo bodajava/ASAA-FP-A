@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { NotificationRule, Site, Account } from '@/types/api';
 import { apiGet } from '@/lib/api';
@@ -173,14 +174,15 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
 }
 
 export default function NotificationRulesPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<NotificationRule>
-      title="Notification Rules"
-      description="Configure alert rules for variance exceptions, approval gates, and integrations"
+      title={t('page.notificationRules.title')}
+      description={t('page.notificationRules.description')}
       endpoint="/notifications/rules"
       columns={columns}
-      emptyTitle="No notification rules defined"
-      emptyDescription="Create a rule to automatically alert your team when threshold anomalies occur."
+      emptyTitle={t('page.notificationRules.emptyTitle')}
+      emptyDescription={t('page.notificationRules.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <NotificationRuleForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

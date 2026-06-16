@@ -16,6 +16,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/ui/feedback-s
 import { useAuth } from '@/lib/auth-context';
 import { apiGet } from '@/lib/api';
 import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type {
   VarianceRecord,
   Account,
@@ -32,6 +33,7 @@ type CompareType = 'budget-vs-actual' | 'budget-vs-forecast' | 'actual-vs-foreca
 export default function VariancePage() {
   const { activeCompanyId } = useAuth();
   const { error: toastError } = useToast();
+  const { t } = useI18n();
 
   // Comparison Tab
   const [compareType, setCompareType] = useState<CompareType>('budget-vs-actual');
@@ -166,7 +168,7 @@ export default function VariancePage() {
   const columns: Column<VarianceRecord>[] = [
     {
       key: 'account_id',
-      header: 'Account',
+      header: t('page.variance.account'),
       render: (v) => {
         const acc = accounts.find((a) => a.id === String(v));
         return (
@@ -179,17 +181,17 @@ export default function VariancePage() {
     },
     {
       key: 'period_month',
-      header: 'Period',
+      header: t('page.variance.period'),
       render: (v, row) => `FY${row.fiscal_year} M${String(v)}`,
     },
     {
       key: 'site_id',
-      header: 'Site',
+      header: t('page.variance.site'),
       render: (v) => sites.find((s) => s.id === String(v))?.name ?? '—',
     },
     {
       key: 'product_id',
-      header: 'Product/Customer',
+      header: t('page.variance.productCustomer'),
       render: (v, row) => {
         const prod = products.find((p) => p.id === String(v))?.name;
         const cust = customers.find((c) => c.id === row.customer_id)?.name;
@@ -206,33 +208,33 @@ export default function VariancePage() {
   // Dynamically append comparison columns
   if (compareType === 'budget-vs-actual') {
     columns.push(
-      { key: 'budget_amount', header: 'Budget', className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'actual_amount', header: 'Actual', className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
       {
         key: 'variance_amount',
-        header: 'Variance (Actual - Budget)',
+        header: t('page.variance.varianceActBud'),
         className: 'text-right',
         render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
       }
     );
   } else if (compareType === 'budget-vs-forecast') {
     columns.push(
-      { key: 'budget_amount', header: 'Budget', className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'forecast_amount', header: 'Forecast', className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
       {
         key: 'variance_amount',
-        header: 'Variance (Forecast - Budget)',
+        header: t('page.variance.varianceForBud'),
         className: 'text-right',
         render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
       }
     );
   } else if (compareType === 'actual-vs-forecast') {
     columns.push(
-      { key: 'actual_amount', header: 'Actual', className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'forecast_amount', header: 'Forecast', className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
       {
         key: 'variance_amount',
-        header: 'Variance (Forecast - Actual)',
+        header: t('page.variance.varianceForAct'),
         className: 'text-right',
         render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
       }
@@ -240,24 +242,24 @@ export default function VariancePage() {
   } else {
     // Three-way
     columns.push(
-      { key: 'budget_amount', header: 'Budget', className: 'text-right font-mono text-xs text-slate-500', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'actual_amount', header: 'Actual', className: 'text-right font-mono text-xs text-slate-700', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'forecast_amount', header: 'Forecast', className: 'text-right font-mono text-xs text-slate-700 border-r border-slate-100', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs text-slate-500', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs text-slate-700', render: (v) => `$${Number(v).toLocaleString()}` },
+      { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs text-slate-700 border-r border-slate-100', render: (v) => `$${Number(v).toLocaleString()}` },
       {
         key: 'actual_vs_budget_amount',
-        header: 'Act vs Bud',
+        header: t('page.variance.actVsBud'),
         className: 'text-right',
         render: (_, row) => renderVariance(row.actual_vs_budget_amount ?? 0, row.actual_vs_budget_pct ?? null, row.account_id),
       },
       {
         key: 'forecast_vs_budget_amount',
-        header: 'For vs Bud',
+        header: t('page.variance.forVsBud'),
         className: 'text-right',
         render: (_, row) => renderVariance(row.forecast_vs_budget_amount ?? 0, row.forecast_vs_budget_pct ?? null, row.account_id),
       },
       {
         key: 'forecast_vs_actual_amount',
-        header: 'For vs Act',
+        header: t('page.variance.forVsAct'),
         className: 'text-right',
         render: (_, row) => renderVariance(row.forecast_vs_actual_amount ?? 0, row.forecast_vs_actual_pct ?? null, row.account_id),
       }
@@ -267,7 +269,7 @@ export default function VariancePage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Variance Analysis" description="Compare financial performance across budget, forecast, and actual dimensions." />
+        <PageHeader title={t('page.variance.title')} description={t('page.variance.description')} />
         <ErrorState
           title="No active company"
           message="Please select a company from the sidebar before viewing variance analysis."
@@ -278,16 +280,16 @@ export default function VariancePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Variance Analysis" description="Measure performance metrics and analyze budget compliance." />
+      <PageHeader title={t('page.variance.title')} description={t('page.variance.description')} />
 
       {/* Tabs for comparison modes */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200">
         {(
           [
-            { value: 'budget-vs-actual', label: 'Budget vs Actual' },
-            { value: 'budget-vs-forecast', label: 'Budget vs Forecast' },
-            { value: 'actual-vs-forecast', label: 'Actual vs Forecast' },
-            { value: 'budget-actual-forecast', label: 'Three-Way (B vs A vs F)' },
+            { value: 'budget-vs-actual', label: t('page.variance.budgetVsActual') },
+            { value: 'budget-vs-forecast', label: t('page.variance.budgetVsForecast') },
+            { value: 'actual-vs-forecast', label: t('page.variance.actualVsForecast') },
+            { value: 'budget-actual-forecast', label: t('page.variance.threeWay') },
           ] as const
         ).map((t) => (
           <button
@@ -307,12 +309,12 @@ export default function VariancePage() {
       {/* Filters Bar */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
         <div className="flex items-center gap-1.5 text-slate-700 text-xs font-semibold">
-          <Filter className="h-4.5 w-4.5 text-emerald-600" /> Filter Analysis
+          <Filter className="h-4.5 w-4.5 text-emerald-600" /> {t('page.variance.filterAnalysis')}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <Input
             id="v-year"
-            label="Fiscal Year"
+            label={t('page.variance.fiscalYear')}
             type="number"
             value={fiscalYear}
             onChange={(e) => setFiscalYear(e.target.value)}
@@ -320,70 +322,70 @@ export default function VariancePage() {
             className="h-8 py-1.5 text-xs"
           />
           <div className="flex flex-col gap-1">
-            <label htmlFor="v-month" className="text-xs font-semibold text-slate-500">Period Month</label>
+            <label htmlFor="v-month" className="text-xs font-semibold text-slate-500">{t('page.variance.periodMonth')}</label>
             <select
               id="v-month"
               value={periodMonth}
               onChange={(e) => setPeriodMonth(e.target.value)}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="">All Months</option>
+              <option value="">{t('page.variance.allMonths')}</option>
               {MONTH_NAMES.slice(1).map((name, i) => (
                 <option key={i + 1} value={i + 1}>{name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="v-account" className="text-xs font-semibold text-slate-500">Account</label>
+            <label htmlFor="v-account" className="text-xs font-semibold text-slate-500">{t('page.variance.account')}</label>
             <select
               id="v-account"
               value={accountId}
               onChange={(e) => setAccountId(e.target.value)}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="">All Accounts</option>
+              <option value="">{t('page.variance.allAccounts')}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>[{a.code}] {a.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="v-site" className="text-xs font-semibold text-slate-500">Site</label>
+            <label htmlFor="v-site" className="text-xs font-semibold text-slate-500">{t('page.variance.site')}</label>
             <select
               id="v-site"
               value={siteId}
               onChange={(e) => setSiteId(e.target.value)}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="">All Sites</option>
+              <option value="">{t('page.variance.allSites')}</option>
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="v-product" className="text-xs font-semibold text-slate-500">Product</label>
+            <label htmlFor="v-product" className="text-xs font-semibold text-slate-500">{t('page.variance.product')}</label>
             <select
               id="v-product"
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="">All Products</option>
+              <option value="">{t('page.variance.allProducts')}</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="v-customer" className="text-xs font-semibold text-slate-500">Customer</label>
+            <label htmlFor="v-customer" className="text-xs font-semibold text-slate-500">{t('page.variance.customer')}</label>
             <select
               id="v-customer"
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="">All Customers</option>
+              <option value="">{t('page.variance.allCustomers')}</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -397,14 +399,14 @@ export default function VariancePage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
-              placeholder="Search table..."
+              placeholder={t('page.variance.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
           <Button variant="outline" size="sm" className="h-8 px-3 ml-auto flex gap-1 items-center" onClick={fetchVarianceReport}>
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <RefreshCw className="h-3.5 w-3.5" /> {t('page.variance.refresh')}
           </Button>
         </div>
       </div>
@@ -416,8 +418,8 @@ export default function VariancePage() {
         <ErrorState message={error} onRetry={fetchVarianceReport} />
       ) : records.length === 0 ? (
         <EmptyState
-          title="No variance data found"
-          description="Try broadening your filter parameters or import actuals/create budgets."
+          title={t('page.variance.noData')}
+          description={t('page.variance.noDataDesc')}
         />
       ) : (
         <>

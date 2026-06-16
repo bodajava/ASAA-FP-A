@@ -5,6 +5,7 @@ import { CrudPage } from '@/components/crud-page';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { apiGet } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { User, Role } from '@/types/api';
 
@@ -146,14 +147,15 @@ function UserForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function UsersPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<User>
-      title="Users"
-      description="Manage users who have access to this company"
+      title={t('page.users.title')}
+      description={t('page.users.description')}
       endpoint="/users"
       columns={columns}
-      emptyTitle="No users created"
-      emptyDescription="Add users to grant them access to the FP&A platform."
+      emptyTitle={t('page.users.emptyTitle')}
+      emptyDescription={t('page.users.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <UserForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

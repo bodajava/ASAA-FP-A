@@ -1011,6 +1011,122 @@ export type TranslationKey =
   | 'page.promotions.search'
   | 'page.promotions.startDate'
   | 'page.promotions.status'
+
+  /* ── Page: BOM Recipes ───────────────────────────────────────────────── */
+  | 'page.bomRecipes.description'
+  | 'page.bomRecipes.emptyDescription'
+  | 'page.bomRecipes.emptyTitle'
+  | 'page.bomRecipes.lockedDescription'
+  | 'page.bomRecipes.lockedTitle'
+
+  /* ── Page: Customers ──────────────────────────────────────────────────── */
+  | 'page.customers.description'
+  | 'page.customers.emptyDescription'
+  | 'page.customers.emptyTitle'
+
+  /* ── Page: Integrations ───────────────────────────────────────────────── */
+  | 'page.integrations.title'
+  | 'page.integrations.description'
+  | 'page.integrations.connectionsHeader'
+  | 'page.integrations.mappingsHeader'
+  | 'page.integrations.connectionsDescription'
+  | 'page.integrations.mappingsDescription'
+  | 'page.integrations.addConnection'
+  | 'page.integrations.addMapping'
+  | 'page.integrations.selectConnection'
+  | 'page.integrations.selectMapping'
+  | 'page.integrations.mappingName'
+  | 'page.integrations.sourceSystem'
+  | 'page.integrations.dataType'
+  | 'page.integrations.isDefault'
+  | 'page.integrations.status'
+  | 'page.integrations.connectionAdapter'
+  | 'page.integrations.testConnection'
+  | 'page.integrations.connectionSuccessful'
+  | 'page.integrations.connectionFailed'
+  | 'page.integrations.importMappingTemplate'
+  | 'page.integrations.manualDataSync'
+  | 'page.integrations.triggerManualSync'
+  | 'page.integrations.triggerSynchronization'
+  | 'page.integrations.syncDescription'
+  | 'page.integrations.syncPeriodFrom'
+  | 'page.integrations.syncPeriodTo'
+  | 'page.integrations.recordsSynced'
+  | 'page.integrations.syncCompleted'
+  | 'page.integrations.syncFailed'
+  | 'page.integrations.lockedTitle'
+  | 'page.integrations.lockedDescription'
+  | 'page.integrations.noConnectionsTitle'
+  | 'page.integrations.noConnectionsDescription'
+  | 'page.integrations.noMappingsTitle'
+  | 'page.integrations.noMappingsDescription'
+  | 'page.integrations.loadingConnections'
+  | 'page.integrations.loadingMappings'
+
+  /* ── Page: KPI Targets ───────────────────────────────────────────────── */
+  | 'page.kpiTargets.description'
+  | 'page.kpiTargets.emptyDescription'
+  | 'page.kpiTargets.emptyTitle'
+
+  /* ── Page: Materials ──────────────────────────────────────────────────── */
+  | 'page.materials.description'
+  | 'page.materials.emptyDescription'
+  | 'page.materials.emptyTitle'
+
+  /* ── Page: Notification Rules ─────────────────────────────────────────── */
+  | 'page.notificationRules.description'
+  | 'page.notificationRules.emptyDescription'
+  | 'page.notificationRules.emptyTitle'
+
+  /* ── Page: Product Categories ─────────────────────────────────────────── */
+  | 'page.productCategories.emptyDescription'
+
+  /* ── Page: Products ───────────────────────────────────────────────────── */
+  | 'page.products.description'
+  | 'page.products.emptyDescription'
+  | 'page.products.emptyTitle'
+
+  /* ── Page: Suppliers ──────────────────────────────────────────────────── */
+  | 'page.suppliers.emptyDescription'
+
+  /* ── Page: Users ──────────────────────────────────────────────────────── */
+  | 'page.users.description'
+  | 'page.users.emptyDescription'
+  | 'page.users.emptyTitle'
+
+  /* ── Page: Variance ───────────────────────────────────────────────────── */
+  | 'page.variance.description'
+  | 'page.variance.budgetVsActual'
+  | 'page.variance.budgetVsForecast'
+  | 'page.variance.actualVsForecast'
+  | 'page.variance.threeWay'
+  | 'page.variance.filterAnalysis'
+  | 'page.variance.fiscalYear'
+  | 'page.variance.periodMonth'
+  | 'page.variance.account'
+  | 'page.variance.site'
+  | 'page.variance.product'
+  | 'page.variance.customer'
+  | 'page.variance.allMonths'
+  | 'page.variance.allAccounts'
+  | 'page.variance.allSites'
+  | 'page.variance.allProducts'
+  | 'page.variance.allCustomers'
+  | 'page.variance.search'
+  | 'page.variance.refresh'
+  | 'page.variance.period'
+  | 'page.variance.productCustomer'
+  | 'page.variance.budget'
+  | 'page.variance.actual'
+  | 'page.variance.forecast'
+  | 'page.variance.actVsBud'
+  | 'page.variance.forVsBud'
+  | 'page.variance.forVsAct'
+  | 'page.variance.noData'
+  | 'page.variance.noDataDesc'
+  | 'page.variance.varianceActBud'
+  | 'page.variance.varianceForBud'
+  | 'page.variance.varianceForAct'
 ;
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
@@ -2072,6 +2188,122 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.promotions.promotionCreated': 'Promotion created successfully.',
     'page.promotions.promotionDeleted': 'Promotion deleted successfully.',
     'page.promotions.promotionDeleteFailed': 'Failed to delete promotion.',
+
+    /* BOM Recipes */
+    'page.bomRecipes.description': 'Manage bill of materials recipes for your products.',
+    'page.bomRecipes.emptyDescription': 'Create BOM recipes to define the materials and quantities needed for production.',
+    'page.bomRecipes.emptyTitle': 'No BOM recipes yet',
+    'page.bomRecipes.lockedDescription': 'BOM Recipe management is available on the Business and Enterprise tiers.',
+    'page.bomRecipes.lockedTitle': 'BOM Recipes Locked',
+
+    /* Customers */
+    'page.customers.description': 'Manage your customer list and profiles.',
+    'page.customers.emptyDescription': 'Add your first customer to get started.',
+    'page.customers.emptyTitle': 'No customers yet',
+
+    /* Integrations */
+    'page.integrations.title': 'Integrations',
+    'page.integrations.description': 'Connect external systems and manage data mappings.',
+    'page.integrations.connectionsHeader': 'Connections',
+    'page.integrations.mappingsHeader': 'Mappings',
+    'page.integrations.connectionsDescription': 'Configure connections to external systems for data synchronization.',
+    'page.integrations.mappingsDescription': 'Define how data fields map between external systems and ASAA FP&A.',
+    'page.integrations.addConnection': 'Add Connection',
+    'page.integrations.addMapping': 'Add Mapping',
+    'page.integrations.selectConnection': 'Select connection...',
+    'page.integrations.selectMapping': 'Select mapping...',
+    'page.integrations.mappingName': 'Mapping Name',
+    'page.integrations.sourceSystem': 'Source System',
+    'page.integrations.dataType': 'Data Type',
+    'page.integrations.isDefault': 'Is Default',
+    'page.integrations.status': 'Status',
+    'page.integrations.connectionAdapter': 'Connection Adapter',
+    'page.integrations.testConnection': 'Test Connection',
+    'page.integrations.connectionSuccessful': 'Connection test successful.',
+    'page.integrations.connectionFailed': 'Connection test failed.',
+    'page.integrations.importMappingTemplate': 'Import Mapping Template',
+    'page.integrations.manualDataSync': 'Manual Data Sync',
+    'page.integrations.triggerManualSync': 'Trigger Manual Sync',
+    'page.integrations.triggerSynchronization': 'Trigger Synchronization',
+    'page.integrations.syncDescription': 'Synchronize data between the external system and ASAA FP&A.',
+    'page.integrations.syncPeriodFrom': 'Sync Period From',
+    'page.integrations.syncPeriodTo': 'Sync Period To',
+    'page.integrations.recordsSynced': 'Records Synced',
+    'page.integrations.syncCompleted': 'Sync completed successfully.',
+    'page.integrations.syncFailed': 'Sync failed.',
+    'page.integrations.lockedTitle': 'Integrations Locked',
+    'page.integrations.lockedDescription': 'Data integration features are available on the Business and Enterprise tiers.',
+    'page.integrations.noConnectionsTitle': 'No connections yet',
+    'page.integrations.noConnectionsDescription': 'Add a connection to an external system to start syncing data.',
+    'page.integrations.noMappingsTitle': 'No mappings yet',
+    'page.integrations.noMappingsDescription': 'Add a mapping to define how external data is translated into ASAA FP&A.',
+    'page.integrations.loadingConnections': 'Loading connections...',
+    'page.integrations.loadingMappings': 'Loading mappings...',
+
+    /* KPI Targets */
+    'page.kpiTargets.description': 'Define and track key performance indicator targets.',
+    'page.kpiTargets.emptyDescription': 'Create KPI targets to monitor your business performance.',
+    'page.kpiTargets.emptyTitle': 'No KPI targets yet',
+
+    /* Materials */
+    'page.materials.description': 'Manage raw materials and ingredients used in production.',
+    'page.materials.emptyDescription': 'Add your first material to get started.',
+    'page.materials.emptyTitle': 'No materials yet',
+
+    /* Notification Rules */
+    'page.notificationRules.description': 'Configure rules for automated alerts and notifications.',
+    'page.notificationRules.emptyDescription': 'Create notification rules to receive alerts on key events.',
+    'page.notificationRules.emptyTitle': 'No notification rules yet',
+
+    /* Product Categories */
+    'page.productCategories.emptyDescription': 'Add categories to organize your products.',
+
+    /* Products */
+    'page.products.description': 'Manage your product catalog and pricing.',
+    'page.products.emptyDescription': 'Add your first product to get started.',
+    'page.products.emptyTitle': 'No products yet',
+
+    /* Suppliers */
+    'page.suppliers.emptyDescription': 'Add suppliers to link to your materials and purchase orders.',
+
+    /* Users */
+    'page.users.description': 'Manage system users and their roles.',
+    'page.users.emptyDescription': 'Invite your first user to collaborate.',
+    'page.users.emptyTitle': 'No users yet',
+
+    /* Variance */
+    'page.variance.description': 'Analyze variances between budget, forecast, and actuals.',
+    'page.variance.budgetVsActual': 'Budget vs Actual',
+    'page.variance.budgetVsForecast': 'Budget vs Forecast',
+    'page.variance.actualVsForecast': 'Actual vs Forecast',
+    'page.variance.threeWay': 'Three-Way Variance',
+    'page.variance.filterAnalysis': 'Filter Analysis',
+    'page.variance.fiscalYear': 'Fiscal Year',
+    'page.variance.periodMonth': 'Period / Month',
+    'page.variance.account': 'Account',
+    'page.variance.site': 'Site',
+    'page.variance.product': 'Product',
+    'page.variance.customer': 'Customer',
+    'page.variance.allMonths': 'All Months',
+    'page.variance.allAccounts': 'All Accounts',
+    'page.variance.allSites': 'All Sites',
+    'page.variance.allProducts': 'All Products',
+    'page.variance.allCustomers': 'All Customers',
+    'page.variance.search': 'Search',
+    'page.variance.refresh': 'Refresh',
+    'page.variance.period': 'Period',
+    'page.variance.productCustomer': 'Product / Customer',
+    'page.variance.budget': 'Budget',
+    'page.variance.actual': 'Actual',
+    'page.variance.forecast': 'Forecast',
+    'page.variance.actVsBud': 'Act vs Bud',
+    'page.variance.forVsBud': 'For vs Bud',
+    'page.variance.forVsAct': 'For vs Act',
+    'page.variance.noData': 'No data available',
+    'page.variance.noDataDesc': 'Select filters and refresh to load variance data.',
+    'page.variance.varianceActBud': 'Variance (Act vs Bud)',
+    'page.variance.varianceForBud': 'Variance (For vs Bud)',
+    'page.variance.varianceForAct': 'Variance (For vs Act)',
   },
 
   ar: {
@@ -3133,5 +3365,120 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.promotions.promotionDeleted': 'تم حذف العرض الترويجي بنجاح.',
     'page.promotions.promotionDeleteFailed': 'فشل حذف العرض الترويجي.',
 
+    /* BOM Recipes */
+    'page.bomRecipes.description': 'إدارة قوائم مكونات المنتجات لوصفات التصنيع.',
+    'page.bomRecipes.emptyDescription': 'أنشئ وصفات تصنيع لتحديد المواد والكميات المطلوبة للإنتاج.',
+    'page.bomRecipes.emptyTitle': 'لا توجد وصفات تصنيع بعد',
+    'page.bomRecipes.lockedDescription': 'إدارة وصفات التصنيع متاحة في باقات الأعمال والمؤسسات.',
+    'page.bomRecipes.lockedTitle': 'وصفات التصنيع مقفولة',
+
+    /* Customers */
+    'page.customers.description': 'إدارة قائمة العملاء وملفاتهم.',
+    'page.customers.emptyDescription': 'أضف أول عميل للبدء.',
+    'page.customers.emptyTitle': 'لا يوجد عملاء بعد',
+
+    /* Integrations */
+    'page.integrations.title': 'التكاملات',
+    'page.integrations.description': 'ربط الأنظمة الخارجية وإدارة تعيينات البيانات.',
+    'page.integrations.connectionsHeader': 'الاتصالات',
+    'page.integrations.mappingsHeader': 'التعيينات',
+    'page.integrations.connectionsDescription': 'تكوين اتصالات بالأنظمة الخارجية لمزامنة البيانات.',
+    'page.integrations.mappingsDescription': 'تحديد كيفية تعيين حقول البيانات بين الأنظمة الخارجية و ASAA FP&A.',
+    'page.integrations.addConnection': 'إضافة اتصال',
+    'page.integrations.addMapping': 'إضافة تعيين',
+    'page.integrations.selectConnection': 'اختر اتصالاً...',
+    'page.integrations.selectMapping': 'اختر تعييناً...',
+    'page.integrations.mappingName': 'اسم التعيين',
+    'page.integrations.sourceSystem': 'النظام المصدر',
+    'page.integrations.dataType': 'نوع البيانات',
+    'page.integrations.isDefault': 'افتراضي',
+    'page.integrations.status': 'الحالة',
+    'page.integrations.connectionAdapter': 'موصل الاتصال',
+    'page.integrations.testConnection': 'اختبار الاتصال',
+    'page.integrations.connectionSuccessful': 'اختبار الاتصال ناجح.',
+    'page.integrations.connectionFailed': 'فشل اختبار الاتصال.',
+    'page.integrations.importMappingTemplate': 'استيراد قالب التعيين',
+    'page.integrations.manualDataSync': 'مزامنة البيانات اليدوية',
+    'page.integrations.triggerManualSync': 'تشغيل المزامنة اليدوية',
+    'page.integrations.triggerSynchronization': 'تشغيل المزامنة',
+    'page.integrations.syncDescription': 'مزامنة البيانات بين النظام الخارجي و ASAA FP&A.',
+    'page.integrations.syncPeriodFrom': 'من فترة المزامنة',
+    'page.integrations.syncPeriodTo': 'إلى فترة المزامنة',
+    'page.integrations.recordsSynced': 'السجلات المتزامنة',
+    'page.integrations.syncCompleted': 'اكتملت المزامنة بنجاح.',
+    'page.integrations.syncFailed': 'فشلت المزامنة.',
+    'page.integrations.lockedTitle': 'التكاملات مقفولة',
+    'page.integrations.lockedDescription': 'ميزات تكامل البيانات متاحة في باقات الأعمال والمؤسسات.',
+    'page.integrations.noConnectionsTitle': 'لا توجد اتصالات بعد',
+    'page.integrations.noConnectionsDescription': 'أضف اتصالاً بنظام خارجي لبدء مزامنة البيانات.',
+    'page.integrations.noMappingsTitle': 'لا توجد تعيينات بعد',
+    'page.integrations.noMappingsDescription': 'أضف تعييناً لتحديد كيفية ترجمة البيانات الخارجية إلى ASAA FP&A.',
+    'page.integrations.loadingConnections': 'جارٍ تحميل الاتصالات...',
+    'page.integrations.loadingMappings': 'جارٍ تحميل التعيينات...',
+
+    /* KPI Targets */
+    'page.kpiTargets.description': 'تحديد وتتبع مستهدفات مؤشرات الأداء الرئيسية.',
+    'page.kpiTargets.emptyDescription': 'أنشئ مستهدفات أداء لمراقبة أداء أعمالك.',
+    'page.kpiTargets.emptyTitle': 'لا توجد مستهدفات أداء بعد',
+
+    /* Materials */
+    'page.materials.description': 'إدارة المواد الخام والمكونات المستخدمة في الإنتاج.',
+    'page.materials.emptyDescription': 'أضف أول مادة للبدء.',
+    'page.materials.emptyTitle': 'لا توجد مواد بعد',
+
+    /* Notification Rules */
+    'page.notificationRules.description': 'تكوين قواعد التنبيهات والإشعارات الآلية.',
+    'page.notificationRules.emptyDescription': 'أنشئ قواعد إشعارات لتلقي تنبيهات حول الأحداث الرئيسية.',
+    'page.notificationRules.emptyTitle': 'لا توجد قواعد إشعارات بعد',
+
+    /* Product Categories */
+    'page.productCategories.emptyDescription': 'أضف تصنيفات لتنظيم منتجاتك.',
+
+    /* Products */
+    'page.products.description': 'إدارة كتالوج المنتجات والتسعير.',
+    'page.products.emptyDescription': 'أضف أول منتج للبدء.',
+    'page.products.emptyTitle': 'لا توجد منتجات بعد',
+
+    /* Suppliers */
+    'page.suppliers.emptyDescription': 'أضف موردين لربطهم بالمواد وأوامر الشراء.',
+
+    /* Users */
+    'page.users.description': 'إدارة مستخدمي النظام وأدوارهم.',
+    'page.users.emptyDescription': 'ادعُ أول مستخدم للتعاون.',
+    'page.users.emptyTitle': 'لا يوجد مستخدمين بعد',
+
+    /* Variance */
+    'page.variance.description': 'تحليل الانحرافات بين الميزانية والتوقعات والفعليات.',
+    'page.variance.budgetVsActual': 'الميزانية مقابل الفعلي',
+    'page.variance.budgetVsForecast': 'الميزانية مقابل التوقعات',
+    'page.variance.actualVsForecast': 'الفعلي مقابل التوقعات',
+    'page.variance.threeWay': 'الانحراف الثلاثي',
+    'page.variance.filterAnalysis': 'تصفية التحليل',
+    'page.variance.fiscalYear': 'السنة المالية',
+    'page.variance.periodMonth': 'الفترة / الشهر',
+    'page.variance.account': 'الحساب',
+    'page.variance.site': 'الموقع',
+    'page.variance.product': 'المنتج',
+    'page.variance.customer': 'العميل',
+    'page.variance.allMonths': 'كل الأشهر',
+    'page.variance.allAccounts': 'كل الحسابات',
+    'page.variance.allSites': 'كل المواقع',
+    'page.variance.allProducts': 'كل المنتجات',
+    'page.variance.allCustomers': 'كل العملاء',
+    'page.variance.search': 'بحث',
+    'page.variance.refresh': 'تحديث',
+    'page.variance.period': 'الفترة',
+    'page.variance.productCustomer': 'المنتج / العميل',
+    'page.variance.budget': 'الميزانية',
+    'page.variance.actual': 'الفعلي',
+    'page.variance.forecast': 'التوقعات',
+    'page.variance.actVsBud': 'الفعلي مقابل الميزانية',
+    'page.variance.forVsBud': 'التوقعات مقابل الميزانية',
+    'page.variance.forVsAct': 'التوقعات مقابل الفعلي',
+    'page.variance.noData': 'لا توجد بيانات متاحة',
+    'page.variance.noDataDesc': 'اختر عوامل التصفية وقم بالتحديث لتحميل بيانات الانحراف.',
+    'page.variance.varianceActBud': 'الانحراف (الفعلي مقابل الميزانية)',
+    'page.variance.varianceForBud': 'الانحراف (التوقعات مقابل الميزانية)',
+    'page.variance.varianceForAct': 'الانحراف (التوقعات مقابل الفعلي)',
   },
 };

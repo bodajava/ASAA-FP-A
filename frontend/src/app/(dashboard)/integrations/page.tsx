@@ -25,6 +25,7 @@ import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { CONNECTION_TYPES, SYNC_SCHEDULES, SOURCE_SYSTEMS, IMPORT_TYPES } from '@/lib/constants';
 import type {
   IntegrationConnection,
@@ -40,6 +41,7 @@ import axios from 'axios';
 export default function IntegrationsPage() {
   const { activeCompanyId, tenant } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'connections' | 'mappings' | 'sync'>('connections');
 
   useEffect(() => {
@@ -294,12 +296,12 @@ export default function IntegrationsPage() {
 
   // Table Columns Mappings
   const mappingColumns: Column<ImportMapping>[] = [
-    { key: 'name', header: 'Mapping Name', className: 'font-semibold' },
-    { key: 'sourceSystem', header: 'Source System', className: 'capitalize font-medium text-slate-700' },
-    { key: 'importType', header: 'Data Type', className: 'capitalize text-slate-500 font-mono' },
+    { key: 'name', header: t('page.integrations.mappingName'), className: 'font-semibold' },
+    { key: 'sourceSystem', header: t('page.integrations.sourceSystem'), className: 'capitalize font-medium text-slate-700' },
+    { key: 'importType', header: t('page.integrations.dataType'), className: 'capitalize text-slate-500 font-mono' },
     {
       key: 'isDefault',
-      header: 'Is Default',
+      header: t('page.integrations.isDefault'),
       render: (v) => (
         <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${v ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-50 text-slate-500'}`}>
           {v ? 'Yes' : 'No'}
@@ -308,7 +310,7 @@ export default function IntegrationsPage() {
     },
     {
       key: 'isActive',
-      header: 'Status',
+      header: t('page.integrations.status'),
       render: (v) => (
         <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${v ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
           {v ? 'Active' : 'Inactive'}
@@ -346,7 +348,7 @@ export default function IntegrationsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Integrations Manager" description="Connect ERPs and databases to automate accounting records synchronizations" />
+        <PageHeader title={t('page.integrations.title')} description={t('page.integrations.description')} />
         <ErrorState
           title="No active company"
           message="Please select a company from the sidebar before managing integrations."
@@ -359,10 +361,10 @@ export default function IntegrationsPage() {
   if (planName === 'starter') {
     return (
       <div className="space-y-6">
-        <PageHeader title="Integrations Manager" description="Connect ERPs and databases to automate accounting records synchronizations" />
+        <PageHeader title={t('page.integrations.title')} description={t('page.integrations.description')} />
         <LockedState
-          title="Integrations Manager is Locked"
-          description="Data integration adapters and connectors (SAP, Odoo, Oracle, WooCommerce, POS, APIs) are exclusive to the Business and Enterprise tiers. Sync automated ledger entries and sales logs directly."
+          title={t('page.integrations.lockedTitle')}
+          description={t('page.integrations.lockedDescription')}
           requiredPlan="Business"
         />
       </div>
@@ -384,7 +386,7 @@ export default function IntegrationsPage() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Connections
+          {t('page.connections.title')}
         </button>
         <button
           onClick={() => {
@@ -397,7 +399,7 @@ export default function IntegrationsPage() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Import Mappings
+          {t('page.importMappings.title')}
         </button>
         <button
           onClick={() => {
@@ -410,7 +412,7 @@ export default function IntegrationsPage() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Manual Data Sync
+          {t('page.integrations.manualDataSync')}
         </button>
       </div>
 
@@ -418,7 +420,7 @@ export default function IntegrationsPage() {
         <div role="alert" className={`rounded-xl border p-4 text-xs flex gap-2.5 items-start max-w-xl ${testResult.success ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
           {testResult.success ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
           <div>
-            <p className="font-bold">{testResult.success ? 'Connection Successful' : 'Connection Failed'}</p>
+            <p className="font-bold">{testResult.success ? t('page.integrations.connectionSuccessful') : t('page.integrations.connectionFailed')}</p>
             <p className="mt-0.5 font-medium">{testResult.message}</p>
           </div>
         </div>
@@ -426,24 +428,24 @@ export default function IntegrationsPage() {
 
       {activeTab === 'connections' && (
         <div className="space-y-5">
-          <PageHeader title="Integration Connections" description="Manage database and API adapters to automate syncs.">
+          <PageHeader title={t('page.integrations.connectionsHeader')} description={t('page.integrations.connectionsDescription')}>
             <Button size="sm" onClick={() => {
               setEditConn(null);
               setConnModalOpen(true);
             }}>
-              <Plus className="h-4 w-4" /> Add Connection
+              <Plus className="h-4 w-4" /> {t('page.integrations.addConnection')}
             </Button>
           </PageHeader>
 
           {isLoadingConn ? (
-            <LoadingState rows={5} message="Loading connections..." />
+            <LoadingState rows={5} message={t('page.integrations.loadingConnections')} />
           ) : errorConn ? (
             <ErrorState message={errorConn} onRetry={fetchConnections} />
           ) : connections.length === 0 ? (
             <EmptyState
               icon={<Database className="h-6 w-6" />}
-              title="No integration connections"
-              description="Connect your ERP, POS, Odoo database, or custom REST APIs to fetch transactional records automatically."
+              title={t('page.integrations.noConnectionsTitle')}
+              description={t('page.integrations.noConnectionsDescription')}
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -487,7 +489,7 @@ export default function IntegrationsPage() {
                       onClick={() => handleTestConnection(c)}
                       isLoading={testingConnId === c.id}
                     >
-                      <Play className="h-3 w-3 fill-current mr-1 text-emerald-600" /> Test Connection
+                      <Play className="h-3 w-3 fill-current mr-1 text-emerald-600" /> {t('page.integrations.testConnection')}
                     </Button>
                     <div className="flex items-center gap-1">
                       <button
@@ -528,24 +530,24 @@ export default function IntegrationsPage() {
 
       {activeTab === 'mappings' && (
         <div className="space-y-5">
-          <PageHeader title="Import Mapping Templates" description="Configure fields mapping between external ERP columns and ledger entries.">
+          <PageHeader title={t('page.integrations.mappingsHeader')} description={t('page.integrations.mappingsDescription')}>
             <Button size="sm" onClick={() => {
               setEditMap(null);
               setMapModalOpen(true);
             }}>
-              <Plus className="h-4 w-4" /> Add Mapping
+              <Plus className="h-4 w-4" /> {t('page.integrations.addMapping')}
             </Button>
           </PageHeader>
 
           {isLoadingMap ? (
-            <LoadingState rows={5} message="Loading mappings..." />
+            <LoadingState rows={5} message={t('page.integrations.loadingMappings')} />
           ) : errorMap ? (
             <ErrorState message={errorMap} onRetry={fetchMappings} />
           ) : mappings.length === 0 ? (
             <EmptyState
               icon={<Layers className="h-6 w-6" />}
-              title="No mapping templates"
-              description="Define mapping schemas to parse standard data streams into ledger compatible transactions."
+              title={t('page.integrations.noMappingsTitle')}
+              description={t('page.integrations.noMappingsDescription')}
             />
           ) : (
             <div className="space-y-4">
@@ -576,15 +578,15 @@ export default function IntegrationsPage() {
         <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <Activity className="h-4 w-4 text-emerald-600" /> Trigger Manual Sync
+              <Activity className="h-4 w-4 text-emerald-600" /> {t('page.integrations.triggerManualSync')}
             </h3>
-            <p className="text-xs text-slate-500 mt-1">Select an active connection adapter and a mapping template to sync transactions.</p>
+            <p className="text-xs text-slate-500 mt-1">{t('page.integrations.syncDescription')}</p>
           </div>
 
           <form onSubmit={handleManualSync} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="sync-conn" className="text-xs font-semibold text-slate-500">Connection Adapter</label>
+                <label htmlFor="sync-conn" className="text-xs font-semibold text-slate-500">{t('page.integrations.connectionAdapter')}</label>
                 <select
                   id="sync-conn"
                   value={syncConnId}
@@ -592,7 +594,7 @@ export default function IntegrationsPage() {
                   className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700"
                   required
                 >
-                  <option value="">Select connection...</option>
+                  <option value="">{t('page.integrations.selectConnection')}</option>
                   {connections.filter((c) => c.isActive).map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.connectionType})
@@ -602,7 +604,7 @@ export default function IntegrationsPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="sync-map" className="text-xs font-semibold text-slate-500">Import Mapping Template</label>
+                <label htmlFor="sync-map" className="text-xs font-semibold text-slate-500">{t('page.integrations.importMappingTemplate')}</label>
                 <select
                   id="sync-map"
                   value={syncMapId}
@@ -610,7 +612,7 @@ export default function IntegrationsPage() {
                   className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700"
                   required
                 >
-                  <option value="">Select mapping...</option>
+                  <option value="">{t('page.integrations.selectMapping')}</option>
                   {mappings.filter((m) => m.isActive).map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} ({m.importType})
@@ -623,7 +625,7 @@ export default function IntegrationsPage() {
             <div className="grid grid-cols-2 gap-4">
               <Input
                 id="sync-start"
-                label="Sync Period From"
+                label={t('page.integrations.syncPeriodFrom')}
                 type="date"
                 required
                 value={syncStartDate}
@@ -631,7 +633,7 @@ export default function IntegrationsPage() {
               />
               <Input
                 id="sync-end"
-                label="Sync Period To"
+                label={t('page.integrations.syncPeriodTo')}
                 type="date"
                 required
                 value={syncEndDate}
@@ -641,7 +643,7 @@ export default function IntegrationsPage() {
 
             <div className="border-t border-slate-100 pt-4 flex justify-end">
               <Button type="submit" isLoading={syncLoading} disabled={!syncConnId || !syncMapId}>
-                <RefreshCw className={`h-4 w-4 mr-1.5 ${syncLoading ? 'animate-spin' : ''}`} /> Trigger Synchronization
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${syncLoading ? 'animate-spin' : ''}`} /> {t('page.integrations.triggerSynchronization')}
               </Button>
             </div>
           </form>
@@ -650,7 +652,7 @@ export default function IntegrationsPage() {
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 flex gap-2.5 items-start">
               <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
               <div>
-                <p className="font-bold">Synchronization Failed</p>
+                <p className="font-bold">{t('page.integrations.syncFailed')}</p>
                 <p className="mt-0.5">{syncError}</p>
               </div>
             </div>
@@ -660,9 +662,9 @@ export default function IntegrationsPage() {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 flex gap-2.5 items-start animate-fade-in">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
               <div>
-                <p className="font-bold">Sync Completed Successfully</p>
+                <p className="font-bold">{t('page.integrations.syncCompleted')}</p>
                 <p className="mt-0.5 font-medium">{syncResult.message}</p>
-                <p className="mt-1 font-bold">Records Synced: {syncResult.recordsSynced}</p>
+                <p className="mt-1 font-bold">{t('page.integrations.recordsSynced')}: {syncResult.recordsSynced}</p>
               </div>
             </div>
           )}

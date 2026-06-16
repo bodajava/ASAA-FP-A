@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { boolBadge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/toast';
 import { apiGet } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { BomRecipe, Product, Material, PaginatedResponse } from '@/types/api';
 import { useAuth } from '@/lib/auth-context';
@@ -276,18 +277,19 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 
 export default function BomRecipesPage() {
   const { tenant } = useAuth();
+  const { t } = useI18n();
   const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
 
   if (planName === 'starter' || planName === 'business') {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">BOM Recipes</h1>
-          <p className="text-sm text-slate-500">Bill of Materials recipes defining product manufacturing inputs</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('page.bomRecipes.title')}</h1>
+          <p className="text-sm text-slate-500">{t('page.bomRecipes.description')}</p>
         </div>
         <LockedState
-          title="BOM Recipes is Locked"
-          description="BOM recipes and factory requirement planning are exclusive to the Enterprise tier. Get full access to BOM explosion calculations, raw materials requirements, wastage tracking, and production forecasting."
+          title={t('page.bomRecipes.lockedTitle')}
+          description={t('page.bomRecipes.lockedDescription')}
           requiredPlan="Enterprise"
         />
       </div>
@@ -296,13 +298,13 @@ export default function BomRecipesPage() {
 
   return (
     <CrudPage<BomRecipe>
-      title="BOM Recipes"
+      title={t('page.bomRecipes.title')}
       importModule="bom-recipes"
-      description="Bill of Materials recipes defining product manufacturing inputs"
+      description={t('page.bomRecipes.description')}
       endpoint="/bom-recipes"
       columns={columns}
-      emptyTitle="No BOM recipes yet"
-      emptyDescription="Add BOM recipes to calculate product costs from raw materials."
+      emptyTitle={t('page.bomRecipes.emptyTitle')}
+      emptyDescription={t('page.bomRecipes.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <BomRecipeForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

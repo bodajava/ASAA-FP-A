@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { ProductCategory } from '@/types/api';
 
@@ -36,15 +37,16 @@ function ProductCategoryForm({ item, onClose, onSubmit, isLoading }: FormProps) 
 }
 
 export default function ProductCategoriesPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<ProductCategory>
-      title="Product Categories"
+      title={t('page.productCategories.title')}
       importModule="product-categories"
-      description="Hierarchical product categorization"
+      description={t('page.productCategories.description')}
       endpoint="/product-categories"
       columns={columns}
-      emptyTitle="No categories yet"
-      emptyDescription="Add categories to organize your products."
+      emptyTitle={t('page.productCategories.emptyTitle')}
+      emptyDescription={t('page.productCategories.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <ProductCategoryForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

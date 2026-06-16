@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { Customer } from '@/types/api';
 
@@ -42,15 +43,16 @@ function CustomerForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function CustomersPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<Customer>
-      title="Customers"
+      title={t('page.customers.title')}
       importModule="customers"
-      description="Manage your customer accounts"
+      description={t('page.customers.description')}
       endpoint="/customers"
       columns={columns}
-      emptyTitle="No customers yet"
-      emptyDescription="Add customers to track revenue by account."
+      emptyTitle={t('page.customers.emptyTitle')}
+      emptyDescription={t('page.customers.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <CustomerForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

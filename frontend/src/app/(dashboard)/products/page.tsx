@@ -5,6 +5,7 @@ import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { boolBadge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { Product, ProductType } from '@/types/api';
 
@@ -78,15 +79,16 @@ function ProductForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function ProductsPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<Product>
-      title="Products"
+      title={t('page.products.title')}
       importModule="products"
-      description="Finished goods, semi-finished, and services"
+      description={t('page.products.description')}
       endpoint="/products"
       columns={columns}
-      emptyTitle="No products yet"
-      emptyDescription="Add products to start tracking sales, budgets, and BOM recipes."
+      emptyTitle={t('page.products.emptyTitle')}
+      emptyDescription={t('page.products.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <ProductForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

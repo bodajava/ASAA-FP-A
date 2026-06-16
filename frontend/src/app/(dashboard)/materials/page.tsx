@@ -5,6 +5,7 @@ import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { boolBadge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { Material } from '@/types/api';
 
@@ -67,15 +68,16 @@ function MaterialForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function MaterialsPage() {
+  const { t } = useI18n();
   return (
     <CrudPage<Material>
-      title="Materials"
+      title={t('page.materials.title')}
       importModule="materials"
-      description="Raw materials and inputs used in BOM recipes"
+      description={t('page.materials.description')}
       endpoint="/materials"
       columns={columns}
-      emptyTitle="No materials yet"
-      emptyDescription="Add raw materials to use in BOM recipes."
+      emptyTitle={t('page.materials.emptyTitle')}
+      emptyDescription={t('page.materials.emptyDescription')}
       renderForm={({ item, onClose, onSubmit, isLoading }) => (
         <MaterialForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
       )}

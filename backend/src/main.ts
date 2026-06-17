@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
@@ -13,10 +14,9 @@ Object.defineProperty(BigInt.prototype, 'toJSON', {
 });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Trust proxy headers for correct protocol detection behind reverse proxies
-  app.getHttpServer().setMaxListeners(0);
   app.set('trust proxy', 1);
 
   // Enable CORS with credentials support

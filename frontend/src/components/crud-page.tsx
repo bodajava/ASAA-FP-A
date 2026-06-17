@@ -122,11 +122,11 @@ export function CrudPage<T extends { id: string }>({
       if (axios.isAxiosError(err)) {
         const msg =
           (err.response?.data as { message?: string } | undefined)?.message ??
-          'Operation failed.';
+          t('error.operationFailed');
         setFormError(msg);
         toastError(msg);
       } else {
-        const msg = 'An unexpected error occurred.';
+        const msg = t('error.unexpectedError');
         setFormError(msg);
         toastError(msg);
       }

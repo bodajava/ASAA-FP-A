@@ -101,6 +101,8 @@ export function translateNotificationTitle(title: string): string {
     'Spending Alert': 'spendingAlert',
     'Approval Required': 'approvalRequired',
     'New Report Available': 'newReportAvailable',
+    'USD Rate Increase Alert': 'usdRateIncrease',
+    'Scenario Triggered': 'scenarioTriggered',
   };
   const tKey = map[title];
   return tKey ? `notification.${tKey}` : title;

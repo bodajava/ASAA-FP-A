@@ -618,6 +618,11 @@ export type TranslationKey =
   | 'page.headcountPlans.title'
   | 'page.modules.title'
   | 'page.notifications.title'
+  | 'page.notifications.inboxTab'
+  | 'page.notifications.rulesTab'
+  | 'page.notifications.description'
+  | 'page.notifications.emptyTitle'
+  | 'page.notifications.emptyDescription'
   /* ── Actual Imports page ──────────────────────────────────────────────── */
   | 'page.actualImports.description'
   | 'page.actualImports.importButton'
@@ -1218,7 +1223,36 @@ export type TranslationKey =
   | 'common.approve'
   | 'common.reject'
   | 'common.permission'
-  | 'page.notificationRules.changeable';
+  | 'page.notificationRules.changeable'
+  /* ── Error messages ──────────────────────────────────────────────────── */
+  | 'error.dashboardLoadFailed'
+  | 'error.networkError'
+  | 'error.sessionExpired'
+  | 'error.requestFailed'
+  | 'error.operationFailed'
+  | 'error.unexpectedError'
+  | 'error.loadFailed'
+  | 'error.saveFailed'
+  | 'error.notFound'
+  | 'error.serverError'
+  | 'error.markReadFailed'
+  | 'error.deleteFailed'
+  | 'error.fetchFailed'
+  | 'error.notificationsFetchFailed'
+  | 'error.rulesFetchFailed'
+  | 'error.ruleSaveFailed'
+  | 'error.ruleDeleteFailed'
+  /* ── Notification translations ───────────────────────────────────────── */
+  | 'notification.budgetThresholdExceeded'
+  | 'notification.spendingAlert'
+  | 'notification.approvalRequired'
+  | 'notification.newReportAvailable'
+  | 'notification.budgetThresholdBody'
+  | 'notification.spendingBody'
+  | 'notification.approvalBody'
+  | 'notification.newReportBody'
+  | 'notification.usdRateIncrease'
+  | 'notification.scenarioTriggered';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -1869,6 +1903,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.headcountPlans.title': 'Headcount Plans',
     'page.modules.title': 'Modules',
     'page.notifications.title': 'Notifications',
+    'page.notifications.inboxTab': 'Notifications Inbox',
+    'page.notifications.rulesTab': 'Alert Rules',
+    'page.notifications.description': 'System notifications and compliance warnings.',
+    'page.notifications.emptyTitle': 'Inbox is clean!',
+    'page.notifications.emptyDescription': 'No new notifications. Everything matches standard tolerances.',
 
     /* Actual Imports */
     'page.actualImports.description': 'Import accounting transactions from ERP or spreadsheets.',
@@ -2486,6 +2525,36 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.kpiTargets.siteScope': 'Site Scope',
     'page.kpiTargets.targetValue': 'Target Value',
     'page.kpiTargets.unit': 'Measurement Unit',
+
+    /* ── Error messages ──────────────────────────────────────────────────── */
+    'error.dashboardLoadFailed': 'Failed to load dashboard data. Please try again.',
+    'error.networkError': 'Network error. Please check your connection and try again.',
+    'error.sessionExpired': 'Session expired. Please log in again.',
+    'error.requestFailed': 'Request failed. Please check your data and try again.',
+    'error.operationFailed': 'Operation failed.',
+    'error.unexpectedError': 'An unexpected error occurred.',
+    'error.loadFailed': 'Failed to load data.',
+    'error.saveFailed': 'Failed to save.',
+    'error.notFound': 'Not found.',
+    'error.serverError': 'Server error. Please try again later.',
+    'error.markReadFailed': 'Failed to mark notification as read.',
+    'error.deleteFailed': 'Failed to delete.',
+    'error.fetchFailed': 'Failed to retrieve data.',
+    'error.notificationsFetchFailed': 'Failed to retrieve notifications.',
+    'error.rulesFetchFailed': 'Failed to retrieve notification rules.',
+    'error.ruleSaveFailed': 'Failed to save alert rule.',
+    'error.ruleDeleteFailed': 'Failed to delete notification rule.',
+    /* ── Notification translations ───────────────────────────────────────── */
+    'notification.budgetThresholdExceeded': 'Budget Threshold Exceeded',
+    'notification.spendingAlert': 'Spending Alert',
+    'notification.approvalRequired': 'Approval Required',
+    'notification.newReportAvailable': 'New Report Available',
+    'notification.budgetThresholdBody': 'A budget threshold has been exceeded.',
+    'notification.spendingBody': 'Unusual spending detected.',
+    'notification.approvalBody': 'Your approval is needed.',
+    'notification.newReportBody': 'A new report is ready.',
+    'notification.usdRateIncrease': 'USD Rate Increase Alert',
+    'notification.scenarioTriggered': 'Scenario Triggered',
   },
 
   ar: {
@@ -3149,6 +3218,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.headcountPlans.title': 'خطط التوظيف',
     'page.modules.title': 'الوحدات',
     'page.notifications.title': 'الإشعارات',
+    'page.notifications.inboxTab': 'صندوق الإشعارات',
+    'page.notifications.rulesTab': 'قواعد التنبيهات',
+    'page.notifications.description': 'إشعارات النظام وتحذيرات الامتثال.',
+    'page.notifications.emptyTitle': 'صندوق الإشعارات نظيف!',
+    'page.notifications.emptyDescription': 'لا توجد إشعارات جديدة. كل شيء ضمن الحدود الطبيعية.',
 
     /* Actual Imports */
     'page.actualImports.description': 'استيراد معاملات المحاسبة من ERP أو جداول البيانات.',
@@ -3753,5 +3827,35 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.users.lastLogin': 'آخر تسجيل دخول',
     'page.users.namePlaceholder': 'الاسم الكامل',
     'page.users.passwordPlaceholder': '8 أحرف كحد أدنى',
+
+    /* ── Error messages ──────────────────────────────────────────────────── */
+    'error.dashboardLoadFailed': 'فشل تحميل بيانات لوحة التحكم. يرجى المحاولة مرة أخرى.',
+    'error.networkError': 'خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
+    'error.sessionExpired': 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+    'error.requestFailed': 'فشل الطلب. يرجى مراجعة البيانات والمحاولة مرة أخرى.',
+    'error.operationFailed': 'فشلت العملية.',
+    'error.unexpectedError': 'حدث خطأ غير متوقع.',
+    'error.loadFailed': 'فشل تحميل البيانات.',
+    'error.saveFailed': 'فشل الحفظ.',
+    'error.notFound': 'غير موجود.',
+    'error.serverError': 'خطأ في الخادم. يرجى المحاولة لاحقاً.',
+    'error.markReadFailed': 'فشل تعيين الإشعار كمقروء.',
+    'error.deleteFailed': 'فشل الحذف.',
+    'error.fetchFailed': 'فشل استرجاع البيانات.',
+    'error.notificationsFetchFailed': 'فشل استرجاع الإشعارات.',
+    'error.rulesFetchFailed': 'فشل استرجاع قواعد الإشعارات.',
+    'error.ruleSaveFailed': 'فشل حفظ قاعدة التنبيه.',
+    'error.ruleDeleteFailed': 'فشل حذف قاعدة الإشعار.',
+    /* ── Notification translations ───────────────────────────────────────── */
+    'notification.budgetThresholdExceeded': 'تجاوز حد الميزانية',
+    'notification.spendingAlert': 'تنبيه الإنفاق',
+    'notification.approvalRequired': 'الموافقة مطلوبة',
+    'notification.newReportAvailable': 'تقرير جديد متاح',
+    'notification.budgetThresholdBody': 'تم تجاوز حد الميزانية.',
+    'notification.spendingBody': 'تم اكتشاف إنفاق غير عادي.',
+    'notification.approvalBody': 'موافقتك مطلوبة.',
+    'notification.newReportBody': 'تقرير جديد جاهز.',
+    'notification.usdRateIncrease': 'تنبيه ارتفاع سعر الدولار',
+    'notification.scenarioTriggered': 'تم إنشاء سيناريو',
   },
 };

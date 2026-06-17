@@ -107,19 +107,52 @@ api.interceptors.response.use(
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
-        // Clear auth storage so the auth context detects isAuthenticated = false
-        // and redirects to /login cleanly via Next.js router.
         clearAuthStorage();
         if (typeof window !== 'undefined') {
-          // Dispatch a custom event so the auth context can react immediately
-          // without waiting for the next fetchUser() call.
           window.dispatchEvent(new Event('auth:expired'));
         }
+      }
+      // Attach a user-friendly translated message
+      if (typeof window !== 'undefined') {
+        const locale = localStorage.getItem('asaa_locale') || 'en';
+        error.message = translateApiError(error, locale);
       }
     }
     return Promise.reject(error);
   },
 );
+
+function translateApiError(error: any, locale: string): string {
+  const isAr = locale === 'ar';
+  const status = error?.response?.status;
+  const serverMsg = (error?.response?.data as { message?: string } | undefined)?.message;
+
+  // If server sent a message, use it as-is (could be localized already)
+  if (serverMsg && typeof serverMsg === 'string' && serverMsg.length > 0 && serverMsg.length < 200) {
+    return serverMsg;
+  }
+
+  if (error?.code === 'ERR_NETWORK') {
+    return isAr ? 'خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.' : 'Network error. Please check your connection and try again.';
+  }
+
+  if (status) {
+    if (status >= 500) {
+      return isAr ? 'خطأ في الخادم. يرجى المحاولة لاحقاً.' : 'Server error. Please try again later.';
+    }
+    if (status === 404) {
+      return isAr ? 'غير موجود.' : 'Not found.';
+    }
+    if (status === 403) {
+      return isAr ? 'ليس لديك صلاحية للوصول إلى هذا المورد.' : 'You do not have permission to access this resource.';
+    }
+    if (status === 400) {
+      return isAr ? 'فشل الطلب. يرجى مراجعة البيانات والمحاولة مرة أخرى.' : 'Request failed. Please check your data and try again.';
+    }
+  }
+
+  return isAr ? 'حدث خطأ غير متوقع.' : 'An unexpected error occurred.';
+}
 
 export default api;
 

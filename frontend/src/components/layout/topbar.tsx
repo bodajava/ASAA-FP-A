@@ -6,8 +6,10 @@ import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils/cn';
 import { apiGet, apiPatch } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { translateNotificationTitle, translateNotificationBody } from '@/lib/i18n/display-values';
 import { useTheme } from '@/lib/theme/theme-context';
 import type { Notification, PaginatedResponse } from '@/types/api';
+import type { TranslationKey } from '@/lib/i18n/translations';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -216,10 +218,10 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
                   latestUnread.map((n) => (
                     <div key={n.id} className="p-3 hover:bg-secondary flex gap-2 items-start justify-between group transition-colors">
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-card-foreground truncate">{n.title}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
+                        <p className="text-xs font-bold text-card-foreground truncate">{t(translateNotificationTitle(n.title) as TranslationKey)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">{t(translateNotificationBody(n.body ?? '') as TranslationKey)}</p>
                         <span className="text-[9px] text-muted-foreground mt-1 block font-medium">
-                          {new Date(n.createdAt).toLocaleDateString()}
+                          {new Date(n.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US')}
                         </span>
                       </div>
                       <button

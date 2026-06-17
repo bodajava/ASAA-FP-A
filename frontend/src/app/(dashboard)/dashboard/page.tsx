@@ -17,8 +17,10 @@ import { Badge } from '@/components/ui/badge';
 import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useActiveCurrency } from '@/hooks/use-active-currency';
-import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
+import { formatPercent } from '@/lib/currency';
+import { getCurrentFiscalYear } from '@/lib/constants';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { translateMonth } from '@/lib/i18n/translate-api';
 import type {
   DashboardKpis,
   MonthlyTrendItem,
@@ -26,13 +28,13 @@ import type {
   UtilizationData,
 } from '@/types/api';
 
-function pct(n: number | null | undefined) {
+function pct(n: number | null | undefined, locale?: string) {
   if (n === null || n === undefined) return '—';
-  return `${n.toFixed(1)}%`;
+  return formatPercent(n, 1, locale);
 }
 
 export default function DashboardPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { activeCompanyId } = useAuth();
   const { format: fmt } = useActiveCurrency();
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
@@ -66,7 +68,7 @@ export default function DashboardPage() {
         setTopCustomers(Array.isArray(custs) ? custs : []);
         setUtilization(util);
       } catch {
-        setError('Failed to load dashboard data. Please try again.');
+        setError(t('error.dashboardLoadFailed'));
       } finally {
         setIsLoading(false);
       }
@@ -177,18 +179,18 @@ export default function DashboardPage() {
           />
           <KpiCard
             title={t('page.dashboard.budgetUtilization')}
-            value={kpis ? pct(kpis.budget_utilization) : '—'}
+            value={kpis ? pct(kpis.budget_utilization, locale) : '—'}
             icon={<Target className="h-5 w-5" />}
             trendDirection={
               kpis && kpis.budget_utilization > 100 ? 'down'
                 : kpis && kpis.budget_utilization >= 80 ? 'up'
                   : 'neutral'
             }
-            description={t('page.dashboard.budgetUtilDesc', { rev: pct(utilization?.revenue_utilization), exp: pct(utilization?.expense_utilization) })}
+            description={t('page.dashboard.budgetUtilDesc', { rev: pct(utilization?.revenue_utilization, locale), exp: pct(utilization?.expense_utilization, locale) })}
           />
           <KpiCard
             title={t('page.dashboard.forecastAccuracy')}
-            value={kpis ? pct(kpis.forecast_accuracy) : '—'}
+            value={kpis ? pct(kpis.forecast_accuracy, locale) : '—'}
             trendDirection={kpis && kpis.forecast_accuracy >= 90 ? 'up' : 'neutral'}
             description={t('page.dashboard.forecastAccDesc')}
           />
@@ -223,7 +225,7 @@ export default function DashboardPage() {
                     {revenue.map((row) => (
                       <tr key={row.period_month}>
                         <td className="py-2 text-slate-700 dark:text-slate-300">
-                          {MONTH_NAMES[row.period_month]}
+                          {translateMonth(row.period_month, locale)}
                         </td>
                         <td className="py-2 text-right font-medium text-emerald-700 dark:text-emerald-400">
                           {fmt(row.actual)}

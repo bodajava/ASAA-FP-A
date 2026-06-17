@@ -26,29 +26,17 @@ const currencyConfig: Record<
 export function formatCurrency(
   amount: number | string | bigint | null | undefined,
   currencyCode?: string | null,
+  locale?: string,
 ): string {
   if (amount == null) return '—';
   const num = typeof amount === 'bigint' ? Number(amount) : Number(amount);
   if (isNaN(num)) return '—';
 
   const code = (currencyCode || 'EGP').toUpperCase();
-  const config = currencyConfig[code];
-
-  if (config) {
-    try {
-      return new Intl.NumberFormat(config.locale, {
-        style: 'currency',
-        currency: code,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(num);
-    } catch {
-      return `${config.symbol}${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-  }
+  const fmtLocale = resolveLocale(locale);
 
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(fmtLocale, {
       style: 'currency',
       currency: code,
       minimumFractionDigits: 2,
@@ -59,14 +47,21 @@ export function formatCurrency(
   }
 }
 
+function resolveLocale(locale?: string): string {
+  if (locale === 'ar') return 'ar-EG';
+  return 'en-US';
+}
+
 export function formatNumber(
   value: number | string | bigint | null | undefined,
   fractionDigits = 0,
+  locale?: string,
 ): string {
   if (value == null) return '—';
   const num = typeof value === 'bigint' ? Number(value) : Number(value);
   if (isNaN(num)) return '—';
-  return num.toLocaleString('en-US', {
+  const fmtLocale = resolveLocale(locale);
+  return num.toLocaleString(fmtLocale, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
@@ -75,11 +70,16 @@ export function formatNumber(
 export function formatPercent(
   value: number | string | null | undefined,
   fractionDigits = 1,
+  locale?: string,
 ): string {
   if (value == null) return '—';
   const num = Number(value);
   if (isNaN(num)) return '—';
-  return `${num.toFixed(fractionDigits)}%`;
+  const fmtLocale = resolveLocale(locale);
+  return num.toLocaleString(fmtLocale, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }) + '%';
 }
 
 export function getCurrencySymbol(currencyCode?: string | null): string {

@@ -21,8 +21,10 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-s
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { TRIGGER_TYPES } from '@/lib/constants';
+import { translateTriggerType } from '@/lib/i18n/translate-api';
 import type {
   Notification,
   NotificationRule,
@@ -34,6 +36,7 @@ import type {
 import axios from 'axios';
 
 export default function NotificationsPage() {
+  const { t, locale } = useI18n();
   const { activeCompanyId } = useAuth();
   const [activeTab, setActiveTab] = useState<'inbox' | 'rules'>('inbox');
 
@@ -100,8 +103,8 @@ export default function NotificationsPage() {
       setNotifications(filteredNotifs);
       setTotalNotif(res.total ?? 0);
       setTotalPagesNotif(res.totalPages ?? 1);
-    } catch (err: unknown) {
-      setErrorNotif(err instanceof Error ? err.message : 'Failed to retrieve notifications.');
+    } catch {
+      setErrorNotif(t('error.notificationsFetchFailed'));
     } finally {
       setIsLoadingNotif(false);
     }
@@ -119,8 +122,8 @@ export default function NotificationsPage() {
       setRules(res.data ?? []);
       setTotalRules(res.total ?? 0);
       setTotalPagesRules(res.totalPages ?? 1);
-    } catch (err: unknown) {
-      setErrorRules(err instanceof Error ? err.message : 'Failed to retrieve notification rules.');
+    } catch {
+      setErrorRules(t('error.rulesFetchFailed'));
     } finally {
       setIsLoadingRules(false);
     }
@@ -139,8 +142,8 @@ export default function NotificationsPage() {
     try {
       await apiPatch<Notification>(`/notifications/${id}/read`);
       void fetchNotifications();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to mark notification as read.');
+    } catch {
+      alert(t('error.markReadFailed'));
     }
   }
 
@@ -152,8 +155,8 @@ export default function NotificationsPage() {
       await apiDelete<NotificationRule>(`/notifications/rules/${deleteRuleConfirm.id}`);
       setDeleteRuleConfirm(null);
       void fetchRules();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete notification rule');
+    } catch {
+      alert(t('error.ruleDeleteFailed'));
     } finally {
       setDeleteRuleLoading(false);
     }
@@ -165,7 +168,7 @@ export default function NotificationsPage() {
     {
       key: 'triggerType',
       header: 'Trigger Type',
-      render: (v) => TRIGGER_TYPES.find((t) => t.value === v)?.label ?? String(v),
+      render: (v) => t(translateTriggerType(String(v)) as any),
     },
     {
       key: 'thresholdValue',
@@ -236,10 +239,10 @@ export default function NotificationsPage() {
   if (!activeCompanyId) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Alerts & Notifications" description="Configure alerts thresholds and view system notifications" />
+        <PageHeader title={t('page.notifications.title')} description={t('page.notifications.description')} />
         <ErrorState
-          title="No active company"
-          message="Please select a company from the sidebar before viewing alerts."
+          title={t('common.noCompany')}
+          message={t('common.selectCompany')}
         />
       </div>
     );
@@ -257,7 +260,7 @@ export default function NotificationsPage() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Notifications Inbox
+          {t('page.notifications.inboxTab')}
         </button>
         <button
           onClick={() => setActiveTab('rules')}
@@ -267,13 +270,13 @@ export default function NotificationsPage() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Alert Rules Configuration
+          {t('page.notifications.rulesTab')}
         </button>
       </div>
 
       {activeTab === 'inbox' && (
         <div className="space-y-5">
-          <PageHeader title="Notifications Inbox" description="System notifications and compliance warnings." />
+          <PageHeader title={t('page.notifications.inboxTab')} description={t('page.notifications.description')} />
 
           {/* Filtering bar */}
           <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -284,7 +287,7 @@ export default function NotificationsPage() {
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${statusFilter === 'unread' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
-              Unread
+              {t('common.unread')}
             </button>
             <button
               onClick={() => {
@@ -293,19 +296,19 @@ export default function NotificationsPage() {
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${statusFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
-              All Notifications
+              {t('common.all')}
             </button>
           </div>
 
           {isLoadingNotif ? (
-            <LoadingState rows={5} message="Retrieving inbox..." />
+            <LoadingState rows={5} message={t('common.loading')} />
           ) : errorNotif ? (
             <ErrorState message={errorNotif} onRetry={fetchNotifications} />
           ) : notifications.length === 0 ? (
             <EmptyState
               icon={<Bell className="h-6 w-6 text-slate-300" />}
-              title="Inbox is clean!"
-              description="No new notifications. Everything matches standard tolerances."
+              title={t('page.notifications.emptyTitle')}
+              description={t('page.notifications.emptyDescription')}
             />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden divide-y divide-slate-100">
@@ -316,10 +319,10 @@ export default function NotificationsPage() {
                       {n.channel === 'email' ? <Mail className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-800 text-sm">{n.title}</h4>
+                    <h4 className="font-bold text-slate-800 text-sm">{n.title}</h4>
                       <p className="text-xs text-slate-500 mt-0.5">{n.body}</p>
                       <span className="text-[10px] text-slate-400 mt-2 block font-medium">
-                        {new Date(n.createdAt).toLocaleString()}
+                        {new Date(n.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US')}
                       </span>
                     </div>
                   </div>
@@ -331,7 +334,7 @@ export default function NotificationsPage() {
                       className="h-8 text-[10px] font-bold shrink-0 border-slate-200"
                       onClick={() => handleMarkAsRead(n.id)}
                     >
-                      <Check className="h-3.5 w-3.5 mr-1" /> Mark as Read
+                      <Check className="h-3.5 w-3.5 mr-1" /> {t('common.markAsRead')}
                     </Button>
                   )}
                 </div>
@@ -353,24 +356,24 @@ export default function NotificationsPage() {
 
       {activeTab === 'rules' && (
         <div className="space-y-5">
-          <PageHeader title="Alert Rules" description="Set custom warning thresholds to trigger alerts automatically.">
+          <PageHeader title={t('page.notificationRules.title')} description={t('page.notificationRules.description')}>
             <Button size="sm" onClick={() => {
               setEditRule(null);
               setRuleModalOpen(true);
             }}>
-              <Plus className="h-4 w-4" /> Add Rule
+              <Plus className="h-4 w-4" /> {t('page.notificationRules.createRule')}
             </Button>
           </PageHeader>
 
           {isLoadingRules ? (
-            <LoadingState rows={5} message="Loading alert rules..." />
+            <LoadingState rows={5} message={t('common.loading')} />
           ) : errorRules ? (
             <ErrorState message={errorRules} onRetry={fetchRules} />
           ) : rules.length === 0 ? (
             <EmptyState
               icon={<Sliders className="h-6 w-6" />}
-              title="No Alert Rules defined"
-              description="Create a warning threshold (such as a 10% budget overspend) to alert management automatically."
+              title={t('page.notificationRules.emptyTitle')}
+              description={t('page.notificationRules.emptyDescription')}
             />
           ) : (
             <div className="space-y-4">
@@ -411,11 +414,8 @@ export default function NotificationsPage() {
               }
               setRuleModalOpen(false);
               void fetchRules();
-            } catch (err: unknown) {
-              const msg = axios.isAxiosError(err)
-                ? ((err.response?.data as { message?: string })?.message ?? 'Failed to save alert rule.')
-                : 'Failed to save alert rule.';
-              setRuleFormError(msg);
+            } catch {
+              setRuleFormError(t('error.ruleSaveFailed'));
             } finally {
               setRuleFormLoading(false);
             }
@@ -428,7 +428,7 @@ export default function NotificationsPage() {
       {/* DELETE CONFIRM RULE */}
       <ConfirmDialog
         open={deleteRuleConfirm !== null}
-        message={`Are you sure you want to delete alert rule "${deleteRuleConfirm?.ruleName}"?`}
+        message={t('common.confirmDeleteMessage')}
         isLoading={deleteRuleLoading}
         onConfirm={handleDeleteRule}
         onCancel={() => setDeleteRuleConfirm(null)}

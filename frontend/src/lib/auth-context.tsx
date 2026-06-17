@@ -144,6 +144,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Listen for auth:expired events dispatched by the API 401 interceptor
+  useEffect(() => {
+    function handleAuthExpired() {
+      setUser(null);
+      setAvailableCompanies([]);
+      setActiveCompanyId(null);
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth:expired', handleAuthExpired);
+      return () => window.removeEventListener('auth:expired', handleAuthExpired);
+    }
+  }, []);
+
   // Initialise from cookie-based session on mount
   useEffect(() => {
     const companyId = getStoredCompanyId();

@@ -106,16 +106,14 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
-      // Only 401 on login/auth endpoints should force logout.
-      // Missing/expired company scoping is NOT a session expiry.
       if (error.response?.status === 401) {
-        const url = error.config?.url ?? '';
-        const isAuthRequest = /\/auth\//.test(url);
-        if (isAuthRequest) {
-          clearAuthStorage();
-          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
+        // Clear auth storage so the auth context detects isAuthenticated = false
+        // and redirects to /login cleanly via Next.js router.
+        clearAuthStorage();
+        if (typeof window !== 'undefined') {
+          // Dispatch a custom event so the auth context can react immediately
+          // without waiting for the next fetchUser() call.
+          window.dispatchEvent(new Event('auth:expired'));
         }
       }
     }

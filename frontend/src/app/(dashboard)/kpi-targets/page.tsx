@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,15 +8,6 @@ import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { KpiTarget, Site } from '@/types/api';
 import { apiGet } from '@/lib/api';
-
-const columns: Column<KpiTarget>[] = [
-  { key: 'kpiName', header: 'KPI Name', className: 'font-semibold text-slate-700' },
-  { key: 'kpiCategory', header: 'Category', className: 'capitalize text-xs text-slate-500' },
-  { key: 'fiscalYear', header: 'Fiscal Year' },
-  { key: 'periodMonth', header: 'Month', render: (v) => v ? String(v) : 'Annual' },
-  { key: 'targetValue', header: 'Target Value', render: (v, row) => `${Number(v).toLocaleString()} ${row.unit ?? ''}` },
-  { key: 'site', header: 'Site Scope', render: (v) => (v as any)?.name ?? 'All Sites' },
-];
 
 interface FormProps {
   item: KpiTarget | null;
@@ -26,6 +17,7 @@ interface FormProps {
 }
 
 function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
+  const { t } = useI18n();
   const [kpiName, setKpiName] = useState(item?.kpiName ?? '');
   const [kpiCategory, setKpiCategory] = useState(item?.kpiCategory ?? 'financial');
   const [fiscalYear, setFiscalYear] = useState(item?.fiscalYear ? String(item.fiscalYear) : String(new Date().getFullYear()));
@@ -33,7 +25,7 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
   const [targetValue, setTargetValue] = useState(item?.targetValue ? String(item.targetValue) : '0');
   const [unit, setUnit] = useState(item?.unit ?? '');
   const [siteId, setSiteId] = useState((item as any)?.site?.id ?? '');
-  
+
   const [sites, setSites] = useState<Site[]>([]);
   const [loadingSites, setLoadingSites] = useState(false);
 
@@ -69,40 +61,40 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
         id="kpi-name"
-        label="KPI Target Name"
+        label={t('page.kpiTargets.kpiName')}
         required
         value={kpiName}
         onChange={(e) => setKpiName(e.target.value)}
         placeholder="e.g. Monthly Production Yield"
       />
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="kpi-cat" className="text-xs font-medium text-slate-500">Category</label>
+          <label htmlFor="kpi-cat" className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('page.kpiTargets.category')}</label>
           <select
             id="kpi-cat"
             value={kpiCategory}
             onChange={(e) => setKpiCategory(e.target.value as any)}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            <option value="financial">Financial</option>
-            <option value="operational">Operational</option>
-            <option value="sales">Sales</option>
-            <option value="production">Production</option>
-            <option value="hr">HR</option>
+            <option value="financial">{t('kpiCategory.financial')}</option>
+            <option value="operational">{t('kpiCategory.operational')}</option>
+            <option value="sales">{t('kpiCategory.sales')}</option>
+            <option value="production">{t('kpiCategory.production')}</option>
+            <option value="hr">{t('kpiCategory.hr')}</option>
           </select>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="kpi-site" className="text-xs font-medium text-slate-500">Site Scope</label>
+          <label htmlFor="kpi-site" className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('page.kpiTargets.siteScope')}</label>
           <select
             id="kpi-site"
             value={siteId}
             onChange={(e) => setSiteId(e.target.value)}
             disabled={loadingSites}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            <option value="">All Sites (Company-wide)</option>
+            <option value="">{t('common.allSites')}</option>
             {sites.map((site) => (
               <option key={site.id} value={site.id}>{site.name}</option>
             ))}
@@ -114,7 +106,7 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
         <Input
           id="kpi-year"
           type="number"
-          label="Fiscal Year"
+          label={t('page.kpiTargets.fiscalYear')}
           required
           value={fiscalYear}
           onChange={(e) => setFiscalYear(e.target.value)}
@@ -122,10 +114,10 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
         <Input
           id="kpi-month"
           type="number"
-          label="Month (1-12, Optional)"
+          label={t('page.kpiTargets.monthOptional')}
           value={periodMonth}
           onChange={(e) => setPeriodMonth(e.target.value)}
-          placeholder="Annual target if empty"
+          placeholder={t('page.kpiTargets.annual')}
           min={1}
           max={12}
         />
@@ -136,23 +128,23 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
           id="kpi-val"
           type="number"
           step="0.0001"
-          label="Target Value"
+          label={t('page.kpiTargets.targetValue')}
           required
           value={targetValue}
           onChange={(e) => setTargetValue(e.target.value)}
         />
         <Input
           id="kpi-unit"
-          label="Measurement Unit"
+          label={t('page.kpiTargets.unit')}
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
           placeholder="e.g. %, EGP, Liters"
         />
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-        <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
-        <Button size="sm" type="submit" isLoading={isLoading}>{item ? 'Save Changes' : 'Create Target'}</Button>
+      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
+        <Button variant="outline" size="sm" type="button" onClick={onClose}>{t('common.cancel')}</Button>
+        <Button size="sm" type="submit" isLoading={isLoading}>{item ? t('common.saveChanges') : t('page.kpiTargets.createTarget')}</Button>
       </div>
     </form>
   );
@@ -160,6 +152,15 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 
 export default function KpiTargetsPage() {
   const { t } = useI18n();
+  const columns: Column<KpiTarget>[] = useMemo(() => [
+    { key: 'kpiName', header: t('page.kpiTargets.kpiName'), className: 'font-semibold text-slate-700 dark:text-slate-200' },
+    { key: 'kpiCategory', header: t('page.kpiTargets.category'), className: 'capitalize text-xs text-slate-500 dark:text-slate-400' },
+    { key: 'fiscalYear', header: t('page.kpiTargets.fiscalYear') },
+    { key: 'periodMonth', header: t('common.month'), render: (v) => v ? String(v) : t('page.kpiTargets.annual') },
+    { key: 'targetValue', header: t('page.kpiTargets.targetValue'), render: (v, row) => `${Number(v).toLocaleString()} ${row.unit ?? ''}` },
+    { key: 'site', header: t('page.kpiTargets.siteScope'), render: (v) => (v as any)?.name ?? t('common.allSites') },
+  ], [t]);
+
   return (
     <CrudPage<KpiTarget>
       title={t('page.kpiTargets.title')}

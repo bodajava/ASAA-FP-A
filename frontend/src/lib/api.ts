@@ -106,11 +106,16 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
-      // 401 → clear storage and redirect to login
+      // Only 401 on login/auth endpoints should force logout.
+      // Missing/expired company scoping is NOT a session expiry.
       if (error.response?.status === 401) {
-        clearAuthStorage();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          window.location.href = '/login';
+        const url = error.config?.url ?? '';
+        const isAuthRequest = /\/auth\//.test(url);
+        if (isAuthRequest) {
+          clearAuthStorage();
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       }
     }

@@ -1,22 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import type { TranslationKey } from '@/lib/i18n/translations';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { NotificationRule, Site, Account } from '@/types/api';
 import { apiGet } from '@/lib/api';
 import { TRIGGER_TYPES } from '@/lib/constants';
-
-const columns: Column<NotificationRule>[] = [
-  { key: 'ruleName', header: 'Rule Name', className: 'font-semibold text-slate-700' },
-  { key: 'triggerType', header: 'Trigger Type', render: (v) => String(v).replace('_', ' ').toUpperCase(), className: 'text-xs font-mono text-slate-600' },
-  { key: 'thresholdValue', header: 'Threshold', render: (v, row) => row.triggerType.startsWith('variance') ? `${Number(v)}%` : v ? String(v) : '—' },
-  { key: 'channel', header: 'Channels', className: 'text-xs text-slate-500' },
-  { key: 'isActive', header: 'Active', render: (v) => v ? '✅ Yes' : '❌ No' },
-];
 
 interface FormProps {
   item: NotificationRule | null;
@@ -26,6 +19,7 @@ interface FormProps {
 }
 
 function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps) {
+  const { t } = useI18n();
   const [ruleName, setRuleName] = useState(item?.ruleName ?? '');
   const [triggerType, setTriggerType] = useState(item?.triggerType ?? 'variance_pct');
   const [thresholdValue, setThresholdValue] = useState(item?.thresholdValue ? String(item.thresholdValue) : '');
@@ -77,7 +71,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
         id="rule-name"
-        label="Rule Name"
+        label={t('page.notificationRules.ruleName')}
         required
         value={ruleName}
         onChange={(e) => setRuleName(e.target.value)}
@@ -85,16 +79,19 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
       />
       
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="trigger-type" className="text-xs font-medium text-slate-500">Trigger Event</label>
+        <label htmlFor="trigger-type" className="text-xs font-medium text-slate-500">{t('page.notificationRules.triggerEvent')}</label>
         <select
           id="trigger-type"
           value={triggerType}
           onChange={(e) => setTriggerType(e.target.value as any)}
           className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          {TRIGGER_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
+          {TRIGGER_TYPES.map((trigger) => {
+            const key = trigger.value.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+            return (
+              <option key={trigger.value} value={trigger.value}>{t(`triggerType.${key}` as TranslationKey)}</option>
+            );
+          })}
         </select>
       </div>
 
@@ -103,7 +100,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
           id="rule-thresh"
           type="number"
           step="0.01"
-          label={triggerType === 'variance_pct' ? 'Threshold Percentage (%)' : 'Threshold Amount'}
+          label={triggerType === 'variance_pct' ? t('page.notificationRules.thresholdPct') : t('page.notificationRules.thresholdAmount')}
           required
           value={thresholdValue}
           onChange={(e) => setThresholdValue(e.target.value)}
@@ -113,7 +110,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="rule-account" className="text-xs font-medium text-slate-500">Account Scope (Optional)</label>
+          <label htmlFor="rule-account" className="text-xs font-medium text-slate-500">{t('page.notificationRules.accountScope')}</label>
           <select
             id="rule-account"
             value={accountId}
@@ -121,7 +118,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
             disabled={loadingDropdowns}
             className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="">All Accounts</option>
+            <option value="">{t('common.allAccounts')}</option>
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>[{acc.code}] {acc.name}</option>
             ))}
@@ -129,7 +126,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="rule-site" className="text-xs font-medium text-slate-500">Site Scope (Optional)</label>
+          <label htmlFor="rule-site" className="text-xs font-medium text-slate-500">{t('page.notificationRules.siteScope')}</label>
           <select
             id="rule-site"
             value={siteId}
@@ -137,7 +134,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
             disabled={loadingDropdowns}
             className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="">All Sites</option>
+            <option value="">{t('common.allSites')}</option>
             {sites.map((site) => (
               <option key={site.id} value={site.id}>{site.name}</option>
             ))}
@@ -147,7 +144,7 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
 
       <Input
         id="rule-channel"
-        label="Notification Channels"
+        label={t('page.notificationRules.channel')}
         required
         value={channel}
         onChange={(e) => setChannel(e.target.value)}
@@ -162,12 +159,12 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
           onChange={(e) => setIsActive(e.target.checked)}
           className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
         />
-        <label htmlFor="rule-active" className="text-sm font-medium text-slate-700">Active Rule</label>
+        <label htmlFor="rule-active" className="text-sm font-medium text-slate-700">{t('common.active')}</label>
       </div>
 
       <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-        <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
-        <Button size="sm" type="submit" isLoading={isLoading}>{item ? 'Save Changes' : 'Create Rule'}</Button>
+        <Button variant="outline" size="sm" type="button" onClick={onClose}>{t('common.cancel')}</Button>
+        <Button size="sm" type="submit" isLoading={isLoading}>{item ? t('common.saveChanges') : t('page.notificationRules.createRule')}</Button>
       </div>
     </form>
   );
@@ -175,6 +172,16 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
 
 export default function NotificationRulesPage() {
   const { t } = useI18n();
+  const columns: Column<NotificationRule>[] = useMemo(() => [
+    { key: 'ruleName', header: t('page.notificationRules.ruleName'), className: 'font-semibold text-slate-700' },
+    { key: 'triggerType', header: t('page.notificationRules.triggerType'), render: (v) => {
+      const key = String(v).replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+      return t(`triggerType.${key}` as TranslationKey);
+    }, className: 'text-xs font-mono text-slate-600' },
+    { key: 'thresholdValue', header: t('page.notificationRules.threshold'), render: (v, row) => row.triggerType.startsWith('variance') ? `${Number(v)}%` : v ? String(v) : '—' },
+    { key: 'channel', header: t('page.notificationRules.channel'), className: 'text-xs text-slate-500' },
+    { key: 'isActive', header: t('common.active'), render: (v) => v ? `✅ ${t('common.yes')}` : `❌ ${t('common.no')}` },
+  ], [t]);
   return (
     <CrudPage<NotificationRule>
       title={t('page.notificationRules.title')}

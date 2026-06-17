@@ -4,9 +4,13 @@ import { cn } from '@/lib/utils/cn';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+import type { TranslationKey } from '@/lib/i18n/translations';
+
 export interface Column<T> {
   key: keyof T | string;
   header: React.ReactNode;
+  /** Translation key for the header (overrides `header` when `t()` is available) */
+  headerKey?: TranslationKey;
   className?: string;
   render?: (value: unknown, row: T, index: number) => React.ReactNode;
 }

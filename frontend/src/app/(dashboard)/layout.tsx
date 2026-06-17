@@ -10,6 +10,7 @@ import { PwaInstallPrompt } from '@/components/layout/pwa-install-prompt';
 import { ServiceWorkerRegistration } from '@/components/layout/service-worker-registration';
 import { Building2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 /**
  * Pages that do NOT require an active company selection.
@@ -99,7 +100,7 @@ export default function DashboardLayout({
           id="main-content"
           className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8"
         >
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
 

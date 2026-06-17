@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
@@ -14,27 +14,6 @@ import type { BomRecipe, Product, Material, PaginatedResponse } from '@/types/ap
 import { useAuth } from '@/lib/auth-context';
 import { LockedState } from '@/components/ui/feedback-states';
 
-const columns: Column<BomRecipe>[] = [
-  {
-    key: 'product',
-    header: 'Product',
-    render: (_, row) => row.product ? `[${row.product.sku}] ${row.product.name}` : row.productId,
-  },
-  { key: 'version', header: 'Version' },
-  { key: 'outputQty', header: 'Output Qty', render: (v) => Number(v).toFixed(4) },
-  { key: 'laborCost', header: 'Labor Cost', render: (v) => Number(v).toFixed(2) },
-  { key: 'overheadCost', header: 'Overhead Cost', render: (v) => Number(v).toFixed(2) },
-  {
-    key: 'bomLines',
-    header: 'Lines',
-    render: (v) => {
-      const arr = v as BomRecipe['bomLines'];
-      return <span className="text-xs text-slate-500 font-semibold">{Array.isArray(arr) ? arr.length : 0} items</span>;
-    },
-  },
-  { key: 'isActive', header: 'Status', render: (v) => boolBadge(Boolean(v)) },
-];
-
 interface FormBomLine {
   materialId: string;
   qtyPerOutput: number;
@@ -42,9 +21,6 @@ interface FormBomLine {
   wastagePct?: number;
 }
 
-// ---------------------------------------------------------------------------
-// BOM Line sub-form row
-// ---------------------------------------------------------------------------
 interface BomLineRowProps {
   line: FormBomLine;
   index: number;
@@ -54,18 +30,19 @@ interface BomLineRowProps {
 }
 
 function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowProps) {
+  const { t } = useI18n();
   return (
     <div className="grid grid-cols-[1fr_80px_80px_32px] items-end gap-2">
       <div className="flex flex-col gap-1.5">
-        {index === 0 && <label htmlFor={`bom-line-mat-${index}`} className="text-xs font-semibold text-slate-500">Material</label>}
+        {index === 0 && <label htmlFor={`bom-line-mat-${index}`} className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('page.bomRecipes.material')}</label>}
         <select
           id={`bom-line-mat-${index}`}
           value={line.materialId}
           onChange={(e) => onChange(index, { ...line, materialId: e.target.value })}
-          className="h-9 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="h-9 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           required
         >
-          <option value="">Select material...</option>
+          <option value="">{t('page.bomRecipes.selectMaterial')}</option>
           {materials.map((m) => (
             <option key={m.id} value={m.id}>
               [{m.code}] {m.name}
@@ -78,7 +55,7 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
         type="number"
         step="0.0001"
         min="0.0001"
-        label={index === 0 ? 'Qty/Output' : ''}
+        label={index === 0 ? t('page.bomRecipes.qtyPerOutput') : ''}
         value={line.qtyPerOutput.toString()}
         onChange={(e) => onChange(index, { ...line, qtyPerOutput: Number(e.target.value) })}
         placeholder="1"
@@ -88,7 +65,7 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
         id={`bom-line-cost-${index}`}
         type="number"
         step="0.01"
-        label={index === 0 ? 'Unit Cost' : ''}
+        label={index === 0 ? t('page.bomRecipes.unitCost') : ''}
         value={(line.unitCost ?? '').toString()}
         onChange={(e) =>
           onChange(index, { ...line, unitCost: e.target.value ? Number(e.target.value) : undefined })
@@ -98,9 +75,9 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
       <button
         type="button"
         onClick={() => onRemove(index)}
-        className="mb-0.5 flex h-9 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:border-red-200 hover:text-red-500 cursor-pointer"
-        aria-label={`Remove line ${index + 1}`}
-        title="Remove Line"
+        className="mb-0.5 flex h-9 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:border-red-200 hover:text-red-500 cursor-pointer dark:border-slate-700 dark:bg-slate-800"
+        aria-label={`${t('page.bomRecipes.removeLine')} ${index + 1}`}
+        title={t('page.bomRecipes.removeLine')}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
@@ -108,9 +85,6 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main form
-// ---------------------------------------------------------------------------
 interface FormProps {
   item: BomRecipe | null;
   onClose: () => void;
@@ -119,6 +93,7 @@ interface FormProps {
 }
 
 function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
+  const { t } = useI18n();
   const { error: toastError } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -139,7 +114,6 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
     })) ?? [],
   );
 
-  // Load Products & Materials metadata
   useEffect(() => {
     async function loadMeta() {
       try {
@@ -150,11 +124,11 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
         setProducts(prodRes.data ?? []);
         setMaterials(matRes.data ?? []);
       } catch {
-        toastError('Failed to load products and materials list for recipe configuration.');
+        toastError(t('page.bomRecipes.loadMetaError'));
       }
     }
     void loadMeta();
-  }, [toastError]);
+  }, [toastError, t]);
 
   function addLine() {
     setBomLines((prev) => [...prev, { materialId: '', qtyPerOutput: 1, wastagePct: 0 }]);
@@ -171,23 +145,22 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Client-side validations
     if (!productId) {
-      toastError('Please select a target product.');
+      toastError(t('page.bomRecipes.noProductError'));
       return;
     }
     if (bomLines.length === 0) {
-      toastError('BOM Recipe requires at least one material line.');
+      toastError(t('page.bomRecipes.noLinesError'));
       return;
     }
     for (let i = 0; i < bomLines.length; i++) {
       const line = bomLines[i];
       if (!line.materialId) {
-        toastError(`BOM Line #${i + 1} is missing a material selection.`);
+        toastError(`${t('page.bomRecipes.linePrefix')} ${i + 1}: ${t('page.bomRecipes.noMaterialError')}`);
         return;
       }
       if (line.qtyPerOutput <= 0) {
-        toastError(`BOM Line #${i + 1} must have a quantity per output greater than 0.`);
+        toastError(`${t('page.bomRecipes.linePrefix')} ${i + 1}: ${t('page.bomRecipes.qtyError')}`);
         return;
       }
     }
@@ -212,15 +185,15 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="bom-product-select" className="text-xs font-semibold text-slate-500">Product</label>
+        <label htmlFor="bom-product-select" className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('page.bomRecipes.product')}</label>
         <select
           id="bom-product-select"
           value={productId}
           onChange={(e) => setProductId(e.target.value)}
-          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           required
         >
-          <option value="">Select a product...</option>
+          <option value="">{t('page.bomRecipes.selectProduct')}</option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
               [{p.sku}] {p.name}
@@ -230,34 +203,33 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Input id="bom-version" label="Version" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="v1" />
-        <Input id="bom-output-qty" type="number" label="Output Qty" value={outputQty} onChange={(e) => setOutputQty(e.target.value)} placeholder="1" />
+        <Input id="bom-version" label={t('page.bomRecipes.version')} value={version} onChange={(e) => setVersion(e.target.value)} placeholder="v1" />
+        <Input id="bom-output-qty" type="number" label={t('page.bomRecipes.outputQty')} value={outputQty} onChange={(e) => setOutputQty(e.target.value)} placeholder="1" />
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <Input id="bom-wastage" type="number" label="Wastage %" value={wastagePct} onChange={(e) => setWastagePct(e.target.value)} placeholder="0" />
-        <Input id="bom-labor" type="number" label="Labor Cost" value={laborCost} onChange={(e) => setLaborCost(e.target.value)} placeholder="0" />
-        <Input id="bom-overhead" type="number" label="Overhead Cost" value={overheadCost} onChange={(e) => setOverheadCost(e.target.value)} placeholder="0" />
+        <Input id="bom-wastage" type="number" label={t('page.bomRecipes.wastagePct')} value={wastagePct} onChange={(e) => setWastagePct(e.target.value)} placeholder="0" />
+        <Input id="bom-labor" type="number" label={t('page.bomRecipes.laborCost')} value={laborCost} onChange={(e) => setLaborCost(e.target.value)} placeholder="0" />
+        <Input id="bom-overhead" type="number" label={t('page.bomRecipes.overheadCost')} value={overheadCost} onChange={(e) => setOverheadCost(e.target.value)} placeholder="0" />
       </div>
-      <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-slate-300 accent-emerald-600" />
-        Active
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-slate-300 accent-emerald-600 dark:border-slate-600" />
+        {t('common.active')}
       </label>
 
-      {/* BOM Lines */}
-      <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+      <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-700">BOM Lines</span>
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('page.bomRecipes.bomLinesSection')}</span>
           <button
             type="button"
             onClick={addLine}
-            className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 cursor-pointer"
-            title="Add Material Line"
+            className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 cursor-pointer dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+            title={t('page.bomRecipes.addLine')}
           >
-            <Plus className="h-3 w-3" /> Add Line
+            <Plus className="h-3 w-3" /> {t('page.bomRecipes.addLine')}
           </button>
         </div>
         {bomLines.length === 0 ? (
-          <p className="text-center text-xs text-slate-400">No lines yet. Click &ldquo;Add Line&rdquo; to add materials.</p>
+          <p className="text-center text-xs text-slate-400">{t('page.bomRecipes.noLinesText')}</p>
         ) : (
           <div className="flex flex-col gap-2">
             {bomLines.map((line, i) => (
@@ -267,9 +239,9 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 font-semibold">
-        <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
-        <Button size="sm" type="submit" isLoading={isLoading}>{item ? 'Save Changes' : 'Create Recipe'}</Button>
+      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 font-semibold dark:border-slate-700">
+        <Button variant="outline" size="sm" type="button" onClick={onClose}>{t('common.cancel')}</Button>
+        <Button size="sm" type="submit" isLoading={isLoading}>{item ? t('common.saveChanges') : t('page.bomRecipes.createRecipe')}</Button>
       </div>
     </form>
   );
@@ -284,7 +256,7 @@ export default function BomRecipesPage() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('page.bomRecipes.title')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{t('page.bomRecipes.title')}</h1>
           <p className="text-sm text-slate-500">{t('page.bomRecipes.description')}</p>
         </div>
         <LockedState
@@ -295,6 +267,27 @@ export default function BomRecipesPage() {
       </div>
     );
   }
+
+  const columns: Column<BomRecipe>[] = useMemo(() => [
+    {
+      key: 'product',
+      header: t('page.bomRecipes.product'),
+      render: (_, row) => row.product ? `[${row.product.sku}] ${row.product.name}` : row.productId,
+    },
+    { key: 'version', header: t('page.bomRecipes.version') },
+    { key: 'outputQty', header: t('page.bomRecipes.outputQty'), render: (v) => Number(v).toFixed(4) },
+    { key: 'laborCost', header: t('page.bomRecipes.laborCost'), render: (v) => Number(v).toFixed(2) },
+    { key: 'overheadCost', header: t('page.bomRecipes.overheadCost'), render: (v) => Number(v).toFixed(2) },
+    {
+      key: 'bomLines',
+      header: t('page.bomRecipes.linesHeader'),
+      render: (v) => {
+        const arr = v as BomRecipe['bomLines'];
+        return <span className="text-xs text-slate-500 font-semibold dark:text-slate-400">{Array.isArray(arr) ? arr.length : 0} {t('page.bomRecipes.itemsUnit')}</span>;
+      },
+    },
+    { key: 'isActive', header: t('common.status'), render: (v) => boolBadge(Boolean(v)) },
+  ], [t]);
 
   return (
     <CrudPage<BomRecipe>

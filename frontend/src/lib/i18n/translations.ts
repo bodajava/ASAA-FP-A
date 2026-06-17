@@ -1074,6 +1074,16 @@ export type TranslationKey =
   | 'page.materials.emptyTitle'
 
   /* ── Page: Notification Rules ─────────────────────────────────────────── */
+  | 'page.notificationRules.ruleName'
+  | 'page.notificationRules.triggerType'
+  | 'page.notificationRules.threshold'
+  | 'page.notificationRules.channel'
+  | 'page.notificationRules.triggerEvent'
+  | 'page.notificationRules.thresholdPct'
+  | 'page.notificationRules.thresholdAmount'
+  | 'page.notificationRules.accountScope'
+  | 'page.notificationRules.siteScope'
+  | 'page.notificationRules.createRule'
   | 'page.notificationRules.description'
   | 'page.notificationRules.emptyDescription'
   | 'page.notificationRules.emptyTitle'
@@ -1127,7 +1137,88 @@ export type TranslationKey =
   | 'page.variance.varianceActBud'
   | 'page.variance.varianceForBud'
   | 'page.variance.varianceForAct'
-;
+
+  | 'common.role'
+  | 'common.selectRole'
+  | 'page.bomRecipes.addLine'
+  | 'page.bomRecipes.bomLinesSection'
+  | 'page.bomRecipes.createRecipe'
+  | 'page.bomRecipes.itemsUnit'
+  | 'page.bomRecipes.laborCost'
+  | 'page.bomRecipes.linePrefix'
+  | 'page.bomRecipes.linesHeader'
+  | 'page.bomRecipes.loadMetaError'
+  | 'page.bomRecipes.material'
+  | 'page.bomRecipes.noLinesError'
+  | 'page.bomRecipes.noLinesText'
+  | 'page.bomRecipes.noMaterialError'
+  | 'page.bomRecipes.noProductError'
+  | 'page.bomRecipes.outputQty'
+  | 'page.bomRecipes.overheadCost'
+  | 'page.bomRecipes.product'
+  | 'page.bomRecipes.qtyError'
+  | 'page.bomRecipes.qtyPerOutput'
+  | 'page.bomRecipes.removeLine'
+  | 'page.bomRecipes.selectMaterial'
+  | 'page.bomRecipes.selectProduct'
+  | 'page.bomRecipes.unitCost'
+  | 'page.bomRecipes.version'
+  | 'page.bomRecipes.wastagePct'
+  | 'page.customers.contactEmail'
+  | 'page.customers.contactPhone'
+  | 'page.customers.createCustomer'
+  | 'page.customers.customerCode'
+  | 'page.customers.customerName'
+  | 'page.kpiTargets.kpiName'
+  | 'page.materials.createMaterial'
+  | 'page.materials.materialCode'
+  | 'page.materials.materialName'
+  | 'page.materials.purchasePrice'
+  | 'page.materials.safetyStock'
+  | 'page.materials.supplierId'
+  | 'page.materials.unitId'
+  | 'page.productCategories.createCategory'
+  | 'page.productCategories.parentIdOptional'
+  | 'page.productCategories.parentIdPlaceholder'
+  | 'page.products.categoryId'
+  | 'page.products.createProduct'
+  | 'page.products.productName'
+  | 'page.products.salePrice'
+  | 'page.products.sku'
+  | 'page.products.standardCost'
+  | 'page.products.unitId'
+  | 'page.suppliers.createSupplier'
+  | 'page.users.createUser'
+  | 'page.users.lastLogin'
+  | 'page.users.namePlaceholder'
+  | 'page.users.passwordPlaceholder'
+  | 'page.kpiTargets.annual'
+  | 'page.kpiTargets.category'
+  | 'page.kpiTargets.createTarget'
+  | 'page.kpiTargets.fiscalYear'
+  | 'page.kpiTargets.monthOptional'
+  | 'page.kpiTargets.siteScope'
+  | 'page.kpiTargets.targetValue'
+  | 'page.kpiTargets.unit'
+  | 'kpiCategory.financial'
+  | 'kpiCategory.hr'
+  | 'kpiCategory.operational'
+  | 'kpiCategory.production'
+  | 'kpiCategory.sales'
+  | 'common.pending'
+  | 'common.approved'
+  | 'common.rejected'
+  | 'common.draft'
+  | 'common.submitted'
+  | 'common.completed'
+  | 'common.cancelled'
+  | 'common.submit'
+  | 'common.login'
+  | 'common.logout'
+  | 'common.approve'
+  | 'common.reject'
+  | 'common.permission'
+  | 'page.notificationRules.changeable';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -2251,6 +2342,17 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.materials.emptyTitle': 'No materials yet',
 
     /* Notification Rules */
+    'page.notificationRules.ruleName': 'Rule Name',
+    'page.notificationRules.triggerType': 'Trigger Type',
+    'page.notificationRules.threshold': 'Threshold',
+    'page.notificationRules.channel': 'Notification Channels',
+    'page.notificationRules.triggerEvent': 'Trigger Event',
+    'page.notificationRules.thresholdPct': 'Threshold Percentage (%)',
+    'page.notificationRules.thresholdAmount': 'Threshold Amount',
+    'page.notificationRules.accountScope': 'Account Scope (Optional)',
+    'page.notificationRules.siteScope': 'Site Scope (Optional)',
+    'page.notificationRules.createRule': 'Create Rule',
+    'page.notificationRules.changeable': 'Changeable',
     'page.notificationRules.description': 'Configure rules for automated alerts and notifications.',
     'page.notificationRules.emptyDescription': 'Create notification rules to receive alerts on key events.',
     'page.notificationRules.emptyTitle': 'No notification rules yet',
@@ -2304,6 +2406,86 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.variance.varianceActBud': 'Variance (Act vs Bud)',
     'page.variance.varianceForBud': 'Variance (For vs Bud)',
     'page.variance.varianceForAct': 'Variance (For vs Act)',
+    'common.role': 'Role',
+    'common.selectRole': 'Select role...',
+    'page.bomRecipes.addLine': 'Add Line',
+    'page.bomRecipes.bomLinesSection': 'BOM Lines',
+    'page.bomRecipes.createRecipe': 'Create Recipe',
+    'page.bomRecipes.itemsUnit': 'items',
+    'page.bomRecipes.laborCost': 'Labor Cost',
+    'page.bomRecipes.linePrefix': 'BOM Line',
+    'page.bomRecipes.linesHeader': 'Lines',
+    'page.bomRecipes.loadMetaError': 'Failed to load products and materials list.',
+    'page.bomRecipes.material': 'Material',
+    'page.bomRecipes.noLinesError': 'BOM requires at least one material line.',
+    'page.bomRecipes.noLinesText': 'No lines yet. Click "Add Line" to add materials.',
+    'page.bomRecipes.noMaterialError': 'Missing a material selection.',
+    'page.bomRecipes.noProductError': 'Please select a target product.',
+    'page.bomRecipes.outputQty': 'Output Qty',
+    'page.bomRecipes.overheadCost': 'Overhead Cost',
+    'page.bomRecipes.product': 'Product',
+    'page.bomRecipes.qtyError': 'Quantity must be greater than 0.',
+    'page.bomRecipes.qtyPerOutput': 'Qty/Output',
+    'page.bomRecipes.removeLine': 'Remove Line',
+    'page.bomRecipes.selectMaterial': 'Select material...',
+    'page.bomRecipes.selectProduct': 'Select a product...',
+    'page.bomRecipes.unitCost': 'Unit Cost',
+    'page.bomRecipes.version': 'Version',
+    'page.bomRecipes.wastagePct': 'Wastage %',
+    'page.customers.contactEmail': 'Contact Email',
+    'page.customers.contactPhone': 'Contact Phone',
+    'page.customers.createCustomer': 'Create Customer',
+    'page.customers.customerCode': 'Customer Code',
+    'page.customers.customerName': 'Customer Name',
+    'page.kpiTargets.kpiName': 'KPI Name',
+    'page.materials.createMaterial': 'Create Material',
+    'page.materials.materialCode': 'Material Code',
+    'page.materials.materialName': 'Material Name',
+    'page.materials.purchasePrice': 'Purchase Price',
+    'page.materials.safetyStock': 'Safety Stock',
+    'page.materials.supplierId': 'Supplier ID',
+    'page.materials.unitId': 'Unit ID',
+    'page.productCategories.createCategory': 'Create Category',
+    'page.productCategories.parentIdOptional': 'Parent Category ID (optional)',
+    'page.productCategories.parentIdPlaceholder': 'Leave blank for root',
+    'page.products.categoryId': 'Category ID',
+    'page.products.createProduct': 'Create Product',
+    'page.products.productName': 'Product Name',
+    'page.products.salePrice': 'Sale Price',
+    'page.products.sku': 'SKU',
+    'page.products.standardCost': 'Std. Cost',
+    'page.products.unitId': 'Unit ID',
+    'page.suppliers.createSupplier': 'Create Supplier',
+    'page.users.createUser': 'Create User',
+    'page.users.lastLogin': 'Last Login',
+    'page.users.namePlaceholder': 'Full name',
+    'page.users.passwordPlaceholder': 'Min. 8 characters',
+    'common.approve': 'Approve',
+    'common.approved': 'Approved',
+    'common.cancelled': 'Cancelled',
+    'common.completed': 'Completed',
+    'common.draft': 'Draft',
+    'common.login': 'Login',
+    'common.logout': 'Logout',
+    'common.pending': 'Pending',
+    'common.permission': 'Permission',
+    'common.reject': 'Reject',
+    'common.rejected': 'Rejected',
+    'common.submit': 'Submit',
+    'common.submitted': 'Submitted',
+    'kpiCategory.financial': 'Financial',
+    'kpiCategory.hr': 'HR',
+    'kpiCategory.operational': 'Operational',
+    'kpiCategory.production': 'Production',
+    'kpiCategory.sales': 'Sales',
+    'page.kpiTargets.annual': 'Annual target if empty',
+    'page.kpiTargets.category': 'Category',
+    'page.kpiTargets.createTarget': 'Create Target',
+    'page.kpiTargets.fiscalYear': 'Fiscal Year',
+    'page.kpiTargets.monthOptional': 'Month (1-12, Optional)',
+    'page.kpiTargets.siteScope': 'Site Scope',
+    'page.kpiTargets.targetValue': 'Target Value',
+    'page.kpiTargets.unit': 'Measurement Unit',
   },
 
   ar: {
@@ -2452,6 +2634,19 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.restore': 'استعادة',
     'common.select': 'اختيار',
     'common.optional': 'اختياري',
+    'common.permission': 'صلاحية',
+    'common.reject': 'رفض',
+    'common.approve': 'اعتماد',
+    'common.logout': 'تسجيل الخروج',
+    'common.login': 'تسجيل الدخول',
+    'common.submit': 'تقديم',
+    'common.cancelled': 'ملغي',
+    'common.completed': 'مكتمل',
+    'common.submitted': 'مقدم',
+    'common.draft': 'مسودة',
+    'common.rejected': 'مرفوض',
+    'common.approved': 'معتمد',
+    'common.pending': 'قيد الانتظار',
     'common.allMonths': 'كل الأشهر',
     'common.allSites': 'كل المواقع',
     'common.allProducts': 'كل المنتجات',
@@ -3427,6 +3622,17 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.materials.emptyTitle': 'لا توجد مواد بعد',
 
     /* Notification Rules */
+    'page.notificationRules.ruleName': 'اسم القاعدة',
+    'page.notificationRules.triggerType': 'نوع المشغل',
+    'page.notificationRules.threshold': 'الحد الأدنى',
+    'page.notificationRules.channel': 'قنوات الإشعارات',
+    'page.notificationRules.triggerEvent': 'الحدث المشغل',
+    'page.notificationRules.thresholdPct': 'نسبة الحد الأدنى (%)',
+    'page.notificationRules.thresholdAmount': 'المبلغ الأدنى',
+    'page.notificationRules.accountScope': 'نطاق الحساب (اختياري)',
+    'page.notificationRules.siteScope': 'نطاق الموقع (اختياري)',
+    'page.notificationRules.createRule': 'إنشاء قاعدة',
+    'page.notificationRules.changeable': 'قابل للتغيير',
     'page.notificationRules.description': 'تكوين قواعد التنبيهات والإشعارات الآلية.',
     'page.notificationRules.emptyDescription': 'أنشئ قواعد إشعارات لتلقي تنبيهات حول الأحداث الرئيسية.',
     'page.notificationRules.emptyTitle': 'لا توجد قواعد إشعارات بعد',
@@ -3480,5 +3686,72 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.variance.varianceActBud': 'الانحراف (الفعلي مقابل الميزانية)',
     'page.variance.varianceForBud': 'الانحراف (التوقعات مقابل الميزانية)',
     'page.variance.varianceForAct': 'الانحراف (التوقعات مقابل الفعلي)',
+    'common.role': 'الدور',
+    'common.selectRole': 'اختر الدور...',
+    'page.bomRecipes.addLine': 'إضافة بند',
+    'page.bomRecipes.bomLinesSection': 'بنود قائمة المكونات',
+    'page.bomRecipes.createRecipe': 'إنشاء وصفة',
+    'page.bomRecipes.itemsUnit': 'عنصر',
+    'page.bomRecipes.laborCost': 'تكلفة العمالة',
+    'page.bomRecipes.linePrefix': 'بند قائمة المكونات',
+    'page.bomRecipes.linesHeader': 'البنود',
+    'page.bomRecipes.loadMetaError': 'فشل تحميل قوائم المنتجات والمواد.',
+    'page.bomRecipes.material': 'المادة',
+    'page.bomRecipes.noLinesError': 'قائمة المكونات تتطلب بند مادة واحد على الأقل.',
+    'page.bomRecipes.noLinesText': 'لا توجد بنود بعد. انقر "إضافة بند" لإضافة المواد.',
+    'page.bomRecipes.noMaterialError': 'اختيار المادة مفقود.',
+    'page.bomRecipes.noProductError': 'الرجاء اختيار منتج مستهدف.',
+    'page.bomRecipes.outputQty': 'كمية الإخراج',
+    'page.bomRecipes.overheadCost': 'التكاليف العامة',
+    'page.bomRecipes.product': 'المنتج',
+    'page.bomRecipes.qtyError': 'يجب أن تكون الكمية أكبر من 0.',
+    'page.bomRecipes.qtyPerOutput': 'الكمية لكل إخراج',
+    'page.bomRecipes.removeLine': 'حذف البند',
+    'page.bomRecipes.selectMaterial': 'اختر مادة...',
+    'page.bomRecipes.selectProduct': 'اختر منتج...',
+    'page.bomRecipes.unitCost': 'تكلفة الوحدة',
+    'page.bomRecipes.version': 'الإصدار',
+    'page.bomRecipes.wastagePct': 'نسبة الهدر %',
+    'page.customers.contactEmail': 'البريد الإلكتروني للتواصل',
+    'page.customers.contactPhone': 'هاتف التواصل',
+    'page.customers.createCustomer': 'إنشاء عميل',
+    'page.customers.customerCode': 'كود العميل',
+    'page.customers.customerName': 'اسم العميل',
+    'page.kpiTargets.kpiName': 'اسم مؤشر الأداء',
+    'page.kpiTargets.annual': 'هدف سنوي إذا كان فارغاً',
+    'page.kpiTargets.category': 'التصنيف',
+    'page.kpiTargets.createTarget': 'إنشاء هدف',
+    'page.kpiTargets.fiscalYear': 'السنة المالية',
+    'page.kpiTargets.monthOptional': 'الشهر (1-12، اختياري)',
+    'page.kpiTargets.siteScope': 'نطاق الموقع',
+    'page.kpiTargets.targetValue': 'القيمة المستهدفة',
+    'page.kpiTargets.unit': 'وحدة القياس',
+    'kpiCategory.financial': 'مالي',
+    'kpiCategory.hr': 'موارد بشرية',
+    'kpiCategory.operational': 'تشغيلي',
+    'kpiCategory.production': 'إنتاج',
+    'kpiCategory.sales': 'مبيعات',
+    'page.materials.createMaterial': 'إنشاء مادة',
+    'page.materials.materialCode': 'كود المادة',
+    'page.materials.materialName': 'اسم المادة',
+    'page.materials.purchasePrice': 'سعر الشراء',
+    'page.materials.safetyStock': 'المخزون الآمن',
+    'page.materials.supplierId': 'معرف المورد',
+    'page.materials.unitId': 'معرف الوحدة',
+    'page.productCategories.createCategory': 'إنشاء تصنيف',
+    'page.productCategories.parentIdOptional': 'معرف التصنيف الأب (اختياري)',
+    'page.productCategories.parentIdPlaceholder': 'اتركه فارغاً للتصنيف الجذر',
+    'page.products.categoryId': 'معرف التصنيف',
+    'page.products.createProduct': 'إنشاء منتج',
+    'page.products.productName': 'اسم المنتج',
+    'page.products.salePrice': 'سعر البيع',
+    'page.products.sku': 'كود المنتج',
+    'page.products.standardCost': 'التكلفة المعيارية',
+    'page.products.unitId': 'معرف الوحدة',
+    'page.suppliers.createSupplier': 'إنشاء مورد',
+    'page.users.createUser': 'إنشاء مستخدم',
+    'page.users.lastLogin': 'آخر تسجيل دخول',
+    'page.users.namePlaceholder': 'الاسم الكامل',
+    'page.users.passwordPlaceholder': '8 أحرف كحد أدنى',
   },
 };

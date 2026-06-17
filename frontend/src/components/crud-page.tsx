@@ -14,6 +14,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import type { TranslationKey } from '@/lib/i18n/translations';
 import axios from 'axios';
 
 export interface CrudPageProps<T extends { id: string }> {
@@ -21,6 +22,8 @@ export interface CrudPageProps<T extends { id: string }> {
   description?: string;
   endpoint: string;
   columns: Column<T>[];
+  /** Map column keys to TranslationKey for automatic header translation */
+  columnHeaders?: Record<string, TranslationKey>;
   renderForm: (opts: {
     item: T | null;
     onClose: () => void;
@@ -42,6 +45,7 @@ export function CrudPage<T extends { id: string }>({
   description,
   endpoint,
   columns,
+  columnHeaders,
   renderForm,
   emptyTitle,
   emptyDescription,
@@ -61,6 +65,18 @@ export function CrudPage<T extends { id: string }>({
     limit: 20,
     enabled: requiresCompany ? Boolean(activeCompanyId) : true,
   });
+
+  const resolvedColumns = React.useMemo(
+    () =>
+      columns.map((col) => {
+        const headerKey = col.headerKey ?? (columnHeaders ? columnHeaders[col.key as string] : undefined);
+        if (headerKey) {
+          return { ...col, header: t(headerKey) };
+        }
+        return col;
+      }),
+    [columns, columnHeaders, t],
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<T | null>(null);
@@ -163,7 +179,7 @@ export function CrudPage<T extends { id: string }>({
     ),
   };
 
-  const allColumns = [...columns, actionColumn];
+  const allColumns = [...resolvedColumns, actionColumn];
 
   if (requiresCompany && !activeCompanyId) {
     return (

@@ -66,6 +66,20 @@ export default function RootLayout({
           content="#0f172a"
           media="(prefers-color-scheme: dark)"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var theme = localStorage.getItem('asaa_theme') || 'system';
+                var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.classList.add('dark');
+                var locale = localStorage.getItem('asaa_locale') || 'en';
+                document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+                document.documentElement.lang = locale;
+              })();
+            `,
+          }}
+        />
       </head>
       <body className="min-h-full bg-background text-foreground" suppressHydrationWarning>
         <ThemeProvider>

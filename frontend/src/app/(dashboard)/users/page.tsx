@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CrudPage } from '@/components/crud-page';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,36 +8,6 @@ import { apiGet } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { User, Role } from '@/types/api';
-
-const columns: Column<User>[] = [
-  { key: 'name', header: 'Name', className: 'font-semibold text-slate-700' },
-  { key: 'email', header: 'Email' },
-  {
-    key: 'roleName',
-    header: 'Role',
-    render: (v) => String(v ?? '-'),
-  },
-  {
-    key: 'status',
-    header: 'Status',
-    render: (v) => (
-      <span
-        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-          v === 'active'
-            ? 'bg-emerald-100 text-emerald-800'
-            : 'bg-slate-100 text-slate-600'
-        }`}
-      >
-        {String(v ?? '-')}
-      </span>
-    ),
-  },
-  {
-    key: 'lastLoginAt',
-    header: 'Last Login',
-    render: (v) => (v ? new Date(v as string).toLocaleString() : 'Never'),
-  },
-];
 
 interface FormProps {
   item: User | null;
@@ -47,6 +17,7 @@ interface FormProps {
 }
 
 function UserForm({ item, onClose, onSubmit, isLoading }: FormProps) {
+  const { t } = useI18n();
   const [roles, setRoles] = useState<Role[]>([]);
   const [name, setName] = useState(item?.name ?? '');
   const [email, setEmail] = useState(item?.email ?? '');
@@ -76,43 +47,43 @@ function UserForm({ item, onClose, onSubmit, isLoading }: FormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
         id="user-name"
-        label="Name"
+        label={t('common.name')}
         required
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Full name"
+        placeholder={t('page.users.namePlaceholder')}
       />
       <Input
         id="user-email"
         type="email"
-        label="Email"
+        label={t('common.email')}
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="user@example.com"
+        placeholder={t('common.emailPlaceholder')}
       />
       {!item && (
         <Input
           id="user-password"
           type="password"
-          label="Password"
+          label={t('common.password')}
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Min. 8 characters"
+          placeholder={t('page.users.passwordPlaceholder')}
         />
       )}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="user-role" className="text-xs font-medium text-slate-500">
-          Role
+        <label htmlFor="user-role" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          {t('common.role')}
         </label>
         <select
           id="user-role"
           value={roleId}
           onChange={(e) => setRoleId(e.target.value)}
-          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
-          <option value="">Select role...</option>
+          <option value="">{t('common.selectRole')}</option>
           {roles.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
@@ -121,25 +92,25 @@ function UserForm({ item, onClose, onSubmit, isLoading }: FormProps) {
         </select>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="user-status" className="text-xs font-medium text-slate-500">
-          Status
+        <label htmlFor="user-status" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          {t('common.status')}
         </label>
         <select
           id="user-status"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="active">{t('common.active')}</option>
+          <option value="inactive">{t('common.inactive')}</option>
         </select>
       </div>
-      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
         <Button variant="outline" size="sm" type="button" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button size="sm" type="submit" isLoading={isLoading}>
-          {item ? 'Save Changes' : 'Create User'}
+          {item ? t('common.saveChanges') : t('page.users.createUser')}
         </Button>
       </div>
     </form>
@@ -147,7 +118,37 @@ function UserForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function UsersPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const columns: Column<User>[] = useMemo(() => [
+    { key: 'name', header: t('common.name'), className: 'font-semibold text-slate-700 dark:text-slate-200' },
+    { key: 'email', header: t('common.email') },
+    {
+      key: 'roleName',
+      header: t('common.role'),
+      render: (v) => String(v ?? '—'),
+    },
+    {
+      key: 'status',
+      header: t('common.status'),
+      render: (v) => (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+            v === 'active'
+              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+          }`}
+        >
+          {v === 'active' ? t('common.active') : v === 'inactive' ? t('common.inactive') : String(v ?? '—')}
+        </span>
+      ),
+    },
+    {
+      key: 'lastLoginAt',
+      header: t('page.users.lastLogin'),
+      render: (v) => (v ? new Date(v as string).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US') : '—'),
+    },
+  ], [t, locale]);
+
   return (
     <CrudPage<User>
       title={t('page.users.title')}

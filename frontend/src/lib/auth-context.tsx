@@ -15,6 +15,7 @@ import api, {
   getItem,
   removeItem,
   setItem,
+  setStoredToken,
   STORAGE_KEYS,
 } from './api';
 
@@ -196,7 +197,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       );
 
-      // Token is stored in HttpOnly cookie by the server — no localStorage needed
+      // Token is stored in HttpOnly cookie by the server — also keep in
+      // localStorage as a fallback for the Bearer Authorization header.
+      setStoredToken(response.accessToken);
       setItem(STORAGE_KEYS.TENANT_ID, String(tenantId));
 
       const fullName = response.user.name ?? '';

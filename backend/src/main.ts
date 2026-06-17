@@ -15,12 +15,27 @@ Object.defineProperty(BigInt.prototype, 'toJSON', {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Trust proxy headers for correct protocol detection behind reverse proxies
+  app.getHttpServer().setMaxListeners(0);
+  app.set('trust proxy', 1);
+
   // Enable CORS with credentials support
   app.enableCors({
     origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',')
-      : ['http://localhost:5173', 'http://localhost:3000'],
+      ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+      : [
+          'http://localhost:5173',
+          'http://localhost:3000',
+          'https://asaa-fp-a.vercel.app',
+        ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-tenant-id',
+      'x-company-id',
+    ],
   });
 
   // Cookie parser for reading HttpOnly cookies

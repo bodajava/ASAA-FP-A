@@ -41,6 +41,10 @@ export function getStoredToken(): string | null {
   return getItem(STORAGE_KEYS.ACCESS_TOKEN);
 }
 
+export function setStoredToken(token: string): void {
+  setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+}
+
 export function getStoredTenantId(): string | null {
   return getItem(STORAGE_KEYS.TENANT_ID);
 }
@@ -73,8 +77,14 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const tenantId = getStoredTenantId();
     const companyId = getStoredCompanyId();
+    const token = getStoredToken();
 
     const isLoginRequest = config.url?.endsWith('/auth/login') || false;
+
+    // Inject Bearer token as fallback (primary auth is via HttpOnly cookie)
+    if (token && !config.headers['Authorization']) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
 
     // x-tenant-id validation (must be numeric)
     const incomingTenantId = (config.headers['x-tenant-id'] as string) ?? tenantId;

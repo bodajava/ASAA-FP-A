@@ -170,9 +170,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-border bg-card',
+          'fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-border bg-card rtl:border-l rtl:border-r-0',
           'transition-transform duration-300 ease-in-out',
-          open ? 'translate-x-0' : '-translate-x-full',
+          open ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full',
           'lg:relative lg:translate-x-0',
         )}
         aria-label="Main navigation"
@@ -223,7 +223,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             </div>
           </div>
         )}

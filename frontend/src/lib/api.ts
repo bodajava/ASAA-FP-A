@@ -111,17 +111,91 @@ api.interceptors.request.use(
   (error: unknown) => Promise.reject(error),
 );
 
-// Response interceptor – unified error handling
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// Response interceptor – unified error handling and token refreshing
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: unknown) => {
+  async (error: unknown) => {
     if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) {
-        clearAuthStorage();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('auth:expired'));
+      const originalRequest = error.config as any;
+
+      if (error.response?.status === 401 && originalRequest) {
+        const isAuthRequest =
+          originalRequest.url?.endsWith('/auth/refresh') ||
+          originalRequest.url?.endsWith('/auth/login');
+        const hasStoredToken = getStoredToken();
+
+        // If the request is login or refresh, or if we don't have a stored token, or if we already retried, don't try to refresh
+        if (isAuthRequest || !hasStoredToken || originalRequest._retry) {
+          clearAuthStorage();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('auth:expired'));
+          }
+          if (typeof window !== 'undefined') {
+            const locale = localStorage.getItem('asaa_locale') || 'en';
+            error.message = translateApiError(error, locale);
+          }
+          return Promise.reject(error);
+        }
+
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then((token) => {
+              if (originalRequest.headers) {
+                originalRequest.headers['Authorization'] = `Bearer ${token}`;
+              }
+              return api(originalRequest);
+            })
+            .catch((err) => Promise.reject(err));
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          // Attempt to refresh the token (cookies are sent automatically)
+          const res = await api.post<{ accessToken: string; refreshToken: string }>(
+            '/auth/refresh',
+            {},
+            { _retry: true } as any,
+          );
+          const { accessToken } = res.data;
+
+          setStoredToken(accessToken);
+
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+          }
+
+          processQueue(null, accessToken);
+          return api(originalRequest);
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          clearAuthStorage();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('auth:expired'));
+          }
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       }
+
       // Attach a user-friendly translated message
       if (typeof window !== 'undefined') {
         const locale = localStorage.getItem('asaa_locale') || 'en';

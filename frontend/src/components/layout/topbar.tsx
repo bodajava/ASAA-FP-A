@@ -105,13 +105,13 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
 
       <div className="relative hidden flex-1 max-w-md sm:flex">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
           aria-hidden="true"
         />
         <input
           type="search"
           placeholder={`${t('common.search')}…`}
-          className="h-9 w-full rounded-lg border border-input bg-muted pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="h-9 w-full rounded-lg border border-input bg-muted ps-9 pe-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           aria-label={t('common.search')}
         />
       </div>
@@ -130,16 +130,16 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
             <Globe className="h-5 w-5" />
           </button>
           {langOpen && (
-            <div className="absolute right-0 mt-2 w-36 rounded-xl border border-border bg-card py-1 shadow-xl z-50">
+            <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-36 rounded-xl border border-border bg-card py-1 shadow-xl z-50">
               <button
                 onClick={() => { setLocale('en'); setLangOpen(false); }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-secondary cursor-pointer ${locale === 'en' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
+                className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${locale === 'en' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
               >
                 English
               </button>
               <button
                 onClick={() => { setLocale('ar'); setLangOpen(false); }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-secondary cursor-pointer ${locale === 'ar' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
+                className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${locale === 'ar' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
               >
                 العربية
               </button>
@@ -158,26 +158,26 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
             <ThemeIcon className="h-5 w-5" />
           </button>
           {themeOpen && (
-            <div className="absolute right-0 mt-2 w-36 rounded-xl border border-border bg-card py-1 shadow-xl z-50">
+            <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-36 rounded-xl border border-border bg-card py-1 shadow-xl z-50">
               <button
                 onClick={() => { setTheme('light'); setThemeOpen(false); }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'light' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
+                className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'light' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
               >
-                <Sun className="mr-2 inline-block h-4 w-4" />
+                <Sun className="me-2 inline-block h-4 w-4" />
                 {t('common.light')}
               </button>
               <button
                 onClick={() => { setTheme('dark'); setThemeOpen(false); }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'dark' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
+                className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'dark' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
               >
-                <Moon className="mr-2 inline-block h-4 w-4" />
+                <Moon className="me-2 inline-block h-4 w-4" />
                 {t('common.dark')}
               </button>
               <button
                 onClick={() => { setTheme('system'); setThemeOpen(false); }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'system' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
+                className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'system' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
               >
-                <span className="mr-2 inline-block h-4 w-4 text-center text-xs">🌓</span>
+                <span className="me-2 inline-block h-4 w-4 text-center text-xs">🌓</span>
                 {t('common.system')}
               </button>
             </div>
@@ -194,14 +194,14 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
           >
             <Bell className="h-5 w-5" />
             {unreadNotifs.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white ring-2 ring-background">
+              <span className="absolute -right-0.5 rtl:right-auto rtl:-left-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white ring-2 ring-background">
                 {unreadNotifs.length}
               </span>
             )}
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border bg-card py-2 shadow-xl z-50">
+            <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-80 rounded-xl border border-border bg-card py-2 shadow-xl z-50">
               <div className="flex items-center justify-between px-4 py-2 border-b border-border">
                 <span className="text-xs font-bold text-card-foreground">{t('common.notifications')}</span>
                 <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-semibold">{unreadNotifs.length} {t('common.unread')}</span>

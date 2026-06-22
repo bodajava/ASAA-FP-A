@@ -1,6 +1,52 @@
-import { PrismaClient, TenantStatus, IndustryType, UserStatus, SiteType, SiteStatus, AccountType, ProductType, CustomerType, RateSource, CycleStatus, PeriodType, ScenarioType, ForecastMethod, ImportSourceSystem, ImportType, ImportStatus, CostCenterType, BillingCycle, SubscriptionStatus, PlanSource, KpiCategory, TriggerType, EmploymentType } from '@prisma/client';
+import { 
+  PrismaClient, 
+  TenantStatus, 
+  IndustryType, 
+  UserStatus, 
+  SiteType, 
+  SiteStatus, 
+  AccountType, 
+  ProductType, 
+  CustomerType, 
+  RateSource, 
+  CycleStatus, 
+  PeriodType, 
+  ScenarioType, 
+  ForecastMethod, 
+  ImportSourceSystem, 
+  ImportType, 
+  ImportStatus, 
+  CostCenterType, 
+  BillingCycle, 
+  SubscriptionStatus, 
+  PlanSource, 
+  KpiCategory, 
+  TriggerType, 
+  EmploymentType,
+  ApprovalStatus,
+  NotificationChannel,
+  NotificationStatus,
+  ConnectionType,
+  SyncSchedule,
+  SyncStatus
+} from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
+
+const ALGORITHM = 'aes-256-cbc';
+const IV_LENGTH = 16;
+
+function encrypt(text: string): string {
+  if (!text) return '';
+  const secret = process.env.ENCRYPTION_KEY || 'test-encryption-key-32-chars-for-testing!!';
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const key = crypto.createHash('sha256').update(secret).digest();
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return `${iv.toString('hex')}:${encrypted}`;
+}
 
 function createPrismaClient(): PrismaClient {
   let url = process.env.DATABASE_URL!;
@@ -16,13 +62,13 @@ function createPrismaClient(): PrismaClient {
   }
   url = urlObj.toString();
   const adapter = new PrismaMariaDb(url, { useTextProtocol: true });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 }
 
 const prisma = createPrismaClient();
 
 async function main() {
-  console.log('🌱 Starting comprehensive database seed...\n');
+  console.log('🌱 Starting comprehensive database seed for two companies...\n');
 
   // 1. Tenant
   let tenant = await prisma.tenant.findUnique({
@@ -42,28 +88,7 @@ async function main() {
     console.log(`ℹ️ Tenant already exists: ID=${tenant.id}`);
   }
 
-  // 2. Company
-  let company = await prisma.company.findFirst({
-    where: { tenantId: tenant.id, name: 'iDiibi Manufacturing Co.' },
-  });
-  if (!company) {
-    company = await prisma.company.create({
-      data: {
-        tenantId: tenant.id,
-        name: 'iDiibi Manufacturing Co.',
-        legalName: 'iDiibi Manufacturing Co. LLC',
-        industryType: IndustryType.food_manufacturing,
-        currencyCode: 'EGP',
-        fiscalYearStartMonth: 1,
-        taxNumber: 'TAX-99887766',
-      },
-    });
-    console.log(`✅ Created Company: ID=${company.id}, Name=${company.name}`);
-  } else {
-    console.log(`ℹ️ Company already exists: ID=${company.id}`);
-  }
-
-  // 3. Super Admin Role
+  // 2. Super Admin Role
   let role = await prisma.role.findFirst({
     where: { tenantId: tenant.id, name: 'Super Admin' },
   });
@@ -80,7 +105,7 @@ async function main() {
     console.log(`ℹ️ Role already exists: ID=${role.id}`);
   }
 
-  // 4. Admin User
+  // 3. Admin User
   const email = 'admin@idiibi.com';
   const password = 'Admin@123456';
   const passwordHash = await bcrypt.hash(password, 10);
@@ -108,521 +133,7 @@ async function main() {
     console.log(`✅ Verified/Updated Admin User Password: ID=${user.id}`);
   }
 
-  // 5. Sites
-  const siteData = [
-    { name: 'Main Factory', type: SiteType.factory, region: 'Cairo', address: '10th of Ramadan City' },
-    { name: 'Main Warehouse', type: SiteType.warehouse, region: 'Giza', address: '6th of October City' },
-    { name: 'HQ Office', type: SiteType.office, region: 'Cairo', address: 'New Cairo' },
-  ];
-  const sites = [];
-  for (const s of siteData) {
-    let site = await prisma.site.findFirst({
-      where: { companyId: company.id, name: s.name },
-    });
-    if (!site) {
-      site = await prisma.site.create({
-        data: {
-          companyId: company.id,
-          name: s.name,
-          type: s.type,
-          region: s.region,
-          address: s.address,
-          status: SiteStatus.active,
-        },
-      });
-      console.log(`✅ Created Site: Name=${site.name}, Type=${site.type}`);
-    }
-    sites.push(site);
-  }
-
-  // 6. Units
-  const unitData = [
-    { name: 'Kilogram', symbol: 'kg' },
-    { name: 'Metric Ton', symbol: 'ton' },
-    { name: 'Piece', symbol: 'pcs' },
-    { name: 'Liter', symbol: 'L' },
-  ];
-  const units = [];
-  for (const u of unitData) {
-    let unit = await prisma.unit.findFirst({
-      where: { companyId: company.id, symbol: u.symbol },
-    });
-    if (!unit) {
-      unit = await prisma.unit.create({
-        data: {
-          companyId: company.id,
-          name: u.name,
-          symbol: u.symbol,
-        },
-      });
-      console.log(`✅ Created Unit: Symbol=${unit.symbol}`);
-    }
-    units.push(unit);
-  }
-  const kgUnit = units.find(u => u.symbol === 'kg')!;
-  const LUnit = units.find(u => u.symbol === 'L')!;
-  const pcsUnit = units.find(u => u.symbol === 'pcs')!;
-
-  // 7. Accounts
-  const accountData = [
-    { code: '4000', name: 'Sales Revenue', type: AccountType.revenue },
-    { code: '5000', name: 'Cost of Goods Sold', type: AccountType.cogs },
-    { code: '6000', name: 'Rent Expense', type: AccountType.expense },
-    { code: '6100', name: 'Salaries Expense', type: AccountType.expense },
-    { code: '1000', name: 'Inventory Asset', type: AccountType.asset },
-    { code: '2000', name: 'Accounts Payable', type: AccountType.liability },
-  ];
-  const accounts = [];
-  for (const a of accountData) {
-    let account = await prisma.account.findUnique({
-      where: { companyId_code: { companyId: company.id, code: a.code } },
-    });
-    if (!account) {
-      account = await prisma.account.create({
-        data: {
-          companyId: company.id,
-          code: a.code,
-          name: a.name,
-          type: a.type,
-          isActive: true,
-        },
-      });
-      console.log(`✅ Created Account: Code=${account.code}, Name=${account.name}`);
-    }
-    accounts.push(account);
-  }
-  const salesAccount = accounts.find(a => a.code === '4000')!;
-  const cogsAccount = accounts.find(a => a.code === '5000')!;
-  const rentAccount = accounts.find(a => a.code === '6000')!;
-  const salariesAccount = accounts.find(a => a.code === '6100')!;
-
-  // 8. Cost Centers
-  const ccData = [
-    { code: 'CC_PROD', name: 'Production Dept', type: CostCenterType.production },
-    { code: 'CC_SALES', name: 'Sales & Marketing', type: CostCenterType.sales },
-    { code: 'CC_ADMIN', name: 'Administration', type: CostCenterType.admin },
-  ];
-  const costCenters = [];
-  for (const cc of ccData) {
-    let costCenter = await prisma.costCenter.findFirst({
-      where: { companyId: company.id, code: cc.code },
-    });
-    if (!costCenter) {
-      costCenter = await prisma.costCenter.create({
-        data: {
-          companyId: company.id,
-          code: cc.code,
-          name: cc.name,
-          type: cc.type,
-        },
-      });
-      console.log(`✅ Created Cost Center: Code=${costCenter.code}`);
-    }
-    costCenters.push(costCenter);
-  }
-  const ccProd = costCenters.find(c => c.code === 'CC_PROD')!;
-  const ccSales = costCenters.find(c => c.code === 'CC_SALES')!;
-
-  // 9. Suppliers
-  const supplierData = [
-    { name: 'Al-Hoda Raw Materials Co.', phone: '01011111111', email: 'alhoda@supplier.com' },
-    { name: 'Delta Packaging Solutions', phone: '01022222222', email: 'delta@supplier.com' },
-  ];
-  const suppliers = [];
-  for (const s of supplierData) {
-    let supplier = await prisma.supplier.findFirst({
-      where: { companyId: company.id, name: s.name },
-    });
-    if (!supplier) {
-      supplier = await prisma.supplier.create({
-        data: {
-          companyId: company.id,
-          name: s.name,
-          phone: s.phone,
-          email: s.email,
-        },
-      });
-      console.log(`✅ Created Supplier: Name=${supplier.name}`);
-    }
-    suppliers.push(supplier);
-  }
-  const rawMaterialSupplier = suppliers[0];
-  const packagingSupplier = suppliers[1];
-
-  // 10. Customers
-  const customerData = [
-    { code: 'CUST-001', name: 'HyperOne retail', customerType: CustomerType.retail, email: 'hyperone@customer.com' },
-    { code: 'CUST-002', name: 'Carrefour Wholesale', customerType: CustomerType.wholesale, email: 'carrefour@customer.com' },
-  ];
-  const customers = [];
-  for (const c of customerData) {
-    let customer = await prisma.customer.findUnique({
-      where: { companyId_code: { companyId: company.id, code: c.code } },
-    });
-    if (!customer) {
-      customer = await prisma.customer.create({
-        data: {
-          companyId: company.id,
-          code: c.code,
-          name: c.name,
-          customerType: c.customerType,
-          email: c.email,
-          isActive: true,
-        },
-      });
-      console.log(`✅ Created Customer: Code=${customer.code}`);
-    }
-    customers.push(customer);
-  }
-
-  // 11. Product Categories
-  const categoryData = [
-    { name: 'Beverages' },
-    { name: 'Dairy Products' },
-  ];
-  const categories = [];
-  for (const cat of categoryData) {
-    let category = await prisma.productCategory.findFirst({
-      where: { companyId: company.id, name: cat.name },
-    });
-    if (!category) {
-      category = await prisma.productCategory.create({
-        data: {
-          companyId: company.id,
-          name: cat.name,
-        },
-      });
-      console.log(`✅ Created Product Category: Name=${category.name}`);
-    }
-    categories.push(category);
-  }
-  const beveragesCategory = categories.find(c => c.name === 'Beverages')!;
-  const dairyCategory = categories.find(c => c.name === 'Dairy Products')!;
-
-  // 12. Products
-  const productData = [
-    { sku: 'PROD-JUICE', name: 'Apple Juice 250ml', categoryId: beveragesCategory.id, unitId: pcsUnit.id, salePrice: 15.00, standardCost: 8.00 },
-    { sku: 'PROD-MILK', name: 'Full Cream Milk 1L', categoryId: dairyCategory.id, unitId: pcsUnit.id, salePrice: 35.00, standardCost: 20.00 },
-  ];
-  const products = [];
-  for (const p of productData) {
-    let product = await prisma.product.findUnique({
-      where: { companyId_sku: { companyId: company.id, sku: p.sku } },
-    });
-    if (!product) {
-      product = await prisma.product.create({
-        data: {
-          companyId: company.id,
-          sku: p.sku,
-          name: p.name,
-          categoryId: p.categoryId,
-          unitId: p.unitId,
-          salePrice: p.salePrice,
-          standardCost: p.standardCost,
-          productType: ProductType.finished_good,
-          isActive: true,
-        },
-      });
-      console.log(`✅ Created Product: SKU=${product.sku}`);
-    }
-    products.push(product);
-  }
-  const juiceProduct = products.find(p => p.sku === 'PROD-JUICE')!;
-  const milkProduct = products.find(p => p.sku === 'PROD-MILK')!;
-
-  // 13. Materials
-  const materialData = [
-    { code: 'MAT-SUGAR', name: 'Refined White Sugar', supplierId: rawMaterialSupplier.id, unitId: kgUnit.id, purchasePrice: 30.00 },
-    { code: 'MAT-CONCENTRATE', name: 'Apple Juice Concentrate', supplierId: rawMaterialSupplier.id, unitId: LUnit.id, purchasePrice: 150.00 },
-    { code: 'MAT-CARTON', name: 'TetraPack Carton 250ml', supplierId: packagingSupplier.id, unitId: pcsUnit.id, purchasePrice: 1.50 },
-  ];
-  const materials = [];
-  for (const m of materialData) {
-    let material = await prisma.material.findUnique({
-      where: { companyId_code: { companyId: company.id, code: m.code } },
-    });
-    if (!material) {
-      material = await prisma.material.create({
-        data: {
-          companyId: company.id,
-          code: m.code,
-          name: m.name,
-          supplierId: m.supplierId,
-          unitId: m.unitId,
-          purchasePrice: m.purchasePrice,
-          isActive: true,
-        },
-      });
-      console.log(`✅ Created Material: Code=${material.code}`);
-    }
-    materials.push(material);
-  }
-  const sugarMaterial = materials.find(m => m.code === 'MAT-SUGAR')!;
-  const concentrateMaterial = materials.find(m => m.code === 'MAT-CONCENTRATE')!;
-  const cartonMaterial = materials.find(m => m.code === 'MAT-CARTON')!;
-
-  // 14. BOM Recipes
-  let juiceBom = await prisma.bomRecipe.findFirst({
-    where: { companyId: company.id, productId: juiceProduct.id },
-  });
-  if (!juiceBom) {
-    juiceBom = await prisma.bomRecipe.create({
-      data: {
-        companyId: company.id,
-        productId: juiceProduct.id,
-        version: 'v1',
-        outputQty: 1,
-        wastagePct: 0.02,
-        laborCost: 0.50,
-        overheadCost: 0.30,
-        isActive: true,
-      },
-    });
-    console.log(`✅ Created BOM Recipe for Product: ID=${juiceProduct.id}`);
-
-    await prisma.bomLine.createMany({
-      data: [
-        { bomId: juiceBom.id, materialId: sugarMaterial.id, qtyPerOutput: 0.02, unitCost: 30.00 },
-        { bomId: juiceBom.id, materialId: concentrateMaterial.id, qtyPerOutput: 0.05, unitCost: 150.00 },
-        { bomId: juiceBom.id, materialId: cartonMaterial.id, qtyPerOutput: 1.00, unitCost: 1.50 },
-      ],
-    });
-    console.log('  Added lines to Apple Juice BOM');
-  }
-
-  let milkBom = await prisma.bomRecipe.findFirst({
-    where: { companyId: company.id, productId: milkProduct.id },
-  });
-  if (!milkBom) {
-    milkBom = await prisma.bomRecipe.create({
-      data: {
-        companyId: company.id,
-        productId: milkProduct.id,
-        version: 'v1',
-        outputQty: 1,
-        wastagePct: 0.01,
-        laborCost: 1.00,
-        overheadCost: 0.50,
-        isActive: true,
-      },
-    });
-    console.log(`✅ Created BOM Recipe for Product: ID=${milkProduct.id}`);
-
-    await prisma.bomLine.createMany({
-      data: [
-        { bomId: milkBom.id, materialId: cartonMaterial.id, qtyPerOutput: 1.00, unitCost: 1.50 },
-      ],
-    });
-    console.log('  Added lines to Milk BOM');
-  }
-
-  // 15. Budget Cycle + Budget Lines
-  let budgetCycle = await prisma.budgetCycle.findFirst({
-    where: { companyId: company.id, fiscalYear: 2025, name: 'FY2025 Annual Budget' },
-  });
-  if (!budgetCycle) {
-    budgetCycle = await prisma.budgetCycle.create({
-      data: {
-        companyId: company.id,
-        name: 'FY2025 Annual Budget',
-        fiscalYear: 2025,
-        periodType: PeriodType.annual,
-        status: CycleStatus.approved,
-        createdBy: user.id,
-        approvedBy: user.id,
-        approvedAt: new Date(),
-      },
-    });
-    console.log(`✅ Created Budget Cycle: ${budgetCycle.name}`);
-
-    const lines = [];
-    for (let month = 1; month <= 12; month++) {
-      lines.push({
-        budgetCycleId: budgetCycle.id,
-        accountId: salesAccount.id,
-        periodMonth: month,
-        amount: 100000.00,
-        notes: `Projected monthly revenue for month ${month}`,
-      });
-      lines.push({
-        budgetCycleId: budgetCycle.id,
-        accountId: cogsAccount.id,
-        periodMonth: month,
-        amount: 55000.00,
-        notes: `Projected COGS for month ${month}`,
-      });
-      lines.push({
-        budgetCycleId: budgetCycle.id,
-        accountId: salariesAccount.id,
-        periodMonth: month,
-        amount: 20000.00,
-        notes: `Budgeted salaries for month ${month}`,
-      });
-      lines.push({
-        budgetCycleId: budgetCycle.id,
-        accountId: rentAccount.id,
-        periodMonth: month,
-        amount: 10000.00,
-        notes: `Budgeted rent for month ${month}`,
-      });
-    }
-    await prisma.budgetLine.createMany({ data: lines });
-    console.log('  Seeded 48 Budget Lines (Sales, COGS, Salaries, Rent for 12 months)');
-  }
-
-  // 16. Actual Import + Actual Lines
-  let actualImport = await prisma.actualImport.findFirst({
-    where: { companyId: company.id, sourceSystem: ImportSourceSystem.excel, importType: ImportType.gl },
-  });
-  if (!actualImport) {
-    actualImport = await prisma.actualImport.create({
-      data: {
-        companyId: company.id,
-        sourceSystem: ImportSourceSystem.excel,
-        importType: ImportType.gl,
-        periodFrom: new Date('2025-01-01'),
-        periodTo: new Date('2025-01-31'),
-        status: ImportStatus.posted,
-        importedBy: user.id,
-      },
-    });
-    console.log(`✅ Created Actual Import: ID=${actualImport.id}`);
-
-    await prisma.actualLine.createMany({
-      data: [
-        {
-          actualImportId: actualImport.id,
-          accountId: salesAccount.id,
-          transactionDate: new Date('2025-01-15'),
-          amount: 120000.00,
-          referenceNo: 'REV-202501',
-        },
-        {
-          actualImportId: actualImport.id,
-          accountId: cogsAccount.id,
-          transactionDate: new Date('2025-01-15'),
-          amount: 70000.00,
-          referenceNo: 'COGS-202501',
-        },
-        {
-          actualImportId: actualImport.id,
-          accountId: rentAccount.id,
-          transactionDate: new Date('2025-01-01'),
-          amount: 10000.00,
-          referenceNo: 'RENT-202501',
-        },
-        {
-          actualImportId: actualImport.id,
-          accountId: salariesAccount.id,
-          transactionDate: new Date('2025-01-28'),
-          amount: 21500.00,
-          referenceNo: 'PAY-202501',
-        },
-      ],
-    });
-    console.log('  Seeded January Actual Lines (Sales, COGS, Rent, Salaries)');
-  }
-
-  // 17. Scenario Examples
-  const scenarios = [];
-  const scenarioData = [
-    {
-      name: 'Base Scenario',
-      scenarioType: ScenarioType.base,
-      assumptionsJson: { material_price_growth: 0.05, sales_volume_growth: 0.10 },
-    },
-    {
-      name: 'High Inflation Scenario',
-      scenarioType: ScenarioType.custom,
-      assumptionsJson: { sugar_price_increase_pct: 20, cogs_increase_pct: 10 },
-    },
-    {
-      name: 'Demand Drop Scenario',
-      scenarioType: ScenarioType.pessimistic,
-      assumptionsJson: { sales_volume_drop_pct: 15 },
-    },
-  ];
-  for (const sc of scenarioData) {
-    let scenario = await prisma.scenario.findFirst({
-      where: { companyId: company.id, name: sc.name },
-    });
-    if (!scenario) {
-      scenario = await prisma.scenario.create({
-        data: {
-          companyId: company.id,
-          name: sc.name,
-          scenarioType: sc.scenarioType,
-          assumptionsJson: JSON.stringify(sc.assumptionsJson),
-          createdBy: user.id,
-        },
-      });
-      console.log(`✅ Created Scenario Assumption: ${scenario.name}`);
-    }
-    scenarios.push(scenario);
-  }
-  const baseScenario = scenarios.find(s => s.scenarioType === ScenarioType.base)!;
-
-  // 18. Forecast Cycle + Forecast Lines
-  let forecastCycle = await prisma.forecastCycle.findFirst({
-    where: { companyId: company.id, fiscalYear: 2025, name: 'FY2025 Q1 rolling Forecast' },
-  });
-  if (!forecastCycle) {
-    forecastCycle = await prisma.forecastCycle.create({
-      data: {
-        companyId: company.id,
-        scenarioId: baseScenario.id,
-        name: 'FY2025 Q1 rolling Forecast',
-        fiscalYear: 2025,
-        basePeriod: new Date('2025-01-31'),
-        method: ForecastMethod.rolling,
-        status: CycleStatus.approved,
-        createdBy: user.id,
-        approvedBy: user.id,
-        approvedAt: new Date(),
-      },
-    });
-    console.log(`✅ Created Forecast Cycle: ${forecastCycle.name}`);
-
-    await prisma.forecastLine.createMany({
-      data: [
-        {
-          forecastCycleId: forecastCycle.id,
-          accountId: salesAccount.id,
-          periodMonth: 2,
-          amount: 130000.00,
-          driverType: 'sales_growth',
-          notes: 'Forecasted February Sales with +10% demand assumption',
-        },
-        {
-          forecastCycleId: forecastCycle.id,
-          accountId: cogsAccount.id,
-          periodMonth: 2,
-          amount: 80000.00,
-          driverType: 'rolling_avg',
-          notes: 'Forecasted February COGS',
-        },
-        {
-          forecastCycleId: forecastCycle.id,
-          accountId: salesAccount.id,
-          periodMonth: 3,
-          amount: 135000.00,
-          driverType: 'sales_growth',
-          notes: 'Forecasted March Sales',
-        },
-        {
-          forecastCycleId: forecastCycle.id,
-          accountId: cogsAccount.id,
-          periodMonth: 3,
-          amount: 82000.00,
-          driverType: 'rolling_avg',
-          notes: 'Forecasted March COGS',
-        },
-      ],
-    });
-    console.log('  Seeded Forecast Lines for Feb/March');
-  }
-
-  // 19. Plans (Pricing Packages)
+  // 4. Plans (Pricing Packages)
   const planData = [
     {
       name: 'Starter',
@@ -727,7 +238,7 @@ async function main() {
   }
   const businessPlan = plans.find(p => p.name === 'Business')!;
 
-  // 20. Subscription
+  // 5. Subscription
   let subscription = await prisma.subscription.findFirst({
     where: { tenantId: tenant.id, planId: businessPlan.id },
   });
@@ -747,277 +258,7 @@ async function main() {
     console.log(`ℹ️ Subscription already exists: ID=${subscription.id}`);
   }
 
-  // 21. Exchange Rates
-  const rateData = [
-    { fromCurrency: 'EGP', toCurrency: 'USD', rate: 0.032 },
-    { fromCurrency: 'EGP', toCurrency: 'EUR', rate: 0.027 },
-  ];
-  for (const r of rateData) {
-    let rate = await prisma.exchangeRate.findFirst({
-      where: { companyId: company.id, fromCurrency: r.fromCurrency, toCurrency: r.toCurrency, rateDate: new Date('2025-01-01') },
-    });
-    if (!rate) {
-      rate = await prisma.exchangeRate.create({
-        data: {
-          companyId: company.id,
-          fromCurrency: r.fromCurrency,
-          toCurrency: r.toCurrency,
-          rate: r.rate,
-          rateDate: new Date('2025-01-01'),
-          source: RateSource.manual,
-          createdBy: user.id,
-        },
-      });
-      console.log(`✅ Created Exchange Rate: ${r.fromCurrency} -> ${r.toCurrency} = ${r.rate}`);
-    } else {
-      console.log(`ℹ️ Exchange rate already exists: ${r.fromCurrency} -> ${r.toCurrency}`);
-    }
-  }
-
-  // 22. Headcount Plans
-  const headcountPlanData = [
-    { siteId: sites[0].id, costCenterId: ccProd.id, jobTitle: 'Production Worker', department: 'Production', headcount: 20, periodMonth: 1, basicSalary: 5000, allowances: 1000, socialInsurance: 500 },
-    { siteId: sites[2].id, costCenterId: ccSales.id, jobTitle: 'Sales Representative', department: 'Sales', headcount: 5, periodMonth: 1, basicSalary: 8000, allowances: 1500, socialInsurance: 500 },
-    { siteId: sites[2].id, costCenterId: costCenters.find(c => c.code === 'CC_ADMIN')!.id, jobTitle: 'Admin Staff', department: 'Administration', headcount: 3, periodMonth: 1, basicSalary: 10000, allowances: 2000, socialInsurance: 500 },
-  ];
-  for (const hc of headcountPlanData) {
-    let existing = await prisma.headcountPlan.findFirst({
-      where: { budgetCycleId: budgetCycle.id, siteId: hc.siteId, costCenterId: hc.costCenterId, periodMonth: hc.periodMonth },
-    });
-    if (!existing) {
-      const totalCost = (hc.basicSalary + hc.allowances + hc.socialInsurance) * hc.headcount;
-      await prisma.headcountPlan.create({
-        data: {
-          budgetCycleId: budgetCycle.id,
-          siteId: hc.siteId,
-          costCenterId: hc.costCenterId,
-          jobTitle: hc.jobTitle,
-          department: hc.department,
-          employmentType: EmploymentType.full_time,
-          headcount: hc.headcount,
-          periodMonth: hc.periodMonth,
-          basicSalary: hc.basicSalary,
-          allowances: hc.allowances,
-          socialInsurance: hc.socialInsurance,
-          totalCost: totalCost,
-        },
-      });
-      console.log(`✅ Created Headcount Plan: ${hc.department} (${hc.headcount} headcount)`);
-    } else {
-      console.log(`ℹ️ Headcount Plan already exists: ${hc.department}`);
-    }
-  }
-
-  // 23. Production Plans
-  const productionPlanData = [
-    { productId: juiceProduct.id, month: 1, plannedQty: 10000, estimatedCost: 80000 },
-    { productId: juiceProduct.id, month: 2, plannedQty: 10000, estimatedCost: 80000 },
-    { productId: juiceProduct.id, month: 3, plannedQty: 10000, estimatedCost: 80000 },
-    { productId: milkProduct.id, month: 1, plannedQty: 5000, estimatedCost: 100000 },
-    { productId: milkProduct.id, month: 2, plannedQty: 5000, estimatedCost: 100000 },
-    { productId: milkProduct.id, month: 3, plannedQty: 5000, estimatedCost: 100000 },
-  ];
-  for (const pp of productionPlanData) {
-    let existing = await prisma.productionPlan.findFirst({
-      where: { companyId: company.id, siteId: sites[0].id, productId: pp.productId, fiscalYear: 2025, periodMonth: pp.month },
-    });
-    if (!existing) {
-      await prisma.productionPlan.create({
-        data: {
-          companyId: company.id,
-          siteId: sites[0].id,
-          productId: pp.productId,
-          planSource: PlanSource.manual,
-          fiscalYear: 2025,
-          periodMonth: pp.month,
-          plannedQty: pp.plannedQty,
-          estimatedCost: pp.estimatedCost,
-        },
-      });
-      const productName = pp.productId === juiceProduct.id ? 'Juice' : 'Milk';
-      console.log(`✅ Created Production Plan: ${productName} (Month ${pp.month})`);
-    } else {
-      console.log(`ℹ️ Production Plan already exists: product=${pp.productId}, month=${pp.month}`);
-    }
-  }
-
-  // 24. Inventory Snapshots
-  const months = [1, 2, 3];
-  const snapshotDates = [
-    new Date('2025-01-31'),
-    new Date('2025-02-28'),
-    new Date('2025-03-31'),
-  ];
-  for (let i = 0; i < months.length; i++) {
-    const snapDate = snapshotDates[i];
-    // Product snapshots
-    const productSnapshots = [
-      { productId: juiceProduct.id, materialId: null, qtyOnHand: 2000, inventoryValue: 16000 },
-      { productId: milkProduct.id, materialId: null, qtyOnHand: 1500, inventoryValue: 30000 },
-    ];
-    for (const ps of productSnapshots) {
-      let existing = await prisma.inventorySnapshot.findFirst({
-        where: { companyId: company.id, siteId: sites[1].id, productId: ps.productId, snapshotDate: snapDate },
-      });
-      if (!existing) {
-        await prisma.inventorySnapshot.create({
-          data: {
-            companyId: company.id,
-            siteId: sites[1].id,
-            productId: ps.productId,
-            snapshotDate: snapDate,
-            qtyOnHand: ps.qtyOnHand,
-            inventoryValue: ps.inventoryValue,
-          },
-        });
-        console.log(`✅ Created Inventory Snapshot: Product=${ps.productId}, Date=${snapDate.toISOString().slice(0, 10)}`);
-      } else {
-        console.log(`ℹ️ Inventory Snapshot already exists: product=${ps.productId}, date=${snapDate.toISOString().slice(0, 10)}`);
-      }
-    }
-    // Material snapshots
-    const materialSnapshots = [
-      { materialId: sugarMaterial.id, productId: null, qtyOnHand: 100, inventoryValue: 3000 },
-      { materialId: concentrateMaterial.id, productId: null, qtyOnHand: 200, inventoryValue: 30000 },
-      { materialId: cartonMaterial.id, productId: null, qtyOnHand: 3000, inventoryValue: 4500 },
-    ];
-    for (const ms of materialSnapshots) {
-      let existing = await prisma.inventorySnapshot.findFirst({
-        where: { companyId: company.id, siteId: sites[1].id, materialId: ms.materialId, snapshotDate: snapDate },
-      });
-      if (!existing) {
-        await prisma.inventorySnapshot.create({
-          data: {
-            companyId: company.id,
-            siteId: sites[1].id,
-            materialId: ms.materialId,
-            snapshotDate: snapDate,
-            qtyOnHand: ms.qtyOnHand,
-            inventoryValue: ms.inventoryValue,
-          },
-        });
-        console.log(`✅ Created Inventory Snapshot: Material=${ms.materialId}, Date=${snapDate.toISOString().slice(0, 10)}`);
-      } else {
-        console.log(`ℹ️ Inventory Snapshot already exists: material=${ms.materialId}, date=${snapDate.toISOString().slice(0, 10)}`);
-      }
-    }
-  }
-
-  // 25. KPI Targets
-  const kpiData = [
-    { kpiName: 'Revenue Target', kpiCategory: KpiCategory.financial, fiscalYear: 2025, targetValue: 1200000, unit: null },
-    { kpiName: 'Gross Margin Target', kpiCategory: KpiCategory.financial, fiscalYear: 2025, targetValue: 40, unit: '%' },
-    { kpiName: 'Production Efficiency', kpiCategory: KpiCategory.production, fiscalYear: 2025, targetValue: 95, unit: '%' },
-    { kpiName: 'Customer Satisfaction', kpiCategory: KpiCategory.sales, fiscalYear: 2025, targetValue: 90, unit: '%' },
-  ];
-  for (const kpi of kpiData) {
-    let existing = await prisma.kpiTarget.findFirst({
-      where: { companyId: company.id, kpiName: kpi.kpiName, fiscalYear: kpi.fiscalYear },
-    });
-    if (!existing) {
-      await prisma.kpiTarget.create({
-        data: {
-          companyId: company.id,
-          kpiName: kpi.kpiName,
-          kpiCategory: kpi.kpiCategory,
-          fiscalYear: kpi.fiscalYear,
-          targetValue: kpi.targetValue,
-          unit: kpi.unit,
-          createdBy: user.id,
-        },
-      });
-      console.log(`✅ Created KPI Target: ${kpi.kpiName}`);
-    } else {
-      console.log(`ℹ️ KPI Target already exists: ${kpi.kpiName}`);
-    }
-  }
-
-  // 26. Notification Rules
-  const ruleData = [
-    { ruleName: 'Budget Variance Alert', triggerType: TriggerType.variance_pct, thresholdValue: 10, accountId: salesAccount.id, channel: null },
-    { ruleName: 'Import Failure Alert', triggerType: TriggerType.import_failed, thresholdValue: null, accountId: null, channel: 'system,email' },
-  ];
-  for (const rule of ruleData) {
-    let existing = await prisma.notificationRule.findFirst({
-      where: { companyId: company.id, ruleName: rule.ruleName },
-    });
-    if (!existing) {
-      await prisma.notificationRule.create({
-        data: {
-          companyId: company.id,
-          ruleName: rule.ruleName,
-          triggerType: rule.triggerType,
-          thresholdValue: rule.thresholdValue,
-          accountId: rule.accountId,
-          channel: rule.channel ?? 'system',
-          createdBy: user.id,
-        },
-      });
-      console.log(`✅ Created Notification Rule: ${rule.ruleName}`);
-    } else {
-      console.log(`ℹ️ Notification Rule already exists: ${rule.ruleName}`);
-    }
-  }
-
-  // 27. Promotions
-  const promoData = [
-    { name: 'Summer Juice Promo', productId: juiceProduct.id, discountPct: 15, discountAmt: null, startDate: new Date('2025-06-01'), endDate: new Date('2025-08-31'), budgetAmt: 15000 },
-    { name: 'New Year Milk Bundle', productId: milkProduct.id, discountPct: null, discountAmt: 10, startDate: new Date('2025-12-15'), endDate: new Date('2026-01-15'), budgetAmt: 8000 },
-  ];
-  for (const promo of promoData) {
-    let existing = await prisma.promotion.findFirst({
-      where: { companyId: company.id, name: promo.name },
-    });
-    if (!existing) {
-      await prisma.promotion.create({
-        data: {
-          companyId: company.id,
-          name: promo.name,
-          productId: promo.productId,
-          discountPct: promo.discountPct,
-          discountAmt: promo.discountAmt,
-          startDate: promo.startDate,
-          endDate: promo.endDate,
-          budgetAmt: promo.budgetAmt,
-          createdBy: user.id,
-        },
-      });
-      console.log(`✅ Created Promotion: ${promo.name}`);
-    } else {
-      console.log(`ℹ️ Promotion already exists: ${promo.name}`);
-    }
-  }
-
-  // 28. Raw Material Prices
-  const priceData = [
-    { materialId: sugarMaterial.id, price: 30.00, priceDate: new Date('2025-01-01') },
-    { materialId: sugarMaterial.id, price: 32.50, priceDate: new Date('2025-03-01') },
-    { materialId: sugarMaterial.id, price: 35.00, priceDate: new Date('2025-06-01') },
-    { materialId: concentrateMaterial.id, price: 150.00, priceDate: new Date('2025-01-01') },
-    { materialId: concentrateMaterial.id, price: 155.00, priceDate: new Date('2025-04-01') },
-    { materialId: cartonMaterial.id, price: 1.50, priceDate: new Date('2025-01-01') },
-  ];
-  for (const rmp of priceData) {
-    let existing = await prisma.rawMaterialPrice.findFirst({
-      where: { companyId: company.id, materialId: rmp.materialId, priceDate: rmp.priceDate },
-    });
-    if (!existing) {
-      await prisma.rawMaterialPrice.create({
-        data: {
-          companyId: company.id,
-          materialId: rmp.materialId,
-          price: rmp.price,
-          priceDate: rmp.priceDate,
-          source: 'manual',
-        },
-      });
-      console.log(`✅ Created Raw Material Price: material=${rmp.materialId}, date=${rmp.priceDate.toISOString().slice(0, 10)}, price=${rmp.price}`);
-    } else {
-      console.log(`ℹ️ Raw Material Price already exists: material=${rmp.materialId}, date=${rmp.priceDate.toISOString().slice(0, 10)}`);
-    }
-  }
-
-  // 29. Additional Roles
+  // 6. Additional Roles
   const additionalRoles = [
     { name: 'Chief Financial Officer (CFO)', permissions: { all: false, financial: true, reports: true, budget: true, forecast: true } },
     { name: 'FP&A Manager', permissions: { all: false, budget: true, forecast: true, reports: true, analytics: true } },
@@ -1042,24 +283,1033 @@ async function main() {
         },
       });
       console.log(`✅ Created Role: ${r.name}`);
-    } else {
-      console.log(`ℹ️ Role already exists: ${r.name}`);
     }
   }
 
+  // ============================================================
+  // COMPANY 1: iDiibi Manufacturing Co.
+  // ============================================================
+  console.log('\n--- Seeding Company 1: iDiibi Manufacturing Co. ---');
+  let company1 = await prisma.company.findFirst({
+    where: { tenantId: tenant.id, name: 'iDiibi Manufacturing Co.' },
+  });
+  if (!company1) {
+    company1 = await prisma.company.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'iDiibi Manufacturing Co.',
+        legalName: 'iDiibi Manufacturing Co. LLC',
+        industryType: IndustryType.food_manufacturing,
+        currencyCode: 'EGP',
+        fiscalYearStartMonth: 1,
+        taxNumber: 'TAX-99887766',
+      },
+    });
+    console.log(`✅ Created Company 1: ID=${company1.id}, Name=${company1.name}`);
+  } else {
+    console.log(`ℹ️ Company 1 already exists: ID=${company1.id}`);
+  }
+
+  await seedCompanyData(company1.id, {
+    sites: [
+      { name: 'Main Factory', type: SiteType.factory, region: 'Cairo', address: '10th of Ramadan City' },
+      { name: 'Main Warehouse', type: SiteType.warehouse, region: 'Giza', address: '6th of October City' },
+      { name: 'HQ Office', type: SiteType.office, region: 'Cairo', address: 'New Cairo' },
+    ],
+    units: [
+      { name: 'Kilogram', symbol: 'kg' },
+      { name: 'Metric Ton', symbol: 'ton' },
+      { name: 'Piece', symbol: 'pcs' },
+      { name: 'Liter', symbol: 'L' },
+    ],
+    accounts: [
+      { code: '4000', name: 'Sales Revenue', type: AccountType.revenue },
+      { code: '5000', name: 'Cost of Goods Sold', type: AccountType.cogs },
+      { code: '6000', name: 'Rent Expense', type: AccountType.expense },
+      { code: '6100', name: 'Salaries Expense', type: AccountType.expense },
+      { code: '1000', name: 'Inventory Asset', type: AccountType.asset },
+      { code: '2000', name: 'Accounts Payable', type: AccountType.liability },
+    ],
+    costCenters: [
+      { code: 'CC_PROD', name: 'Production Dept', type: CostCenterType.production },
+      { code: 'CC_SALES', name: 'Sales & Marketing', type: CostCenterType.sales },
+      { code: 'CC_ADMIN', name: 'Administration', type: CostCenterType.admin },
+    ],
+    suppliers: [
+      { name: 'Al-Hoda Raw Materials Co.', phone: '01011111111', email: 'alhoda@supplier.com' },
+      { name: 'Delta Packaging Solutions', phone: '01022222222', email: 'delta@supplier.com' },
+    ],
+    customers: [
+      { code: 'CUST-001', name: 'HyperOne retail', customerType: CustomerType.retail, email: 'hyperone@customer.com' },
+      { code: 'CUST-002', name: 'Carrefour Wholesale', customerType: CustomerType.wholesale, email: 'carrefour@customer.com' },
+    ],
+    categories: [
+      { name: 'Beverages' },
+      { name: 'Dairy Products' },
+    ],
+    products: (cats: any, uns: any) => [
+      { sku: 'PROD-JUICE', name: 'Apple Juice 250ml', categoryId: cats['Beverages'], unitId: uns['pcs'], salePrice: 15.00, standardCost: 8.00 },
+      { sku: 'PROD-MILK', name: 'Full Cream Milk 1L', categoryId: cats['Dairy Products'], unitId: uns['pcs'], salePrice: 35.00, standardCost: 20.00 },
+    ],
+    materials: (supps: any, uns: any) => [
+      { code: 'MAT-SUGAR', name: 'Refined White Sugar', supplierId: supps['Al-Hoda Raw Materials Co.'], unitId: uns['kg'], purchasePrice: 30.00 },
+      { code: 'MAT-CONCENTRATE', name: 'Apple Juice Concentrate', supplierId: supps['Al-Hoda Raw Materials Co.'], unitId: uns['L'], purchasePrice: 150.00 },
+      { code: 'MAT-CARTON', name: 'TetraPack Carton 250ml', supplierId: supps['Delta Packaging Solutions'], unitId: uns['pcs'], purchasePrice: 1.50 },
+    ],
+    boms: (prods: any, mats: any) => [
+      {
+        productId: prods['PROD-JUICE'],
+        version: 'v1',
+        outputQty: 1,
+        wastagePct: 0.02,
+        laborCost: 0.50,
+        overheadCost: 0.30,
+        lines: [
+          { materialId: mats['MAT-SUGAR'], qtyPerOutput: 0.02, unitCost: 30.00 },
+          { materialId: mats['MAT-CONCENTRATE'], qtyPerOutput: 0.05, unitCost: 150.00 },
+          { materialId: mats['MAT-CARTON'], qtyPerOutput: 1.00, unitCost: 1.50 },
+        ]
+      },
+      {
+        productId: prods['PROD-MILK'],
+        version: 'v1',
+        outputQty: 1,
+        wastagePct: 0.01,
+        laborCost: 1.00,
+        overheadCost: 0.50,
+        lines: [
+          { materialId: mats['MAT-CARTON'], qtyPerOutput: 1.00, unitCost: 1.50 },
+        ]
+      }
+    ],
+    budget: {
+      year: 2025,
+      name: 'FY2025 Annual Budget',
+      monthlyValues: {
+        '4000': 100000.00, // Revenue
+        '5000': 55000.00,  // COGS
+        '6100': 20000.00,  // Salaries
+        '6000': 10000.00,  // Rent
+      }
+    },
+    actual: {
+      periodFrom: new Date('2025-01-01'),
+      periodTo: new Date('2025-01-31'),
+      lines: [
+        { accountCode: '4000', amount: 120000.00, date: new Date('2025-01-15'), ref: 'REV-202501' },
+        { accountCode: '5000', amount: 70000.00, date: new Date('2025-01-15'), ref: 'COGS-202501' },
+        { accountCode: '6000', amount: 10000.00, date: new Date('2025-01-01'), ref: 'RENT-202501' },
+        { accountCode: '6100', amount: 21500.00, date: new Date('2025-01-28'), ref: 'PAY-202501' },
+      ]
+    },
+    forecast: {
+      year: 2025,
+      name: 'FY2025 Q1 rolling Forecast',
+      lines: [
+        { accountCode: '4000', month: 2, amount: 130000.00, driver: 'sales_growth', notes: 'Forecasted Feb Sales' },
+        { accountCode: '5000', month: 2, amount: 80000.00, driver: 'rolling_avg', notes: 'Forecasted Feb COGS' },
+        { accountCode: '4000', month: 3, amount: 135000.00, driver: 'sales_growth', notes: 'Forecasted March Sales' },
+        { accountCode: '5000', month: 3, amount: 82000.00, driver: 'rolling_avg', notes: 'Forecasted March COGS' },
+      ]
+    },
+    rates: [
+      { from: 'EGP', to: 'USD', rate: 0.032 },
+      { from: 'EGP', to: 'EUR', rate: 0.027 },
+    ],
+    headcount: (sts: any, ccs: any) => [
+      { siteId: sts['Main Factory'], costCenterId: ccs['CC_PROD'], jobTitle: 'Production Worker', department: 'Production', headcount: 20, periodMonth: 1, basicSalary: 5000, allowances: 1000, socialInsurance: 500 },
+      { siteId: sts['HQ Office'], costCenterId: ccs['CC_SALES'], jobTitle: 'Sales Representative', department: 'Sales', headcount: 5, periodMonth: 1, basicSalary: 8000, allowances: 1500, socialInsurance: 500 },
+    ],
+    production: (sts: any, prds: any) => [
+      { siteId: sts['Main Factory'], productId: prds['PROD-JUICE'], month: 1, plannedQty: 10000, estimatedCost: 80000 },
+      { siteId: sts['Main Factory'], productId: prds['PROD-JUICE'], month: 2, plannedQty: 10000, estimatedCost: 80000 },
+      { siteId: sts['Main Factory'], productId: prds['PROD-MILK'], month: 1, plannedQty: 5000, estimatedCost: 100000 },
+    ],
+    inventory: (sts: any, prds: any, mats: any) => [
+      { siteId: sts['Main Warehouse'], productId: prds['PROD-JUICE'], materialId: null, qtyOnHand: 2000, inventoryValue: 16000, date: new Date('2025-01-31') },
+      { siteId: sts['Main Warehouse'], productId: prds['PROD-MILK'], materialId: null, qtyOnHand: 1500, inventoryValue: 30000, date: new Date('2025-01-31') },
+      { siteId: sts['Main Warehouse'], productId: null, materialId: mats['MAT-SUGAR'], qtyOnHand: 100, inventoryValue: 3000, date: new Date('2025-01-31') },
+    ],
+    kpis: [
+      { name: 'Revenue Target', category: KpiCategory.financial, target: 1200000, unit: null },
+      { name: 'Gross Margin Target', category: KpiCategory.financial, target: 40, unit: '%' },
+    ],
+    rules: [
+      { name: 'Budget Variance Alert', trigger: TriggerType.variance_pct, threshold: 10, accountCode: '4000', channel: 'system' },
+    ],
+    promotions: (prds: any) => [
+      { name: 'Summer Juice Promo', productId: prds['PROD-JUICE'], discountPct: 15, discountAmt: null, startDate: new Date('2025-06-01'), endDate: new Date('2025-08-31'), budget: 15000 },
+    ],
+    matPrices: (mats: any) => [
+      { materialId: mats['MAT-SUGAR'], price: 30.00, date: new Date('2025-01-01') },
+      { materialId: mats['MAT-CONCENTRATE'], price: 150.00, date: new Date('2025-01-01') },
+    ],
+    tenantId: tenant.id,
+    userId: user.id
+  });
+
+  // ============================================================
+  // COMPANY 2: Delta Beverages Corp.
+  // ============================================================
+  console.log('\n--- Seeding Company 2: Delta Beverages Corp. ---');
+  let company2 = await prisma.company.findFirst({
+    where: { tenantId: tenant.id, name: 'Delta Beverages Corp.' },
+  });
+  if (!company2) {
+    company2 = await prisma.company.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Delta Beverages Corp.',
+        legalName: 'Delta Beverages Corp. LLC',
+        industryType: IndustryType.food_manufacturing,
+        currencyCode: 'EGP',
+        fiscalYearStartMonth: 1,
+        taxNumber: 'TAX-11223344',
+      },
+    });
+    console.log(`✅ Created Company 2: ID=${company2.id}, Name=${company2.name}`);
+  } else {
+    console.log(`ℹ️ Company 2 already exists: ID=${company2.id}`);
+  }
+
+  await seedCompanyData(company2.id, {
+    sites: [
+      { name: 'Delta Main Plant', type: SiteType.factory, region: 'Delta Region', address: 'Sadat City Industrial Zone' },
+      { name: 'Mansoura DC', type: SiteType.warehouse, region: 'Mansoura', address: 'Mansoura Logistics Center' },
+      { name: 'Cairo Cold Storage', type: SiteType.warehouse, region: 'Cairo', address: 'Obour City' },
+    ],
+    units: [
+      { name: 'Kilogram', symbol: 'kg' },
+      { name: 'Pieces', symbol: 'pcs' },
+      { name: 'Liter', symbol: 'L' },
+    ],
+    accounts: [
+      { code: '4000', name: 'Sales Revenue - Bottled Drinks', type: AccountType.revenue },
+      { code: '5000', name: 'Raw Ingredients Cost', type: AccountType.expense },
+      { code: '6000', name: 'Cost of Goods Sold', type: AccountType.cogs },
+      { code: '7000', name: 'Salaries & Wages', type: AccountType.expense },
+      { code: '1000', name: 'Inventory Asset', type: AccountType.asset },
+      { code: '2000', name: 'Accounts Payable', type: AccountType.liability },
+    ],
+    costCenters: [
+      { code: 'CC-PROD', name: 'Bottling Line', type: CostCenterType.production },
+      { code: 'CC-SALES', name: 'Sales Distribution', type: CostCenterType.sales },
+      { code: 'CC-ADMIN', name: 'General Administration', type: CostCenterType.admin },
+    ],
+    suppliers: [
+      { name: 'Suez Sugar Refinery', phone: '01033333333', email: 'suez@sugar.com' },
+      { name: 'Industrial Gases Egypt', phone: '01044444444', email: 'gases@egypt.com' },
+    ],
+    customers: [
+      { code: 'CUST-001', name: 'Delta Beverage Distributor', customerType: CustomerType.wholesale, email: 'dist@delta.com' },
+      { code: 'CUST-002', name: 'Port Said Retail Group', customerType: CustomerType.retail, email: 'portsaid@retail.com' },
+    ],
+    categories: [
+      { name: 'Carbonated Drinks' },
+      { name: 'Juices & Nectars' },
+    ],
+    products: (cats: any, uns: any) => [
+      { sku: 'P001', name: 'Cola Drink 330ml', categoryId: cats['Carbonated Drinks'], unitId: uns['pcs'], salePrice: 5.00, standardCost: 2.80 },
+      { sku: 'P002', name: 'Orange Juice 1L', categoryId: cats['Juices & Nectars'], unitId: uns['L'], salePrice: 18.00, standardCost: 11.00 },
+    ],
+    materials: (supps: any, uns: any) => [
+      { code: 'M001', name: 'Sugar Syrup', supplierId: supps['Suez Sugar Refinery'], unitId: uns['kg'], purchasePrice: 2.10 },
+      { code: 'M002', name: 'CO2 Gas', supplierId: supps['Industrial Gases Egypt'], unitId: uns['kg'], purchasePrice: 1.50 },
+    ],
+    boms: (prods: any, mats: any) => [
+      {
+        productId: prods['P001'],
+        version: 'v1',
+        outputQty: 2400,
+        wastagePct: 0.01,
+        laborCost: 200.00,
+        overheadCost: 120.00,
+        lines: [
+          { materialId: mats['M001'], qtyPerOutput: 0.05, unitCost: 2.10 },
+          { materialId: mats['M002'], qtyPerOutput: 0.003, unitCost: 1.50 },
+        ]
+      }
+    ],
+    budget: {
+      year: 2025,
+      name: 'FY2025 Annual Budget',
+      monthlyValues: {
+        '4000': 150000.00, // Revenue
+        '5000': 85000.00,  // COGS
+        '7000': 30000.00,  // Salaries
+        '6000': 12000.00,  // Rent
+      }
+    },
+    actual: {
+      periodFrom: new Date('2025-01-01'),
+      periodTo: new Date('2025-01-31'),
+      lines: [
+        { accountCode: '4000', amount: 165000.00, date: new Date('2025-01-15'), ref: 'REV-DELTA01' },
+        { accountCode: '5000', amount: 92000.00, date: new Date('2025-01-15'), ref: 'COGS-DELTA01' },
+        { accountCode: '6000', amount: 12000.00, date: new Date('2025-01-01'), ref: 'RENT-DELTA01' },
+        { accountCode: '7000', amount: 31500.00, date: new Date('2025-01-28'), ref: 'PAY-DELTA01' },
+      ]
+    },
+    forecast: {
+      year: 2025,
+      name: 'FY2025 Q1 rolling Forecast',
+      lines: [
+        { accountCode: '4000', month: 2, amount: 170000.00, driver: 'sales_growth', notes: 'Forecasted Feb Sales' },
+        { accountCode: '5000', month: 2, amount: 95000.00, driver: 'rolling_avg', notes: 'Forecasted Feb COGS' },
+        { accountCode: '4000', month: 3, amount: 175000.00, driver: 'sales_growth', notes: 'Forecasted March Sales' },
+        { accountCode: '5000', month: 3, amount: 98000.00, driver: 'rolling_avg', notes: 'Forecasted March COGS' },
+      ]
+    },
+    rates: [
+      { from: 'EGP', to: 'USD', rate: 0.032 },
+      { from: 'EGP', to: 'EUR', rate: 0.027 },
+    ],
+    headcount: (sts: any, ccs: any) => [
+      { siteId: sts['Delta Main Plant'], costCenterId: ccs['CC-PROD'], jobTitle: 'Bottling Operator', department: 'Production', headcount: 15, periodMonth: 1, basicSalary: 4500, allowances: 800, socialInsurance: 450 },
+      { siteId: sts['Mansoura DC'], costCenterId: ccs['CC-SALES'], jobTitle: 'Delivery Driver', department: 'Logistics', headcount: 8, periodMonth: 1, basicSalary: 5500, allowances: 1000, socialInsurance: 500 },
+    ],
+    production: (sts: any, prds: any) => [
+      { siteId: sts['Delta Main Plant'], productId: prds['P001'], month: 1, plannedQty: 50000, estimatedCost: 140000 },
+      { siteId: sts['Delta Main Plant'], productId: prds['P001'], month: 2, plannedQty: 50000, estimatedCost: 140000 },
+    ],
+    inventory: (sts: any, prds: any, mats: any) => [
+      { siteId: sts['Cairo Cold Storage'], productId: prds['P001'], materialId: null, qtyOnHand: 12000, inventoryValue: 33600, date: new Date('2025-01-31') },
+      { siteId: sts['Mansoura DC'], productId: null, materialId: mats['M001'], qtyOnHand: 500, inventoryValue: 1050, date: new Date('2025-01-31') },
+    ],
+    kpis: [
+      { name: 'Revenue Target', category: KpiCategory.financial, target: 1800000, unit: null },
+      { name: 'Gross Margin Target', category: KpiCategory.financial, target: 45, unit: '%' },
+    ],
+    rules: [
+      { name: 'Budget Variance Alert', trigger: TriggerType.variance_pct, threshold: 10, accountCode: '4000', channel: 'system' },
+    ],
+    promotions: (prds: any) => [
+      { name: 'Cola Summer Blast', productId: prds['P001'], discountPct: 10, discountAmt: null, startDate: new Date('2025-07-01'), endDate: new Date('2025-08-31'), budget: 25000 },
+    ],
+    matPrices: (mats: any) => [
+      { materialId: mats['M001'], price: 2.10, date: new Date('2025-01-01') },
+      { materialId: mats['M002'], price: 1.50, date: new Date('2025-01-01') },
+    ],
+    tenantId: tenant.id,
+    userId: user.id
+  });
+
+  // ============================================================
+  // 30. Seed Approvals, Notifications, and Audit Logs (Tenant level)
+  // ============================================================
+  console.log('\n--- Seeding Approvals, Notifications, and Audit Logs ---');
+  
+  // Seed Approvals
+  const budgetCycle1 = await prisma.budgetCycle.findFirst({ where: { companyId: company1.id, name: 'FY2025 Annual Budget' } });
+  const forecastCycle1 = await prisma.forecastCycle.findFirst({ where: { companyId: company1.id, name: 'FY2025 Q1 rolling Forecast' } });
+  
+  if (budgetCycle1) {
+    const existing = await prisma.approval.findFirst({ where: { tenantId: tenant.id, entityType: 'BudgetCycle', entityId: budgetCycle1.id } });
+    if (!existing) {
+      await prisma.approval.create({
+        data: {
+          tenantId: tenant.id,
+          entityType: 'BudgetCycle',
+          entityId: budgetCycle1.id,
+          stepOrder: 1,
+          status: ApprovalStatus.approved,
+          requestedBy: user.id,
+          approvedBy: user.id,
+          approvedAt: new Date(),
+          comments: 'Annual budget cycle approved by administrator.',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      });
+      console.log('✅ Created Approval for Company 1 Budget Cycle');
+    }
+  }
+
+  if (forecastCycle1) {
+    const existing = await prisma.approval.findFirst({ where: { tenantId: tenant.id, entityType: 'ForecastCycle', entityId: forecastCycle1.id } });
+    if (!existing) {
+      await prisma.approval.create({
+        data: {
+          tenantId: tenant.id,
+          entityType: 'ForecastCycle',
+          entityId: forecastCycle1.id,
+          stepOrder: 1,
+          status: ApprovalStatus.approved,
+          requestedBy: user.id,
+          approvedBy: user.id,
+          approvedAt: new Date(),
+          comments: 'Forecast cycle approved by administrator.',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      });
+      console.log('✅ Created Approval for Company 1 Forecast Cycle');
+    }
+  }
+
+  // Seed Notifications
+  const rule1 = await prisma.notificationRule.findFirst({ where: { companyId: company1.id, ruleName: 'Budget Variance Alert' } });
+  if (rule1) {
+    const existing = await prisma.notification.findFirst({ where: { companyId: company1.id, title: 'Budget Variance Alert' } });
+    if (!existing) {
+      await prisma.notification.create({
+        data: {
+          ruleId: rule1.id,
+          companyId: company1.id,
+          userId: user.id,
+          title: 'Budget Variance Alert',
+          body: 'Actual expenses for Salaries Expense exceeded the budget by 7.5% in January 2025.',
+          channel: NotificationChannel.system,
+          entityType: 'ActualImport',
+          entityId: 1n, // simulated ID
+          status: NotificationStatus.read,
+          sentAt: new Date(),
+          readAt: new Date(),
+        }
+      });
+      console.log('✅ Created system notification for Company 1');
+    }
+  }
+
+  // Seed Audit Logs
+  const existingAudit = await prisma.auditLog.findFirst({ where: { tenantId: tenant.id, action: 'login' } });
+  if (!existingAudit) {
+    await prisma.auditLog.createMany({
+      data: [
+        {
+          tenantId: tenant.id,
+          userId: user.id,
+          entityType: 'User',
+          entityId: user.id,
+          action: 'login',
+          oldValues: null,
+          newValues: '{"email":"admin@idiibi.com","status":"active"}',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          createdAt: new Date(),
+        },
+        {
+          tenantId: tenant.id,
+          userId: user.id,
+          entityType: 'BudgetCycle',
+          entityId: budgetCycle1?.id || 1n,
+          action: 'approve',
+          oldValues: '{"status":"submitted"}',
+          newValues: '{"status":"approved"}',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          createdAt: new Date(),
+        }
+      ]
+    });
+    console.log('✅ Seeded 2 Audit Logs');
+  }
+
   console.log('\n========================================');
-  console.log('🎉 Seed completed successfully!\n');
+  console.log('🎉 Comprehensive seed completed successfully!');
   console.log('  Use these credentials to log in:\n');
   console.log(`  Tenant ID (slug):  ${tenant.slug} (Numeric ID: ${tenant.id})`);
-  console.log(`  Company ID:        ${company.id}`);
+  console.log(`  Company 1 ID:      ${company1.id} (${company1.name})`);
+  console.log(`  Company 2 ID:      ${company2.id} (${company2.name})`);
   console.log(`  Email:             ${email}`);
   console.log(`  Password:          ${password}`);
-  console.log('\n  Login API example:');
-  console.log(`  curl -X POST http://localhost:3001/api/auth/login \\`);
-  console.log(`    -H "Content-Type: application/json" \\`);
-  console.log(`    -H "x-tenant-id: ${tenant.id}" \\`);
-  console.log(`    -d '{"email":"${email}","password":"${password}"}'`);
   console.log('========================================\n');
+}
+
+async function seedCompanyData(companyId: bigint, data: any) {
+  const companySelector = { companyId };
+
+  // 1. Sites
+  const sites: any = {};
+  for (const s of data.sites) {
+    let site = await prisma.site.findFirst({
+      where: { companyId, name: s.name },
+    });
+    if (!site) {
+      site = await prisma.site.create({
+        data: {
+          companyId,
+          name: s.name,
+          type: s.type,
+          region: s.region,
+          address: s.address,
+          status: SiteStatus.active,
+        },
+      });
+      console.log(`  ✅ Created Site: ${site.name}`);
+    }
+    sites[s.name] = site.id;
+  }
+
+  // 2. Units
+  const units: any = {};
+  for (const u of data.units) {
+    let unit = await prisma.unit.findFirst({
+      where: { companyId, symbol: u.symbol },
+    });
+    if (!unit) {
+      unit = await prisma.unit.create({
+        data: {
+          companyId,
+          name: u.name,
+          symbol: u.symbol,
+        },
+      });
+      console.log(`  ✅ Created Unit: ${unit.symbol}`);
+    }
+    units[u.symbol] = unit.id;
+  }
+
+  // 3. Accounts
+  const accounts: any = {};
+  for (const a of data.accounts) {
+    let account = await prisma.account.findUnique({
+      where: { companyId_code: { companyId, code: a.code } },
+    });
+    if (!account) {
+      account = await prisma.account.create({
+        data: {
+          companyId,
+          code: a.code,
+          name: a.name,
+          type: a.type,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ Created Account: ${account.code} - ${account.name}`);
+    }
+    accounts[a.code] = account.id;
+  }
+
+  // 4. Cost Centers
+  const costCenters: any = {};
+  for (const cc of data.costCenters) {
+    let costCenter = await prisma.costCenter.findFirst({
+      where: { companyId, code: cc.code },
+    });
+    if (!costCenter) {
+      costCenter = await prisma.costCenter.create({
+        data: {
+          companyId,
+          code: cc.code,
+          name: cc.name,
+          type: cc.type,
+        },
+      });
+      console.log(`  ✅ Created Cost Center: ${costCenter.code}`);
+    }
+    costCenters[cc.code] = costCenter.id;
+  }
+
+  // 5. Suppliers
+  const suppliers: any = {};
+  for (const s of data.suppliers) {
+    let supplier = await prisma.supplier.findFirst({
+      where: { companyId, name: s.name },
+    });
+    if (!supplier) {
+      supplier = await prisma.supplier.create({
+        data: {
+          companyId,
+          name: s.name,
+          phone: s.phone,
+          email: s.email,
+        },
+      });
+      console.log(`  ✅ Created Supplier: ${supplier.name}`);
+    }
+    suppliers[s.name] = supplier.id;
+  }
+
+  // 6. Customers
+  const customers: any = {};
+  for (const c of data.customers) {
+    let customer = await prisma.customer.findUnique({
+      where: { companyId_code: { companyId, code: c.code } },
+    });
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          companyId,
+          code: c.code,
+          name: c.name,
+          customerType: c.customerType,
+          email: c.email,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ Created Customer: ${customer.code}`);
+    }
+    customers[c.code] = customer.id;
+  }
+
+  // 7. Categories
+  const categories: any = {};
+  for (const cat of data.categories) {
+    let category = await prisma.productCategory.findFirst({
+      where: { companyId, name: cat.name },
+    });
+    if (!category) {
+      category = await prisma.productCategory.create({
+        data: {
+          companyId,
+          name: cat.name,
+        },
+      });
+      console.log(`  ✅ Created Product Category: ${category.name}`);
+    }
+    categories[cat.name] = category.id;
+  }
+
+  // 8. Products
+  const products: any = {};
+  const productsToSeed = data.products(categories, units);
+  for (const p of productsToSeed) {
+    let product = await prisma.product.findUnique({
+      where: { companyId_sku: { companyId, sku: p.sku } },
+    });
+    if (!product) {
+      product = await prisma.product.create({
+        data: {
+          companyId,
+          sku: p.sku,
+          name: p.name,
+          categoryId: p.categoryId,
+          unitId: p.unitId,
+          salePrice: p.salePrice,
+          standardCost: p.standardCost,
+          productType: ProductType.finished_good,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ Created Product: ${product.sku}`);
+    }
+    products[p.sku] = product.id;
+  }
+
+  // 9. Materials
+  const materials: any = {};
+  const materialsToSeed = data.materials(suppliers, units);
+  for (const m of materialsToSeed) {
+    let material = await prisma.material.findUnique({
+      where: { companyId_code: { companyId, code: m.code } },
+    });
+    if (!material) {
+      material = await prisma.material.create({
+        data: {
+          companyId,
+          code: m.code,
+          name: m.name,
+          supplierId: m.supplierId,
+          unitId: m.unitId,
+          purchasePrice: m.purchasePrice,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ Created Material: ${material.code}`);
+    }
+    materials[m.code] = material.id;
+  }
+
+  // 10. BOM Recipes
+  const bomsToSeed = data.boms(products, materials);
+  for (const bom of bomsToSeed) {
+    let recipe = await prisma.bomRecipe.findFirst({
+      where: { companyId, productId: bom.productId, version: bom.version },
+    });
+    if (!recipe) {
+      recipe = await prisma.bomRecipe.create({
+        data: {
+          companyId,
+          productId: bom.productId,
+          version: bom.version,
+          outputQty: bom.outputQty,
+          wastagePct: bom.wastagePct,
+          laborCost: bom.laborCost,
+          overheadCost: bom.overheadCost,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ Created BOM Recipe for product ID: ${bom.productId}`);
+
+      for (const line of bom.lines) {
+        await prisma.bomLine.create({
+          data: {
+            bomId: recipe.id,
+            materialId: line.materialId,
+            qtyPerOutput: line.qtyPerOutput,
+            unitCost: line.unitCost,
+          }
+        });
+      }
+      console.log(`    Added lines to BOM Recipe.`);
+    }
+  }
+
+  // 11. Budget Cycle + Budget Lines
+  let budgetCycle = await prisma.budgetCycle.findFirst({
+    where: { companyId, fiscalYear: data.budget.year, name: data.budget.name },
+  });
+  if (!budgetCycle) {
+    budgetCycle = await prisma.budgetCycle.create({
+      data: {
+        companyId,
+        name: data.budget.name,
+        fiscalYear: data.budget.year,
+        periodType: PeriodType.annual,
+        status: CycleStatus.approved,
+        createdBy: data.userId,
+        approvedBy: data.userId,
+        approvedAt: new Date(),
+      },
+    });
+    console.log(`  ✅ Created Budget Cycle: ${budgetCycle.name}`);
+
+    const lines = [];
+    const accountsInDb = Object.keys(data.budget.monthlyValues);
+    for (let month = 1; month <= 12; month++) {
+      for (const code of accountsInDb) {
+        const accountId = accounts[code];
+        if (accountId) {
+          lines.push({
+            budgetCycleId: budgetCycle.id,
+            accountId: accountId,
+            periodMonth: month,
+            amount: data.budget.monthlyValues[code],
+            notes: `Projected standard value for ${code} month ${month}`,
+          });
+        }
+      }
+    }
+    await prisma.budgetLine.createMany({ data: lines });
+    console.log(`    Seeded ${lines.length} Budget Lines`);
+  }
+
+  // 12. Actual Import + Actual Lines
+  let actualImport = await prisma.actualImport.findFirst({
+    where: { companyId, sourceSystem: ImportSourceSystem.excel, importType: ImportType.gl, status: ImportStatus.posted },
+  });
+  if (!actualImport) {
+    actualImport = await prisma.actualImport.create({
+      data: {
+        companyId,
+        sourceSystem: ImportSourceSystem.excel,
+        importType: ImportType.gl,
+        periodFrom: data.actual.periodFrom,
+        periodTo: data.actual.periodTo,
+        status: ImportStatus.posted,
+        importedBy: data.userId,
+      },
+    });
+    console.log(`  ` + `✅ Created Actual Import: ID=${actualImport.id}`);
+
+    const linesToInsert = data.actual.lines.map((l: any) => ({
+      actualImportId: actualImport!.id,
+      accountId: accounts[l.accountCode],
+      transactionDate: l.date,
+      amount: l.amount,
+      referenceNo: l.ref,
+    })).filter((l: any) => l.accountId !== undefined);
+
+    await prisma.actualLine.createMany({ data: linesToInsert });
+    console.log(`    Seeded ${linesToInsert.length} Actual Lines`);
+  }
+
+  // 13. Scenarios
+  const baseScenario = await prisma.scenario.findFirst({
+    where: { companyId, scenarioType: ScenarioType.base },
+  });
+  let scenarioId = baseScenario?.id;
+  if (!baseScenario) {
+    const sc = await prisma.scenario.create({
+      data: {
+        companyId,
+        name: 'Base Scenario',
+        scenarioType: ScenarioType.base,
+        assumptionsJson: JSON.stringify({ material_price_growth: 0.05, sales_volume_growth: 0.10 }),
+        createdBy: data.userId,
+      }
+    });
+    console.log(`  ` + `✅ Created Scenario: ${sc.name}`);
+    scenarioId = sc.id;
+  }
+
+  // 14. Forecast Cycle + Forecast Lines
+  let forecastCycle = await prisma.forecastCycle.findFirst({
+    where: { companyId, fiscalYear: data.forecast.year, name: data.forecast.name },
+  });
+  if (!forecastCycle && scenarioId) {
+    forecastCycle = await prisma.forecastCycle.create({
+      data: {
+        companyId,
+        scenarioId: scenarioId,
+        name: data.forecast.name,
+        fiscalYear: data.forecast.year,
+        basePeriod: data.actual.periodTo,
+        method: ForecastMethod.rolling,
+        status: CycleStatus.approved,
+        createdBy: data.userId,
+        approvedBy: data.userId,
+        approvedAt: new Date(),
+      },
+    });
+    console.log(`  ` + `✅ Created Forecast Cycle: ${forecastCycle.name}`);
+
+    const fLines = data.forecast.lines.map((l: any) => ({
+      forecastCycleId: forecastCycle!.id,
+      accountId: accounts[l.accountCode],
+      periodMonth: l.month,
+      amount: l.amount,
+      driverType: l.driver,
+      notes: l.notes,
+    })).filter((l: any) => l.accountId !== undefined);
+
+    await prisma.forecastLine.createMany({ data: fLines });
+    console.log(`    Seeded ${fLines.length} Forecast Lines`);
+  }
+
+  // 15. Exchange Rates
+  for (const r of data.rates) {
+    let rate = await prisma.exchangeRate.findFirst({
+      where: { companyId, fromCurrency: r.from, toCurrency: r.to, rateDate: new Date('2025-01-01') },
+    });
+    if (!rate) {
+      rate = await prisma.exchangeRate.create({
+        data: {
+          companyId,
+          fromCurrency: r.from,
+          toCurrency: r.to,
+          rate: r.rate,
+          rateDate: new Date('2025-01-01'),
+          source: RateSource.manual,
+          createdBy: data.userId,
+        },
+      });
+      console.log(`  ✅ Created Exchange Rate: ${r.from} -> ${r.to}`);
+    }
+  }
+
+  // 16. Headcount Plans
+  const headcountToSeed = data.headcount(sites, costCenters);
+  for (const hc of headcountToSeed) {
+    let existing = await prisma.headcountPlan.findFirst({
+      where: { budgetCycleId: budgetCycle.id, siteId: hc.siteId, costCenterId: hc.costCenterId, periodMonth: hc.periodMonth, jobTitle: hc.jobTitle },
+    });
+    if (!existing) {
+      const totalCost = (hc.basicSalary + hc.allowances + hc.socialInsurance) * hc.headcount;
+      await prisma.headcountPlan.create({
+        data: {
+          budgetCycleId: budgetCycle.id,
+          siteId: hc.siteId,
+          costCenterId: hc.costCenterId,
+          jobTitle: hc.jobTitle,
+          department: hc.department,
+          employmentType: EmploymentType.full_time,
+          headcount: hc.headcount,
+          periodMonth: hc.periodMonth,
+          basicSalary: hc.basicSalary,
+          allowances: hc.allowances,
+          socialInsurance: hc.socialInsurance,
+          totalCost: totalCost,
+        },
+      });
+      console.log(`  ✅ Created Headcount Plan: ${hc.jobTitle}`);
+    }
+  }
+
+  // 17. Production Plans
+  const prodToSeed = data.production(sites, products);
+  for (const pp of prodToSeed) {
+    let existing = await prisma.productionPlan.findFirst({
+      where: { companyId, siteId: pp.siteId, productId: pp.productId, fiscalYear: data.budget.year, periodMonth: pp.month },
+    });
+    if (!existing) {
+      await prisma.productionPlan.create({
+        data: {
+          companyId,
+          siteId: pp.siteId,
+          productId: pp.productId,
+          planSource: PlanSource.manual,
+          fiscalYear: data.budget.year,
+          periodMonth: pp.month,
+          plannedQty: pp.plannedQty,
+          estimatedCost: pp.estimatedCost,
+        },
+      });
+      console.log(`  ✅ Created Production Plan for Product ID: ${pp.productId}`);
+    }
+  }
+
+  // 18. Inventory Snapshots
+  const invToSeed = data.inventory(sites, products, materials);
+  for (const inv of invToSeed) {
+    let existing = await prisma.inventorySnapshot.findFirst({
+      where: { companyId, siteId: inv.siteId, productId: inv.productId, materialId: inv.materialId, snapshotDate: inv.date },
+    });
+    if (!existing) {
+      await prisma.inventorySnapshot.create({
+        data: {
+          companyId,
+          siteId: inv.siteId,
+          productId: inv.productId,
+          materialId: inv.materialId,
+          snapshotDate: inv.date,
+          qtyOnHand: inv.qtyOnHand,
+          inventoryValue: inv.inventoryValue,
+        },
+      });
+      console.log(`  ✅ Created Inventory Snapshot for site ID: ${inv.siteId}`);
+    }
+  }
+
+  // 19. KPI Targets
+  for (const kpi of data.kpis) {
+    let existing = await prisma.kpiTarget.findFirst({
+      where: { companyId, kpiName: kpi.name, fiscalYear: data.budget.year },
+    });
+    if (!existing) {
+      await prisma.kpiTarget.create({
+        data: {
+          companyId,
+          kpiName: kpi.name,
+          kpiCategory: kpi.category,
+          fiscalYear: data.budget.year,
+          targetValue: kpi.target,
+          unit: kpi.unit,
+          createdBy: data.userId,
+        },
+      });
+      console.log(`  ✅ Created KPI Target: ${kpi.name}`);
+    }
+  }
+
+  // 20. Notification Rules
+  for (const rule of data.rules) {
+    let existing = await prisma.notificationRule.findFirst({
+      where: { companyId, ruleName: rule.name },
+    });
+    if (!existing) {
+      await prisma.notificationRule.create({
+        data: {
+          companyId,
+          ruleName: rule.name,
+          triggerType: rule.trigger,
+          thresholdValue: rule.threshold,
+          accountId: accounts[rule.accountCode],
+          channel: rule.channel,
+          createdBy: data.userId,
+        },
+      });
+      console.log(`  ✅ Created Notification Rule: ${rule.name}`);
+    }
+  }
+
+  // 21. Promotions
+  const promoToSeed = data.promotions(products);
+  for (const promo of promoToSeed) {
+    let existing = await prisma.promotion.findFirst({
+      where: { companyId, name: promo.name },
+    });
+    if (!existing) {
+      await prisma.promotion.create({
+        data: {
+          companyId,
+          name: promo.name,
+          productId: promo.productId,
+          discountPct: promo.discountPct,
+          discountAmt: promo.discountAmt,
+          startDate: promo.startDate,
+          endDate: promo.endDate,
+          budgetAmt: promo.budget,
+          createdBy: data.userId,
+        },
+      });
+      console.log(`  ✅ Created Promotion: ${promo.name}`);
+    }
+  }
+
+  // 22. Raw Material Prices
+  const pricesToSeed = data.matPrices(materials);
+  for (const rmp of pricesToSeed) {
+    let existing = await prisma.rawMaterialPrice.findFirst({
+      where: { companyId, materialId: rmp.materialId, priceDate: rmp.date },
+    });
+    if (!existing) {
+      await prisma.rawMaterialPrice.create({
+        data: {
+          companyId,
+          materialId: rmp.materialId,
+          price: rmp.price,
+          priceDate: rmp.date,
+          source: 'manual',
+        },
+      });
+      console.log(`  ✅ Created Raw Material Price for material ID: ${rmp.materialId}`);
+    }
+  }
+
+  // 23. Integration Connection & Import Mappings (Oracle Mock / Direct Setup)
+  let connection = await prisma.integrationConnection.findFirst({
+    where: { companyId, name: 'Oracle UAT Source' },
+  });
+  if (!connection) {
+    connection = await prisma.integrationConnection.create({
+      data: {
+        companyId,
+        name: 'Oracle UAT Source',
+        connectionType: ConnectionType.oracle,
+        host: 'mock',
+        port: 1521,
+        databaseName: 'FREEPDB1',
+        username: 'fpuat',
+        passwordEnc: encrypt('FpUat123'),
+        syncSchedule: SyncSchedule.manual,
+        isActive: true,
+        createdBy: data.userId,
+      }
+    });
+    console.log(`  ✅ Created Integration Connection: ${connection.name}`);
+  }
+
+  // Seed Import Mappings
+  const mappingsToSeed = [
+    { name: 'Oracle Sales Mapping', type: ImportType.sales },
+    { name: 'Oracle Expenses Mapping', type: ImportType.expenses },
+    { name: 'Oracle GL Actuals Mapping', type: ImportType.gl },
+  ];
+
+  for (const m of mappingsToSeed) {
+    let existingMap = await prisma.importMapping.findFirst({
+      where: { companyId, name: m.name },
+    });
+    if (!existingMap) {
+      const config = {
+        accountCode: 'Account Code',
+        amount: 'Amount',
+        transactionDate: 'Date',
+        quantity: 'Quantity',
+        unitPrice: 'Unit Price',
+        referenceNo: 'Reference',
+        productSku: 'Product SKU',
+        customerCode: 'Customer Code',
+        siteCode: 'Site Code',
+      };
+      await prisma.importMapping.create({
+        data: {
+          companyId,
+          connectionId: connection.id,
+          name: m.name,
+          sourceSystem: ImportSourceSystem.oracle,
+          importType: m.type,
+          mappingConfig: JSON.stringify(config),
+          isDefault: true,
+          isActive: true,
+          createdBy: data.userId,
+        }
+      });
+      console.log(`  ✅ Created Import Mapping: ${m.name}`);
+    }
+  }
 }
 
 main()

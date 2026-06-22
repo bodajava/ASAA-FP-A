@@ -26,6 +26,7 @@ import { CreateMappingDto } from './dto/create-mapping.dto';
 import { UpdateMappingDto } from './dto/update-mapping.dto';
 import { TestConnectionDto } from './dto/test-connection.dto';
 import { SyncTriggerDto } from './dto/sync-trigger.dto';
+import { PreviewRowsDto } from './dto/preview-rows.dto';
 import {
   ConnectionResponseDto,
   MappingResponseDto,
@@ -284,6 +285,58 @@ export class IntegrationsController {
       companyId,
       req.user.tenantId,
       req.user.id,
+    );
+  }
+
+  @Get('connections/:id/oracle-schema/tables')
+  @ApiOperation({ summary: 'List available tables/views from Oracle connection' })
+  @ApiResponse({ status: 200 })
+  discoverTables(
+    @Param('id') id: string,
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ): Promise<any[]> {
+    return this.integrationsService.discoverOracleTables(
+      BigInt(id),
+      companyId,
+      req.user.tenantId,
+    );
+  }
+
+  @Get('connections/:id/oracle-schema/tables/:tableName/columns')
+  @ApiOperation({ summary: 'List columns and types for a specific Oracle table/view' })
+  @ApiResponse({ status: 200 })
+  discoverColumns(
+    @Param('id') id: string,
+    @Param('tableName') tableName: string,
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ): Promise<any[]> {
+    return this.integrationsService.discoverOracleColumns(
+      BigInt(id),
+      tableName,
+      companyId,
+      req.user.tenantId,
+    );
+  }
+
+  @Post('connections/:id/preview-rows')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Preview rows from Oracle source table using mapping' })
+  @ApiResponse({ status: 200 })
+  previewRows(
+    @Param('id') id: string,
+    @Body() dto: PreviewRowsDto,
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ): Promise<any[]> {
+    return this.integrationsService.previewOracleRows(
+      BigInt(id),
+      dto.sourceTable,
+      dto.mappingConfig,
+      dto.limit ?? 10,
+      companyId,
+      req.user.tenantId,
     );
   }
 }

@@ -5,6 +5,16 @@ import { AuditLogResponseDto } from './dto/audit-log-response.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 function mapAuditLogToResponse(log: AuditLog): AuditLogResponseDto {
+  const parseJsonSafe = (val: any): any => {
+    if (!val) return null;
+    if (typeof val === 'object') return val;
+    try {
+      return JSON.parse(val);
+    } catch {
+      return null;
+    }
+  };
+
   return {
     id: log.id.toString(),
     tenantId: log.tenantId.toString(),
@@ -12,18 +22,8 @@ function mapAuditLogToResponse(log: AuditLog): AuditLogResponseDto {
     entityType: log.entityType,
     entityId: log.entityId ? log.entityId.toString() : null,
     action: log.action,
-    oldValues: log.oldValues
-      ? (JSON.parse(log.oldValues) as Record<
-          string,
-          string | number | boolean | null | object
-        >)
-      : null,
-    newValues: log.newValues
-      ? (JSON.parse(log.newValues) as Record<
-          string,
-          string | number | boolean | null | object
-        >)
-      : null,
+    oldValues: parseJsonSafe(log.oldValues),
+    newValues: parseJsonSafe(log.newValues),
     ipAddress: log.ipAddress,
     userAgent: log.userAgent,
     createdAt: log.createdAt,

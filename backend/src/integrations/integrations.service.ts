@@ -13,6 +13,7 @@ import {
   SyncStatus,
   ImportStatus,
   ImportType,
+
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { CreateConnectionDto } from './dto/create-connection.dto';
@@ -67,7 +68,9 @@ function mapMappingToResponse(mapping: ImportMapping): MappingResponseDto {
     name: mapping.name,
     sourceSystem: mapping.sourceSystem,
     importType: mapping.importType,
-    mappingConfig: JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
+    mappingConfig: typeof mapping.mappingConfig === 'string'
+      ? JSON.parse(mapping.mappingConfig)
+      : mapping.mappingConfig,
     skipErrors: mapping.skipErrors,
     isDefault: mapping.isDefault,
     isActive: mapping.isActive,
@@ -103,12 +106,26 @@ export class IntegrationsService implements OnApplicationBootstrap {
     }
   }
 
-  private validateMappingConfig(config: Record<string, string | null>): void {
+  private validateMappingConfig(config: Record<string, any>): void {
     if (!config || typeof config !== 'object') {
       throw new BadRequestException(
         'mappingConfig must be a valid JSON object',
       );
     }
+
+    if (config.targetModule) {
+      if (typeof config.targetModule !== 'string' || config.targetModule.trim() === '') {
+        throw new BadRequestException('targetModule must be a non-empty string');
+      }
+      if (config.sourceTable && (typeof config.sourceTable !== 'string' || config.sourceTable.trim() === '')) {
+        throw new BadRequestException('sourceTable must be a non-empty string');
+      }
+      if (config.columnMapping && (typeof config.columnMapping !== 'object' || Array.isArray(config.columnMapping))) {
+        throw new BadRequestException('columnMapping must be a valid JSON object');
+      }
+      return;
+    }
+
     const requiredKeys = ['accountCode', 'amount', 'transactionDate'];
     for (const key of requiredKeys) {
       const val = config[key];
@@ -144,6 +161,934 @@ export class IntegrationsService implements OnApplicationBootstrap {
         );
       }
     }
+  }
+
+  private formatOracleError(err: any): string {
+    const errMsg = err?.message || String(err);
+    if (errMsg.includes('ORA-00942')) {
+      return 'Oracle table or view not found. Please check your import mapping.';
+    }
+    if (errMsg.includes('ORA-01017')) {
+      return 'Invalid Oracle username or password.';
+    }
+    const networkKeywords = [
+      'NJS-511',
+      'ENOTFOUND',
+      'ECONNREFUSED',
+      'ETIMEDOUT',
+      'ORA-12170',
+      'ORA-12541',
+      'TNS-'
+    ];
+    if (networkKeywords.some(keyword => errMsg.includes(keyword))) {
+      return 'Could not connect to Oracle host/port/service.';
+    }
+    return errMsg;
+  }
+
+  async discoverOracleTables(
+    connectionId: bigint,
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<any[]> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const connection = await this.prisma.integrationConnection.findFirst({
+      where: { id: connectionId, companyId },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(`Connection with ID ${connectionId} not found under this company`);
+    }
+
+    if (connection.connectionType !== ConnectionType.oracle) {
+      throw new BadRequestException('Schema discovery is only supported for Oracle connections.');
+    }
+
+    if (connection.host?.toLowerCase() === 'mock') {
+      return [
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_GL_ACTUALS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_COMPANIES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_ACCOUNTS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_SITES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_CUSTOMERS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_PRODUCTS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_MATERIALS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_COST_CENTERS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_PRODUCT_CATEGORIES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_UNITS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_SUPPLIERS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_BOM_RECIPES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_BOM_LINES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_INVENTORY_SNAPSHOTS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_BUDGET_LINES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_FORECAST_LINES', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_PRODUCTION_PLANS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_HEADCOUNT_PLANS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_PROMOTIONS', TABLE_TYPE: 'TABLE' },
+        { OWNER: 'MOCK', TABLE_NAME: 'FP_RAW_MATERIAL_PRICES', TABLE_TYPE: 'TABLE' },
+      ];
+    }
+
+    let oracledb: any;
+    try {
+      oracledb = require('oracledb');
+    } catch {
+      throw new BadRequestException('Oracle client is not configured.');
+    }
+
+    const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+    const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
+
+    let connInstance: any;
+    try {
+      connInstance = await oracledb.getConnection({
+        user: connection.username || '',
+        password,
+        connectString,
+      });
+
+      const result = await connInstance.execute(
+        `SELECT OWNER, TABLE_NAME, 'TABLE' as TABLE_TYPE FROM ALL_TABLES WHERE OWNER = USER UNION SELECT OWNER, VIEW_NAME as TABLE_NAME, 'VIEW' as TABLE_TYPE FROM ALL_VIEWS WHERE OWNER = USER`,
+        [],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      return result.rows || [];
+    } catch (err: any) {
+      throw new BadRequestException(this.formatOracleError(err));
+    } finally {
+      if (connInstance) {
+        await connInstance.close().catch(() => { });
+      }
+    }
+  }
+
+  async discoverOracleColumns(
+    connectionId: bigint,
+    tableName: string,
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<any[]> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const connection = await this.prisma.integrationConnection.findFirst({
+      where: { id: connectionId, companyId },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(`Connection with ID ${connectionId} not found under this company`);
+    }
+
+    if (connection.connectionType !== ConnectionType.oracle) {
+      throw new BadRequestException('Column discovery is only supported for Oracle connections.');
+    }
+
+    if (!/^[A-Za-z0-9_$#]+$/.test(tableName)) {
+      throw new BadRequestException('Invalid table name format.');
+    }
+
+    if (connection.host?.toLowerCase() === 'mock') {
+      const tableUpper = tableName.toUpperCase();
+      if (tableUpper.includes('COMPAN')) {
+        return [
+          { COLUMN_NAME: 'COMPANY_CODE', DATA_TYPE: 'VARCHAR2' },
+          { COLUMN_NAME: 'COMPANY_NAME', DATA_TYPE: 'VARCHAR2' },
+          { COLUMN_NAME: 'INDUSTRY_TYPE', DATA_TYPE: 'VARCHAR2' },
+          { COLUMN_NAME: 'CURRENCY_CODE', DATA_TYPE: 'VARCHAR2' },
+        ];
+      }
+      if (tableUpper.includes('ACCOUNT')) {
+        return [
+          { COLUMN_NAME: 'ACCOUNT_CODE', DATA_TYPE: 'VARCHAR2' },
+          { COLUMN_NAME: 'ACCOUNT_NAME', DATA_TYPE: 'VARCHAR2' },
+          { COLUMN_NAME: 'ACCOUNT_TYPE', DATA_TYPE: 'VARCHAR2' },
+          { COLUMN_NAME: 'COMPANY_CODE', DATA_TYPE: 'VARCHAR2' },
+        ];
+      }
+      return [
+        { COLUMN_NAME: 'ACCOUNT_CODE', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'SITE_CODE', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'COST_CENTER_CODE', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'PRODUCT_CODE', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'MATERIAL_CODE', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'CUSTOMER_CODE', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'QUANTITY', DATA_TYPE: 'NUMBER' },
+        { COLUMN_NAME: 'AMOUNT', DATA_TYPE: 'NUMBER' },
+        { COLUMN_NAME: 'TRANSACTION_DATE', DATA_TYPE: 'DATE' },
+        { COLUMN_NAME: 'REFERENCE_NO', DATA_TYPE: 'VARCHAR2' },
+        { COLUMN_NAME: 'COMPANY_CODE', DATA_TYPE: 'VARCHAR2' },
+      ];
+    }
+
+    let oracledb: any;
+    try {
+      oracledb = require('oracledb');
+    } catch {
+      throw new BadRequestException('Oracle client is not configured.');
+    }
+
+    const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+    const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
+
+    let connInstance: any;
+    try {
+      connInstance = await oracledb.getConnection({
+        user: connection.username || '',
+        password,
+        connectString,
+      });
+
+      const result = await connInstance.execute(
+        `SELECT COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS WHERE OWNER = USER AND TABLE_NAME = :tableName ORDER BY COLUMN_ID`,
+        { tableName: tableName.toUpperCase() },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      return result.rows || [];
+    } catch (err: any) {
+      throw new BadRequestException(this.formatOracleError(err));
+    } finally {
+      if (connInstance) {
+        await connInstance.close().catch(() => { });
+      }
+    }
+  }
+
+  async previewOracleRows(
+    connectionId: bigint,
+    sourceTable: string,
+    mappingConfig: Record<string, string | null>,
+    limit: number,
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<any[]> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const connection = await this.prisma.integrationConnection.findFirst({
+      where: { id: connectionId, companyId },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(`Connection with ID ${connectionId} not found under this company`);
+    }
+
+    if (connection.connectionType !== ConnectionType.oracle) {
+      throw new BadRequestException('Row preview is only supported for Oracle connections.');
+    }
+
+    if (!/^[A-Za-z0-9_$#]+$/.test(sourceTable)) {
+      throw new BadRequestException('Invalid table name format.');
+    }
+
+    const selectColumns: string[] = [];
+    const flatMapping = mappingConfig.columnMapping && typeof mappingConfig.columnMapping === 'object'
+      ? (mappingConfig.columnMapping as Record<string, string | null>)
+      : mappingConfig;
+
+    for (const key of Object.keys(flatMapping)) {
+      const val = flatMapping[key];
+      if (typeof val === 'string' && val.trim() !== '') {
+        if (!/^[A-Za-z0-9_$#]+$/.test(val)) {
+          throw new BadRequestException(`Invalid column name: ${val}`);
+        }
+        if (!selectColumns.includes(val)) {
+          selectColumns.push(val);
+        }
+      }
+    }
+
+    const selectClause = selectColumns.length > 0 ? selectColumns.map(c => `"${c.toUpperCase()}"`).join(', ') : '*';
+
+    if (connection.host?.toLowerCase() === 'mock') {
+      const mockConfig: Record<string, string | null> = {};
+      const extractFlatConfig = (configObj: any) => {
+        for (const k of Object.keys(configObj)) {
+          const val = configObj[k];
+          if (typeof val === 'string') {
+            mockConfig[k] = val;
+          } else if (typeof val === 'object' && val !== null) {
+            extractFlatConfig(val);
+          }
+        }
+      };
+      extractFlatConfig(mappingConfig);
+      return this.generateMockRows(mockConfig, companyId);
+    }
+
+    let oracledb: any;
+    try {
+      oracledb = require('oracledb');
+    } catch {
+      throw new BadRequestException('Oracle client is not configured.');
+    }
+
+    const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+    const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
+
+    let connInstance: any;
+    try {
+      connInstance = await oracledb.getConnection({
+        user: connection.username || '',
+        password,
+        connectString,
+      });
+
+      const query = `SELECT * FROM (SELECT ${selectClause} FROM ${sourceTable.toUpperCase()}) WHERE ROWNUM <= :previewLimit`;
+      const result = await connInstance.execute(
+        query,
+        { previewLimit: limit || 10 },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      return result.rows || [];
+    } catch (err: any) {
+      throw new BadRequestException(this.formatOracleError(err));
+    } finally {
+      if (connInstance) {
+        await connInstance.close().catch(() => { });
+      }
+    }
+  }
+
+  async syncCustomDataRows(
+    rows: any[],
+    targetModule: string,
+    columnMapping: Record<string, string | null>,
+    companyId: bigint,
+    userId: bigint,
+    skipErrors: boolean = false,
+  ): Promise<number> {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const tenantId = company?.tenantId || 1n;
+    const moduleName = targetModule.toLowerCase().replace(/[^a-z]/g, '');
+
+    const getValue = (row: any, targetField: string): any => {
+      const sourceCol = columnMapping[targetField];
+      if (!sourceCol) return undefined;
+      if (row[sourceCol] !== undefined) return row[sourceCol];
+      if (row[sourceCol.toUpperCase()] !== undefined) return row[sourceCol.toUpperCase()];
+      if (row[sourceCol.toLowerCase()] !== undefined) return row[sourceCol.toLowerCase()];
+      return undefined;
+    };
+
+    let syncedCount = 0;
+
+    if (moduleName === 'inventorysnapshots' || moduleName === 'inventorysnapshot') {
+      await this.prisma.inventorySnapshot.deleteMany({ where: { companyId } });
+    } else if (moduleName === 'promotions' || moduleName === 'promotion') {
+      await this.prisma.promotion.deleteMany({ where: { companyId } });
+    } else if (moduleName === 'rawmaterialprices' || moduleName === 'rawmaterialprice') {
+      await this.prisma.rawMaterialPrice.deleteMany({ where: { companyId } });
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      try {
+        if (moduleName === 'companies' || moduleName === 'company') {
+          const codeVal = getValue(row, 'code') || getValue(row, 'id');
+          const companyCodeStr = codeVal ? String(codeVal) : '';
+          const parsedCompanyId = this.parseCompanyId(companyCodeStr);
+          if (!parsedCompanyId) {
+            throw new Error(`Could not parse company ID from "${companyCodeStr}"`);
+          }
+          const name = String(getValue(row, 'name') || `Company ${parsedCompanyId}`);
+          const industryStr = String(getValue(row, 'industryType') || 'mixed').toLowerCase();
+          const industryType = ['food_manufacturing', 'food_retail', 'mixed', 'other'].includes(industryStr)
+            ? industryStr
+            : 'mixed';
+          const currencyCode = String(getValue(row, 'currencyCode') || 'EGP');
+
+          await this.prisma.company.upsert({
+            where: { id: parsedCompanyId },
+            update: { name, industryType: industryType as any, currencyCode },
+            create: { id: parsedCompanyId, tenantId, name, industryType: industryType as any, currencyCode },
+          });
+
+        } else if (moduleName === 'sites' || moduleName === 'site') {
+          const name = String(getValue(row, 'name') || '');
+          if (!name) throw new Error('Site name is required');
+          const typeStr = String(getValue(row, 'type') || 'factory').toLowerCase();
+          const type = ['factory', 'branch', 'warehouse', 'office', 'distribution_center'].includes(typeStr)
+            ? typeStr
+            : 'factory';
+          const region = getValue(row, 'region') ? String(getValue(row, 'region')) : null;
+
+          const existing = await this.prisma.site.findFirst({ where: { companyId, name } });
+          if (existing) {
+            await this.prisma.site.update({
+              where: { id: existing.id },
+              data: { type: type as any, region, status: 'active' },
+            });
+          } else {
+            await this.prisma.site.create({
+              data: { companyId, name, type: type as any, region, status: 'active' },
+            });
+          }
+
+        } else if (moduleName === 'accounts' || moduleName === 'account') {
+          const code = String(getValue(row, 'code') || '');
+          if (!code) throw new Error('Account code is required');
+          const name = String(getValue(row, 'name') || `Account ${code}`);
+          const typeStr = String(getValue(row, 'type') || 'expense').toLowerCase();
+          const type = ['revenue', 'cogs', 'expense', 'asset', 'liability', 'equity', 'cashflow'].includes(typeStr)
+            ? typeStr
+            : 'expense';
+
+          await this.prisma.account.upsert({
+            where: { companyId_code: { companyId, code } },
+            update: { name, type: type as any, isActive: true },
+            create: { companyId, code, name, type: type as any, isActive: true },
+          });
+
+        } else if (moduleName === 'costcenters' || moduleName === 'costcenter') {
+          const code = String(getValue(row, 'code') || '');
+          if (!code) throw new Error('Cost center code is required');
+          const name = String(getValue(row, 'name') || `Cost Center ${code}`);
+          const typeStr = String(getValue(row, 'type') || 'other').toLowerCase();
+          const type = ['sales', 'production', 'admin', 'marketing', 'logistics', 'maintenance', 'other'].includes(typeStr)
+            ? typeStr
+            : 'other';
+
+          const existing = await this.prisma.costCenter.findFirst({ where: { companyId, code } });
+          if (existing) {
+            await this.prisma.costCenter.update({
+              where: { id: existing.id },
+              data: { name, type: type as any },
+            });
+          } else {
+            await this.prisma.costCenter.create({
+              data: { companyId, code, name, type: type as any },
+            });
+          }
+
+        } else if (moduleName === 'productcategories' || moduleName === 'productcategory') {
+          const name = String(getValue(row, 'name') || '');
+          if (!name) throw new Error('Product category name is required');
+          const existing = await this.prisma.productCategory.findFirst({ where: { companyId, name } });
+          if (!existing) {
+            await this.prisma.productCategory.create({ data: { companyId, name } });
+          }
+
+        } else if (moduleName === 'suppliers' || moduleName === 'supplier') {
+          const name = String(getValue(row, 'name') || '');
+          if (!name) throw new Error('Supplier name is required');
+          const phone = getValue(row, 'phone') ? String(getValue(row, 'phone')) : null;
+          const email = getValue(row, 'email') ? String(getValue(row, 'email')) : null;
+
+          const existing = await this.prisma.supplier.findFirst({ where: { companyId, name } });
+          if (existing) {
+            await this.prisma.supplier.update({
+              where: { id: existing.id },
+              data: { phone, email },
+            });
+          } else {
+            await this.prisma.supplier.create({
+              data: { companyId, name, phone, email },
+            });
+          }
+
+        } else if (moduleName === 'customers' || moduleName === 'customer') {
+          const code = String(getValue(row, 'code') || '');
+          if (!code) throw new Error('Customer code is required');
+          const name = String(getValue(row, 'name') || `Customer ${code}`);
+          const typeStr = String(getValue(row, 'type') || 'retail').toLowerCase();
+          const customerType = ['retail', 'wholesale', 'distributor', 'internal', 'other'].includes(typeStr)
+            ? typeStr
+            : 'retail';
+          const region = getValue(row, 'region') ? String(getValue(row, 'region')) : null;
+
+          await this.prisma.customer.upsert({
+            where: { companyId_code: { companyId, code } },
+            update: { name, customerType: customerType as any, region, isActive: true },
+            create: { companyId, code, name, customerType: customerType as any, region, isActive: true },
+          });
+
+        } else if (moduleName === 'products' || moduleName === 'product') {
+          const sku = String(getValue(row, 'sku') || getValue(row, 'code') || '');
+          if (!sku) throw new Error('Product SKU is required');
+          const name = String(getValue(row, 'name') || `Product ${sku}`);
+          const categoryName = getValue(row, 'category') ? String(getValue(row, 'category')) : null;
+          const unitSymbol = getValue(row, 'unit') ? String(getValue(row, 'unit')) : null;
+          const salePrice = Number(getValue(row, 'salePrice') || 0);
+          const standardCost = Number(getValue(row, 'standardCost') || 0);
+
+          let categoryId: bigint | null = null;
+          if (categoryName) {
+            let cat = await this.prisma.productCategory.findFirst({ where: { companyId, name: categoryName } });
+            if (!cat) cat = await this.prisma.productCategory.create({ data: { companyId, name: categoryName } });
+            categoryId = cat.id;
+          }
+
+          let unitId: bigint | null = null;
+          if (unitSymbol) {
+            let unit = await this.prisma.unit.findFirst({ where: { companyId, symbol: unitSymbol } });
+            if (!unit) unit = await this.prisma.unit.create({ data: { companyId, symbol: unitSymbol, name: unitSymbol } });
+            unitId = unit.id;
+          }
+
+          await this.prisma.product.upsert({
+            where: { companyId_sku: { companyId, sku } },
+            update: { name, salePrice, standardCost, categoryId, unitId, isActive: true },
+            create: { companyId, sku, name, salePrice, standardCost, categoryId, unitId, isActive: true },
+          });
+
+        } else if (moduleName === 'materials' || moduleName === 'material') {
+          const code = String(getValue(row, 'code') || '');
+          if (!code) throw new Error('Material code is required');
+          const name = String(getValue(row, 'name') || `Material ${code}`);
+          const unitSymbol = getValue(row, 'unit') ? String(getValue(row, 'unit')) : null;
+          const purchasePrice = Number(getValue(row, 'purchasePrice') || 0);
+          const supplierName = getValue(row, 'supplier') || getValue(row, 'supplierCode') ? String(getValue(row, 'supplier') || getValue(row, 'supplierCode')) : null;
+
+          let unitId: bigint | null = null;
+          if (unitSymbol) {
+            let unit = await this.prisma.unit.findFirst({ where: { companyId, symbol: unitSymbol } });
+            if (!unit) unit = await this.prisma.unit.create({ data: { companyId, symbol: unitSymbol, name: unitSymbol } });
+            unitId = unit.id;
+          }
+
+          let supplierId: bigint | null = null;
+          if (supplierName) {
+            let supp = await this.prisma.supplier.findFirst({ where: { companyId, name: supplierName } });
+            if (!supp) supp = await this.prisma.supplier.create({ data: { companyId, name: supplierName } });
+            supplierId = supp.id;
+          }
+
+          await this.prisma.material.upsert({
+            where: { companyId_code: { companyId, code } },
+            update: { name, purchasePrice, unitId, supplierId, isActive: true },
+            create: { companyId, code, name, purchasePrice, unitId, supplierId, isActive: true },
+          });
+
+        } else if (moduleName === 'units' || moduleName === 'unit') {
+          const symbol = String(getValue(row, 'symbol') || '');
+          if (!symbol) throw new Error('Unit symbol is required');
+          const name = String(getValue(row, 'name') || symbol);
+
+          const existing = await this.prisma.unit.findFirst({ where: { companyId, symbol } });
+          if (!existing) {
+            await this.prisma.unit.create({ data: { companyId, symbol, name } });
+          }
+
+        } else if (moduleName === 'bomrecipes' || moduleName === 'bomrecipe') {
+          const productSku = String(getValue(row, 'productSku') || getValue(row, 'productCode') || '');
+          if (!productSku) throw new Error('Product SKU is required for recipe');
+          const product = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+          if (!product) throw new Error(`Product not found for SKU: ${productSku}`);
+          const version = String(getValue(row, 'version') || 'v1');
+          const outputQty = Number(getValue(row, 'outputQty') ?? 1);
+          const laborCost = Number(getValue(row, 'laborCost') ?? 0);
+          const overheadCost = Number(getValue(row, 'overheadCost') ?? 0);
+
+          const existing = await this.prisma.bomRecipe.findFirst({ where: { companyId, productId: product.id, version } });
+          if (existing) {
+            await this.prisma.bomRecipe.update({
+              where: { id: existing.id },
+              data: { outputQty, laborCost, overheadCost },
+            });
+          } else {
+            await this.prisma.bomRecipe.create({
+              data: { companyId, productId: product.id, version, outputQty, laborCost, overheadCost },
+            });
+          }
+
+        } else if (moduleName === 'bomlines' || moduleName === 'bomline') {
+          const productSku = String(getValue(row, 'productSku') || getValue(row, 'productCode') || '');
+          if (!productSku) throw new Error('Product SKU is required for BOM line recipe lookup');
+          const product = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+          if (!product) throw new Error(`Product not found for SKU: ${productSku}`);
+          const version = String(getValue(row, 'version') || 'v1');
+          const recipe = await this.prisma.bomRecipe.findFirst({ where: { companyId, productId: product.id, version } });
+          if (!recipe) throw new Error(`BOM Recipe not found for SKU ${productSku} version ${version}`);
+
+          const materialCode = String(getValue(row, 'materialCode') || '');
+          if (!materialCode) throw new Error('Material code is required for BOM line');
+          const material = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+          if (!material) throw new Error(`Material not found for code: ${materialCode}`);
+
+          const qtyPerOutput = Number(getValue(row, 'qtyPerOutput') ?? 1);
+          const unitCost = Number(getValue(row, 'unitCost') ?? 0);
+
+          const existing = await this.prisma.bomLine.findFirst({ where: { bomId: recipe.id, materialId: material.id } });
+          if (existing) {
+            await this.prisma.bomLine.update({
+              where: { id: existing.id },
+              data: { qtyPerOutput, unitCost },
+            });
+          } else {
+            await this.prisma.bomLine.create({
+              data: { bomId: recipe.id, materialId: material.id, qtyPerOutput, unitCost },
+            });
+          }
+
+        } else if (moduleName === 'inventorysnapshots' || moduleName === 'inventorysnapshot') {
+          const siteName = String(getValue(row, 'siteName') || getValue(row, 'siteCode') || '');
+          if (!siteName) throw new Error('Site name/code is required for inventory snapshot');
+          const site = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+          if (!site) throw new Error(`Site not found: ${siteName}`);
+
+          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          let productId: bigint | null = null;
+          if (productSku) {
+            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            if (p) productId = p.id;
+          }
+
+          const materialCode = getValue(row, 'materialCode') ? String(getValue(row, 'materialCode')) : null;
+          let materialId: bigint | null = null;
+          if (materialCode) {
+            const m = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+            if (m) materialId = m.id;
+          }
+
+          const snapshotDate = new Date(getValue(row, 'snapshotDate') || new Date());
+          const qtyOnHand = Number(getValue(row, 'qtyOnHand') || 0);
+          const inventoryValue = Number(getValue(row, 'inventoryValue') || 0);
+
+          await this.prisma.inventorySnapshot.create({
+            data: { companyId, siteId: site.id, productId, materialId, snapshotDate, qtyOnHand, inventoryValue },
+          });
+
+        } else if (moduleName === 'budgetcycles' || moduleName === 'budgetcycle') {
+          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          const name = String(getValue(row, 'name') || `FY ${fiscalYear} - Budget`);
+          const statusStr = String(getValue(row, 'status') || 'approved').toLowerCase();
+          const status = ['draft', 'under_review', 'approved', 'rejected'].includes(statusStr) ? statusStr : 'approved';
+          const startDate = new Date(getValue(row, 'startDate') || `${fiscalYear}-01-01`);
+          const endDate = new Date(getValue(row, 'endDate') || `${fiscalYear}-12-31`);
+
+          const existing = await this.prisma.budgetCycle.findFirst({ where: { companyId, fiscalYear } });
+          if (existing) {
+            await this.prisma.budgetCycle.update({
+              where: { id: existing.id },
+              data: { name, status: status as any, startDate, endDate },
+            });
+          } else {
+            await this.prisma.budgetCycle.create({
+              data: { companyId, fiscalYear, name, status: status as any, startDate, endDate },
+            });
+          }
+
+        } else if (moduleName === 'budgetlines' || moduleName === 'budgetline') {
+          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          let budgetCycle = await this.prisma.budgetCycle.findFirst({ where: { companyId, fiscalYear } });
+          if (!budgetCycle) {
+            budgetCycle = await this.prisma.budgetCycle.create({
+              data: {
+                companyId,
+                fiscalYear,
+                name: `FY ${fiscalYear} - Budget`,
+                status: 'approved',
+                startDate: new Date(`${fiscalYear}-01-01`),
+                endDate: new Date(`${fiscalYear}-12-31`),
+              },
+            });
+          }
+
+          if (syncedCount === 0) {
+            await this.prisma.budgetLine.deleteMany({ where: { budgetCycleId: budgetCycle.id } });
+          }
+
+          const accountCode = String(getValue(row, 'accountCode') || '');
+          if (!accountCode) throw new Error('Account code is required for budget line');
+          const account = await this.prisma.account.findFirst({ where: { companyId, code: accountCode } });
+          if (!account) throw new Error(`Account not found: ${accountCode}`);
+
+          let siteId: bigint | null = null;
+          const siteName = getValue(row, 'siteName') || getValue(row, 'siteCode') ? String(getValue(row, 'siteName') || getValue(row, 'siteCode')) : null;
+          if (siteName) {
+            const s = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+            if (s) siteId = s.id;
+          }
+
+          let costCenterId: bigint | null = null;
+          const costCenterCode = getValue(row, 'costCenterCode') ? String(getValue(row, 'costCenterCode')) : null;
+          if (costCenterCode) {
+            const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: costCenterCode } });
+            if (cc) costCenterId = cc.id;
+          }
+
+          let productId: bigint | null = null;
+          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          if (productSku) {
+            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            if (p) productId = p.id;
+          }
+
+          let materialId: bigint | null = null;
+          const materialCode = getValue(row, 'materialCode') ? String(getValue(row, 'materialCode')) : null;
+          if (materialCode) {
+            const m = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+            if (m) materialId = m.id;
+          }
+
+          let customerId: bigint | null = null;
+          const customerCode = getValue(row, 'customerCode') ? String(getValue(row, 'customerCode')) : null;
+          if (customerCode) {
+            const c = await this.prisma.customer.findFirst({ where: { companyId, code: customerCode } });
+            if (c) customerId = c.id;
+          }
+
+          const periodMonth = Number(getValue(row, 'periodMonth') || 1);
+          const quantity = Number(getValue(row, 'quantity') || 0);
+          const unitPrice = Number(getValue(row, 'unitPrice') || 0);
+          const amount = Number(getValue(row, 'amount') || 0);
+          const notes = getValue(row, 'notes') ? String(getValue(row, 'notes')) : null;
+
+          await this.prisma.budgetLine.create({
+            data: {
+              budgetCycleId: budgetCycle.id,
+              accountId: account.id,
+              siteId, costCenterId, productId, materialId, customerId,
+              periodMonth, quantity, unitPrice, amount, notes,
+            },
+          });
+
+        } else if (moduleName === 'forecastcycles' || moduleName === 'forecastcycle') {
+          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          const name = String(getValue(row, 'name') || `FY ${fiscalYear} - Forecast`);
+          const basePeriod = new Date(getValue(row, 'basePeriod') || `${fiscalYear}-01-01`);
+          const statusStr = String(getValue(row, 'status') || 'approved').toLowerCase();
+          const status = ['draft', 'under_review', 'approved', 'rejected'].includes(statusStr) ? statusStr : 'approved';
+
+          const existing = await this.prisma.forecastCycle.findFirst({ where: { companyId, fiscalYear } });
+          if (existing) {
+            await this.prisma.forecastCycle.update({
+              where: { id: existing.id },
+              data: { name, basePeriod, status: status as any },
+            });
+          } else {
+            await this.prisma.forecastCycle.create({
+              data: { companyId, fiscalYear, name, basePeriod, status: status as any },
+            });
+          }
+
+        } else if (moduleName === 'forecastlines' || moduleName === 'forecastline') {
+          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          let forecastCycle = await this.prisma.forecastCycle.findFirst({ where: { companyId, fiscalYear } });
+          if (!forecastCycle) {
+            forecastCycle = await this.prisma.forecastCycle.create({
+              data: {
+                companyId,
+                fiscalYear,
+                name: `FY ${fiscalYear} - Forecast`,
+                basePeriod: new Date(`${fiscalYear}-01-01`),
+                status: 'approved',
+              },
+            });
+          }
+
+          if (syncedCount === 0) {
+            await this.prisma.forecastLine.deleteMany({ where: { forecastCycleId: forecastCycle.id } });
+          }
+
+          const accountCode = String(getValue(row, 'accountCode') || '');
+          if (!accountCode) throw new Error('Account code is required for forecast line');
+          const account = await this.prisma.account.findFirst({ where: { companyId, code: accountCode } });
+          if (!account) throw new Error(`Account not found: ${accountCode}`);
+
+          let siteId: bigint | null = null;
+          const siteName = getValue(row, 'siteName') || getValue(row, 'siteCode') ? String(getValue(row, 'siteName') || getValue(row, 'siteCode')) : null;
+          if (siteName) {
+            const s = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+            if (s) siteId = s.id;
+          }
+
+          let costCenterId: bigint | null = null;
+          const costCenterCode = getValue(row, 'costCenterCode') ? String(getValue(row, 'costCenterCode')) : null;
+          if (costCenterCode) {
+            const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: costCenterCode } });
+            if (cc) costCenterId = cc.id;
+          }
+
+          let productId: bigint | null = null;
+          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          if (productSku) {
+            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            if (p) productId = p.id;
+          }
+
+          let materialId: bigint | null = null;
+          const materialCode = getValue(row, 'materialCode') ? String(getValue(row, 'materialCode')) : null;
+          if (materialCode) {
+            const m = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+            if (m) materialId = m.id;
+          }
+
+          let customerId: bigint | null = null;
+          const customerCode = getValue(row, 'customerCode') ? String(getValue(row, 'customerCode')) : null;
+          if (customerCode) {
+            const c = await this.prisma.customer.findFirst({ where: { companyId, code: customerCode } });
+            if (c) customerId = c.id;
+          }
+
+          const periodMonth = Number(getValue(row, 'periodMonth') || 1);
+          const quantity = Number(getValue(row, 'quantity') || 0);
+          const unitPrice = Number(getValue(row, 'unitPrice') || 0);
+          const amount = Number(getValue(row, 'amount') || 0);
+          const driverType = getValue(row, 'driverType') ? String(getValue(row, 'driverType')) : null;
+          const notes = getValue(row, 'notes') ? String(getValue(row, 'notes')) : null;
+
+          await this.prisma.forecastLine.create({
+            data: {
+              forecastCycleId: forecastCycle.id,
+              accountId: account.id,
+              siteId, costCenterId, productId, materialId, customerId,
+              periodMonth, quantity, unitPrice, amount, driverType, notes,
+            },
+          });
+
+        } else if (moduleName === 'productionplans' || moduleName === 'productionplan') {
+          const siteName = String(getValue(row, 'siteName') || getValue(row, 'siteCode') || '');
+          if (!siteName) throw new Error('Site name/code is required for production plan');
+          const site = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+          if (!site) throw new Error(`Site not found: ${siteName}`);
+
+          const productSku = String(getValue(row, 'productSku') || getValue(row, 'productCode') || '');
+          if (!productSku) throw new Error('Product SKU is required for production plan');
+          const product = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+          if (!product) throw new Error(`Product not found: ${productSku}`);
+
+          const planSourceStr = String(getValue(row, 'planSource') || 'manual').toLowerCase();
+          const planSource = planSourceStr === 'auto' ? 'auto' : 'manual';
+          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          const periodMonth = Number(getValue(row, 'periodMonth') || 1);
+          const plannedQty = Number(getValue(row, 'plannedQty') || 0);
+          const actualQty = getValue(row, 'actualQty') !== undefined && getValue(row, 'actualQty') !== null ? Number(getValue(row, 'actualQty')) : null;
+          const estimatedCost = getValue(row, 'estimatedCost') !== undefined && getValue(row, 'estimatedCost') !== null ? Number(getValue(row, 'estimatedCost')) : null;
+          const actualCost = getValue(row, 'actualCost') !== undefined && getValue(row, 'actualCost') !== null ? Number(getValue(row, 'actualCost')) : null;
+
+          await this.prisma.productionPlan.upsert({
+            where: {
+              companyId_siteId_productId_fiscalYear_periodMonth: {
+                companyId, siteId: site.id, productId: product.id, fiscalYear, periodMonth,
+              },
+            },
+            update: { plannedQty, actualQty, estimatedCost, actualCost, planSource: planSource as any },
+            create: { companyId, siteId: site.id, productId: product.id, fiscalYear, periodMonth, plannedQty, actualQty, estimatedCost, actualCost, planSource: planSource as any },
+          });
+
+        } else if (moduleName === 'headcountplans' || moduleName === 'headcountplan') {
+          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          let budgetCycle = await this.prisma.budgetCycle.findFirst({ where: { companyId, fiscalYear } });
+          if (!budgetCycle) {
+            budgetCycle = await this.prisma.budgetCycle.create({
+              data: {
+                companyId,
+                fiscalYear,
+                name: `FY ${fiscalYear} - Budget`,
+                status: 'approved',
+                startDate: new Date(`${fiscalYear}-01-01`),
+                endDate: new Date(`${fiscalYear}-12-31`),
+              },
+            });
+          }
+
+          if (syncedCount === 0) {
+            await this.prisma.headcountPlan.deleteMany({ where: { budgetCycleId: budgetCycle.id } });
+          }
+
+          let siteId: bigint | null = null;
+          const siteName = getValue(row, 'siteName') || getValue(row, 'siteCode') ? String(getValue(row, 'siteName') || getValue(row, 'siteCode')) : null;
+          if (siteName) {
+            const s = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+            if (s) siteId = s.id;
+          }
+
+          let costCenterId: bigint | null = null;
+          const costCenterCode = getValue(row, 'costCenterCode') ? String(getValue(row, 'costCenterCode')) : null;
+          if (costCenterCode) {
+            const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: costCenterCode } });
+            if (cc) costCenterId = cc.id;
+          }
+
+          const jobTitle = String(getValue(row, 'jobTitle') || 'Staff');
+          const department = String(getValue(row, 'department') || 'Operations');
+          const empTypeStr = String(getValue(row, 'employmentType') || 'full_time').toLowerCase();
+          const employmentType = ['full_time', 'part_time', 'contract', 'seasonal'].includes(empTypeStr) ? empTypeStr : 'full_time';
+          const headcount = Number(getValue(row, 'headcount') ?? 1);
+          const periodMonth = Number(getValue(row, 'periodMonth') || 1);
+          const basicSalary = Number(getValue(row, 'basicSalary') || 0);
+          const allowances = Number(getValue(row, 'allowances') || 0);
+          const socialInsurance = Number(getValue(row, 'socialInsurance') || 0);
+          const totalCost = Number(getValue(row, 'totalCost') || 0);
+          const notes = getValue(row, 'notes') ? String(getValue(row, 'notes')) : null;
+
+          await this.prisma.headcountPlan.create({
+            data: {
+              budgetCycleId: budgetCycle.id, siteId, costCenterId,
+              jobTitle, department, employmentType: employmentType as any,
+              headcount, periodMonth, basicSalary, allowances, socialInsurance, totalCost, notes,
+            },
+          });
+
+        } else if (moduleName === 'promotions' || moduleName === 'promotion') {
+          const name = String(getValue(row, 'name') || '');
+          if (!name) throw new Error('Promotion name is required');
+          const description = getValue(row, 'description') ? String(getValue(row, 'description')) : null;
+
+          let productId: bigint | null = null;
+          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          if (productSku) {
+            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            if (p) productId = p.id;
+          }
+
+          let customerId: bigint | null = null;
+          const customerCode = getValue(row, 'customerCode') ? String(getValue(row, 'customerCode')) : null;
+          if (customerCode) {
+            const c = await this.prisma.customer.findFirst({ where: { companyId, code: customerCode } });
+            if (c) customerId = c.id;
+          }
+
+          const discountPct = getValue(row, 'discountPct') !== undefined && getValue(row, 'discountPct') !== null ? Number(getValue(row, 'discountPct')) : null;
+          const discountAmt = getValue(row, 'discountAmount') !== undefined && getValue(row, 'discountAmount') !== null ? Number(getValue(row, 'discountAmount')) : null;
+          const startDate = new Date(getValue(row, 'startDate') || new Date());
+          const endDate = getValue(row, 'endDate') ? new Date(getValue(row, 'endDate')) : null;
+          const budgetAmt = Number(getValue(row, 'budgetAmount') || 0);
+          const actualCost = Number(getValue(row, 'actualCost') || 0);
+          const incrementalRevenue = Number(getValue(row, 'incrementalRevenue') || 0);
+          const roi = getValue(row, 'roi') !== undefined && getValue(row, 'roi') !== null ? Number(getValue(row, 'roi')) : null;
+          const isActive = getValue(row, 'isActive') === 'Y' || getValue(row, 'isActive') === 1 || getValue(row, 'isActive') === true || getValue(row, 'isActive') === 'true';
+
+          await this.prisma.promotion.create({
+            data: {
+              companyId, name, description, productId, customerId,
+              discountPct, discountAmt, startDate, endDate, budgetAmt, actualCost,
+              incrementalRevenue, roi, isActive,
+            },
+          });
+
+        } else if (moduleName === 'rawmaterialprices' || moduleName === 'rawmaterialprice') {
+          const materialCode = String(getValue(row, 'materialCode') || '');
+          if (!materialCode) throw new Error('Material code is required for price sync');
+          const material = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+          if (!material) throw new Error(`Material not found: ${materialCode}`);
+
+          const price = Number(getValue(row, 'price') || 0);
+          const priceDate = new Date(getValue(row, 'priceDate') || new Date());
+          const source = getValue(row, 'source') ? String(getValue(row, 'source')) : 'oracle-custom-sync';
+
+          await this.prisma.rawMaterialPrice.create({
+            data: { companyId, materialId: material.id, price, priceDate, source },
+          });
+
+        } else {
+          throw new Error(`Unsupported custom module: ${targetModule}`);
+        }
+
+        syncedCount++;
+      } catch (err: any) {
+        if (!skipErrors) {
+          throw new BadRequestException(`Failed to sync row ${i + 1}: ${err.message}`);
+        } else {
+          console.error(`[syncCustomDataRows] Skipping error on row ${i + 1}: ${err.message}`);
+        }
+      }
+    }
+
+    return syncedCount;
   }
 
   // ============================================================
@@ -191,14 +1136,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
       },
     });
 
-    if (
-      connection.connectionType === ConnectionType.oracle &&
-      connection.host?.toLowerCase() !== 'mock'
-    ) {
-      await this.runCompanySyncForConnection(connection, tenantId).catch(
-        console.error,
-      );
-    }
 
     return maskConnection(connection);
   }
@@ -324,14 +1261,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
       },
     });
 
-    if (
-      updatedConnection.connectionType === ConnectionType.oracle &&
-      updatedConnection.host?.toLowerCase() !== 'mock'
-    ) {
-      await this.runCompanySyncForConnection(updatedConnection, tenantId).catch(
-        console.error,
-      );
-    }
 
     return maskConnection(updatedConnection);
   }
@@ -837,7 +1766,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
   }
 
   async syncMasterData(connInstance: any, companyId: bigint): Promise<void> {
-    if (this.isHostingerDb() && process.env.ALLOW_HEAVY_SYNC !== 'true') {
+    if (this.isHostingerDb() && process.env.ALLOW_HEAVY_SYNC === 'false') {
       throw new BadRequestException(
         'Heavy sync jobs cannot be run directly against the production Hostinger shared database to prevent connection/resource exhaustion. Please run them locally on a development database.',
       );
@@ -1819,7 +2748,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
               message = `Successfully connected to Oracle DB at ${connectString}.`;
             } catch (err: unknown) {
               success = false;
-              message = `Oracle DB connection failed: ${err instanceof Error ? err.message : String(err)}`;
+              message = this.formatOracleError(err);
             }
           }
         }
@@ -1977,6 +2906,172 @@ export class IntegrationsService implements OnApplicationBootstrap {
         ? new Date(dto.periodTo)
         : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
 
+    let parsedConfig: any = {};
+    try {
+      parsedConfig = JSON.parse(mapping.mappingConfig);
+    } catch { }
+
+    if (parsedConfig && parsedConfig.targetModule) {
+      const targetModule = parsedConfig.targetModule;
+      const sourceTable = parsedConfig.sourceTable;
+      const columnMapping = parsedConfig.columnMapping || {};
+
+      if (!sourceTable) {
+        throw new BadRequestException('sourceTable is required in custom mappingConfig');
+      }
+
+      let rawRows: any[] = [];
+
+      if (dto.rawRows && dto.rawRows.length > 0) {
+        rawRows = dto.rawRows;
+      } else {
+        const connectionId = dto.connectionId
+          ? BigInt(dto.connectionId)
+          : mapping.connectionId;
+        const connection = connectionId
+          ? await this.prisma.integrationConnection.findFirst({
+            where: { id: connectionId, companyId },
+          })
+          : null;
+
+        if (!connection) {
+          throw new BadRequestException('A connection is required to trigger sync.');
+        }
+
+        if (connection.connectionType === ConnectionType.oracle) {
+          if (connection.host?.toLowerCase() === 'mock') {
+            const mockConfig: Record<string, string | null> = {};
+            for (const k of Object.keys(columnMapping)) {
+              mockConfig[k] = columnMapping[k];
+            }
+            rawRows = await this.generateMockRows(mockConfig, companyId);
+          } else {
+            let oracledb: any;
+            try {
+              oracledb = require('oracledb');
+            } catch {
+              throw new BadRequestException('Oracle client is not configured.');
+            }
+
+            const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+            const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
+
+            let connInstance: any;
+            try {
+              connInstance = await oracledb.getConnection({
+                user: connection.username || '',
+                password,
+                connectString,
+              });
+
+              const selectColumns: string[] = [];
+              for (const key of Object.keys(columnMapping)) {
+                const val = columnMapping[key];
+                if (typeof val === 'string' && val.trim() !== '') {
+                  if (!/^[A-Za-z0-9_$#]+$/.test(val)) {
+                    throw new BadRequestException(`Invalid column name: ${val}`);
+                  }
+                  if (!selectColumns.includes(val)) {
+                    selectColumns.push(val);
+                  }
+                }
+              }
+
+              const selectClause = selectColumns.length > 0 ? selectColumns.map(c => `"${c.toUpperCase()}"`).join(', ') : '*';
+              if (!/^[A-Za-z0-9_$#]+$/.test(sourceTable)) {
+                throw new BadRequestException('Invalid table name format.');
+              }
+
+              const query = `SELECT ${selectClause} FROM ${sourceTable.toUpperCase()}`;
+              const result = await connInstance.execute(
+                query,
+                [],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT },
+              );
+              rawRows = result.rows || [];
+            } catch (err: any) {
+              throw new BadRequestException(this.formatOracleError(err));
+            } finally {
+              if (connInstance) {
+                await connInstance.close().catch(() => { });
+              }
+            }
+          }
+        } else {
+          const mockConfig: Record<string, string | null> = {};
+          for (const k of Object.keys(columnMapping)) {
+            mockConfig[k] = columnMapping[k];
+          }
+          rawRows = await this.generateMockRows(mockConfig, companyId);
+        }
+      }
+
+      if (rawRows.length === 0) {
+        throw new BadRequestException('No rows retrieved to execute manual synchronization.');
+      }
+
+      const syncedCount = await this.syncCustomDataRows(
+        rawRows,
+        targetModule,
+        columnMapping,
+        companyId,
+        userId,
+        mapping.skipErrors ?? false,
+      );
+
+      const createdImport = await this.prisma.actualImport.create({
+        data: {
+          companyId,
+          sourceSystem: mapping.sourceSystem,
+          mappingId: mapping.id,
+          importType: mapping.importType,
+          periodFrom,
+          periodTo,
+          status: 'validated',
+          importedBy: userId,
+        },
+      });
+
+      if (mapping.connectionId) {
+        await this.prisma.integrationConnection.update({
+          where: { id: mapping.connectionId },
+          data: {
+            lastSyncAt: new Date(),
+            lastSyncStatus: SyncStatus.success,
+            lastSyncLog: `Custom sync for module ${targetModule} completed successfully. Synced ${syncedCount} rows.`,
+          },
+        });
+      }
+
+      await this.prisma.importMapping.update({
+        where: { id: mappingId },
+        data: { lastUsedAt: new Date() },
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          tenantId,
+          userId,
+          entityType: 'ActualImport',
+          entityId: createdImport.id,
+          action: 'sync',
+          newValues: JSON.stringify({
+            importId: createdImport.id.toString(),
+            status: 'validated',
+            recordsSynced: syncedCount,
+            targetModule,
+          }),
+        },
+      });
+
+      return {
+        importId: createdImport.id.toString(),
+        status: 'validated',
+        recordsSynced: syncedCount,
+        message: `Custom sync for module "${targetModule}" completed and validated successfully.`,
+      };
+    }
+
     let rawRows: Record<string, string | number | boolean | null>[] = [];
 
     if (dto.rawRows && dto.rawRows.length > 0) {
@@ -2108,9 +3203,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
                 );
               }
             } catch (err: unknown) {
-              throw new BadRequestException(
-                err instanceof Error ? err.message : String(err),
-              );
+              throw new BadRequestException(this.formatOracleError(err));
             } finally {
               if (connInstance) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -2679,6 +3772,20 @@ export class IntegrationsService implements OnApplicationBootstrap {
       };
     }
 
+    const mappings = await this.prisma.importMapping.findMany({
+      where: { connectionId, companyId, isActive: true },
+    });
+
+    const customMappings: { mapping: ImportMapping; config: any }[] = [];
+    for (const m of mappings) {
+      try {
+        const config = JSON.parse(m.mappingConfig);
+        if (config && config.targetModule) {
+          customMappings.push({ mapping: m, config });
+        }
+      } catch { }
+    }
+
     let oracledb: any;
     try {
       oracledb = require('oracledb');
@@ -2701,23 +3808,87 @@ export class IntegrationsService implements OnApplicationBootstrap {
         connectString,
       });
 
-      await this.syncMasterData(connInstance, companyId);
+      if (customMappings.length > 0) {
+        let totalSynced = 0;
+        for (const { mapping, config } of customMappings) {
+          const targetModule = config.targetModule;
+          const sourceTable = config.sourceTable;
+          const columnMapping = config.columnMapping || {};
 
-      await this.prisma.integrationConnection.update({
-        where: { id: connection.id },
-        data: {
-          lastSyncAt: new Date(),
-          lastSyncStatus: SyncStatus.success,
-          lastSyncLog: 'Full master data sync completed successfully.',
-        },
-      });
+          if (!sourceTable) {
+            throw new Error(`sourceTable is missing in custom mapping "${mapping.name}"`);
+          }
+          if (!/^[A-Za-z0-9_$#]+$/.test(sourceTable)) {
+            throw new Error(`Invalid sourceTable name format in mapping "${mapping.name}"`);
+          }
 
-      return {
-        success: true,
-        message: 'Full master data sync completed successfully.',
-      };
+          const selectColumns: string[] = [];
+          for (const key of Object.keys(columnMapping)) {
+            const val = columnMapping[key];
+            if (typeof val === 'string' && val.trim() !== '') {
+              if (!/^[A-Za-z0-9_$#]+$/.test(val)) {
+                throw new Error(`Invalid column name: ${val}`);
+              }
+              if (!selectColumns.includes(val)) {
+                selectColumns.push(val);
+              }
+            }
+          }
+
+          const selectClause = selectColumns.length > 0 ? selectColumns.map(c => `"${c.toUpperCase()}"`).join(', ') : '*';
+          const query = `SELECT ${selectClause} FROM ${sourceTable.toUpperCase()}`;
+
+          const result = await connInstance.execute(
+            query,
+            [],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT },
+          );
+
+          const rows = result.rows || [];
+          const count = await this.syncCustomDataRows(
+            rows,
+            targetModule,
+            columnMapping,
+            companyId,
+            connection.createdBy || 1n,
+            mapping.skipErrors ?? false,
+          );
+          totalSynced += count;
+        }
+
+        await this.prisma.integrationConnection.update({
+          where: { id: connection.id },
+          data: {
+            lastSyncAt: new Date(),
+            lastSyncStatus: SyncStatus.success,
+            lastSyncLog: `Full custom data sync completed successfully. Synced ${totalSynced} rows across ${customMappings.length} modules.`,
+          },
+        });
+
+        return {
+          success: true,
+          message: `Full custom data sync completed successfully. Synced ${totalSynced} rows across ${customMappings.length} modules.`,
+        };
+      } else {
+        // Fallback to default FP_* tables sync
+        await this.syncMasterData(connInstance, companyId);
+
+        await this.prisma.integrationConnection.update({
+          where: { id: connection.id },
+          data: {
+            lastSyncAt: new Date(),
+            lastSyncStatus: SyncStatus.success,
+            lastSyncLog: 'Full master data sync completed successfully.',
+          },
+        });
+
+        return {
+          success: true,
+          message: 'Full master data sync completed successfully.',
+        };
+      }
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      const errorMsg = this.formatOracleError(err);
       await this.prisma.integrationConnection.update({
         where: { id: connection.id },
         data: {
@@ -2726,7 +3897,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           lastSyncLog: `Full sync failed: ${errorMsg}`,
         },
       });
-      return { success: false, message: `Full sync failed: ${errorMsg}` };
+      throw new BadRequestException(`Full sync failed: ${errorMsg}`);
     } finally {
       if (connInstance) {
         await connInstance.close().catch(() => { });

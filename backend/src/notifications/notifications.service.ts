@@ -18,6 +18,17 @@ import { NotificationRuleResponseDto } from './dto/notification-rule-response.dt
 import { NotificationResponseDto } from './dto/notification-response.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
+function parseJsonArraySafe(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try {
+    const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function mapRuleToResponse(
   rule: NotificationRule,
 ): NotificationRuleResponseDto {
@@ -29,8 +40,8 @@ function mapRuleToResponse(
     thresholdValue: rule.thresholdValue ? Number(rule.thresholdValue) : null,
     accountId: rule.accountId ? rule.accountId.toString() : null,
     siteId: rule.siteId ? rule.siteId.toString() : null,
-    notifyRoles: rule.notifyRoles ? (JSON.parse(rule.notifyRoles) as string[]) : null,
-    notifyUsers: rule.notifyUsers ? (JSON.parse(rule.notifyUsers) as string[]) : null,
+    notifyRoles: rule.notifyRoles ? parseJsonArraySafe(rule.notifyRoles) : null,
+    notifyUsers: rule.notifyUsers ? parseJsonArraySafe(rule.notifyUsers) : null,
     channel: rule.channel,
     isActive: rule.isActive,
     createdBy: rule.createdBy ? rule.createdBy.toString() : null,
@@ -442,7 +453,7 @@ export class NotificationsService {
 
     // 1. Explicit users list
     if (rule.notifyUsers) {
-      const explicitIds = JSON.parse(rule.notifyUsers) as string[];
+      const explicitIds = parseJsonArraySafe(rule.notifyUsers);
       for (const strId of explicitIds) {
         userIds.push(BigInt(strId));
       }
@@ -450,7 +461,7 @@ export class NotificationsService {
 
     // 2. Resolve roles to users
     if (rule.notifyRoles) {
-      const explicitRoles = JSON.parse(rule.notifyRoles) as string[];
+      const explicitRoles = parseJsonArraySafe(rule.notifyRoles);
       const usersWithRoles = await this.prisma.user.findMany({
         where: {
           tenantId,

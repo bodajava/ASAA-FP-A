@@ -161,7 +161,7 @@ export default function BudgetsPage() {
       setTotal(res.total);
       setTotalPages(res.totalPages);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch budget cycles.');
+      setError(err instanceof Error ? err.message : t('page.budgets.fetchFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +217,7 @@ export default function BudgetsPage() {
       const res = await apiGet<BudgetCycle>(`/budgets/${id}`);
       setSelectedCycle(res);
     } catch (err: unknown) {
-      setDetailError(err instanceof Error ? err.message : 'Failed to fetch details.');
+      setDetailError(err instanceof Error ? err.message : t('page.budgets.detailsFailed'));
     } finally {
       setIsLoadingDetail(false);
     }
@@ -253,8 +253,8 @@ export default function BudgetsPage() {
       }
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Failed to update status')
-        : 'Failed to update status';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.budgets.statusUpdateFailed'))
+        : t('page.budgets.statusUpdateFailed');
       toastError(msg);
     } finally {
       setIsTransitioning(false);
@@ -274,8 +274,8 @@ export default function BudgetsPage() {
       }
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Failed to delete budget')
-        : 'Failed to delete budget';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.budgets.deleteFailed'))
+        : t('page.budgets.deleteFailed');
       toastError(msg);
     } finally {
       setDeleteLoading(false);
@@ -710,8 +710,8 @@ export default function BudgetsPage() {
               }
             } catch (err: unknown) {
               const msg = axios.isAxiosError(err)
-                ? ((err.response?.data as { message?: string })?.message ?? 'Failed to save budget cycle')
-                : 'Failed to save budget cycle';
+                ? ((err.response?.data as { message?: string })?.message ?? t('page.budgets.saveFailed'))
+                : t('page.budgets.saveFailed');
               setFormError(msg);
               toastError(msg);
             } finally {

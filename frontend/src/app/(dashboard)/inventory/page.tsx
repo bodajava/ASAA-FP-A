@@ -100,7 +100,7 @@ export default function InventoryPage() {
         setSnapshots(res ?? []);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch inventory data.');
+      setError(err instanceof Error ? err.message : t('page.inventory.fetchFailed'));
     } finally {
       setLoading(false);
     }

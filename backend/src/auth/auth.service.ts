@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as ms from 'ms';
 import { Prisma } from '@prisma/client';
+import { ErrorCodes } from '../common/error-codes';
 
 export interface AuthRole {
   id: bigint;
@@ -61,16 +62,16 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials or tenant ID');
+      throw new UnauthorizedException({ message: 'Invalid credentials or tenant ID', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
     }
 
     if (user.status !== 'active') {
-      throw new UnauthorizedException('User account is inactive');
+      throw new UnauthorizedException({ message: 'User account is inactive', code: ErrorCodes.AUTH_USER_INACTIVE });
     }
 
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials or tenant ID');
+      throw new UnauthorizedException({ message: 'Invalid credentials or tenant ID', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
     }
 
     return {
@@ -212,7 +213,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException({ message: 'Invalid or expired refresh token', code: ErrorCodes.AUTH_TOKEN_EXPIRED });
     }
   }
 

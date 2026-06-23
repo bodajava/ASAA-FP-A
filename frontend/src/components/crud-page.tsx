@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { TableWrapper, type Column } from '@/components/ui/table-wrapper';
 import { Pagination } from '@/components/ui/pagination';
-import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-states';
+import { LoadingState, EmptyState } from '@/components/ui/feedback-states';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { ImportModal } from '@/components/import-modal';
@@ -185,9 +185,9 @@ export function CrudPage<T extends { id: string }>({
     return (
       <div className="space-y-6">
         <PageHeader title={title} description={description} />
-        <ErrorState
+        <EmptyState
           title={t('common.noCompany')}
-          message={t('common.selectCompany')}
+          description={t('common.selectCompany')}
         />
       </div>
     );
@@ -235,10 +235,18 @@ export function CrudPage<T extends { id: string }>({
       </div>
 
       {/* Table */}
-      {list.isLoading ? (
+      {list.isLoading && !list.data.length ? (
         <LoadingState rows={6} />
-      ) : list.error ? (
-        <ErrorState message={list.error} onRetry={list.refresh} />
+      ) : list.error && !list.data.length ? (
+        <EmptyState
+          title={t('common.error')}
+          description={list.error}
+          action={
+            <Button size="sm" onClick={list.refresh}>
+              {t('common.retry')}
+            </Button>
+          }
+        />
       ) : list.data.length === 0 ? (
         <EmptyState
           title={emptyTitle ?? t('common.noResults')}
@@ -265,6 +273,13 @@ export function CrudPage<T extends { id: string }>({
         />
       ) : (
         <>
+          {/* Background refresh indicator */}
+          {list.isFetching && !list.isLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="h-3 w-3 animate-spin rounded-full border border-emerald-600 border-t-transparent" />
+              Refreshing…
+            </div>
+          )}
           <TableWrapper<T>
             data={list.data}
             columns={allColumns}

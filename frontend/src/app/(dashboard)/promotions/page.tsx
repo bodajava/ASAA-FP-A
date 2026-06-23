@@ -67,7 +67,7 @@ export default function PromotionsPage() {
       setTotalPages(res.totalPages ?? 1);
       setTotal(res.total ?? 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load promotions');
+      setError(err instanceof Error ? err.message : t('page.promotions.loadFailed'));
     } finally {
       setLoading(false);
     }

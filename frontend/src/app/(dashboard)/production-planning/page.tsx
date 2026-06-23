@@ -291,7 +291,7 @@ export default function ProductionPlanningPage() {
 
   async function handleSavePlan() {
     if (!saveSiteId) {
-      toastError('Please select a site to save the plan.');
+      toastError(t('page.productionPlanning.selectSite'));
       return;
     }
     setSaveLoading(true);
@@ -307,10 +307,10 @@ export default function ProductionPlanningPage() {
         })),
       };
       await apiPost('/production-plans/save-from-explosion', payload);
-      toastSuccess('Production plan saved successfully!');
+      toastSuccess(t('page.productionPlanning.savedSuccess'));
       setSaveModalOpen(false);
     } catch (err) {
-      toastError('Failed to save production plan.');
+      toastError(t('page.productionPlanning.saveFailed'));
     } finally {
       setSaveLoading(false);
     }
@@ -323,7 +323,7 @@ export default function ProductionPlanningPage() {
         const res = await apiGet<PaginatedResponse<Product>>('/products?limit=1000');
         setProducts(res.data ?? []);
       } catch {
-        toastError('Failed to load product list.');
+        toastError(t('page.productionPlanning.loadProductsFailed'));
       }
     }
     void load();
@@ -346,11 +346,11 @@ export default function ProductionPlanningPage() {
   async function handleExplode() {
     for (const line of planLines) {
       if (!line.productId) {
-        toastError('Please select a product for all plan lines.');
+        toastError(t('page.productionPlanning.selectProduct'));
         return;
       }
       if (line.quantity <= 0) {
-        toastError('All quantities must be greater than zero.');
+        toastError(t('page.productionPlanning.quantityGreaterThanZero'));
         return;
       }
     }
@@ -364,7 +364,7 @@ export default function ProductionPlanningPage() {
         })),
       });
       setResult(data);
-      toastSuccess('BOM explosion complete!');
+      toastSuccess(t('page.productionPlanning.bomExplosionComplete'));
     } catch (err: unknown) {
       const msg =
         typeof err === 'object' &&
@@ -372,7 +372,7 @@ export default function ProductionPlanningPage() {
         'response' in err &&
         typeof (err as { response: { data: { message?: string } } }).response?.data?.message === 'string'
           ? (err as { response: { data: { message: string } } }).response.data.message
-          : 'BOM explosion failed. Check that selected products have active BOM recipes.';
+          : t('page.productionPlanning.bomExplosionFailed');
       toastError(msg);
     } finally {
       setIsLoading(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   BarChart3,
   DollarSign,
@@ -9,10 +9,11 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
+import { useQueries } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/page-header';
 import { KpiCard } from '@/components/ui/kpi-card';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { EmptyState, ErrorState } from '@/components/ui/feedback-states';
+import { EmptyState } from '@/components/ui/feedback-states';
 import { Badge } from '@/components/ui/badge';
 import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -21,6 +22,7 @@ import { formatPercent } from '@/lib/currency';
 import { getCurrentFiscalYear } from '@/lib/constants';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import { translateMonth } from '@/lib/i18n/translate-api';
+import { queryKeys } from '@/lib/query-keys';
 import type {
   DashboardKpis,
   MonthlyTrendItem,
@@ -33,49 +35,62 @@ function pct(n: number | null | undefined, locale?: string) {
   return formatPercent(n, 1, locale);
 }
 
+/** Skeleton for a widget that hasn't loaded yet */
+function WidgetSkeleton() {
+  return <div className="h-48 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />;
+}
+
 export default function DashboardPage() {
   const { t, locale } = useI18n();
   const { activeCompanyId } = useAuth();
   const { format: fmt } = useActiveCurrency();
-  const [kpis, setKpis] = useState<DashboardKpis | null>(null);
-  const [revenue, setRevenue] = useState<MonthlyTrendItem[]>([]);
-  const [topProducts, setTopProducts] = useState<RankedItem[]>([]);
-  const [topCustomers, setTopCustomers] = useState<RankedItem[]>([]);
-  const [utilization, setUtilization] = useState<UtilizationData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [year, setYear] = useState<number>(getCurrentFiscalYear());
 
-  useEffect(() => {
-    if (!activeCompanyId) return;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const q = `fiscal_year=${year}`;
-        const [k, rev, prods, custs, util] = await Promise.all([
-          apiGet<DashboardKpis>(`/dashboard/summary?${q}`),
-          apiGet<MonthlyTrendItem[]>(`/dashboard/revenue-trend?${q}`),
-          apiGet<RankedItem[]>(`/dashboard/top-products?${q}`),
-          apiGet<RankedItem[]>(`/dashboard/top-customers?${q}`),
-          apiGet<UtilizationData>(`/dashboard/budget-utilization?${q}`),
-        ]);
-        setKpis(k);
-        setRevenue(Array.isArray(rev) ? rev : []);
-        setTopProducts(Array.isArray(prods) ? prods : []);
-        setTopCustomers(Array.isArray(custs) ? custs : []);
-        setUtilization(util);
-      } catch {
-        setError(t('error.dashboardLoadFailed'));
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void load();
-  }, [activeCompanyId, year]);
+  // Independent queries for each dashboard widget
+  const [kpisQuery, revenueQuery, productsQuery, customersQuery, utilizationQuery] = useQueries({
+    queries: [
+      {
+        queryKey: queryKeys.dashboard.kpis(activeCompanyId!),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          apiGet<DashboardKpis>(`/dashboard/summary?fiscal_year=${year}`, { signal }),
+        enabled: Boolean(activeCompanyId),
+        staleTime: 5 * 60 * 1000,
+        meta: { persist: true },
+      },
+      {
+        queryKey: queryKeys.dashboard.revenue(activeCompanyId!, year),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          apiGet<MonthlyTrendItem[]>(`/dashboard/revenue-trend?fiscal_year=${year}`, { signal }),
+        enabled: Boolean(activeCompanyId),
+        staleTime: 5 * 60 * 1000,
+        meta: { persist: true },
+      },
+      {
+        queryKey: queryKeys.dashboard.topProducts(activeCompanyId!, year),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          apiGet<RankedItem[]>(`/dashboard/top-products?fiscal_year=${year}`, { signal }),
+        enabled: Boolean(activeCompanyId),
+        staleTime: 5 * 60 * 1000,
+        meta: { persist: true },
+      },
+      {
+        queryKey: queryKeys.dashboard.topCustomers(activeCompanyId!, year),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          apiGet<RankedItem[]>(`/dashboard/top-customers?fiscal_year=${year}`, { signal }),
+        enabled: Boolean(activeCompanyId),
+        staleTime: 5 * 60 * 1000,
+        meta: { persist: true },
+      },
+      {
+        queryKey: queryKeys.dashboard.utilization(activeCompanyId!, year),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          apiGet<UtilizationData>(`/dashboard/budget-utilization?fiscal_year=${year}`, { signal }),
+        enabled: Boolean(activeCompanyId),
+        staleTime: 5 * 60 * 1000,
+        meta: { persist: true },
+      },
+    ],
+  });
 
   if (!activeCompanyId) {
     return (
@@ -89,7 +104,16 @@ export default function DashboardPage() {
     );
   }
 
-  if (isLoading) {
+  const kpis = kpisQuery.data ?? null;
+  const revenue = revenueQuery.data ?? [];
+  const topProducts = productsQuery.data ?? [];
+  const topCustomers = customersQuery.data ?? [];
+  const utilization = utilizationQuery.data ?? null;
+
+  // Show loading only on initial load (no cached data yet)
+  const isInitialLoading = kpisQuery.isLoading;
+
+  if (isInitialLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title={t('page.dashboard.title')} description={t('page.dashboard.financialOverview', { year })} />
@@ -102,14 +126,8 @@ export default function DashboardPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title={t('page.dashboard.title')} />
-        <ErrorState message={error} />
-      </div>
-    );
-  }
+  // Background refresh indicator
+  const isRefreshing = kpisQuery.isFetching && !kpisQuery.isLoading;
 
   return (
     <div className="space-y-6">
@@ -117,7 +135,13 @@ export default function DashboardPage() {
         title={t('page.dashboard.title')}
         description={t('page.dashboard.financialOverview', { year })}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {isRefreshing && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <span className="h-2 w-2 animate-spin rounded-full border border-emerald-600 border-t-transparent dark:border-emerald-400 dark:border-t-transparent" />
+              Refreshing…
+            </span>
+          )}
           <label htmlFor="dashboard-year" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             {t('common.fiscalYear')}:
           </label>
@@ -135,77 +159,99 @@ export default function DashboardPage() {
         </div>
       </PageHeader>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — each widget loads independently */}
       <section aria-label="KPI summary">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard
-            title={t('page.dashboard.revenue')}
-            value={kpis ? fmt(kpis.revenue) : '—'}
-            icon={<DollarSign className="h-5 w-5" />}
-            description={t('page.dashboard.ytdLabel')}
-          />
-          <KpiCard
-            title={t('page.dashboard.grossProfit')}
-            value={kpis ? fmt(kpis.gross_profit) : '—'}
-            icon={<TrendingUp className="h-5 w-5" />}
-            description={t('page.dashboard.ytdLabel')}
-          />
-          <KpiCard
-            title={t('page.dashboard.netProfit')}
-            value={kpis ? fmt(kpis.net_profit) : '—'}
-            icon={<BarChart3 className="h-5 w-5" />}
-            trendDirection={
-              kpis && kpis.net_profit > 0 ? 'up' : kpis && kpis.net_profit < 0 ? 'down' : 'neutral'
-            }
-            description={t('page.dashboard.ytdLabel')}
-          />
-          <KpiCard
-            title={t('page.dashboard.cashBalance')}
-            value={kpis ? fmt(kpis.cash_balance) : '—'}
-            icon={<Wallet className="h-5 w-5" />}
-            description={t('page.dashboard.latestLabel')}
-          />
+          {kpisQuery.isLoading || !kpis ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
+              ))}
+            </>
+          ) : (
+            <>
+              <KpiCard
+                title={t('page.dashboard.revenue')}
+                value={fmt(kpis.revenue)}
+                icon={<DollarSign className="h-5 w-5" />}
+                description={t('page.dashboard.ytdLabel')}
+              />
+              <KpiCard
+                title={t('page.dashboard.grossProfit')}
+                value={fmt(kpis.gross_profit)}
+                icon={<TrendingUp className="h-5 w-5" />}
+                description={t('page.dashboard.ytdLabel')}
+              />
+              <KpiCard
+                title={t('page.dashboard.netProfit')}
+                value={fmt(kpis.net_profit)}
+                icon={<BarChart3 className="h-5 w-5" />}
+                trendDirection={
+                  kpis.net_profit > 0 ? 'up' : kpis.net_profit < 0 ? 'down' : 'neutral'
+                }
+                description={t('page.dashboard.ytdLabel')}
+              />
+              <KpiCard
+                title={t('page.dashboard.cashBalance')}
+                value={fmt(kpis.cash_balance)}
+                icon={<Wallet className="h-5 w-5" />}
+                description={t('page.dashboard.latestLabel')}
+              />
+            </>
+          )}
         </div>
       </section>
 
       {/* Second KPI row */}
       <section aria-label="Budget and forecast metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <KpiCard
-            title={t('page.dashboard.expenses')}
-            value={kpis ? fmt(kpis.expenses) : '—'}
-            icon={<TrendingDown className="h-5 w-5" />}
-            description={t('page.dashboard.ytdLabel')}
-          />
-          <KpiCard
-            title={t('page.dashboard.budgetUtilization')}
-            value={kpis ? pct(kpis.budget_utilization, locale) : '—'}
-            icon={<Target className="h-5 w-5" />}
-            trendDirection={
-              kpis && kpis.budget_utilization > 100 ? 'down'
-                : kpis && kpis.budget_utilization >= 80 ? 'up'
-                  : 'neutral'
-            }
-            description={t('page.dashboard.budgetUtilDesc', { rev: pct(utilization?.revenue_utilization, locale), exp: pct(utilization?.expense_utilization, locale) })}
-          />
-          <KpiCard
-            title={t('page.dashboard.forecastAccuracy')}
-            value={kpis ? pct(kpis.forecast_accuracy, locale) : '—'}
-            trendDirection={kpis && kpis.forecast_accuracy >= 90 ? 'up' : 'neutral'}
-            description={t('page.dashboard.forecastAccDesc')}
-          />
+          {kpisQuery.isLoading || !kpis ? (
+            <>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
+              ))}
+            </>
+          ) : (
+            <>
+              <KpiCard
+                title={t('page.dashboard.expenses')}
+                value={fmt(kpis.expenses)}
+                icon={<TrendingDown className="h-5 w-5" />}
+                description={t('page.dashboard.ytdLabel')}
+              />
+              <KpiCard
+                title={t('page.dashboard.budgetUtilization')}
+                value={pct(kpis.budget_utilization, locale)}
+                icon={<Target className="h-5 w-5" />}
+                trendDirection={
+                  kpis.budget_utilization > 100 ? 'down'
+                    : kpis.budget_utilization >= 80 ? 'up'
+                      : 'neutral'
+                }
+                description={t('page.dashboard.budgetUtilDesc', { rev: pct(utilization?.revenue_utilization, locale), exp: pct(utilization?.expense_utilization, locale) })}
+              />
+              <KpiCard
+                title={t('page.dashboard.forecastAccuracy')}
+                value={pct(kpis.forecast_accuracy, locale)}
+                trendDirection={kpis.forecast_accuracy >= 90 ? 'up' : 'neutral'}
+                description={t('page.dashboard.forecastAccDesc')}
+              />
+            </>
+          )}
         </div>
       </section>
 
       {/* Revenue trend + Top tables */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Revenue trend */}
+        {/* Revenue trend — independent widget */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{t('page.dashboard.revenueTrend')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {revenue.length === 0 ? (
+            {revenueQuery.isLoading ? (
+              <WidgetSkeleton />
+            ) : revenue.length === 0 ? (
               <EmptyState
                 title={t('page.dashboard.trendDataEmptyTitle')}
                 description={t('page.dashboard.trendDataEmptyDesc')}
@@ -245,14 +291,16 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Top Products + Customers */}
+        {/* Top Products + Customers — independent widgets */}
         <div className="flex flex-col gap-5">
           <Card>
             <CardHeader>
               <CardTitle>{t('page.dashboard.topProducts')}</CardTitle>
             </CardHeader>
             <CardContent>
-              {topProducts.length === 0 ? (
+              {productsQuery.isLoading ? (
+                <WidgetSkeleton />
+              ) : topProducts.length === 0 ? (
                 <p className="text-sm text-slate-400 dark:text-slate-500">{t('page.dashboard.noDataYet')}</p>
               ) : (
                 <ul className="space-y-2">
@@ -280,7 +328,9 @@ export default function DashboardPage() {
               <CardTitle>{t('page.dashboard.topCustomers')}</CardTitle>
             </CardHeader>
             <CardContent>
-              {topCustomers.length === 0 ? (
+              {customersQuery.isLoading ? (
+                <WidgetSkeleton />
+              ) : topCustomers.length === 0 ? (
                 <p className="text-sm text-slate-400 dark:text-slate-500">{t('page.dashboard.noDataYet')}</p>
               ) : (
                 <ul className="space-y-2">

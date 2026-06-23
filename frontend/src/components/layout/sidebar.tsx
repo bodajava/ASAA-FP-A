@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -30,6 +30,7 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { usePrefetchRouteData } from '@/hooks/use-prefetch-route-data';
 import type { TranslationKey } from '@/lib/i18n/translations';
 
 interface NavItem {
@@ -123,6 +124,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { user, logout, availableCompanies, activeCompanyId, setActiveCompany, tenant } =
     useAuth();
   const { t } = useI18n();
+  const { prefetch } = usePrefetchRouteData();
 
   const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
   const isLocked = (href: string): boolean => {
@@ -245,6 +247,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                       <Link
                         href={item.href}
                         onClick={onClose}
+                        onMouseEnter={() => prefetch(item.href)}
                         className={cn(
                           'flex items-center justify-between rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-100',
                           active

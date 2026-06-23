@@ -8,6 +8,7 @@ import { Topbar } from '@/components/layout/topbar';
 import { LoadingState } from '@/components/ui/feedback-states';
 import { PwaInstallPrompt } from '@/components/layout/pwa-install-prompt';
 import { ServiceWorkerRegistration } from '@/components/layout/service-worker-registration';
+import { GlobalRefreshIndicator } from '@/components/global-refresh-indicator';
 import { Building2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -69,6 +70,9 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Global refresh indicator */}
+      <GlobalRefreshIndicator />
+
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}

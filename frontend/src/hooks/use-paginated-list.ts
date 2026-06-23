@@ -1,14 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n/i18n-context';
+import { getApiErrorMessage } from '@/lib/api-error-handler';
 import type { PaginatedResponse } from '@/types/api';
 
 export interface UsePaginatedListOptions {
   endpoint: string;
   limit?: number;
-  /** Set to false to skip initial fetch (e.g., when companyId is not yet available) */
   enabled?: boolean;
+  /** Query key prefix for cache management */
+  queryKeyPrefix?: string;
 }
 
 export interface UsePaginatedListReturn<T> {
@@ -17,6 +22,7 @@ export interface UsePaginatedListReturn<T> {
   page: number;
   totalPages: number;
   isLoading: boolean;
+  isFetching: boolean;
   error: string | null;
   search: string;
   setSearch: (s: string) => void;
@@ -31,100 +37,132 @@ export function usePaginatedList<T>({
   endpoint,
   limit = 20,
   enabled = true,
+  queryKeyPrefix,
 }: UsePaginatedListOptions): UsePaginatedListReturn<T> {
-  const [data, setData] = useState<T[]>([]);
-  const [total, setTotal] = useState(0);
+  const { activeCompanyId } = useAuth();
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearchState] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [rev, setRev] = useState(0); // revision counter to force refresh
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
+  // Debounce search
+  const setSearch = useCallback((s: string) => {
+    setSearchState(s);
+    setPage(1);
+    // Debounce the actual search value
+    setTimeout(() => {
+      setDebouncedSearch(s);
     }, 400);
-    return () => clearTimeout(handler);
-  }, [search]);
+  }, []);
 
-  const fetchData = useCallback(async () => {
-    if (!enabled) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+  // Build query key
+  const queryKey = [
+    queryKeyPrefix ?? endpoint,
+    'list',
+    activeCompanyId,
+    page,
+    limit,
+    debouncedSearch,
+  ];
 
-      const result = await apiGet<PaginatedResponse<T> | T[]>(
-        `${endpoint}?${params.toString()}`,
-      );
+  // Build URL with params
+  const buildUrl = useCallback(() => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+    return `${endpoint}?${params.toString()}`;
+  }, [endpoint, page, limit, debouncedSearch]);
 
-      // Some endpoints return plain arrays, others paginated objects
-      if (Array.isArray(result)) {
-        setData(result);
-        setTotal(result.length);
-        setTotalPages(1);
-      } else {
-        setData(result.data);
-        setTotal(result.total);
-        setTotalPages(result.totalPages ?? 1);
-      }
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : 'Failed to load data.';
-      setError(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endpoint, page, debouncedSearch, limit, enabled, rev]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData();
-  }, [fetchData]);
-
-  const setSearch = useCallback(
-    (s: string) => {
-      setSearchState(s);
-      setPage(1);
+  // Query for list data
+  const { data: result, isLoading, isFetching, error: queryError } = useQuery({
+    queryKey,
+    queryFn: async ({ signal }) => {
+      return apiGet<PaginatedResponse<T> | T[]>(buildUrl(), { signal });
     },
-    [],
-  );
+    enabled: enabled && Boolean(activeCompanyId),
+    placeholderData: (prev) => prev, // keepPreviousData
+    staleTime: 2 * 60 * 1000, // 2 minutes for lists
+  });
+
+  // Parse result
+  let data: T[] = [];
+  let total = 0;
+  let totalPages = 1;
+
+  if (result) {
+    if (Array.isArray(result)) {
+      data = result;
+      total = result.length;
+      totalPages = 1;
+    } else {
+      data = result.data;
+      total = result.total;
+      totalPages = result.totalPages ?? 1;
+    }
+  }
+
+  const error = queryError ? getApiErrorMessage(queryError, t) : null;
+
+  // Invalidate list cache
+  const invalidateList = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: [queryKeyPrefix ?? endpoint, 'list', activeCompanyId],
+    });
+  }, [queryClient, endpoint, queryKeyPrefix, activeCompanyId]);
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiPost<T>(endpoint, payload),
+    onSuccess: () => {
+      invalidateList();
+    },
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+      apiPatch<T>(`${endpoint}/${id}`, payload),
+    onSuccess: () => {
+      invalidateList();
+    },
+  });
+
+  // Delete mutation
+  const removeMutation = useMutation({
+    mutationFn: (id: string) => apiDelete<T>(`${endpoint}/${id}`),
+    onSuccess: () => {
+      invalidateList();
+    },
+  });
 
   const refresh = useCallback(() => {
-    setRev((r) => r + 1);
-  }, []);
+    invalidateList();
+  }, [invalidateList]);
 
   const create = useCallback(
     async (payload: Record<string, unknown>): Promise<T> => {
-      const result = await apiPost<T>(endpoint, payload);
-      refresh();
-      return result;
+      return createMutation.mutateAsync(payload);
     },
-    [endpoint, refresh],
+    [createMutation],
   );
 
   const update = useCallback(
     async (id: string, payload: Record<string, unknown>): Promise<T> => {
-      const result = await apiPatch<T>(`${endpoint}/${id}`, payload);
-      refresh();
-      return result;
+      return updateMutation.mutateAsync({ id, payload });
     },
-    [endpoint, refresh],
+    [updateMutation],
   );
 
   const remove = useCallback(
     async (id: string): Promise<void> => {
-      await apiDelete<T>(`${endpoint}/${id}`);
-      refresh();
+      await removeMutation.mutateAsync(id);
     },
-    [endpoint, refresh],
+    [removeMutation],
   );
 
   return {
@@ -133,6 +171,7 @@ export function usePaginatedList<T>({
     page,
     totalPages,
     isLoading,
+    isFetching,
     error,
     search,
     setSearch,

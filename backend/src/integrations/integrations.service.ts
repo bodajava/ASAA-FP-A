@@ -27,6 +27,7 @@ import {
   MappingResponseDto,
 } from './dto/integrations-response.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ErrorCodes } from '../common/error-codes';
 import { encrypt, decrypt } from '../common/utils/crypto.util';
 import { ActualImportsService } from '../actual-imports/actual-imports.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -163,13 +164,16 @@ export class IntegrationsService implements OnApplicationBootstrap {
     }
   }
 
-  private formatOracleError(err: any): string {
-    const errMsg = err?.message || String(err);
+  private formatOracleError(err: unknown): { message: string; code: string } {
+    const errMsg = err instanceof Error ? err.message : String(err);
     if (errMsg.includes('ORA-00942')) {
-      return 'Oracle table or view not found. Please check your import mapping.';
+      return { message: 'Oracle table or view not found. Please check your import mapping.', code: ErrorCodes.ORACLE_TABLE_NOT_FOUND };
+    }
+    if (errMsg.includes('ORA-00904')) {
+      return { message: 'Invalid Oracle column name.', code: ErrorCodes.ORACLE_INVALID_COLUMN };
     }
     if (errMsg.includes('ORA-01017')) {
-      return 'Invalid Oracle username or password.';
+      return { message: 'Invalid Oracle username or password.', code: ErrorCodes.ORACLE_INVALID_CREDENTIALS };
     }
     const networkKeywords = [
       'NJS-511',
@@ -181,9 +185,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
       'TNS-'
     ];
     if (networkKeywords.some(keyword => errMsg.includes(keyword))) {
-      return 'Could not connect to Oracle host/port/service.';
+      return { message: 'Could not connect to Oracle host/port/service.', code: ErrorCodes.ORACLE_CONNECTION_FAILED };
     }
-    return errMsg;
+    return { message: errMsg, code: ErrorCodes.ORACLE_UNKNOWN };
   }
 
   async discoverOracleTables(
@@ -234,7 +238,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException('Oracle client is not configured.');
+      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
     }
 
     const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
@@ -255,8 +259,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
 
       return result.rows || [];
-    } catch (err: any) {
-      throw new BadRequestException(this.formatOracleError(err));
+    } catch (err: unknown) {
+      const oracleErr = this.formatOracleError(err);
+      throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
     } finally {
       if (connInstance) {
         await connInstance.close().catch(() => { });
@@ -285,7 +290,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     }
 
     if (!/^[A-Za-z0-9_$#]+$/.test(tableName)) {
-      throw new BadRequestException('Invalid table name format.');
+      throw new BadRequestException({ message: 'Invalid table name format.', code: ErrorCodes.PREVIEW_INVALID_TABLE });
     }
 
     if (connection.host?.toLowerCase() === 'mock') {
@@ -325,7 +330,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException('Oracle client is not configured.');
+      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
     }
 
     const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
@@ -346,8 +351,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
 
       return result.rows || [];
-    } catch (err: any) {
-      throw new BadRequestException(this.formatOracleError(err));
+    } catch (err: unknown) {
+      const oracleErr = this.formatOracleError(err);
+      throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
     } finally {
       if (connInstance) {
         await connInstance.close().catch(() => { });
@@ -377,8 +383,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
       throw new BadRequestException('Row preview is only supported for Oracle connections.');
     }
 
-    if (!/^[A-Za-z0-9_$#]+$/.test(sourceTable)) {
-      throw new BadRequestException('Invalid table name format.');
+    if (!/^[A-Za-z0-9_$#."]+$/.test(sourceTable)) {
+      throw new BadRequestException({ message: 'Invalid table name format.', code: ErrorCodes.PREVIEW_INVALID_TABLE });
     }
 
     const selectColumns: string[] = [];
@@ -389,8 +395,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
     for (const key of Object.keys(flatMapping)) {
       const val = flatMapping[key];
       if (typeof val === 'string' && val.trim() !== '') {
-        if (!/^[A-Za-z0-9_$#]+$/.test(val)) {
-          throw new BadRequestException(`Invalid column name: ${val}`);
+        if (!/^[A-Za-z0-9_$#"]+$/.test(val)) {
+          throw new BadRequestException({ message: `Invalid column name: ${val}`, code: ErrorCodes.PREVIEW_INVALID_COLUMN });
         }
         if (!selectColumns.includes(val)) {
           selectColumns.push(val);
@@ -398,7 +404,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       }
     }
 
-    const selectClause = selectColumns.length > 0 ? selectColumns.map(c => `"${c.toUpperCase()}"`).join(', ') : '*';
+    const selectClause = selectColumns.length > 0 ? selectColumns.map(c => c).join(', ') : '*';
 
     if (connection.host?.toLowerCase() === 'mock') {
       const mockConfig: Record<string, string | null> = {};
@@ -420,7 +426,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException('Oracle client is not configured.');
+      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
     }
 
     const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
@@ -434,7 +440,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         connectString,
       });
 
-      const query = `SELECT * FROM (SELECT ${selectClause} FROM ${sourceTable.toUpperCase()}) WHERE ROWNUM <= :previewLimit`;
+      const query = `SELECT * FROM (SELECT ${selectClause} FROM ${sourceTable}) WHERE ROWNUM <= :previewLimit`;
       const result = await connInstance.execute(
         query,
         { previewLimit: limit || 10 },
@@ -442,8 +448,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
 
       return result.rows || [];
-    } catch (err: any) {
-      throw new BadRequestException(this.formatOracleError(err));
+    } catch (err: unknown) {
+      const oracleErr = this.formatOracleError(err);
+      throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
     } finally {
       if (connInstance) {
         await connInstance.close().catch(() => { });
@@ -1572,7 +1579,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException('Oracle client is not configured.');
+      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
     }
 
     const result = await connInstance.execute(
@@ -1776,489 +1783,532 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException('Oracle client is not configured.');
+      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
     }
 
     // 1. Sync Accounts
-    const accountsResult = await connInstance.execute(
-      `SELECT ACCOUNT_CODE, ACCOUNT_NAME, ACCOUNT_TYPE FROM FP_ACCOUNTS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const accountRows = (accountsResult.rows || []) as {
-      ACCOUNT_CODE: string;
-      ACCOUNT_NAME: string;
-      ACCOUNT_TYPE: string;
-    }[];
-    for (const row of accountRows) {
-      const typeStr = row.ACCOUNT_TYPE?.toLowerCase() || 'expense';
-      let type: any = 'expense';
-      if (
-        [
-          'revenue',
-          'cogs',
-          'expense',
-          'asset',
-          'liability',
-          'equity',
-          'cashflow',
-        ].includes(typeStr)
-      ) {
-        type = typeStr;
+    try {
+      const accountsResult = await connInstance.execute(
+        `SELECT ACCOUNT_CODE, ACCOUNT_NAME, ACCOUNT_TYPE FROM FP_ACCOUNTS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const accountRows = (accountsResult.rows || []) as {
+        ACCOUNT_CODE: string;
+        ACCOUNT_NAME: string;
+        ACCOUNT_TYPE: string;
+      }[];
+      for (const row of accountRows) {
+        const typeStr = row.ACCOUNT_TYPE?.toLowerCase() || 'expense';
+        let type: any = 'expense';
+        if (
+          [
+            'revenue',
+            'cogs',
+            'expense',
+            'asset',
+            'liability',
+            'equity',
+            'cashflow',
+          ].includes(typeStr)
+        ) {
+          type = typeStr;
+        }
+        await this.prisma.account.upsert({
+          where: { companyId_code: { companyId, code: row.ACCOUNT_CODE } },
+          update: { name: row.ACCOUNT_NAME, type, isActive: true },
+          create: {
+            companyId,
+            code: row.ACCOUNT_CODE,
+            name: row.ACCOUNT_NAME,
+            type,
+            isActive: true,
+          },
+        });
       }
-      await this.prisma.account.upsert({
-        where: { companyId_code: { companyId, code: row.ACCOUNT_CODE } },
-        update: { name: row.ACCOUNT_NAME, type, isActive: true },
-        create: {
-          companyId,
-          code: row.ACCOUNT_CODE,
-          name: row.ACCOUNT_NAME,
-          type,
-          isActive: true,
-        },
-      });
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_ACCOUNTS sync: ${e.message}`);
     }
 
     // 2. Sync Sites
-    const sitesResult = await connInstance.execute(
-      `SELECT SITE_CODE, SITE_NAME, SITE_TYPE, REGION FROM FP_SITES WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const siteRows = (sitesResult.rows || []) as {
-      SITE_CODE: string;
-      SITE_NAME: string;
-      SITE_TYPE: string;
-      REGION?: string | null;
-    }[];
-    for (const row of siteRows) {
-      const typeStr = row.SITE_TYPE?.toLowerCase() || 'factory';
-      let type: any = 'factory';
-      if (
-        [
-          'factory',
-          'branch',
-          'warehouse',
-          'office',
-          'distribution_center',
-        ].includes(typeStr)
-      ) {
-        type = typeStr;
-      }
-      const existing = await this.prisma.site.findFirst({
-        where: { companyId, name: row.SITE_NAME },
-      });
-      if (existing) {
-        await this.prisma.site.update({
-          where: { id: existing.id },
-          data: { type, region: row.REGION },
+    try {
+      const sitesResult = await connInstance.execute(
+        `SELECT SITE_CODE, SITE_NAME, SITE_TYPE, REGION FROM FP_SITES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const siteRows = (sitesResult.rows || []) as {
+        SITE_CODE: string;
+        SITE_NAME: string;
+        SITE_TYPE: string;
+        REGION?: string | null;
+      }[];
+      for (const row of siteRows) {
+        const typeStr = row.SITE_TYPE?.toLowerCase() || 'factory';
+        let type: any = 'factory';
+        if (
+          [
+            'factory',
+            'branch',
+            'warehouse',
+            'office',
+            'distribution_center',
+          ].includes(typeStr)
+        ) {
+          type = typeStr;
+        }
+        const existing = await this.prisma.site.findFirst({
+          where: { companyId, name: row.SITE_NAME },
         });
-      } else {
-        await this.prisma.site.create({
-          data: {
-            companyId,
-            name: row.SITE_NAME,
-            type,
-            region: row.REGION,
-            status: 'active',
-          },
-        });
+        if (existing) {
+          await this.prisma.site.update({
+            where: { id: existing.id },
+            data: { type, region: row.REGION },
+          });
+        } else {
+          await this.prisma.site.create({
+            data: {
+              companyId,
+              name: row.SITE_NAME,
+              type,
+              region: row.REGION,
+              status: 'active',
+            },
+          });
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_SITES sync: ${e.message}`);
     }
 
     // 3. Sync Customers
-    const customersResult = await connInstance.execute(
-      `SELECT CUSTOMER_CODE, CUSTOMER_NAME, CUSTOMER_TYPE, REGION FROM FP_CUSTOMERS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const customerRows = (customersResult.rows || []) as {
-      CUSTOMER_CODE: string;
-      CUSTOMER_NAME: string;
-      CUSTOMER_TYPE: string;
-      REGION?: string | null;
-    }[];
-    for (const row of customerRows) {
-      const typeStr = row.CUSTOMER_TYPE?.toLowerCase() || 'retail';
-      let type: any = 'retail';
-      if (
-        ['retail', 'wholesale', 'distributor', 'internal', 'other'].includes(
-          typeStr,
-        )
-      ) {
-        type = typeStr;
+    try {
+      const customersResult = await connInstance.execute(
+        `SELECT CUSTOMER_CODE, CUSTOMER_NAME, CUSTOMER_TYPE, REGION FROM FP_CUSTOMERS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const customerRows = (customersResult.rows || []) as {
+        CUSTOMER_CODE: string;
+        CUSTOMER_NAME: string;
+        CUSTOMER_TYPE: string;
+        REGION?: string | null;
+      }[];
+      for (const row of customerRows) {
+        const typeStr = row.CUSTOMER_TYPE?.toLowerCase() || 'retail';
+        let type: any = 'retail';
+        if (
+          ['retail', 'wholesale', 'distributor', 'internal', 'other'].includes(
+            typeStr,
+          )
+        ) {
+          type = typeStr;
+        }
+        await this.prisma.customer.upsert({
+          where: { companyId_code: { companyId, code: row.CUSTOMER_CODE } },
+          update: {
+            name: row.CUSTOMER_NAME,
+            customerType: type,
+            region: row.REGION,
+            isActive: true,
+          },
+          create: {
+            companyId,
+            code: row.CUSTOMER_CODE,
+            name: row.CUSTOMER_NAME,
+            customerType: type,
+            region: row.REGION,
+            isActive: true,
+          },
+        });
       }
-      await this.prisma.customer.upsert({
-        where: { companyId_code: { companyId, code: row.CUSTOMER_CODE } },
-        update: {
-          name: row.CUSTOMER_NAME,
-          customerType: type,
-          region: row.REGION,
-          isActive: true,
-        },
-        create: {
-          companyId,
-          code: row.CUSTOMER_CODE,
-          name: row.CUSTOMER_NAME,
-          customerType: type,
-          region: row.REGION,
-          isActive: true,
-        },
-      });
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_CUSTOMERS sync: ${e.message}`);
     }
 
     // 4. Sync Products
-    const productsResult = await connInstance.execute(
-      `SELECT PRODUCT_CODE, PRODUCT_NAME, CATEGORY, UNIT, SALE_PRICE, STANDARD_COST FROM FP_PRODUCTS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const productRows = (productsResult.rows || []) as {
-      PRODUCT_CODE: string;
-      PRODUCT_NAME: string;
-      CATEGORY?: string | null;
-      UNIT?: string | null;
-      SALE_PRICE?: number | null;
-      STANDARD_COST?: number | null;
-    }[];
-    for (const row of productRows) {
-      let categoryId: bigint | null = null;
-      if (row.CATEGORY) {
-        let cat = await this.prisma.productCategory.findFirst({
-          where: { companyId, name: row.CATEGORY },
-        });
-        if (!cat) {
-          cat = await this.prisma.productCategory.create({
-            data: { companyId, name: row.CATEGORY },
+    try {
+      const productsResult = await connInstance.execute(
+        `SELECT PRODUCT_CODE, PRODUCT_NAME, CATEGORY, UNIT, SALE_PRICE, STANDARD_COST FROM FP_PRODUCTS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const productRows = (productsResult.rows || []) as {
+        PRODUCT_CODE: string;
+        PRODUCT_NAME: string;
+        CATEGORY?: string | null;
+        UNIT?: string | null;
+        SALE_PRICE?: number | null;
+        STANDARD_COST?: number | null;
+      }[];
+      for (const row of productRows) {
+        let categoryId: bigint | null = null;
+        if (row.CATEGORY) {
+          let cat = await this.prisma.productCategory.findFirst({
+            where: { companyId, name: row.CATEGORY },
           });
+          if (!cat) {
+            cat = await this.prisma.productCategory.create({
+              data: { companyId, name: row.CATEGORY },
+            });
+          }
+          categoryId = cat.id;
         }
-        categoryId = cat.id;
-      }
 
-      let unitId: bigint | null = null;
-      if (row.UNIT) {
-        let unit = await this.prisma.unit.findFirst({
-          where: { companyId, symbol: row.UNIT },
-        });
-        if (!unit) {
-          unit = await this.prisma.unit.create({
-            data: { companyId, symbol: row.UNIT, name: row.UNIT },
+        let unitId: bigint | null = null;
+        if (row.UNIT) {
+          let unit = await this.prisma.unit.findFirst({
+            where: { companyId, symbol: row.UNIT },
           });
+          if (!unit) {
+            unit = await this.prisma.unit.create({
+              data: { companyId, symbol: row.UNIT, name: row.UNIT },
+            });
+          }
+          unitId = unit.id;
         }
-        unitId = unit.id;
-      }
 
-      await this.prisma.product.upsert({
-        where: { companyId_sku: { companyId, sku: row.PRODUCT_CODE } },
-        update: {
-          name: row.PRODUCT_NAME,
-          salePrice: row.SALE_PRICE || 0,
-          standardCost: row.STANDARD_COST || 0,
-          categoryId,
-          unitId,
-          isActive: true,
-        },
-        create: {
-          companyId,
-          sku: row.PRODUCT_CODE,
-          name: row.PRODUCT_NAME,
-          salePrice: row.SALE_PRICE || 0,
-          standardCost: row.STANDARD_COST || 0,
-          categoryId,
-          unitId,
-          isActive: true,
-        },
-      });
+        await this.prisma.product.upsert({
+          where: { companyId_sku: { companyId, sku: row.PRODUCT_CODE } },
+          update: {
+            name: row.PRODUCT_NAME,
+            salePrice: row.SALE_PRICE || 0,
+            standardCost: row.STANDARD_COST || 0,
+            categoryId,
+            unitId,
+            isActive: true,
+          },
+          create: {
+            companyId,
+            sku: row.PRODUCT_CODE,
+            name: row.PRODUCT_NAME,
+            salePrice: row.SALE_PRICE || 0,
+            standardCost: row.STANDARD_COST || 0,
+            categoryId,
+            unitId,
+            isActive: true,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_PRODUCTS sync: ${e.message}`);
     }
 
     // 5. Sync Materials
-    const materialsResult = await connInstance.execute(
-      `SELECT MATERIAL_CODE, MATERIAL_NAME, UNIT, PURCHASE_PRICE, SUPPLIER_CODE FROM FP_MATERIALS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const materialRows = (materialsResult.rows || []) as {
-      MATERIAL_CODE: string;
-      MATERIAL_NAME: string;
-      UNIT?: string | null;
-      PURCHASE_PRICE?: number | null;
-      SUPPLIER_CODE?: string | null;
-    }[];
-    for (const row of materialRows) {
-      let unitId: bigint | null = null;
-      if (row.UNIT) {
-        let unit = await this.prisma.unit.findFirst({
-          where: { companyId, symbol: row.UNIT },
-        });
-        if (!unit) {
-          unit = await this.prisma.unit.create({
-            data: { companyId, symbol: row.UNIT, name: row.UNIT },
+    try {
+      const materialsResult = await connInstance.execute(
+        `SELECT MATERIAL_CODE, MATERIAL_NAME, UNIT, PURCHASE_PRICE, SUPPLIER_CODE FROM FP_MATERIALS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const materialRows = (materialsResult.rows || []) as {
+        MATERIAL_CODE: string;
+        MATERIAL_NAME: string;
+        UNIT?: string | null;
+        PURCHASE_PRICE?: number | null;
+        SUPPLIER_CODE?: string | null;
+      }[];
+      for (const row of materialRows) {
+        let unitId: bigint | null = null;
+        if (row.UNIT) {
+          let unit = await this.prisma.unit.findFirst({
+            where: { companyId, symbol: row.UNIT },
           });
+          if (!unit) {
+            unit = await this.prisma.unit.create({
+              data: { companyId, symbol: row.UNIT, name: row.UNIT },
+            });
+          }
+          unitId = unit.id;
         }
-        unitId = unit.id;
-      }
 
-      let supplierId: bigint | null = null;
-      if (row.SUPPLIER_CODE) {
-        let supp = await this.prisma.supplier.findFirst({
-          where: { companyId, name: row.SUPPLIER_CODE },
-        });
-        if (!supp) {
-          supp = await this.prisma.supplier.create({
-            data: { companyId, name: row.SUPPLIER_CODE },
+        let supplierId: bigint | null = null;
+        if (row.SUPPLIER_CODE) {
+          let supp = await this.prisma.supplier.findFirst({
+            where: { companyId, name: row.SUPPLIER_CODE },
           });
+          if (!supp) {
+            supp = await this.prisma.supplier.create({
+              data: { companyId, name: row.SUPPLIER_CODE },
+            });
+          }
+          supplierId = supp.id;
         }
-        supplierId = supp.id;
-      }
 
-      await this.prisma.material.upsert({
-        where: { companyId_code: { companyId, code: row.MATERIAL_CODE } },
-        update: {
-          name: row.MATERIAL_NAME,
-          purchasePrice: row.PURCHASE_PRICE || 0,
-          unitId,
-          supplierId,
-          isActive: true,
-        },
-        create: {
-          companyId,
-          code: row.MATERIAL_CODE,
-          name: row.MATERIAL_NAME,
-          purchasePrice: row.PURCHASE_PRICE || 0,
-          unitId,
-          supplierId,
-          isActive: true,
-        },
-      });
+        await this.prisma.material.upsert({
+          where: { companyId_code: { companyId, code: row.MATERIAL_CODE } },
+          update: {
+            name: row.MATERIAL_NAME,
+            purchasePrice: row.PURCHASE_PRICE || 0,
+            unitId,
+            supplierId,
+            isActive: true,
+          },
+          create: {
+            companyId,
+            code: row.MATERIAL_CODE,
+            name: row.MATERIAL_NAME,
+            purchasePrice: row.PURCHASE_PRICE || 0,
+            unitId,
+            supplierId,
+            isActive: true,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_MATERIALS sync: ${e.message}`);
     }
 
     // 6. Sync Cost Centers
-    const costCentersResult = await connInstance.execute(
-      `SELECT COST_CENTER_CODE, COST_CENTER_NAME, COST_CENTER_TYPE FROM FP_COST_CENTERS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const ccRows = (costCentersResult.rows || []) as {
-      COST_CENTER_CODE: string;
-      COST_CENTER_NAME: string;
-      COST_CENTER_TYPE?: string | null;
-    }[];
-    for (const row of ccRows) {
-      const existing = await this.prisma.costCenter.findFirst({
-        where: { companyId, code: row.COST_CENTER_CODE },
-      });
-      const typeStr = row.COST_CENTER_TYPE?.toLowerCase() || 'other';
-      const ccType = [
-        'sales',
-        'production',
-        'admin',
-        'marketing',
-        'logistics',
-        'maintenance',
-        'other',
-      ].includes(typeStr)
-        ? typeStr
-        : 'other';
-      if (existing) {
-        await this.prisma.costCenter.update({
-          where: { id: existing.id },
-          data: { name: row.COST_CENTER_NAME, type: ccType as any },
+    try {
+      const costCentersResult = await connInstance.execute(
+        `SELECT COST_CENTER_CODE, COST_CENTER_NAME, COST_CENTER_TYPE FROM FP_COST_CENTERS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const ccRows = (costCentersResult.rows || []) as {
+        COST_CENTER_CODE: string;
+        COST_CENTER_NAME: string;
+        COST_CENTER_TYPE?: string | null;
+      }[];
+      for (const row of ccRows) {
+        const existing = await this.prisma.costCenter.findFirst({
+          where: { companyId, code: row.COST_CENTER_CODE },
         });
-      } else {
-        await this.prisma.costCenter.create({
-          data: {
-            companyId,
-            code: row.COST_CENTER_CODE,
-            name: row.COST_CENTER_NAME,
-            type: ccType as any,
-          },
-        });
+        const typeStr = row.COST_CENTER_TYPE?.toLowerCase() || 'other';
+        const ccType = [
+          'sales',
+          'production',
+          'admin',
+          'marketing',
+          'logistics',
+          'maintenance',
+          'other',
+        ].includes(typeStr)
+          ? typeStr
+          : 'other';
+        if (existing) {
+          await this.prisma.costCenter.update({
+            where: { id: existing.id },
+            data: { name: row.COST_CENTER_NAME, type: ccType as any },
+          });
+        } else {
+          await this.prisma.costCenter.create({
+            data: {
+              companyId,
+              code: row.COST_CENTER_CODE,
+              name: row.COST_CENTER_NAME,
+              type: ccType as any,
+            },
+          });
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_COST_CENTERS sync: ${e.message}`);
     }
 
     // 7. Sync Product Categories (standalone)
-    const categoriesResult = await connInstance.execute(
-      `SELECT CATEGORY_CODE, CATEGORY_NAME FROM FP_PRODUCT_CATEGORIES WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const catRows = (categoriesResult.rows || []) as {
-      CATEGORY_CODE: string;
-      CATEGORY_NAME: string;
-    }[];
-    for (const row of catRows) {
-      const existing = await this.prisma.productCategory.findFirst({
-        where: { companyId, name: row.CATEGORY_NAME },
-      });
-      if (!existing) {
-        await this.prisma.productCategory.create({
-          data: { companyId, name: row.CATEGORY_NAME },
+    try {
+      const categoriesResult = await connInstance.execute(
+        `SELECT CATEGORY_CODE, CATEGORY_NAME FROM FP_PRODUCT_CATEGORIES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const catRows = (categoriesResult.rows || []) as {
+        CATEGORY_CODE: string;
+        CATEGORY_NAME: string;
+      }[];
+      for (const row of catRows) {
+        const existing = await this.prisma.productCategory.findFirst({
+          where: { companyId, name: row.CATEGORY_NAME },
         });
+        if (!existing) {
+          await this.prisma.productCategory.create({
+            data: { companyId, name: row.CATEGORY_NAME },
+          });
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_PRODUCT_CATEGORIES sync: ${e.message}`);
     }
 
     // 8. Sync Units (standalone)
-    const unitsResult = await connInstance.execute(
-      `SELECT UNIT_CODE, UNIT_NAME FROM FP_UNITS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const unitRows = (unitsResult.rows || []) as {
-      UNIT_CODE: string;
-      UNIT_NAME: string;
-    }[];
-    for (const row of unitRows) {
-      const existing = await this.prisma.unit.findFirst({
-        where: { companyId, symbol: row.UNIT_CODE },
-      });
-      if (!existing) {
-        await this.prisma.unit.create({
-          data: {
-            companyId,
-            symbol: row.UNIT_CODE,
-            name: row.UNIT_NAME || row.UNIT_CODE,
-          },
+    try {
+      const unitsResult = await connInstance.execute(
+        `SELECT UNIT_CODE, UNIT_NAME FROM FP_UNITS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const unitRows = (unitsResult.rows || []) as {
+        UNIT_CODE: string;
+        UNIT_NAME: string;
+      }[];
+      for (const row of unitRows) {
+        const existing = await this.prisma.unit.findFirst({
+          where: { companyId, symbol: row.UNIT_CODE },
         });
+        if (!existing) {
+          await this.prisma.unit.create({
+            data: {
+              companyId,
+              symbol: row.UNIT_CODE,
+              name: row.UNIT_NAME || row.UNIT_CODE,
+            },
+          });
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_UNITS sync: ${e.message}`);
     }
 
     // 9. Sync Suppliers (standalone)
-    const suppliersResult = await connInstance.execute(
-      `SELECT SUPPLIER_CODE, SUPPLIER_NAME, SUPPLIER_PHONE, SUPPLIER_EMAIL FROM FP_SUPPLIERS WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const suppRows = (suppliersResult.rows || []) as {
-      SUPPLIER_CODE: string;
-      SUPPLIER_NAME: string;
-      SUPPLIER_PHONE?: string | null;
-      SUPPLIER_EMAIL?: string | null;
-    }[];
-    for (const row of suppRows) {
-      const existing = await this.prisma.supplier.findFirst({
-        where: { companyId, name: row.SUPPLIER_NAME },
-      });
-      if (existing) {
-        await this.prisma.supplier.update({
-          where: { id: existing.id },
-          data: {
-            phone: row.SUPPLIER_PHONE ?? null,
-            email: row.SUPPLIER_EMAIL ?? null,
-          },
+    try {
+      const suppliersResult = await connInstance.execute(
+        `SELECT SUPPLIER_CODE, SUPPLIER_NAME, SUPPLIER_PHONE, SUPPLIER_EMAIL FROM FP_SUPPLIERS WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const suppRows = (suppliersResult.rows || []) as {
+        SUPPLIER_CODE: string;
+        SUPPLIER_NAME: string;
+        SUPPLIER_PHONE?: string | null;
+        SUPPLIER_EMAIL?: string | null;
+      }[];
+      for (const row of suppRows) {
+        const existing = await this.prisma.supplier.findFirst({
+          where: { companyId, name: row.SUPPLIER_NAME },
         });
-      } else {
-        await this.prisma.supplier.create({
-          data: {
-            companyId,
-            name: row.SUPPLIER_NAME,
-            phone: row.SUPPLIER_PHONE ?? null,
-            email: row.SUPPLIER_EMAIL ?? null,
-          },
-        });
+        if (existing) {
+          await this.prisma.supplier.update({
+            where: { id: existing.id },
+            data: {
+              phone: row.SUPPLIER_PHONE ?? null,
+              email: row.SUPPLIER_EMAIL ?? null,
+            },
+          });
+        } else {
+          await this.prisma.supplier.create({
+            data: {
+              companyId,
+              name: row.SUPPLIER_NAME,
+              phone: row.SUPPLIER_PHONE ?? null,
+              email: row.SUPPLIER_EMAIL ?? null,
+            },
+          });
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_SUPPLIERS sync: ${e.message}`);
     }
 
     // 10. Sync BOM Recipes
-    const recipesResult = await connInstance.execute(
-      `SELECT RECIPE_CODE, PRODUCT_CODE, VERSION, OUTPUT_QTY, LABOR_COST, OVERHEAD_COST FROM FP_BOM_RECIPES WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const recipeRows = (recipesResult.rows || []) as {
-      RECIPE_CODE: string;
-      PRODUCT_CODE: string;
-      VERSION?: string | null;
-      OUTPUT_QTY?: number | null;
-      LABOR_COST?: number | null;
-      OVERHEAD_COST?: number | null;
-    }[];
-
     const recipeIdMap = new Map<string, bigint>();
+    try {
+      const recipesResult = await connInstance.execute(
+        `SELECT RECIPE_CODE, PRODUCT_CODE, VERSION, OUTPUT_QTY, LABOR_COST, OVERHEAD_COST FROM FP_BOM_RECIPES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const recipeRows = (recipesResult.rows || []) as {
+        RECIPE_CODE: string;
+        PRODUCT_CODE: string;
+        VERSION?: string | null;
+        OUTPUT_QTY?: number | null;
+        LABOR_COST?: number | null;
+        OVERHEAD_COST?: number | null;
+      }[];
 
-    for (const row of recipeRows) {
-      const product = await this.prisma.product.findFirst({
-        where: { companyId, sku: row.PRODUCT_CODE },
-      });
-      if (!product) continue;
-
-      const existingRecipe = await this.prisma.bomRecipe.findFirst({
-        where: {
-          companyId,
-          productId: product.id,
-          version: row.VERSION || 'v1',
-        },
-      });
-
-      if (existingRecipe) {
-        await this.prisma.bomRecipe.update({
-          where: { id: existingRecipe.id },
-          data: {
-            outputQty: row.OUTPUT_QTY ?? 1,
-            laborCost: row.LABOR_COST ?? 0,
-            overheadCost: row.OVERHEAD_COST ?? 0,
-          },
+      for (const row of recipeRows) {
+        const product = await this.prisma.product.findFirst({
+          where: { companyId, sku: row.PRODUCT_CODE },
         });
-        recipeIdMap.set(row.RECIPE_CODE, existingRecipe.id);
-      } else {
-        const created = await this.prisma.bomRecipe.create({
-          data: {
+        if (!product) continue;
+
+        const existingRecipe = await this.prisma.bomRecipe.findFirst({
+          where: {
             companyId,
             productId: product.id,
             version: row.VERSION || 'v1',
-            outputQty: row.OUTPUT_QTY ?? 1,
-            laborCost: row.LABOR_COST ?? 0,
-            overheadCost: row.OVERHEAD_COST ?? 0,
           },
         });
-        recipeIdMap.set(row.RECIPE_CODE, created.id);
+
+        if (existingRecipe) {
+          await this.prisma.bomRecipe.update({
+            where: { id: existingRecipe.id },
+            data: {
+              outputQty: row.OUTPUT_QTY ?? 1,
+              laborCost: row.LABOR_COST ?? 0,
+              overheadCost: row.OVERHEAD_COST ?? 0,
+            },
+          });
+          recipeIdMap.set(row.RECIPE_CODE, existingRecipe.id);
+        } else {
+          const created = await this.prisma.bomRecipe.create({
+            data: {
+              companyId,
+              productId: product.id,
+              version: row.VERSION || 'v1',
+              outputQty: row.OUTPUT_QTY ?? 1,
+              laborCost: row.LABOR_COST ?? 0,
+              overheadCost: row.OVERHEAD_COST ?? 0,
+            },
+          });
+          recipeIdMap.set(row.RECIPE_CODE, created.id);
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_BOM_RECIPES sync: ${e.message}`);
     }
 
     // 11. Sync BOM Lines
-    const bomLinesResult = await connInstance.execute(
-      `SELECT LINE_ID, RECIPE_CODE, MATERIAL_CODE, QTY_PER_OUTPUT, UNIT_COST FROM FP_BOM_LINES WHERE COMPANY_CODE = :companyCode`,
-      [companyCode],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT },
-    );
-    const bomLineRows = (bomLinesResult.rows || []) as {
-      LINE_ID: string;
-      RECIPE_CODE: string;
-      MATERIAL_CODE: string;
-      QTY_PER_OUTPUT?: number | null;
-      UNIT_COST?: number | null;
-    }[];
+    try {
+      const bomLinesResult = await connInstance.execute(
+        `SELECT LINE_ID, RECIPE_CODE, MATERIAL_CODE, QTY_PER_OUTPUT, UNIT_COST FROM FP_BOM_LINES WHERE COMPANY_CODE = :companyCode`,
+        [companyCode],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const bomLineRows = (bomLinesResult.rows || []) as {
+        LINE_ID: string;
+        RECIPE_CODE: string;
+        MATERIAL_CODE: string;
+        QTY_PER_OUTPUT?: number | null;
+        UNIT_COST?: number | null;
+      }[];
 
-    for (const row of bomLineRows) {
-      const bomId = recipeIdMap.get(row.RECIPE_CODE);
-      if (!bomId) continue;
+      for (const row of bomLineRows) {
+        const bomId = recipeIdMap.get(row.RECIPE_CODE);
+        if (!bomId) continue;
 
-      const material = await this.prisma.material.findFirst({
-        where: { companyId, code: row.MATERIAL_CODE },
-      });
-      if (!material) continue;
-
-      const existingLine = await this.prisma.bomLine.findFirst({
-        where: { bomId, materialId: material.id },
-      });
-
-      if (existingLine) {
-        await this.prisma.bomLine.update({
-          where: { id: existingLine.id },
-          data: {
-            qtyPerOutput: row.QTY_PER_OUTPUT ?? 1,
-            unitCost: row.UNIT_COST ?? 0,
-          },
+        const material = await this.prisma.material.findFirst({
+          where: { companyId, code: row.MATERIAL_CODE },
         });
-      } else {
-        await this.prisma.bomLine.create({
-          data: {
-            bomId,
-            materialId: material.id,
-            qtyPerOutput: row.QTY_PER_OUTPUT ?? 1,
-            unitCost: row.UNIT_COST ?? 0,
-          },
+        if (!material) continue;
+
+        const existingLine = await this.prisma.bomLine.findFirst({
+          where: { bomId, materialId: material.id },
         });
+
+        if (existingLine) {
+          await this.prisma.bomLine.update({
+            where: { id: existingLine.id },
+            data: {
+              qtyPerOutput: row.QTY_PER_OUTPUT ?? 1,
+              unitCost: row.UNIT_COST ?? 0,
+            },
+          });
+        } else {
+          await this.prisma.bomLine.create({
+            data: {
+              bomId,
+              materialId: material.id,
+              qtyPerOutput: row.QTY_PER_OUTPUT ?? 1,
+              unitCost: row.UNIT_COST ?? 0,
+            },
+          });
+        }
       }
+    } catch (e: any) {
+      console.warn(`[syncMasterData] Skipping FP_BOM_LINES sync: ${e.message}`);
     }
 
     // ============================================================
@@ -2748,7 +2798,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
               message = `Successfully connected to Oracle DB at ${connectString}.`;
             } catch (err: unknown) {
               success = false;
-              message = this.formatOracleError(err);
+              message = this.formatOracleError(err).message;
             }
           }
         }
@@ -2950,7 +3000,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
             try {
               oracledb = require('oracledb');
             } catch {
-              throw new BadRequestException('Oracle client is not configured.');
+              throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
             }
 
             const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
@@ -2968,8 +3018,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
               for (const key of Object.keys(columnMapping)) {
                 const val = columnMapping[key];
                 if (typeof val === 'string' && val.trim() !== '') {
-                  if (!/^[A-Za-z0-9_$#]+$/.test(val)) {
-                    throw new BadRequestException(`Invalid column name: ${val}`);
+                  if (!/^[A-Za-z0-9_$#"]+$/.test(val)) {
+                    throw new BadRequestException({ message: `Invalid column name: ${val}`, code: ErrorCodes.PREVIEW_INVALID_COLUMN });
                   }
                   if (!selectColumns.includes(val)) {
                     selectColumns.push(val);
@@ -2977,20 +3027,21 @@ export class IntegrationsService implements OnApplicationBootstrap {
                 }
               }
 
-              const selectClause = selectColumns.length > 0 ? selectColumns.map(c => `"${c.toUpperCase()}"`).join(', ') : '*';
-              if (!/^[A-Za-z0-9_$#]+$/.test(sourceTable)) {
-                throw new BadRequestException('Invalid table name format.');
+              const selectClause = selectColumns.length > 0 ? selectColumns.map(c => c).join(', ') : '*';
+              if (!/^[A-Za-z0-9_$#."]+$/.test(sourceTable)) {
+                throw new BadRequestException({ message: 'Invalid table name format.', code: ErrorCodes.PREVIEW_INVALID_TABLE });
               }
 
-              const query = `SELECT ${selectClause} FROM ${sourceTable.toUpperCase()}`;
+              const query = `SELECT ${selectClause} FROM ${sourceTable}`;
               const result = await connInstance.execute(
                 query,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT },
               );
               rawRows = result.rows || [];
-            } catch (err: any) {
-              throw new BadRequestException(this.formatOracleError(err));
+            } catch (err: unknown) {
+              const oracleErr = this.formatOracleError(err);
+              throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
             } finally {
               if (connInstance) {
                 await connInstance.close().catch(() => { });
@@ -3007,7 +3058,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       }
 
       if (rawRows.length === 0) {
-        throw new BadRequestException('No rows retrieved to execute manual synchronization.');
+        throw new BadRequestException({ message: 'No rows retrieved to execute manual synchronization.', code: ErrorCodes.SYNC_NO_ROWS });
       }
 
       const syncedCount = await this.syncCustomDataRows(
@@ -3104,7 +3155,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
               oracledb = require('oracledb');
             } catch {
               throw new BadRequestException(
-                'Oracle client is not configured on this server.',
+                { message: 'Oracle client is not configured on this server.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED },
               );
             }
 
@@ -3203,7 +3254,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
                 );
               }
             } catch (err: unknown) {
-              throw new BadRequestException(this.formatOracleError(err));
+              const oracleErr = this.formatOracleError(err);
+              throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
             } finally {
               if (connInstance) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -3791,7 +3843,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       oracledb = require('oracledb');
     } catch {
       throw new BadRequestException(
-        'Oracle client is not configured on this server.',
+        { message: 'Oracle client is not configured on this server.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED },
       );
     }
 
@@ -3818,7 +3870,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           if (!sourceTable) {
             throw new Error(`sourceTable is missing in custom mapping "${mapping.name}"`);
           }
-          if (!/^[A-Za-z0-9_$#]+$/.test(sourceTable)) {
+          if (!/^[A-Za-z0-9_$#."]+$/.test(sourceTable)) {
             throw new Error(`Invalid sourceTable name format in mapping "${mapping.name}"`);
           }
 
@@ -3826,7 +3878,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           for (const key of Object.keys(columnMapping)) {
             const val = columnMapping[key];
             if (typeof val === 'string' && val.trim() !== '') {
-              if (!/^[A-Za-z0-9_$#]+$/.test(val)) {
+              if (!/^[A-Za-z0-9_$#"]+$/.test(val)) {
                 throw new Error(`Invalid column name: ${val}`);
               }
               if (!selectColumns.includes(val)) {
@@ -3835,8 +3887,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
             }
           }
 
-          const selectClause = selectColumns.length > 0 ? selectColumns.map(c => `"${c.toUpperCase()}"`).join(', ') : '*';
-          const query = `SELECT ${selectClause} FROM ${sourceTable.toUpperCase()}`;
+          const selectClause = selectColumns.length > 0 ? selectColumns.map(c => c).join(', ') : '*';
+          const query = `SELECT ${selectClause} FROM ${sourceTable}`;
 
           const result = await connInstance.execute(
             query,
@@ -3888,16 +3940,16 @@ export class IntegrationsService implements OnApplicationBootstrap {
         };
       }
     } catch (err: unknown) {
-      const errorMsg = this.formatOracleError(err);
+      const oracleErr = this.formatOracleError(err);
       await this.prisma.integrationConnection.update({
         where: { id: connection.id },
         data: {
           lastSyncAt: new Date(),
           lastSyncStatus: SyncStatus.failed,
-          lastSyncLog: `Full sync failed: ${errorMsg}`,
+          lastSyncLog: `Full sync failed: ${oracleErr.message}`,
         },
       });
-      throw new BadRequestException(`Full sync failed: ${errorMsg}`);
+      throw new BadRequestException({ message: `Full sync failed: ${oracleErr.message}`, code: oracleErr.code });
     } finally {
       if (connInstance) {
         await connInstance.close().catch(() => { });

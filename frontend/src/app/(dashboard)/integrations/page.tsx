@@ -26,6 +26,8 @@ import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { translateErrorCode } from '@/lib/i18n/error-code-map';
+import type { TranslationKey } from '@/lib/i18n/translations';
 import { CONNECTION_TYPES, SYNC_SCHEDULES, SOURCE_SYSTEMS, IMPORT_TYPES } from '@/lib/constants';
 import type {
   IntegrationConnection,
@@ -43,6 +45,16 @@ export default function IntegrationsPage() {
   const { success: toastSuccess, error: toastError } = useToast();
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'connections' | 'mappings' | 'sync'>('connections');
+
+  function getApiErrorMessage(err: unknown, fallbackKey: TranslationKey): string {
+    if (axios.isAxiosError(err)) {
+      const data = err.response?.data as { code?: string; message?: string | string[] } | undefined;
+      if (data?.code) return translateErrorCode(data.code, t);
+      if (typeof data?.message === 'string') return data.message;
+      if (Array.isArray(data?.message) && data.message.length > 0) return String(data.message[0]);
+    }
+    return t(fallbackKey);
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -97,6 +109,12 @@ export default function IntegrationsPage() {
   const [syncResult, setSyncResult] = useState<{ recordsSynced: number; message: string } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  // Dynamic preview states
+  const [previewRows, setPreviewRows] = useState<any[]>([]);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isPreviewValidated, setIsPreviewValidated] = useState(false);
+
   // Connection testing states
   const [testingConnId, setTestingConnId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -112,7 +130,7 @@ export default function IntegrationsPage() {
       setTotalConn(res.total ?? 0);
       setTotalPagesConn(res.totalPages ?? 1);
     } catch (err: unknown) {
-      setErrorConn(err instanceof Error ? err.message : 'Failed to fetch connections.');
+      setErrorConn(err instanceof Error ? err.message : t('page.integrations.fetchConnectionsFailed'));
     } finally {
       setIsLoadingConn(false);
     }
@@ -129,7 +147,7 @@ export default function IntegrationsPage() {
       setTotalMap(res.total ?? 0);
       setTotalPagesMap(res.totalPages ?? 1);
     } catch (err: unknown) {
-      setErrorMap(err instanceof Error ? err.message : 'Failed to fetch mappings.');
+      setErrorMap(err instanceof Error ? err.message : t('page.integrations.fetchMappingsFailed'));
     } finally {
       setIsLoadingMap(false);
     }
@@ -190,7 +208,7 @@ export default function IntegrationsPage() {
           setEditConn(initialConnection as IntegrationConnection);
           setConnModalOpen(true);
         }, 0);
-        toastSuccess('Successfully authenticated with Oracle Cloud OAuth SSO!');
+        toastSuccess(t('page.integrations.oauthSuccess'));
       }
     }
   }, [activeCompanyId, toastSuccess]);
@@ -215,14 +233,12 @@ export default function IntegrationsPage() {
       const res = await apiPost<{ success: boolean; message: string }>('/integrations/connections/test', payload);
       setTestResult(res);
       if (res.success) {
-        toastSuccess(`Connection test succeeded: ${res.message}`);
+        toastSuccess(t('page.integrations.testSucceeded', { message: res.message }));
       } else {
-        toastError(`Connection test failed: ${res.message}`);
+        toastError(t('page.integrations.testFailed', { message: res.message }));
       }
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Test request failed.')
-        : 'Test request failed.';
+      const msg = getApiErrorMessage(err, 'page.integrations.testRequestFailed');
       setTestResult({ success: false, message: msg });
       toastError(msg);
     } finally {
@@ -235,11 +251,11 @@ export default function IntegrationsPage() {
     setDeleteConnLoading(true);
     try {
       await apiDelete<IntegrationConnection>(`/integrations/connections/${deleteConnConfirm.id}`);
-      toastSuccess('Connection deleted successfully.');
+      toastSuccess(t('page.integrations.connectionDeleted'));
       setDeleteConnConfirm(null);
       void fetchConnections();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete connection';
+      const msg = getApiErrorMessage(err, 'page.integrations.deleteConnectionFailed');
       toastError(msg);
     } finally {
       setDeleteConnLoading(false);
@@ -252,11 +268,11 @@ export default function IntegrationsPage() {
     setDeleteMapLoading(true);
     try {
       await apiDelete<ImportMapping>(`/integrations/mappings/${deleteMapConfirm.id}`);
-      toastSuccess('Mapping template deleted successfully.');
+      toastSuccess(t('page.integrations.mappingDeleted'));
       setDeleteMapConfirm(null);
       void fetchMappings();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete mapping';
+      const msg = getApiErrorMessage(err, 'page.integrations.deleteMappingFailed');
       toastError(msg);
     } finally {
       setDeleteMapLoading(false);
@@ -282,15 +298,60 @@ export default function IntegrationsPage() {
         payload
       );
       setSyncResult({ recordsSynced: res.recordsSynced, message: res.message });
-      toastSuccess(`Sync complete. Synced ${res.recordsSynced} records.`);
+      toastSuccess(t('page.integrations.syncComplete', { count: res.recordsSynced }));
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Manual synchronization failed.')
-        : 'Manual synchronization failed.';
+      const msg = getApiErrorMessage(err, 'page.integrations.syncFailedManual');
       setSyncError(msg);
       toastError(msg);
     } finally {
       setSyncLoading(false);
+    }
+  }
+
+  // Clear preview and validation states when sync parameters change
+  useEffect(() => {
+    setPreviewRows([]);
+    setPreviewError(null);
+    setIsPreviewValidated(false);
+  }, [syncConnId, syncMapId]);
+
+  async function handlePreviewData() {
+    if (!syncConnId || !syncMapId) return;
+    setIsPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewRows([]);
+    setIsPreviewValidated(false);
+
+    try {
+      const selectedMap = mappings.find((m) => m.id === syncMapId);
+      if (!selectedMap) {
+        throw new Error(t('page.integrations.mappingNotFound'));
+      }
+
+      let sourceTable = 'FP_GL_ACTUALS';
+      let mappingConfigPayload: Record<string, any> = selectedMap.mappingConfig;
+
+      if (selectedMap.mappingConfig?.targetModule) {
+        sourceTable = (selectedMap.mappingConfig.sourceTable as string) || '';
+        mappingConfigPayload = (selectedMap.mappingConfig.columnMapping as unknown as Record<string, string | null>) || {};
+      }
+
+      const payload = {
+        sourceTable,
+        mappingConfig: mappingConfigPayload,
+        limit: 10,
+      };
+
+      const rows = await apiPost<any[]>(`/integrations/connections/${syncConnId}/preview-rows`, payload);
+      setPreviewRows(rows || []);
+      setIsPreviewValidated(true);
+      toastSuccess(t('page.integrations.previewSuccess'));
+    } catch (err: unknown) {
+      const msg = getApiErrorMessage(err, 'page.integrations.previewFailed');
+      setPreviewError(msg);
+      toastError(msg);
+    } finally {
+      setIsPreviewLoading(false);
     }
   }
 
@@ -641,12 +702,76 @@ export default function IntegrationsPage() {
               />
             </div>
 
-            <div className="border-t border-slate-100 pt-4 flex justify-end">
-              <Button type="submit" isLoading={syncLoading} disabled={!syncConnId || !syncMapId}>
+            <div className="border-t border-slate-100 pt-4 flex gap-3 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePreviewData}
+                isLoading={isPreviewLoading}
+                disabled={!syncConnId || !syncMapId}
+              >
+                Preview Data
+              </Button>
+              <Button type="submit" isLoading={syncLoading} disabled={!isPreviewValidated || !syncConnId || !syncMapId}>
                 <RefreshCw className={`h-4 w-4 mr-1.5 ${syncLoading ? 'animate-spin' : ''}`} /> {t('page.integrations.triggerSynchronization')}
               </Button>
             </div>
           </form>
+
+          {previewError && (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 flex gap-2.5 items-start">
+              <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Preview / Validation Failed</p>
+                <p className="mt-0.5">{previewError}</p>
+              </div>
+            </div>
+          )}
+
+          {isPreviewValidated && previewRows.length === 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 flex gap-2.5 items-start">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">No Data Found</p>
+                <p className="mt-0.5">The preview returned zero rows from the source table. The table may be empty.</p>
+              </div>
+            </div>
+          )}
+
+          {previewRows.length > 0 && (
+            <div className="space-y-2 border border-slate-150 rounded-xl p-4 bg-slate-50/50">
+              <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                Data Preview (First {previewRows.length} rows) - Validated
+              </h4>
+              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white max-h-60">
+                <table className="min-w-full divide-y divide-slate-200 text-left text-[11px] font-medium text-slate-600">
+                  <thead className="bg-slate-100 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      {Object.keys(previewRows[0]).map((col) => (
+                        <th key={col} className="px-3 py-2 border-b border-slate-200">{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-mono">
+                    {previewRows.map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        {Object.keys(previewRows[0]).map((col) => (
+                          <td key={col} className="px-3 py-1.5 truncate max-w-[180px]">
+                            {row[col] !== null && row[col] !== undefined
+                              ? typeof row[col] === 'object'
+                                ? JSON.stringify(row[col])
+                                : String(row[col])
+                              : <span className="text-slate-400 font-sans italic">null</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {syncError && (
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 flex gap-2.5 items-start">
@@ -682,17 +807,15 @@ export default function IntegrationsPage() {
             try {
               if (editConn) {
                 await apiPatch<IntegrationConnection>(`/integrations/connections/${editConn.id}`, payload);
-                toastSuccess('Connection updated successfully.');
+                toastSuccess(t('page.integrations.connectionUpdated'));
               } else {
                 await apiPost<IntegrationConnection>('/integrations/connections', payload);
-                toastSuccess('Connection created successfully.');
+                toastSuccess(t('page.integrations.connectionCreated'));
               }
               setConnModalOpen(false);
               void fetchConnections();
             } catch (err: unknown) {
-              const msg = axios.isAxiosError(err)
-                ? ((err.response?.data as { message?: string })?.message ?? 'Failed to save connection.')
-                : 'Failed to save connection.';
+              const msg = getApiErrorMessage(err, 'page.integrations.saveConnectionFailed');
               setConnFormError(msg);
               toastError(msg);
             } finally {
@@ -716,17 +839,15 @@ export default function IntegrationsPage() {
             try {
               if (editMap) {
                 await apiPatch<ImportMapping>(`/integrations/mappings/${editMap.id}`, payload);
-                toastSuccess('Mapping template updated successfully.');
+                toastSuccess(t('page.integrations.mappingUpdated'));
               } else {
                 await apiPost<ImportMapping>('/integrations/mappings', payload);
-                toastSuccess('Mapping template created successfully.');
+                toastSuccess(t('page.integrations.mappingCreated'));
               }
               setMapModalOpen(false);
               void fetchMappings();
             } catch (err: unknown) {
-              const msg = axios.isAxiosError(err)
-                ? ((err.response?.data as { message?: string })?.message ?? 'Failed to save mapping.')
-                : 'Failed to save mapping.';
+              const msg = getApiErrorMessage(err, 'page.integrations.saveMappingFailed');
               setMapFormError(msg);
               toastError(msg);
             } finally {
@@ -1026,18 +1147,191 @@ function ConnectionFormModal({ item, onClose, onSave, isLoading, error }: Connec
 }
 
 // ===========================================================================
+// MODULE MAPPING METADATA
+// ===========================================================================
+const MODULE_FIELDS: Record<string, { key: string; label: string; required?: boolean }[]> = {
+  companies: [
+    { key: 'code', label: 'Company Code / ID', required: true },
+    { key: 'name', label: 'Company Name' },
+    { key: 'industryType', label: 'Industry Type (food_manufacturing, food_retail, mixed, other)' },
+    { key: 'currencyCode', label: 'Currency Code (e.g. EGP)' },
+  ],
+  sites: [
+    { key: 'name', label: 'Site Name', required: true },
+    { key: 'type', label: 'Site Type (factory, branch, warehouse, office, distribution_center)' },
+    { key: 'region', label: 'Region' },
+  ],
+  accounts: [
+    { key: 'code', label: 'Account Code', required: true },
+    { key: 'name', label: 'Account Name' },
+    { key: 'type', label: 'Account Type (revenue, cogs, expense, asset, liability, equity, cashflow)' },
+  ],
+  costcenters: [
+    { key: 'code', label: 'Cost Center Code', required: true },
+    { key: 'name', label: 'Cost Center Name' },
+    { key: 'type', label: 'Cost Center Type (sales, production, admin, marketing, logistics, maintenance, other)' },
+  ],
+  productcategories: [
+    { key: 'name', label: 'Category Name', required: true },
+  ],
+  suppliers: [
+    { key: 'name', label: 'Supplier Name', required: true },
+    { key: 'phone', label: 'Phone' },
+    { key: 'email', label: 'Email' },
+  ],
+  customers: [
+    { key: 'code', label: 'Customer Code', required: true },
+    { key: 'name', label: 'Customer Name' },
+    { key: 'type', label: 'Customer Type (retail, wholesale, distributor, internal, other)' },
+    { key: 'region', label: 'Region' },
+  ],
+  products: [
+    { key: 'sku', label: 'Product SKU / Code', required: true },
+    { key: 'name', label: 'Product Name' },
+    { key: 'category', label: 'Category Name' },
+    { key: 'unit', label: 'Unit Symbol' },
+    { key: 'salePrice', label: 'Sale Price' },
+    { key: 'standardCost', label: 'Standard Cost' },
+  ],
+  materials: [
+    { key: 'code', label: 'Material Code', required: true },
+    { key: 'name', label: 'Material Name' },
+    { key: 'unit', label: 'Unit Symbol' },
+    { key: 'purchasePrice', label: 'Purchase Price' },
+    { key: 'supplier', label: 'Supplier Name / Code' },
+  ],
+  units: [
+    { key: 'symbol', label: 'Unit Symbol', required: true },
+    { key: 'name', label: 'Unit Name' },
+  ],
+  bomrecipes: [
+    { key: 'productSku', label: 'Product SKU', required: true },
+    { key: 'version', label: 'Version (e.g. v1)' },
+    { key: 'outputQty', label: 'Output Quantity' },
+    { key: 'laborCost', label: 'Labor Cost' },
+    { key: 'overheadCost', label: 'Overhead Cost' },
+  ],
+  bomlines: [
+    { key: 'productSku', label: 'Product SKU', required: true },
+    { key: 'version', label: 'Version (e.g. v1)' },
+    { key: 'materialCode', label: 'Material Code', required: true },
+    { key: 'qtyPerOutput', label: 'Quantity Per Output' },
+    { key: 'unitCost', label: 'Unit Cost' },
+  ],
+  inventorysnapshots: [
+    { key: 'siteName', label: 'Site Name / Code', required: true },
+    { key: 'productSku', label: 'Product SKU' },
+    { key: 'materialCode', label: 'Material Code' },
+    { key: 'snapshotDate', label: 'Snapshot Date' },
+    { key: 'qtyOnHand', label: 'Quantity On Hand' },
+    { key: 'inventoryValue', label: 'Inventory Value' },
+  ],
+  budgetcycles: [
+    { key: 'fiscalYear', label: 'Fiscal Year' },
+    { key: 'name', label: 'Budget Name' },
+    { key: 'status', label: 'Status (draft, under_review, approved, rejected)' },
+    { key: 'startDate', label: 'Start Date' },
+    { key: 'endDate', label: 'End Date' },
+  ],
+  budgetlines: [
+    { key: 'fiscalYear', label: 'Fiscal Year' },
+    { key: 'accountCode', label: 'Account Code', required: true },
+    { key: 'siteName', label: 'Site Name / Code' },
+    { key: 'costCenterCode', label: 'Cost Center Code' },
+    { key: 'productSku', label: 'Product SKU' },
+    { key: 'materialCode', label: 'Material Code' },
+    { key: 'customerCode', label: 'Customer Code' },
+    { key: 'periodMonth', label: 'Period Month (1-12)' },
+    { key: 'quantity', label: 'Quantity' },
+    { key: 'unitPrice', label: 'Unit Price' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'notes', label: 'Notes' },
+  ],
+  forecastcycles: [
+    { key: 'fiscalYear', label: 'Fiscal Year' },
+    { key: 'name', label: 'Forecast Name' },
+    { key: 'basePeriod', label: 'Base Period' },
+    { key: 'status', label: 'Status (draft, under_review, approved, rejected)' },
+  ],
+  forecastlines: [
+    { key: 'fiscalYear', label: 'Fiscal Year' },
+    { key: 'accountCode', label: 'Account Code', required: true },
+    { key: 'siteName', label: 'Site Name / Code' },
+    { key: 'costCenterCode', label: 'Cost Center Code' },
+    { key: 'productSku', label: 'Product SKU' },
+    { key: 'materialCode', label: 'Material Code' },
+    { key: 'customerCode', label: 'Customer Code' },
+    { key: 'periodMonth', label: 'Period Month (1-12)' },
+    { key: 'quantity', label: 'Quantity' },
+    { key: 'unitPrice', label: 'Unit Price' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'driverType', label: 'Driver Type' },
+    { key: 'notes', label: 'Notes' },
+  ],
+  productionplans: [
+    { key: 'siteName', label: 'Site Name / Code', required: true },
+    { key: 'productSku', label: 'Product SKU', required: true },
+    { key: 'planSource', label: 'Plan Source (manual, auto)' },
+    { key: 'fiscalYear', label: 'Fiscal Year' },
+    { key: 'periodMonth', label: 'Period Month (1-12)' },
+    { key: 'plannedQty', label: 'Planned Quantity' },
+    { key: 'actualQty', label: 'Actual Quantity' },
+    { key: 'estimatedCost', label: 'Estimated Cost' },
+    { key: 'actualCost', label: 'Actual Cost' },
+  ],
+  headcountplans: [
+    { key: 'fiscalYear', label: 'Fiscal Year' },
+    { key: 'siteName', label: 'Site Name / Code' },
+    { key: 'costCenterCode', label: 'Cost Center Code' },
+    { key: 'jobTitle', label: 'Job Title' },
+    { key: 'department', label: 'Department' },
+    { key: 'employmentType', label: 'Employment Type (full_time, part_time, contract, seasonal)' },
+    { key: 'headcount', label: 'Headcount' },
+    { key: 'periodMonth', label: 'Period Month (1-12)' },
+    { key: 'basicSalary', label: 'Basic Salary' },
+    { key: 'allowances', label: 'Allowances' },
+    { key: 'socialInsurance', label: 'Social Insurance' },
+    { key: 'totalCost', label: 'Total Cost' },
+    { key: 'notes', label: 'Notes' },
+  ],
+  promotions: [
+    { key: 'name', label: 'Promotion Name', required: true },
+    { key: 'description', label: 'Description' },
+    { key: 'productSku', label: 'Product SKU' },
+    { key: 'customerCode', label: 'Customer Code' },
+    { key: 'discountPct', label: 'Discount Percentage' },
+    { key: 'discountAmount', label: 'Discount Amount' },
+    { key: 'startDate', label: 'Start Date' },
+    { key: 'endDate', label: 'End Date' },
+    { key: 'budgetAmount', label: 'Budget Amount' },
+    { key: 'actualCost', label: 'Actual Cost' },
+    { key: 'incrementalRevenue', label: 'Incremental Revenue' },
+    { key: 'roi', label: 'ROI' },
+    { key: 'isActive', label: 'Is Active (Y/N/true/false)' },
+  ],
+  rawmaterialprices: [
+    { key: 'materialCode', label: 'Material Code', required: true },
+    { key: 'price', label: 'Price' },
+    { key: 'priceDate', label: 'Price Date' },
+    { key: 'source', label: 'Source' },
+  ],
+};
+
+// ===========================================================================
 // SUB-COMPONENT: MAPPING FORM
 // ===========================================================================
 interface MappingFormModalProps {
   item: ImportMapping | null;
   connections: IntegrationConnection[];
   onClose: () => void;
-  onSave: (payload: Record<string, string | number | boolean | null | undefined | Record<string, string | null>>) => Promise<void>;
+  onSave: (payload: Record<string, any>) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
 
 function MappingFormModal({ item, connections, onClose, onSave, isLoading, error }: MappingFormModalProps) {
+  const { error: toastError } = useToast();
+  const { t } = useI18n();
   const [name, setName] = useState(item?.name ?? '');
   const [connectionId, setConnectionId] = useState(item?.connectionId ?? '');
   const [sourceSystem, setSourceSystem] = useState<ImportSourceSystem>(item?.sourceSystem ?? 'excel');
@@ -1046,37 +1340,194 @@ function MappingFormModal({ item, connections, onClose, onSave, isLoading, error
   const [isDefault, setIsDefault] = useState(item?.isDefault ?? false);
   const [isActive, setIsActive] = useState(item ? (item.isActive ?? true) : true);
 
-  // Field Mapping states
-  const [mapAccountCode, setMapAccountCode] = useState(item?.mappingConfig?.accountCode ?? 'Account Code');
-  const [mapAmount, setMapAmount] = useState(item?.mappingConfig?.amount ?? 'Amount');
-  const [mapDate, setMapDate] = useState(item?.mappingConfig?.transactionDate ?? 'Date');
-  const [mapQty, setMapQty] = useState(item?.mappingConfig?.quantity ?? 'Quantity');
-  const [mapPrice, setMapPrice] = useState(item?.mappingConfig?.unitPrice ?? 'Unit Price');
-  const [mapRef, setMapRef] = useState(item?.mappingConfig?.referenceNo ?? 'Reference');
+  // Field Mapping states for standard GL mapping
+  const [mapAccountCode, setMapAccountCode] = useState(
+    item?.mappingConfig && !item.mappingConfig.targetModule
+      ? (item.mappingConfig.accountCode as string) ?? 'Account Code'
+      : 'Account Code'
+  );
+  const [mapAmount, setMapAmount] = useState(
+    item?.mappingConfig && !item.mappingConfig.targetModule
+      ? (item.mappingConfig.amount as string) ?? 'Amount'
+      : 'Amount'
+  );
+  const [mapDate, setMapDate] = useState(
+    item?.mappingConfig && !item.mappingConfig.targetModule
+      ? (item.mappingConfig.transactionDate as string) ?? 'Date'
+      : 'Date'
+  );
+  const [mapQty, setMapQty] = useState(
+    item?.mappingConfig && !item.mappingConfig.targetModule
+      ? (item.mappingConfig.quantity as string) ?? 'Quantity'
+      : 'Quantity'
+  );
+  const [mapPrice, setMapPrice] = useState(
+    item?.mappingConfig && !item.mappingConfig.targetModule
+      ? (item.mappingConfig.unitPrice as string) ?? 'Unit Price'
+      : 'Unit Price'
+  );
+  const [mapRef, setMapRef] = useState(
+    item?.mappingConfig && !item.mappingConfig.targetModule
+      ? (item.mappingConfig.referenceNo as string) ?? 'Reference'
+      : 'Reference'
+  );
+
+  // Custom mapping states
+  const initialIsCustom = !!item?.mappingConfig?.targetModule;
+  const [isCustom, setIsCustom] = useState(initialIsCustom);
+  const [targetModule, setTargetModule] = useState(
+    (item?.mappingConfig?.targetModule as string) ?? 'companies'
+  );
+  const [sourceTable, setSourceTable] = useState(
+    (item?.mappingConfig?.sourceTable as string) ?? ''
+  );
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>(() => {
+    if (initialIsCustom && item?.mappingConfig?.columnMapping) {
+      return item.mappingConfig.columnMapping as unknown as Record<string, string>;
+    }
+    return {};
+  });
+
+  // Schema Discovery states
+  const [oracleTables, setOracleTables] = useState<{ OWNER: string; TABLE_NAME: string; TABLE_TYPE: string }[]>([]);
+  const [oracleColumns, setOracleColumns] = useState<{ COLUMN_NAME: string; DATA_TYPE: string }[]>([]);
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [loadingColumns, setLoadingColumns] = useState(false);
+  const [tableMode, setTableMode] = useState<'select' | 'manual'>('manual');
+  const [columnMode, setColumnMode] = useState<'select' | 'manual'>('manual');
+
+  const selectedConn = connections.find(c => c.id === connectionId);
+  const isOracle = selectedConn?.connectionType === 'oracle';
+
+  // Discover Oracle Tables/Views
+  useEffect(() => {
+    if (connectionId && isOracle) {
+      setLoadingTables(true);
+      apiGet<{ OWNER: string; TABLE_NAME: string; TABLE_TYPE: string }[] | any>(
+        `/integrations/connections/${connectionId}/oracle-schema/tables`
+      )
+        .then((res) => {
+          const list = Array.isArray(res) ? res : (res?.data || []);
+          setOracleTables(list);
+          if (list.length > 0) {
+            setTableMode('select');
+          } else {
+            setTableMode('manual');
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to discover Oracle tables:', err);
+          setTableMode('manual');
+        })
+        .finally(() => {
+          setLoadingTables(false);
+        });
+    } else {
+      setOracleTables([]);
+      setTableMode('manual');
+    }
+  }, [connectionId, isOracle]);
+
+  // Discover Oracle Table Columns
+  useEffect(() => {
+    if (connectionId && sourceTable && isOracle && tableMode === 'select') {
+      setLoadingColumns(true);
+      apiGet<{ COLUMN_NAME: string; DATA_TYPE: string }[] | any>(
+        `/integrations/connections/${connectionId}/oracle-schema/tables/${sourceTable}/columns`
+      )
+        .then((res) => {
+          const list = Array.isArray(res) ? res : (res?.data || []);
+          setOracleColumns(list);
+          if (list.length > 0) {
+            setColumnMode('select');
+          } else {
+            setColumnMode('manual');
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to discover columns:', err);
+          setColumnMode('manual');
+        })
+        .finally(() => {
+          setLoadingColumns(false);
+        });
+    } else {
+      setOracleColumns([]);
+      setColumnMode('manual');
+    }
+  }, [connectionId, sourceTable, isOracle, tableMode]);
+
+  // Handle module changing: pre-populate empty keys
+  useEffect(() => {
+    const fields = MODULE_FIELDS[targetModule] || [];
+    setColumnMapping((prev) => {
+      const next = { ...prev };
+      fields.forEach((f) => {
+        if (next[f.key] === undefined) {
+          next[f.key] = '';
+        }
+      });
+      return next;
+    });
+  }, [targetModule]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const mappingConfig: Record<string, string | null> = {
-      accountCode: mapAccountCode.trim() || null,
-      amount: mapAmount.trim() || null,
-      transactionDate: mapDate.trim() || null,
-      quantity: mapQty.trim() || null,
-      unitPrice: mapPrice.trim() || null,
-      referenceNo: mapRef.trim() || null,
-    };
+    let payload: Record<string, any>;
 
-    const payload: Record<string, string | number | boolean | null | undefined | Record<string, string | null>> = {
-      name: name.trim(),
-      connectionId: connectionId || undefined,
-      sourceSystem,
-      importType,
-      mappingConfig,
-      skipErrors,
-      isDefault,
-      isActive,
-    };
+    if (isCustom) {
+      // Validate that required fields are present in columnMapping
+      const fields = MODULE_FIELDS[targetModule] || [];
+      for (const f of fields) {
+        if (f.required && (!columnMapping[f.key] || !columnMapping[f.key].trim())) {
+          toastError(t('page.integrations.fieldRequired', { label: f.label }));
+          return;
+        }
+      }
+
+      const cleanColMapping: Record<string, string | null> = {};
+      Object.keys(columnMapping).forEach((k) => {
+        const val = columnMapping[k];
+        cleanColMapping[k] = val && val.trim() ? val.trim() : null;
+      });
+
+      payload = {
+        name: name.trim(),
+        connectionId: connectionId || null,
+        sourceSystem,
+        importType,
+        mappingConfig: {
+          targetModule,
+          sourceTable: sourceTable.trim() || undefined,
+          columnMapping: cleanColMapping,
+        },
+        skipErrors,
+        isDefault,
+        isActive,
+      };
+    } else {
+      const mappingConfig: Record<string, string | null> = {
+        accountCode: mapAccountCode.trim() || null,
+        amount: mapAmount.trim() || null,
+        transactionDate: mapDate.trim() || null,
+        quantity: mapQty.trim() || null,
+        unitPrice: mapPrice.trim() || null,
+        referenceNo: mapRef.trim() || null,
+      };
+
+      payload = {
+        name: name.trim(),
+        connectionId: connectionId || null,
+        sourceSystem,
+        importType,
+        mappingConfig,
+        skipErrors,
+        isDefault,
+        isActive,
+      };
+    }
 
     await onSave(payload);
   }
@@ -1138,25 +1589,161 @@ function MappingFormModal({ item, connections, onClose, onSave, isLoading, error
           </div>
         </div>
 
-        {/* MAPPING CONFIG DETAILS */}
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
-          <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Map Columns to Logical Fields</h4>
-            <span className="text-[9px] text-slate-400 font-medium">Specify the column headers as they appear in source data</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input id="val-acc" label="GL Account Code" required value={mapAccountCode} onChange={(e) => setMapAccountCode(e.target.value)} />
-            <Input id="val-amt" label="Amount" required value={mapAmount} onChange={(e) => setMapAmount(e.target.value)} />
-            <Input id="val-date" label="Transaction Date" required value={mapDate} onChange={(e) => setMapDate(e.target.value)} />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input id="val-qty" label="Quantity" value={mapQty} onChange={(e) => setMapQty(e.target.value)} />
-            <Input id="val-price" label="Unit Price" value={mapPrice} onChange={(e) => setMapPrice(e.target.value)} />
-            <Input id="val-ref" label="Reference No" value={mapRef} onChange={(e) => setMapRef(e.target.value)} />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="map-mode" className="text-xs font-semibold text-slate-500">Mapping Mode</label>
+            <select
+              id="map-mode"
+              value={isCustom ? 'custom' : 'standard'}
+              onChange={(e) => {
+                const val = e.target.value === 'custom';
+                setIsCustom(val);
+              }}
+              className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 font-semibold"
+            >
+              <option value="standard">Standard General Ledger (GL) Sync</option>
+              <option value="custom">Custom Module Table Mapping</option>
+            </select>
           </div>
         </div>
+
+        {/* MAPPING CONFIG DETAILS */}
+        {isCustom ? (
+          <div className="space-y-4 pt-2 border-t border-slate-100">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="target-module" className="text-xs font-semibold text-slate-500">Target Module</label>
+                <select
+                  id="target-module"
+                  value={targetModule}
+                  onChange={(e) => setTargetModule(e.target.value)}
+                  className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 font-semibold capitalize"
+                >
+                  {Object.keys(MODULE_FIELDS).map((mod) => (
+                    <option key={mod} value={mod}>
+                      {mod.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <label htmlFor="source-table" className="text-xs font-semibold text-slate-500">Oracle Source Table / View</label>
+                  {isOracle && oracleTables.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setTableMode(tableMode === 'select' ? 'manual' : 'select')}
+                      className="text-[10px] text-emerald-600 font-bold hover:underline"
+                    >
+                      {tableMode === 'select' ? 'Type manually' : 'Select from discovered list'}
+                    </button>
+                  )}
+                </div>
+                {tableMode === 'select' && isOracle && oracleTables.length > 0 ? (
+                  <select
+                    id="source-table"
+                    value={sourceTable}
+                    onChange={(e) => setSourceTable(e.target.value)}
+                    className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 font-semibold"
+                    disabled={loadingTables}
+                  >
+                    <option value="">-- Select Oracle Table/View --</option>
+                    {oracleTables.map((t) => (
+                      <option key={`${t.OWNER}.${t.TABLE_NAME}`} value={t.TABLE_NAME}>
+                        {t.TABLE_NAME} ({t.TABLE_TYPE})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id="source-table"
+                    value={sourceTable}
+                    onChange={(e) => setSourceTable(e.target.value)}
+                    placeholder="e.g. CUSTOM_ORACLE_TABLE"
+                  />
+                )}
+                {loadingTables && <span className="text-[10px] text-slate-400">Loading tables/views from Oracle...</span>}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Map Custom Table Columns</h4>
+                {isOracle && oracleColumns.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setColumnMode(columnMode === 'select' ? 'manual' : 'select')}
+                    className="text-[10px] text-emerald-600 font-bold hover:underline"
+                  >
+                    {columnMode === 'select' ? 'Type columns manually' : 'Select columns from schema'}
+                  </button>
+                )}
+              </div>
+
+              {loadingColumns && <div className="text-xs text-slate-400">Loading table columns...</div>}
+
+              <div className="grid grid-cols-2 gap-4">
+                {(MODULE_FIELDS[targetModule] || []).map((f) => (
+                  <div key={f.key} className="flex flex-col gap-1.5">
+                    <label htmlFor={`field-${f.key}`} className="text-xs font-semibold text-slate-600">
+                      {f.label} {f.required && <span className="text-red-500">*</span>}
+                    </label>
+                    {columnMode === 'select' && isOracle && oracleColumns.length > 0 ? (
+                      <select
+                        id={`field-${f.key}`}
+                        value={columnMapping[f.key] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setColumnMapping((prev) => ({ ...prev, [f.key]: val }));
+                        }}
+                        className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 font-semibold"
+                        required={f.required}
+                      >
+                        <option value="">-- Mapped Column --</option>
+                        {oracleColumns.map((col) => (
+                          <option key={col.COLUMN_NAME} value={col.COLUMN_NAME}>
+                            {col.COLUMN_NAME} ({col.DATA_TYPE})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        id={`field-${f.key}`}
+                        value={columnMapping[f.key] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setColumnMapping((prev) => ({ ...prev, [f.key]: val }));
+                        }}
+                        placeholder="e.g. COLUMN_NAME"
+                        required={f.required}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Map Columns to Logical Fields</h4>
+              <span className="text-[9px] text-slate-400 font-medium">Specify the column headers as they appear in source data</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Input id="val-acc" label="GL Account Code" required value={mapAccountCode} onChange={(e) => setMapAccountCode(e.target.value)} />
+              <Input id="val-amt" label="Amount" required value={mapAmount} onChange={(e) => setMapAmount(e.target.value)} />
+              <Input id="val-date" label="Transaction Date" required value={mapDate} onChange={(e) => setMapDate(e.target.value)} />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Input id="val-qty" label="Quantity" value={mapQty} onChange={(e) => setMapQty(e.target.value)} />
+              <Input id="val-price" label="Unit Price" value={mapPrice} onChange={(e) => setMapPrice(e.target.value)} />
+              <Input id="val-ref" label="Reference No" value={mapRef} onChange={(e) => setMapRef(e.target.value)} />
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
           <div className="flex items-center gap-2">

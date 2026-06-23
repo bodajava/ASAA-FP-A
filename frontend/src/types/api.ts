@@ -323,6 +323,51 @@ export interface CreateBomRecipePayload {
 export type UpdateBomRecipePayload = Partial<CreateBomRecipePayload>;
 
 // ---------------------------------------------------------------------------
+// AI Scenario Planner
+// ---------------------------------------------------------------------------
+export interface AiAssumption {
+  key: string;
+  value: number;
+  unit: 'percent' | 'amount' | 'count' | 'text';
+  description: string;
+}
+
+export interface AiExpectedImpact {
+  revenueImpactPercent: number;
+  costImpactPercent: number;
+  grossMarginImpactPercent: number;
+  netProfitImpactPercent: number;
+  cashFlowImpactPercent: number;
+}
+
+export interface AiSimulationInputs {
+  rawMaterialPriceChangePercent: number;
+  currencyChangePercent: number;
+  demandChangePercent: number;
+  branchExpansionCount: number;
+}
+
+export interface AiScenarioSuggestion {
+  title: string;
+  type: 'raw_material_price_increase' | 'currency_change' | 'demand_decrease' | 'branch_expansion' | 'mixed';
+  confidence: number;
+  summary: string;
+  assumptions: AiAssumption[];
+  expectedImpact: AiExpectedImpact;
+  recommendedActions: string[];
+  simulationInputs: AiSimulationInputs;
+}
+
+export interface AiScenarioResponse {
+  scenarios: AiScenarioSuggestion[];
+}
+
+export interface AiUnavailableResponse {
+  message: string;
+  available: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
 export interface DashboardKpis {

@@ -76,7 +76,7 @@ export default function ApprovalsPage() {
       setTotal(res.total ?? 0);
       setTotalPages(res.totalPages ?? 1);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load approvals.';
+      const msg = err instanceof Error ? err.message : t('page.approvals.loadFailed');
       setError(msg);
       toastError(msg);
     } finally {

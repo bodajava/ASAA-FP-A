@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus,
   Search,
@@ -10,6 +10,7 @@ import {
   Layers,
   AlertCircle
 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,10 @@ import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { translateErrorCode } from '@/lib/i18n/error-code-map';
 import { useTranslateApi } from '@/lib/i18n/translate-api';
+import { AiScenarioPlanner } from '@/components/ai-scenario-planner';
+import { queryKeys } from '@/lib/query-keys';
 import type {
   Scenario,
   ScenarioType,
@@ -53,18 +57,24 @@ export default function ScenariosPage() {
   const { success: toastSuccess, error: toastError } = useToast();
   const { t } = useI18n();
   const { tScenarioSubtype } = useTranslateApi();
+  const queryClient = useQueryClient();
 
   // Active Tab: 'scenarios' list or 'simulation' preview
   const [activeTab, setActiveTab] = useState<'list' | 'simulation'>('list');
 
   // Scenarios List State
-  const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Form states
   const [formOpen, setFormOpen] = useState(false);
@@ -74,15 +84,6 @@ export default function ScenariosPage() {
   const [deleteConfirmScenario, setDeleteConfirmScenario] = useState<Scenario | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Master Data
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [budgets, setBudgets] = useState<BudgetCycle[]>([]);
-  const [forecasts, setForecasts] = useState<ForecastCycle[]>([]);
-
   // Simulation State
   const [simBaseType, setSimBaseType] = useState<'budget' | 'forecast'>('budget');
   const [simBaseId, setSimBaseId] = useState('');
@@ -91,87 +92,84 @@ export default function ScenariosPage() {
   const [simLoading, setSimLoading] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
 
-  // ---------------------------------------------------------------------------
-  // Load Scenarios
-  // ---------------------------------------------------------------------------
-  const fetchScenarios = useCallback(async () => {
-    if (!activeCompanyId) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: '10',
-      });
-      if (search.trim()) {
-        params.set('search', search.trim());
-      }
-      const res = await apiGet<PaginatedResponse<Scenario>>(`/scenarios?${params.toString()}`);
-      setScenarios(res.data);
-      setTotal(res.total);
-      setTotalPages(res.totalPages);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch scenarios.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeCompanyId, page, search]);
+  // AI Scenario Apply State
+  const [aiPrefill, setAiPrefill] = useState<{
+    assumptions: ScenarioAssumptions;
+    name: string;
+  } | null>(null);
 
+  // ---------------------------------------------------------------------------
+  // Load Scenarios via TanStack Query
+  // ---------------------------------------------------------------------------
+  const scenariosQuery = useQuery({
+    queryKey: queryKeys.scenarios.list(activeCompanyId!, { page: String(page), search: debouncedSearch }),
+    queryFn: async ({ signal }) => {
+      const params = new URLSearchParams({ page: String(page), limit: '10' });
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      return apiGet<PaginatedResponse<Scenario>>(`/scenarios?${params.toString()}`, { signal });
+    },
+    enabled: Boolean(activeCompanyId),
+    placeholderData: (prev) => prev,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const scenarios = scenariosQuery.data?.data ?? [];
+  const total = scenariosQuery.data?.total ?? 0;
+  const totalPages = scenariosQuery.data?.totalPages ?? 1;
+
+  // ---------------------------------------------------------------------------
+  // Load Master Data via TanStack Query
+  // ---------------------------------------------------------------------------
+  const masterDataQuery = useQuery({
+    queryKey: [...queryKeys.scenarios.all, 'master-data', activeCompanyId],
+    queryFn: async ({ signal }) => {
+      const [accs, mats, prds, sups, custs, budgs, forecs] = await Promise.all([
+        apiGet<PaginatedResponse<Account>>('/accounts?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Material>>('/materials?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Product>>('/products?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Supplier>>('/suppliers?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Customer>>('/customers?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<BudgetCycle>>('/budgets?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<ForecastCycle>>('/forecasts?limit=1000', { signal }).then((r) => r.data),
+      ]);
+      return { accs, mats, prds, sups, custs, budgs, forecs };
+    },
+    enabled: Boolean(activeCompanyId),
+    staleTime: 10 * 60 * 1000, // Master data changes rarely
+    meta: { persist: true },
+  });
+
+  const accounts = masterDataQuery.data?.accs ?? [];
+  const materials = masterDataQuery.data?.mats ?? [];
+  const products = masterDataQuery.data?.prds ?? [];
+  const suppliers = masterDataQuery.data?.sups ?? [];
+  const customers = masterDataQuery.data?.custs ?? [];
+  const budgets = masterDataQuery.data?.budgs ?? [];
+  const forecasts = masterDataQuery.data?.forecs ?? [];
+
+  // Pre-select baselines when master data loads
   useEffect(() => {
-    void Promise.resolve().then(() => void fetchScenarios());
-  }, [fetchScenarios]);
-
-  // ---------------------------------------------------------------------------
-  // Load Master Data & Baselines
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!activeCompanyId) return;
-    async function loadData() {
-      try {
-        const [accs, mats, prds, sups, custs, budgs, forecs] = await Promise.all([
-          apiGet<PaginatedResponse<Account>>('/accounts?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Material>>('/materials?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Product>>('/products?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Supplier>>('/suppliers?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Customer>>('/customers?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<BudgetCycle>>('/budgets?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<ForecastCycle>>('/forecasts?limit=1000').then((r) => r.data),
-        ]);
-        setAccounts(accs);
-        setMaterials(mats);
-        setProducts(prds);
-        setSuppliers(sups);
-        setCustomers(custs);
-        setBudgets(budgs);
-        setForecasts(forecs);
-
-        // Pre-select baselines
-        if (budgs.length > 0) {
-          setSimBaseId(budgs[0].id);
-        }
-      } catch {
-        // Silent failure
-      }
+    if (budgets.length > 0 && !simBaseId) {
+      setSimBaseId(budgets[0].id);
     }
-    void loadData();
-  }, [activeCompanyId]);
+  }, [budgets, simBaseId]);
 
-  // ---------------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------------
-  async function handleDeleteScenario() {
-    if (!deleteConfirmScenario) return;
-    setDeleteLoading(true);
-    try {
-      await apiDelete<Scenario>(`/scenarios/${deleteConfirmScenario.id}`);
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiDelete<Scenario>(`/scenarios/${id}`),
+    onSuccess: () => {
       toastSuccess(t('common.deletedSuccess'));
       setDeleteConfirmScenario(null);
-      void fetchScenarios();
-    } catch (err: unknown) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.scenarios.all });
+    },
+    onError: (err: unknown) => {
       toastError(err instanceof Error ? err.message : t('common.deleteFailed'));
-    } finally {
-      setDeleteLoading(false);
-    }
+    },
+  });
+
+  async function handleDeleteScenario() {
+    if (!deleteConfirmScenario) return;
+    await deleteMutation.mutateAsync(deleteConfirmScenario.id);
   }
 
   async function handleRunSimulation() {
@@ -189,15 +187,24 @@ export default function ScenariosPage() {
       setSimResult(res);
       toastSuccess(t('common.success'));
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Simulation failed.')
-        : 'Simulation failed.';
+      let msg = t('page.scenarios.simulationFailed');
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { code?: string; message?: string } | undefined;
+        if (data?.code) msg = translateErrorCode(data.code, t);
+        else if (data?.message) msg = data.message;
+      }
       setSimError(msg);
       toastError(msg);
     } finally {
       setSimLoading(false);
     }
   }
+
+  const handleApplyAiScenario = useCallback((assumptions: ScenarioAssumptions, name: string) => {
+    setAiPrefill({ assumptions, name });
+    setEditScenario(null);
+    setFormOpen(true);
+  }, []);
 
   const getValidationBlocker = (): string | null => {
     if (!simBaseId) {
@@ -256,7 +263,7 @@ export default function ScenariosPage() {
 
   const validationBlocker = getValidationBlocker();
 
-  const columns: Column<Scenario>[] = [
+  const columns: Column<Scenario>[] = useMemo(() => [
     { key: 'name', header: t('page.scenarios.scenarioName'), className: 'font-semibold' },
     {
       key: 'scenarioType',
@@ -292,7 +299,7 @@ export default function ScenariosPage() {
         </div>
       ),
     },
-  ];
+  ], [t, tScenarioSubtype]);
 
   if (!activeCompanyId) {
     return (
@@ -358,6 +365,9 @@ export default function ScenariosPage() {
             </Button>
           </PageHeader>
 
+          {/* AI Scenario Planner */}
+          <AiScenarioPlanner onApplyScenario={handleApplyAiScenario} />
+
           {/* Search bar */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-xs">
@@ -365,8 +375,8 @@ export default function ScenariosPage() {
               <input
                 type="search"
                 placeholder={t('page.scenarios.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -374,10 +384,13 @@ export default function ScenariosPage() {
           </div>
 
           {/* Table */}
-          {isLoading ? (
+          {scenariosQuery.isLoading ? (
             <LoadingState rows={6} message={t('common.loading')} />
-          ) : error ? (
-            <ErrorState message={error} onRetry={fetchScenarios} />
+          ) : scenariosQuery.error && !scenarios.length ? (
+            <ErrorState
+              message={t('page.scenarios.fetchFailed')}
+              onRetry={() => void queryClient.invalidateQueries({ queryKey: queryKeys.scenarios.all })}
+            />
           ) : scenarios.length === 0 ? (
             <EmptyState
               title={t('page.scenarios.emptyTitle')}
@@ -393,6 +406,13 @@ export default function ScenariosPage() {
             />
           ) : (
             <>
+              {/* Background refresh indicator */}
+              {scenariosQuery.isFetching && !scenariosQuery.isLoading && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span className="h-3 w-3 animate-spin rounded-full border border-emerald-600 border-t-transparent" />
+                  Refreshing…
+                </div>
+              )}
               <TableWrapper<Scenario>
                 data={scenarios}
                 columns={columns}
@@ -601,6 +621,7 @@ export default function ScenariosPage() {
       {formOpen && (
         <ScenarioFormModal
           item={editScenario}
+          aiPrefill={aiPrefill}
           accounts={accounts}
           materials={materials}
           products={products}
@@ -609,6 +630,7 @@ export default function ScenariosPage() {
           onClose={() => {
             setFormOpen(false);
             setEditScenario(null);
+            setAiPrefill(null);
           }}
           onSave={async (payload) => {
             setFormLoading(true);
@@ -623,7 +645,8 @@ export default function ScenariosPage() {
               }
               setFormOpen(false);
               setEditScenario(null);
-              void fetchScenarios();
+              setAiPrefill(null);
+              void queryClient.invalidateQueries({ queryKey: queryKeys.scenarios.all });
             } catch (err: unknown) {
               const msg = axios.isAxiosError(err)
                 ? ((err.response?.data as { message?: string })?.message ?? t('common.error'))
@@ -656,6 +679,7 @@ export default function ScenariosPage() {
 // ---------------------------------------------------------------------------
 interface ScenarioFormModalProps {
   item: Scenario | null;
+  aiPrefill?: { assumptions: ScenarioAssumptions; name: string } | null;
   accounts: Account[];
   materials: Material[];
   products: Product[];
@@ -669,6 +693,7 @@ interface ScenarioFormModalProps {
 
 function ScenarioFormModal({
   item,
+  aiPrefill,
   accounts,
   materials,
   products,
@@ -681,29 +706,33 @@ function ScenarioFormModal({
 }: ScenarioFormModalProps) {
   const { t } = useI18n();
   const { tScenarioSubtype } = useTranslateApi();
-  const [name, setName] = useState(item?.name ?? '');
+  const [name, setName] = useState(aiPrefill?.name ?? item?.name ?? '');
   const scenarioType: ScenarioType = item?.scenarioType ?? 'custom';
 
-  // Assumptions states
-  const [subtype, setSubtype] = useState<ScenarioSubtype>(item?.assumptions?.subtype ?? 'increase_material_prices');
-  const [percentage, setPercentage] = useState(item?.assumptions?.percentage?.toString() ?? '10');
+  // Assumptions states — prefer AI prefill over existing item data
+  const [subtype, setSubtype] = useState<ScenarioSubtype>(
+    aiPrefill?.assumptions?.subtype ?? item?.assumptions?.subtype ?? 'increase_material_prices',
+  );
+  const [percentage, setPercentage] = useState(
+    aiPrefill?.assumptions?.percentage?.toString() ?? item?.assumptions?.percentage?.toString() ?? '10',
+  );
 
   // Specific IDs select (multi-select / search simulation)
   const [selMaterialIds, setSelMaterialIds] = useState<string[]>(item?.assumptions?.materialIds ?? []);
-  const [fromCurrency, setFromCurrency] = useState(item?.assumptions?.fromCurrency ?? 'USD');
-  const [toCurrency, setToCurrency] = useState(item?.assumptions?.toCurrency ?? 'EGP');
-  const [newRate, setNewRate] = useState(item?.assumptions?.newRate?.toString() ?? '48');
+  const [fromCurrency, setFromCurrency] = useState(aiPrefill?.assumptions?.fromCurrency ?? item?.assumptions?.fromCurrency ?? 'USD');
+  const [toCurrency, setToCurrency] = useState(aiPrefill?.assumptions?.toCurrency ?? item?.assumptions?.toCurrency ?? 'EGP');
+  const [newRate, setNewRate] = useState(aiPrefill?.assumptions?.newRate?.toString() ?? item?.assumptions?.newRate?.toString() ?? '48');
   const [selSupplierIds, setSelSupplierIds] = useState<string[]>(item?.assumptions?.targetSupplierIds ?? []);
   const [selCustomerIds, _setSelCustomerIds] = useState<string[]>(item?.assumptions?.targetCustomerIds ?? []);
   const [selAccountIds, setSelAccountIds] = useState<string[]>(item?.assumptions?.targetAccountIds ?? []);
   const [selProductIds, setSelProductIds] = useState<string[]>(item?.assumptions?.productIds ?? []);
 
   // Branch expansion states
-  const [siteName, setSiteName] = useState(item?.assumptions?.siteName ?? '');
-  const [revenueAmount, setRevenueAmount] = useState(item?.assumptions?.revenueAmount?.toString() ?? '200000');
-  const [expenseAmount, setExpenseAmount] = useState(item?.assumptions?.expenseAmount?.toString() ?? '120000');
-  const [revenueAccountId, setRevenueAccountId] = useState(item?.assumptions?.revenueAccountId ?? '');
-  const [expenseAccountId, setExpenseAccountId] = useState(item?.assumptions?.expenseAccountId ?? '');
+  const [siteName, setSiteName] = useState(aiPrefill?.assumptions?.siteName ?? item?.assumptions?.siteName ?? '');
+  const [revenueAmount, setRevenueAmount] = useState(aiPrefill?.assumptions?.revenueAmount?.toString() ?? item?.assumptions?.revenueAmount?.toString() ?? '200000');
+  const [expenseAmount, setExpenseAmount] = useState(aiPrefill?.assumptions?.expenseAmount?.toString() ?? item?.assumptions?.expenseAmount?.toString() ?? '120000');
+  const [revenueAccountId, setRevenueAccountId] = useState(aiPrefill?.assumptions?.revenueAccountId ?? item?.assumptions?.revenueAccountId ?? '');
+  const [expenseAccountId, setExpenseAccountId] = useState(aiPrefill?.assumptions?.expenseAccountId ?? item?.assumptions?.expenseAccountId ?? '');
 
   // Prepopulate branch expansion accounts
   useEffect(() => {

@@ -127,7 +127,7 @@ export default function SettingsPage() {
       setPlans(data);
     } catch (err: unknown) {
       setPlansError(
-        err instanceof Error ? err.message : 'Failed to load subscription plans.',
+        err instanceof Error ? err.message : t('page.settings.loadPlansFailed'),
       );
     } finally {
       setIsLoadingPlans(false);
@@ -140,13 +140,13 @@ export default function SettingsPage() {
     setUpgradeSuccess(null);
     try {
       await apiPatch<{ message?: string }>(`/tenants/current/plan`, { planId });
-      setUpgradeSuccess(`Successfully upgraded to the ${planName} plan!`);
+      setUpgradeSuccess(t('page.settings.upgradeSuccess', { plan: planName }));
       if (refreshUser) {
         await refreshUser();
       }
     } catch (err: unknown) {
       setUpgradeError(
-        err instanceof Error ? err.message : `Failed to upgrade to the ${planName} plan.`
+        err instanceof Error ? err.message : t('page.settings.upgradeFailed', { plan: planName }),
       );
     } finally {
       setUpgradingPlanId(null);
@@ -168,7 +168,7 @@ export default function SettingsPage() {
       setFiscalYearStart(data.fiscalYearStart ?? 1);
     } catch (err: unknown) {
       setCompanyError(
-        err instanceof Error ? err.message : 'Failed to load company details.',
+        err instanceof Error ? err.message : t('page.settings.loadCompanyFailed'),
       );
     } finally {
       setIsLoadingCompany(false);
@@ -203,7 +203,7 @@ export default function SettingsPage() {
       await fetchCompany();
     } catch (err: unknown) {
       setSaveError(
-        err instanceof Error ? err.message : 'Failed to save company settings.',
+        err instanceof Error ? err.message : t('page.settings.saveCompanyFailed'),
       );
     } finally {
       setIsSaving(false);

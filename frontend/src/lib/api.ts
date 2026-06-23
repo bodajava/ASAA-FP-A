@@ -216,6 +216,11 @@ function translateApiError(error: any, locale: string): string {
     return serverMsg;
   }
 
+  // Handle timeout errors
+  if (error?.code === 'ECONNABORTED' || (error?.message && typeof error.message === 'string' && error.message.includes('timeout'))) {
+    return isAr ? 'انتهت مهلة الطلب. يرجى التحقق من اتصالك والمحاولة مرة أخرى.' : 'Request timed out. Please check your connection and try again.';
+  }
+
   if (error?.code === 'ERR_NETWORK') {
     return isAr ? 'خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.' : 'Network error. Please check your connection and try again.';
   }
@@ -256,6 +261,7 @@ export function clearClientCache(): void {
 
 // ---------------------------------------------------------------------------
 // Typed helper – extract `data` from AxiosResponse
+// Supports AbortController signal for request cancellation.
 // ---------------------------------------------------------------------------
 export async function apiGet<T>(
   url: string,
@@ -266,7 +272,7 @@ export async function apiGet<T>(
   const tenantId = getStoredTenantId() || '';
   const cacheKey = `${tenantId}:${companyId}:${url}:${JSON.stringify(config?.params || {})}`;
 
-  if (!bypass) {
+  if (!bypass && !config?.signal) {
     const cached = clientCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < 60_000) { // 1 minute client cache
       return cached.data as T;
@@ -275,7 +281,7 @@ export async function apiGet<T>(
 
   const response = await api.get<T>(url, config);
 
-  if (!bypass) {
+  if (!bypass && !config?.signal) {
     clientCache.set(cacheKey, {
       data: response.data,
       timestamp: Date.now(),

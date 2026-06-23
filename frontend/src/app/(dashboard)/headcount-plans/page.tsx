@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { getApiErrorMessage } from '@/lib/api-error-handler';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 import type { HeadcountPlan, BudgetCycle, Site, CostCenter } from '@/types/api';
 import { Plus, Users, DollarSign, Briefcase, Pencil, Trash2 } from 'lucide-react';
 import axios from 'axios';
@@ -24,34 +27,16 @@ export default function HeadcountPlansPage() {
   };
   const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const queryClient = useQueryClient();
 
-  const [cycles, setCycles] = useState<BudgetCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<string>('');
-  const [loadingCycles, setLoadingCycles] = useState(false);
-
-  const [plans, setPlans] = useState<HeadcountPlan[]>([]);
-  const [summary, setSummary] = useState<{
-    grandTotalCost: number;
-    grandHeadcount: number;
-    monthly: { month: number; headcount: number; totalCost: number }[];
-    byDepartment: { dept: string; cost: number }[];
-  } | null>(null);
-
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Dropdowns for form
-  const [sites, setSites] = useState<Site[]>([]);
-  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
 
   // Modals & Forms
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<HeadcountPlan | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
-  
+
   const [deleteItem, setDeleteItem] = useState<HeadcountPlan | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Form values
   const [jobTitle, setJobTitle] = useState('');
@@ -66,72 +51,121 @@ export default function HeadcountPlansPage() {
   const [costCenterId, setCostCenterId] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Fetch Budget Cycles
-  useEffect(() => {
-    async function loadCycles() {
-      if (!activeCompanyId) return;
-      setLoadingCycles(true);
-      try {
-        const res = await apiGet<{ data: BudgetCycle[] }>('/budgets?limit=100');
-        const activeCycles = res.data ?? [];
-        setCycles(activeCycles);
-        if (activeCycles.length > 0) {
-          setSelectedCycleId(activeCycles[0].id);
-        }
-      } catch (err) {
-        console.error('Failed to load budget cycles', err);
-      } finally {
-        setLoadingCycles(false);
-      }
-    }
-    void loadCycles();
-  }, [activeCompanyId]);
+  // ---------------------------------------------------------------------------
+  // Load Budget Cycles via TanStack Query
+  // ---------------------------------------------------------------------------
+  const cyclesQuery = useQuery({
+    queryKey: [...queryKeys.headcountPlans.all, 'cycles', activeCompanyId],
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<{ data: BudgetCycle[] }>('/budgets?limit=100', { signal });
+      return res.data ?? [];
+    },
+    enabled: Boolean(activeCompanyId),
+    staleTime: 10 * 60 * 1000,
+    meta: { persist: true },
+  });
 
-  // Load Dropdowns
   useEffect(() => {
-    async function loadDropdowns() {
-      if (!activeCompanyId) return;
-      try {
-        const [sitesRes, ccRes] = await Promise.all([
-          apiGet<{ data: Site[] }>('/sites?limit=100'),
-          apiGet<{ data: CostCenter[] }>('/cost-centers?limit=100'),
-        ]);
-        setSites(sitesRes.data ?? []);
-        setCostCenters(ccRes.data ?? []);
-      } catch (err) {
-        console.error('Failed to load dropdowns', err);
-      }
+    if (!selectedCycleId && cyclesQuery.data && cyclesQuery.data.length > 0) {
+      setSelectedCycleId(cyclesQuery.data[0].id);
     }
-    void loadDropdowns();
-  }, [activeCompanyId]);
+  }, [selectedCycleId, cyclesQuery.data]);
 
-  const loadPlans = useCallback(async () => {
-    if (!selectedCycleId) return;
-    setLoadingPlans(true);
-    setError(null);
-    try {
-      const [listRes, summaryRes] = await Promise.all([
-        apiGet<HeadcountPlan[]>(`/headcount-plans?cycleId=${selectedCycleId}`),
-        apiGet<any>(`/headcount-plans/summary/${selectedCycleId}`),
+  // ---------------------------------------------------------------------------
+  // Load Dropdowns via TanStack Query
+  // ---------------------------------------------------------------------------
+  const dropdownsQuery = useQuery({
+    queryKey: [...queryKeys.headcountPlans.all, 'dropdowns', activeCompanyId],
+    queryFn: async ({ signal }) => {
+      const [sitesRes, ccRes] = await Promise.all([
+        apiGet<{ data: Site[] }>('/sites?limit=100', { signal }),
+        apiGet<{ data: CostCenter[] }>('/cost-centers?limit=100', { signal }),
       ]);
-      setPlans(listRes ?? []);
-      setSummary(summaryRes);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch headcount plans.');
-    } finally {
-      setLoadingPlans(false);
-    }
-  }, [selectedCycleId]);
+      return { sites: sitesRes.data ?? [], costCenters: ccRes.data ?? [] };
+    },
+    enabled: Boolean(activeCompanyId),
+    staleTime: 10 * 60 * 1000,
+    meta: { persist: true },
+  });
 
-  useEffect(() => {
-    if (selectedCycleId) {
-      void loadPlans();
-    } else {
-      setPlans([]);
-      setSummary(null);
-    }
-  }, [selectedCycleId, loadPlans]);
+  const sites = dropdownsQuery.data?.sites ?? [];
+  const costCenters = dropdownsQuery.data?.costCenters ?? [];
 
+  // ---------------------------------------------------------------------------
+  // Load Plans + Summary via TanStack Query
+  // ---------------------------------------------------------------------------
+  const plansQuery = useQuery({
+    queryKey: [...queryKeys.headcountPlans.all, 'plans', selectedCycleId],
+    queryFn: async ({ signal }) => {
+      const [listRes, summaryRes] = await Promise.all([
+        apiGet<HeadcountPlan[]>(`/headcount-plans?cycleId=${selectedCycleId}`, { signal }),
+        apiGet<any>(`/headcount-plans/summary/${selectedCycleId}`, { signal }),
+      ]);
+      return { plans: listRes ?? [], summary: summaryRes };
+    },
+    enabled: Boolean(selectedCycleId),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const plans = plansQuery.data?.plans ?? [];
+  const summary = plansQuery.data?.summary ?? null;
+
+  // ---------------------------------------------------------------------------
+  // Mutations
+  // ---------------------------------------------------------------------------
+  const createMutation = useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      await apiPost('/headcount-plans', payload);
+    },
+    onSuccess: () => {
+      toastSuccess(t('page.headcount.positionAdded'));
+      setFormOpen(false);
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.headcountPlans.all, 'plans', selectedCycleId] });
+    },
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        setFormError((err.response?.data as any)?.message ?? 'Operation failed.');
+      } else {
+        setFormError('An unexpected error occurred.');
+      }
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
+      await apiPatch(`/headcount-plans/${id}`, payload);
+    },
+    onSuccess: () => {
+      toastSuccess(t('page.headcount.positionUpdated'));
+      setFormOpen(false);
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.headcountPlans.all, 'plans', selectedCycleId] });
+    },
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        setFormError((err.response?.data as any)?.message ?? 'Operation failed.');
+      } else {
+        setFormError('An unexpected error occurred.');
+      }
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiDelete(`/headcount-plans/${id}`);
+    },
+    onSuccess: () => {
+      toastSuccess(t('page.headcount.positionDeleted'));
+      setDeleteItem(null);
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.headcountPlans.all, 'plans', selectedCycleId] });
+    },
+    onError: () => {
+      toastError(t('common.deleteFailed'));
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // Handlers
+  // ---------------------------------------------------------------------------
   function openCreate() {
     setEditItem(null);
     setJobTitle('');
@@ -168,8 +202,6 @@ export default function HeadcountPlansPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setFormLoading(true);
-    setFormError(null);
     const payload: Record<string, unknown> = {
       budgetCycleId: selectedCycleId,
       jobTitle,
@@ -185,42 +217,18 @@ export default function HeadcountPlansPage() {
     if (costCenterId) payload.costCenterId = Number(costCenterId);
     if (notes) payload.notes = notes;
 
-    try {
-      if (editItem) {
-        await apiPatch(`/headcount-plans/${editItem.id}`, payload);
-        toastSuccess(t('page.headcount.positionUpdated'));
-      } else {
-        await apiPost('/headcount-plans', payload);
-        toastSuccess(t('page.headcount.positionAdded'));
-      }
-      setFormOpen(false);
-      void loadPlans();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setFormError((err.response?.data as any)?.message ?? 'Operation failed.');
-      } else {
-        setFormError('An unexpected error occurred.');
-      }
-    } finally {
-      setFormLoading(false);
+    if (editItem) {
+      await updateMutation.mutateAsync({ id: editItem.id, payload });
+    } else {
+      await createMutation.mutateAsync(payload);
     }
   }
 
-  async function handleDelete() {
-    if (!deleteItem) return;
-    setDeleteLoading(true);
-    try {
-      await apiDelete(`/headcount-plans/${deleteItem.id}`);
-      toastSuccess(t('page.headcount.positionDeleted'));
-      setDeleteItem(null);
-      void loadPlans();
-    } catch (err) {
-      toastError(t('common.deleteFailed'));
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
+  // ---------------------------------------------------------------------------
+  // Columns
+  // ---------------------------------------------------------------------------
   const columns: Column<HeadcountPlan>[] = [
     { key: 'jobTitle', header: t('page.headcount.jobTitle'), className: 'font-semibold text-slate-700' },
     { key: 'department', header: t('page.headcount.department'), render: (v) => String(v ?? '—') },
@@ -267,7 +275,7 @@ export default function HeadcountPlansPage() {
     <div className="space-y-6">
       <PageHeader title={t('page.headcount.title')} description={t('page.headcount.description')}>
         <div className="flex items-center gap-3">
-          {loadingCycles ? (
+          {cyclesQuery.isLoading ? (
             <p className="text-sm text-slate-400">{t('common.loading')}</p>
           ) : (
             <select
@@ -276,7 +284,7 @@ export default function HeadcountPlansPage() {
               className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="">{t('page.headcount.selectBudgetCycle')}</option>
-              {cycles.map((c) => (
+              {cyclesQuery.data?.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.fiscalYear})
                 </option>
@@ -325,15 +333,24 @@ export default function HeadcountPlansPage() {
 
       {!selectedCycleId ? (
         <EmptyState title={t('page.headcount.noCycleSelected')} description={t('page.headcount.noCycleSelectedDesc')} />
-      ) : loadingPlans ? (
+      ) : plansQuery.isLoading ? (
         <LoadingState rows={8} />
-      ) : error ? (
-        <ErrorState message={error} onRetry={loadPlans} />
+      ) : plansQuery.error ? (
+        <ErrorState
+          message={getApiErrorMessage(plansQuery.error, t)}
+          onRetry={() => void plansQuery.refetch()}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
             <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-700 mb-4">{t('page.headcount.workforceBudgetTable')}</h3>
+              {plansQuery.isFetching && !plansQuery.isLoading && (
+                <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
+                  <span className="h-3 w-3 animate-spin rounded-full border border-emerald-600 border-t-transparent" />
+                  Refreshing…
+                </div>
+              )}
               <TableWrapper<HeadcountPlan>
                 data={plans}
                 columns={columns}
@@ -347,7 +364,7 @@ export default function HeadcountPlansPage() {
               <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <h3 className="text-sm font-semibold text-slate-700 mb-4">{t('page.headcount.costByDepartment')}</h3>
                 <div className="space-y-3">
-                  {summary.byDepartment.map((d) => {
+                  {summary.byDepartment.map((d: { dept: string; cost: number }) => {
                     const pct = summary.grandTotalCost > 0 ? (d.cost / summary.grandTotalCost) * 100 : 0;
                     return (
                       <div key={d.dept} className="space-y-1">
@@ -372,8 +389,8 @@ export default function HeadcountPlansPage() {
               <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <h3 className="text-sm font-semibold text-slate-700 mb-4">{t('page.headcount.monthlyDistribution')}</h3>
                 <div className="flex h-32 items-end justify-between gap-1 pt-4">
-                  {summary.monthly.map((m) => {
-                    const maxCost = Math.max(...summary.monthly.map((x) => x.totalCost)) || 1;
+                  {summary.monthly.map((m: { month: number; headcount: number; totalCost: number }) => {
+                    const maxCost = Math.max(...summary.monthly.map((x: { month: number; headcount: number; totalCost: number }) => x.totalCost)) || 1;
                     const height = (m.totalCost / maxCost) * 100;
                     return (
                       <div key={m.month} className="flex flex-1 flex-col items-center gap-1 group relative">
@@ -492,7 +509,7 @@ export default function HeadcountPlansPage() {
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
                 <Button variant="outline" size="sm" type="button" onClick={() => setFormOpen(false)}>{t('common.cancel')}</Button>
-                <Button size="sm" type="submit" isLoading={formLoading}>{editItem ? t('common.saveChanges') : t('page.headcount.addPosition')}</Button>
+                <Button size="sm" type="submit" isLoading={isSubmitting}>{editItem ? t('common.saveChanges') : t('page.headcount.addPosition')}</Button>
               </div>
             </form>
           </div>
@@ -503,8 +520,8 @@ export default function HeadcountPlansPage() {
       <ConfirmDialog
         open={deleteItem !== null}
         message={t('page.headcount.deleteConfirmMsg')}
-        isLoading={deleteLoading}
-        onConfirm={handleDelete}
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => deleteItem && deleteMutation.mutate(deleteItem.id)}
         onCancel={() => setDeleteItem(null)}
       />
     </div>

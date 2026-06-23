@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { translateErrorCode } from '@/lib/i18n/error-code-map';
 import axios from 'axios';
 
 export default function LoginPage() {
@@ -38,18 +39,20 @@ export default function LoginPage() {
         let msg: string;
         if (err.response) {
           if (err.response.status === 401) {
-            msg = 'Invalid credentials. Please try again.';
+            const data = err.response.data as { code?: string; message?: string } | undefined;
+            msg = data?.code ? translateErrorCode(data.code, t) : t('auth.invalidCredentials');
           } else if (err.response.status === 404) {
-            msg = 'Backend API endpoint not found (404). Please ensure your NEXT_PUBLIC_API_URL in Vercel ends with "/api".';
+            msg = t('auth.apiNotFound');
           } else {
-            msg = (err.response.data as { message?: string } | undefined)?.message ?? 'An unexpected error occurred.';
+            const data = err.response.data as { code?: string; message?: string } | undefined;
+            msg = data?.code ? translateErrorCode(data.code, t) : (data?.message ?? t('error.unexpectedError'));
           }
         } else {
-          msg = 'Failed to connect to the backend server. Please verify your NEXT_PUBLIC_API_URL configuration.';
+          msg = t('auth.connectionFailed');
         }
         setError(msg);
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        setError(t('error.unexpectedError'));
       }
     } finally {
       setIsLoading(false);
@@ -129,7 +132,7 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Protected by JWT authentication &amp; multi-tenant isolation
+        {t('auth.protectedBy')}
       </p>
     </div>
   );

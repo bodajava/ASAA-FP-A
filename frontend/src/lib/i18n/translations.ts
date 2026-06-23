@@ -503,6 +503,30 @@ export type TranslationKey =
   | 'page.scenarios.revAccMissing'
   | 'page.scenarios.expAccMissing'
   | 'page.scenarios.invalidSubtype'
+  /* ── AI Scenario Planner ────────────────────────────────────────────── */
+  | 'page.scenarios.aiPlanner'
+  | 'page.scenarios.generateAiScenario'
+  | 'page.scenarios.aiSuggestionsUnavailable'
+  | 'page.scenarios.applyToScenario'
+  | 'page.scenarios.expectedImpact'
+  | 'page.scenarios.recommendedActions'
+  | 'page.scenarios.confidence'
+  | 'page.scenarios.aiGenerating'
+  | 'page.scenarios.aiGenerateFailed'
+  | 'page.scenarios.assumptions'
+  | 'page.scenarios.simulationInputs'
+  /* ── AI Scenario type badges ──────────────────────────────────────────── */
+  | 'page.scenarios.typeMaterialCost'
+  | 'page.scenarios.typeCurrency'
+  | 'page.scenarios.typeDemand'
+  | 'page.scenarios.typeExpansion'
+  | 'page.scenarios.typeMixed'
+  /* ── AI Scenario impact labels ────────────────────────────────────────── */
+  | 'page.scenarios.impactRevenue'
+  | 'page.scenarios.impactCosts'
+  | 'page.scenarios.impactGrossMargin'
+  | 'page.scenarios.impactNetProfit'
+  | 'page.scenarios.impactCashFlow'
   /* ── Reports page ───────────────────────────────────────────────────── */
   | 'page.reports.title'
   | 'page.reports.description'
@@ -1252,7 +1276,106 @@ export type TranslationKey =
   | 'notification.approvalBody'
   | 'notification.newReportBody'
   | 'notification.usdRateIncrease'
-  | 'notification.scenarioTriggered';
+  | 'notification.scenarioTriggered'
+  /* ── Auth keys ──────────────────────────────────────────────────────── */
+  | 'auth.apiNotFound'
+  | 'auth.connectionFailed'
+  | 'auth.protectedBy'
+  /* ── Production Planning keys ───────────────────────────────────────── */
+  | 'page.productionPlanning.savedSuccess'
+  | 'page.productionPlanning.saveFailed'
+  | 'page.productionPlanning.loadProductsFailed'
+  | 'page.productionPlanning.quantityGreaterThanZero'
+  | 'page.productionPlanning.bomExplosionComplete'
+  | 'page.productionPlanning.bomExplosionFailed'
+  /* ── Integrations keys ──────────────────────────────────────────────── */
+  | 'page.integrations.fetchConnectionsFailed'
+  | 'page.integrations.fetchMappingsFailed'
+  | 'page.integrations.oauthSuccess'
+  | 'page.integrations.testSucceeded'
+  | 'page.integrations.testFailed'
+  | 'page.integrations.testRequestFailed'
+  | 'page.integrations.connectionDeleted'
+  | 'page.integrations.deleteConnectionFailed'
+  | 'page.integrations.mappingDeleted'
+  | 'page.integrations.deleteMappingFailed'
+  | 'page.integrations.syncComplete'
+  | 'page.integrations.syncFailedManual'
+  | 'page.integrations.mappingNotFound'
+  | 'page.integrations.previewSuccess'
+  | 'page.integrations.previewFailed'
+  | 'page.integrations.connectionUpdated'
+  | 'page.integrations.connectionCreated'
+  | 'page.integrations.saveConnectionFailed'
+  | 'page.integrations.mappingUpdated'
+  | 'page.integrations.mappingCreated'
+  | 'page.integrations.saveMappingFailed'
+  | 'page.integrations.fieldRequired'
+  /* ── Forecasts keys ─────────────────────────────────────────────────── */
+  | 'page.forecasts.fetchFailed'
+  | 'page.forecasts.detailsFailed'
+  | 'page.forecasts.statusUpdateFailed'
+  | 'page.forecasts.generateLinesFailed'
+  | 'page.forecasts.deleteFailed'
+  | 'page.forecasts.updatedSuccess'
+  | 'page.forecasts.createdSuccess'
+  | 'page.forecasts.saveFailed'
+  /* ── Budgets keys ───────────────────────────────────────────────────── */
+  | 'page.budgets.fetchFailed'
+  | 'page.budgets.detailsFailed'
+  | 'page.budgets.statusUpdateFailed'
+  | 'page.budgets.deleteFailed'
+  | 'page.budgets.saveFailed'
+  /* ── Reports keys ───────────────────────────────────────────────────── */
+  | 'page.reports.fetchFailed'
+  | 'page.reports.exportFailed'
+  /* ── Settings keys ──────────────────────────────────────────────────── */
+  | 'page.settings.loadPlansFailed'
+  | 'page.settings.upgradeSuccess'
+  | 'page.settings.upgradeFailed'
+  | 'page.settings.loadCompanyFailed'
+  | 'page.settings.saveCompanyFailed'
+  /* ── Variance keys ──────────────────────────────────────────────────── */
+  | 'page.variance.fetchFailed'
+  /* ── Approvals keys ─────────────────────────────────────────────────── */
+  | 'page.approvals.loadFailed'
+  /* ── Promotions keys ────────────────────────────────────────────────── */
+  | 'page.promotions.loadFailed'
+  /* ── Scenarios keys ─────────────────────────────────────────────────── */
+  | 'page.scenarios.fetchFailed'
+  /* ── Headcount Plans keys ───────────────────────────────────────────── */
+  | 'page.headcountPlans.fetchFailed'
+  /* ── Inventory keys ─────────────────────────────────────────────────── */
+  | 'page.inventory.fetchFailed'
+  /* ── Backend error code translations ─────────────────────────────────── */
+  | 'backend.ORACLE_TABLE_NOT_FOUND'
+  | 'backend.ORACLE_INVALID_COLUMN'
+  | 'backend.ORACLE_INVALID_CREDENTIALS'
+  | 'backend.ORACLE_CONNECTION_FAILED'
+  | 'backend.ORACLE_CLIENT_NOT_CONFIGURED'
+  | 'backend.ORACLE_UNKNOWN'
+  | 'backend.MAPPING_VALIDATION_FAILED'
+  | 'backend.MAPPING_NOT_FOUND'
+  | 'backend.SYNC_FAILED'
+  | 'backend.SYNC_NO_ROWS'
+  | 'backend.PREVIEW_FAILED'
+  | 'backend.PREVIEW_INVALID_TABLE'
+  | 'backend.PREVIEW_INVALID_COLUMN'
+  | 'backend.CONNECTION_NOT_FOUND'
+  | 'backend.CONNECTION_TEST_FAILED'
+  | 'backend.AI_UNAVAILABLE'
+  | 'backend.AI_INVALID_RESPONSE'
+  | 'backend.AI_GENERATION_FAILED'
+  | 'backend.AI_PROVIDER_OVERLOADED'
+  | 'backend.AUTH_INVALID_CREDENTIALS'
+  | 'backend.AUTH_USER_INACTIVE'
+  | 'backend.AUTH_TOKEN_EXPIRED'
+  | 'backend.AUTH_TENANT_REQUIRED'
+  | 'backend.AUTH_TENANT_INVALID'
+  | 'backend.NOT_FOUND'
+  | 'backend.VALIDATION_FAILED'
+  | 'backend.COMPANY_NOT_FOUND'
+  | 'backend.DEFAULT';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -1785,6 +1908,31 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.scenarios.revAccMissing': 'Revenue GL Account is missing in branch expansion settings.',
     'page.scenarios.expAccMissing': 'Expense GL Account is missing in branch expansion settings.',
     'page.scenarios.invalidSubtype': 'Invalid scenario subtype: {sub}',
+
+    /* AI Scenario Planner */
+    'page.scenarios.aiPlanner': 'AI Scenario Planner',
+    'page.scenarios.generateAiScenario': 'Generate AI Scenario',
+    'page.scenarios.aiSuggestionsUnavailable': 'AI suggestions unavailable. Please configure GEMINI_API_KEY.',
+    'page.scenarios.applyToScenario': 'Apply to Scenario',
+    'page.scenarios.expectedImpact': 'Expected Impact',
+    'page.scenarios.recommendedActions': 'Recommended Actions',
+    'page.scenarios.confidence': 'Confidence',
+    'page.scenarios.aiGenerating': 'Generating AI scenarios...',
+    'page.scenarios.aiGenerateFailed': 'Failed to generate AI scenarios.',
+    'page.scenarios.assumptions': 'Assumptions',
+    'page.scenarios.simulationInputs': 'Simulation Inputs',
+    /* AI Scenario type badges */
+    'page.scenarios.typeMaterialCost': 'Material Cost',
+    'page.scenarios.typeCurrency': 'Currency',
+    'page.scenarios.typeDemand': 'Demand',
+    'page.scenarios.typeExpansion': 'Expansion',
+    'page.scenarios.typeMixed': 'Mixed',
+    /* AI Scenario impact labels */
+    'page.scenarios.impactRevenue': 'Revenue',
+    'page.scenarios.impactCosts': 'Costs',
+    'page.scenarios.impactGrossMargin': 'Gross Margin',
+    'page.scenarios.impactNetProfit': 'Net Profit',
+    'page.scenarios.impactCashFlow': 'Cash Flow',
 
     /* Reports */
     'page.reports.title': 'Reports & Analytics',
@@ -2555,6 +2703,119 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'notification.newReportBody': 'A new report is ready.',
     'notification.usdRateIncrease': 'USD Rate Increase Alert',
     'notification.scenarioTriggered': 'Scenario Triggered',
+
+    /* ── Auth keys ──────────────────────────────────────────────────────── */
+    'auth.apiNotFound': 'API not found.',
+    'auth.connectionFailed': 'Connection failed.',
+    'auth.protectedBy': 'Protected by authentication.',
+
+    /* ── Production Planning keys ───────────────────────────────────────── */
+    'page.productionPlanning.savedSuccess': 'Production plan saved successfully.',
+    'page.productionPlanning.saveFailed': 'Failed to save production plan.',
+    'page.productionPlanning.loadProductsFailed': 'Failed to load products.',
+    'page.productionPlanning.quantityGreaterThanZero': 'Quantity must be greater than zero.',
+    'page.productionPlanning.bomExplosionComplete': 'BOM explosion completed successfully.',
+    'page.productionPlanning.bomExplosionFailed': 'BOM explosion failed.',
+
+    /* ── Integrations keys ──────────────────────────────────────────────── */
+    'page.integrations.fetchConnectionsFailed': 'Failed to fetch connections.',
+    'page.integrations.fetchMappingsFailed': 'Failed to fetch import mappings.',
+    'page.integrations.oauthSuccess': 'OAuth connection successful.',
+    'page.integrations.testSucceeded': 'Connection test succeeded.',
+    'page.integrations.testFailed': 'Connection test failed.',
+    'page.integrations.testRequestFailed': 'Test request failed.',
+    'page.integrations.connectionDeleted': 'Connection deleted successfully.',
+    'page.integrations.deleteConnectionFailed': 'Failed to delete connection.',
+    'page.integrations.mappingDeleted': 'Mapping deleted successfully.',
+    'page.integrations.deleteMappingFailed': 'Failed to delete mapping.',
+    'page.integrations.syncComplete': 'Sync completed successfully.',
+    'page.integrations.syncFailedManual': 'Sync failed. Please try again manually.',
+    'page.integrations.mappingNotFound': 'Mapping not found.',
+    'page.integrations.previewSuccess': 'Preview generated successfully.',
+    'page.integrations.previewFailed': 'Preview generation failed.',
+    'page.integrations.connectionUpdated': 'Connection updated successfully.',
+    'page.integrations.connectionCreated': 'Connection created successfully.',
+    'page.integrations.saveConnectionFailed': 'Failed to save connection.',
+    'page.integrations.mappingUpdated': 'Mapping updated successfully.',
+    'page.integrations.mappingCreated': 'Mapping created successfully.',
+    'page.integrations.saveMappingFailed': 'Failed to save mapping.',
+    'page.integrations.fieldRequired': 'This field is required.',
+
+    /* ── Forecasts keys ─────────────────────────────────────────────────── */
+    'page.forecasts.fetchFailed': 'Failed to fetch forecasts.',
+    'page.forecasts.detailsFailed': 'Failed to fetch forecast details.',
+    'page.forecasts.statusUpdateFailed': 'Failed to update forecast status.',
+    'page.forecasts.generateLinesFailed': 'Failed to generate forecast lines.',
+    'page.forecasts.deleteFailed': 'Failed to delete forecast.',
+    'page.forecasts.updatedSuccess': 'Forecast updated successfully.',
+    'page.forecasts.createdSuccess': 'Forecast created successfully.',
+    'page.forecasts.saveFailed': 'Failed to save forecast.',
+
+    /* ── Budgets keys ───────────────────────────────────────────────────── */
+    'page.budgets.fetchFailed': 'Failed to fetch budgets.',
+    'page.budgets.detailsFailed': 'Failed to fetch budget details.',
+    'page.budgets.statusUpdateFailed': 'Failed to update budget status.',
+    'page.budgets.deleteFailed': 'Failed to delete budget.',
+    'page.budgets.saveFailed': 'Failed to save budget.',
+
+    /* ── Reports keys ───────────────────────────────────────────────────── */
+    'page.reports.fetchFailed': 'Failed to fetch reports.',
+    'page.reports.exportFailed': 'Failed to export report.',
+
+    /* ── Settings keys ──────────────────────────────────────────────────── */
+    'page.settings.loadPlansFailed': 'Failed to load subscription plans.',
+    'page.settings.upgradeSuccess': 'Plan upgraded successfully.',
+    'page.settings.upgradeFailed': 'Failed to upgrade plan.',
+    'page.settings.loadCompanyFailed': 'Failed to load company details.',
+    'page.settings.saveCompanyFailed': 'Failed to save company profile.',
+
+    /* ── Variance keys ──────────────────────────────────────────────────── */
+    'page.variance.fetchFailed': 'Failed to fetch variance data.',
+
+    /* ── Approvals keys ─────────────────────────────────────────────────── */
+    'page.approvals.loadFailed': 'Failed to load approvals.',
+
+    /* ── Promotions keys ────────────────────────────────────────────────── */
+    'page.promotions.loadFailed': 'Failed to load promotions.',
+
+    /* ── Scenarios keys ─────────────────────────────────────────────────── */
+    'page.scenarios.fetchFailed': 'Failed to fetch scenarios.',
+
+    /* ── Headcount Plans keys ───────────────────────────────────────────── */
+    'page.headcountPlans.fetchFailed': 'Failed to fetch headcount plans.',
+
+    /* ── Inventory keys ─────────────────────────────────────────────────── */
+    'page.inventory.fetchFailed': 'Failed to fetch inventory data.',
+
+    /* ── Backend error code translations ─────────────────────────────────── */
+    'backend.ORACLE_TABLE_NOT_FOUND': 'Oracle table or view not found. Please check your import mapping.',
+    'backend.ORACLE_INVALID_COLUMN': 'Invalid Oracle column name.',
+    'backend.ORACLE_INVALID_CREDENTIALS': 'Invalid Oracle username or password.',
+    'backend.ORACLE_CONNECTION_FAILED': 'Could not connect to Oracle host/port/service.',
+    'backend.ORACLE_CLIENT_NOT_CONFIGURED': 'Oracle client is not configured on this server.',
+    'backend.ORACLE_UNKNOWN': 'An Oracle error occurred.',
+    'backend.MAPPING_VALIDATION_FAILED': 'Mapping validation failed.',
+    'backend.MAPPING_NOT_FOUND': 'Mapping template not found.',
+    'backend.SYNC_FAILED': 'Data synchronization failed.',
+    'backend.SYNC_NO_ROWS': 'No rows retrieved to execute synchronization.',
+    'backend.PREVIEW_FAILED': 'Preview generation failed.',
+    'backend.PREVIEW_INVALID_TABLE': 'Invalid table name format.',
+    'backend.PREVIEW_INVALID_COLUMN': 'Invalid column name.',
+    'backend.CONNECTION_NOT_FOUND': 'Connection not found.',
+    'backend.CONNECTION_TEST_FAILED': 'Connection test failed.',
+    'backend.AI_UNAVAILABLE': 'AI suggestions unavailable. Please configure GEMINI_API_KEY.',
+    'backend.AI_INVALID_RESPONSE': 'AI returned invalid response. Please try again.',
+    'backend.AI_GENERATION_FAILED': 'Failed to generate AI suggestions. Please try again later.',
+    'backend.AI_PROVIDER_OVERLOADED': 'AI service is busy right now. Please try again in a few minutes.',
+    'backend.AUTH_INVALID_CREDENTIALS': 'Invalid credentials. Please try again.',
+    'backend.AUTH_USER_INACTIVE': 'User account is inactive.',
+    'backend.AUTH_TOKEN_EXPIRED': 'Session expired. Please log in again.',
+    'backend.AUTH_TENANT_REQUIRED': 'Tenant ID is required.',
+    'backend.AUTH_TENANT_INVALID': 'Invalid Tenant ID.',
+    'backend.NOT_FOUND': 'Resource not found.',
+    'backend.VALIDATION_FAILED': 'Validation failed.',
+    'backend.COMPANY_NOT_FOUND': 'Company not found.',
+    'backend.DEFAULT': 'An error occurred. Please try again.',
   },
 
   ar: {
@@ -3100,6 +3361,31 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.scenarios.revAccMissing': 'حساب الإيراد في دفتر الأستاذ العام مفقود في إعدادات توسيع الفرع.',
     'page.scenarios.expAccMissing': 'حساب المصروف في دفتر الأستاذ العام مفقود في إعدادات توسيع الفرع.',
     'page.scenarios.invalidSubtype': 'نوع فرعي غير صالح للسيناريو: {sub}',
+
+    /* AI Scenario Planner */
+    'page.scenarios.aiPlanner': 'مخطط السيناريوهات بالذكاء الاصطناعي',
+    'page.scenarios.generateAiScenario': 'إنشاء سيناريو بالذكاء الاصطناعي',
+    'page.scenarios.aiSuggestionsUnavailable': 'اقتراحات الذكاء الاصطناعي غير متاحة. يرجى تكوين GEMINI_API_KEY.',
+    'page.scenarios.applyToScenario': 'تطبيق على السيناريو',
+    'page.scenarios.expectedImpact': 'التأثير المتوقع',
+    'page.scenarios.recommendedActions': 'الإجراءات المقترحة',
+    'page.scenarios.confidence': 'مستوى الثقة',
+    'page.scenarios.aiGenerating': 'جارٍ توليد سيناريوهات الذكاء الاصطناعي...',
+    'page.scenarios.aiGenerateFailed': 'فشل توليد سيناريوهات الذكاء الاصطناعي.',
+    'page.scenarios.assumptions': 'الافتراضات',
+    'page.scenarios.simulationInputs': 'مدخلات المحاكاة',
+    /* AI Scenario type badges */
+    'page.scenarios.typeMaterialCost': 'تكلفة المواد',
+    'page.scenarios.typeCurrency': 'العملة',
+    'page.scenarios.typeDemand': 'الطلب',
+    'page.scenarios.typeExpansion': 'التوسع',
+    'page.scenarios.typeMixed': 'مختلط',
+    /* AI Scenario impact labels */
+    'page.scenarios.impactRevenue': 'الإيرادات',
+    'page.scenarios.impactCosts': 'التكاليف',
+    'page.scenarios.impactGrossMargin': 'هامش الربح',
+    'page.scenarios.impactNetProfit': 'صافي الربح',
+    'page.scenarios.impactCashFlow': 'التدفق النقدي',
 
     /* Reports */
     'page.reports.title': 'التقارير والتحليلات',
@@ -3857,5 +4143,118 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'notification.newReportBody': 'تقرير جديد جاهز.',
     'notification.usdRateIncrease': 'تنبيه ارتفاع سعر الدولار',
     'notification.scenarioTriggered': 'تم إنشاء سيناريو',
+
+    /* ── Auth keys ──────────────────────────────────────────────────────── */
+    'auth.apiNotFound': 'واجهة البرمجة غير موجودة.',
+    'auth.connectionFailed': 'فشل الاتصال.',
+    'auth.protectedBy': 'محمي بالمصادقة.',
+
+    /* ── Production Planning keys ───────────────────────────────────────── */
+    'page.productionPlanning.savedSuccess': 'تم حفظ خطة الإنتاج بنجاح.',
+    'page.productionPlanning.saveFailed': 'فشل حفظ خطة الإنتاج.',
+    'page.productionPlanning.loadProductsFailed': 'فشل تحميل المنتجات.',
+    'page.productionPlanning.quantityGreaterThanZero': 'يجب أن تكون الكمية أكبر من صفر.',
+    'page.productionPlanning.bomExplosionComplete': 'تم تفكيك قائمة المكونات بنجاح.',
+    'page.productionPlanning.bomExplosionFailed': 'فشل تفكيك قائمة المكونات.',
+
+    /* ── Integrations keys ──────────────────────────────────────────────── */
+    'page.integrations.fetchConnectionsFailed': 'فشل استرجاع الاتصالات.',
+    'page.integrations.fetchMappingsFailed': 'فشل استرجاع تعيينات الاستيراد.',
+    'page.integrations.oauthSuccess': 'تم الاتصال بنجاح عبر OAuth.',
+    'page.integrations.testSucceeded': 'نجح اختبار الاتصال.',
+    'page.integrations.testFailed': 'فشل اختبار الاتصال.',
+    'page.integrations.testRequestFailed': 'فشل طلب الاختبار.',
+    'page.integrations.connectionDeleted': 'تم حذف الاتصال بنجاح.',
+    'page.integrations.deleteConnectionFailed': 'فشل حذف الاتصال.',
+    'page.integrations.mappingDeleted': 'تم حذف التعيين بنجاح.',
+    'page.integrations.deleteMappingFailed': 'فشل حذف التعيين.',
+    'page.integrations.syncComplete': 'تمت المزامنة بنجاح.',
+    'page.integrations.syncFailedManual': 'فشلت المزامنة. يرجى المحاولة يدوياً.',
+    'page.integrations.mappingNotFound': 'التعيين غير موجود.',
+    'page.integrations.previewSuccess': 'تم إنشاء المعاينة بنجاح.',
+    'page.integrations.previewFailed': 'فشل إنشاء المعاينة.',
+    'page.integrations.connectionUpdated': 'تم تحديث الاتصال بنجاح.',
+    'page.integrations.connectionCreated': 'تم إنشاء الاتصال بنجاح.',
+    'page.integrations.saveConnectionFailed': 'فشل حفظ الاتصال.',
+    'page.integrations.mappingUpdated': 'تم تحديث التعيين بنجاح.',
+    'page.integrations.mappingCreated': 'تم إنشاء التعيين بنجاح.',
+    'page.integrations.saveMappingFailed': 'فشل حفظ التعيين.',
+    'page.integrations.fieldRequired': 'هذا الحقل مطلوب.',
+
+    /* ── Forecasts keys ─────────────────────────────────────────────────── */
+    'page.forecasts.fetchFailed': 'فشل استرجاع التوقعات.',
+    'page.forecasts.detailsFailed': 'فشل استرجاع تفاصيل التوقعات.',
+    'page.forecasts.statusUpdateFailed': 'فشل تحديث حالة التوقعات.',
+    'page.forecasts.generateLinesFailed': 'فشل إنشاء بنود التوقعات.',
+    'page.forecasts.deleteFailed': 'فشل حذف التوقعات.',
+    'page.forecasts.updatedSuccess': 'تم تحديث التوقعات بنجاح.',
+    'page.forecasts.createdSuccess': 'تم إنشاء التوقعات بنجاح.',
+    'page.forecasts.saveFailed': 'فشل حفظ التوقعات.',
+
+    /* ── Budgets keys ───────────────────────────────────────────────────── */
+    'page.budgets.fetchFailed': 'فشل استرجاع الميزانيات.',
+    'page.budgets.detailsFailed': 'فشل استرجاع تفاصيل الميزانية.',
+    'page.budgets.statusUpdateFailed': 'فشل تحديث حالة الميزانية.',
+    'page.budgets.deleteFailed': 'فشل حذف الميزانية.',
+    'page.budgets.saveFailed': 'فشل حفظ الميزانية.',
+
+    /* ── Reports keys ───────────────────────────────────────────────────── */
+    'page.reports.fetchFailed': 'فشل استرجاع التقارير.',
+    'page.reports.exportFailed': 'فشل تصدير التقرير.',
+
+    /* ── Settings keys ──────────────────────────────────────────────────── */
+    'page.settings.loadPlansFailed': 'فشل تحميل خطط الاشتراك.',
+    'page.settings.upgradeSuccess': 'تم ترقية الخطة بنجاح.',
+    'page.settings.upgradeFailed': 'فشل ترقية الخطة.',
+    'page.settings.loadCompanyFailed': 'فشل تحميل تفاصيل الشركة.',
+    'page.settings.saveCompanyFailed': 'فشل حفظ ملف الشركة.',
+
+    /* ── Variance keys ──────────────────────────────────────────────────── */
+    'page.variance.fetchFailed': 'فشل استرجاع بيانات الانحراف.',
+
+    /* ── Approvals keys ─────────────────────────────────────────────────── */
+    'page.approvals.loadFailed': 'فشل تحميل الموافقات.',
+
+    /* ── Promotions keys ────────────────────────────────────────────────── */
+    'page.promotions.loadFailed': 'فشل تحميل العروض الترويجية.',
+
+    /* ── Scenarios keys ─────────────────────────────────────────────────── */
+    'page.scenarios.fetchFailed': 'فشل استرجاع السيناريوهات.',
+
+    /* ── Headcount Plans keys ───────────────────────────────────────────── */
+    'page.headcountPlans.fetchFailed': 'فشل استرجاع خطط التوظيف.',
+
+    /* ── Inventory keys ─────────────────────────────────────────────────── */
+    'page.inventory.fetchFailed': 'فشل استرجاع بيانات المخزون.',
+
+    /* ── Backend error code translations ─────────────────────────────────── */
+    'backend.ORACLE_TABLE_NOT_FOUND': 'الجدول أو العرض غير موجود في Oracle. يرجى التحقق من تعيين الاستيراد.',
+    'backend.ORACLE_INVALID_COLUMN': 'اسم عمود Oracle غير صالح.',
+    'backend.ORACLE_INVALID_CREDENTIALS': 'اسم مستخدم أو كلمة مرور Oracle غير صالحة.',
+    'backend.ORACLE_CONNECTION_FAILED': 'تعذر الاتصال بمضمن/منفذ/خدمة Oracle.',
+    'backend.ORACLE_CLIENT_NOT_CONFIGURED': 'عميل Oracle غير مُعد على هذا الخادم.',
+    'backend.ORACLE_UNKNOWN': 'حدث خطأ في Oracle.',
+    'backend.MAPPING_VALIDATION_FAILED': 'فشل التحقق من التعيين.',
+    'backend.MAPPING_NOT_FOUND': 'قالب التعيين غير موجود.',
+    'backend.SYNC_FAILED': 'فشلت مزامنة البيانات.',
+    'backend.SYNC_NO_ROWS': 'لم يتم استرجاع صفوف لتنفيذ المزامنة.',
+    'backend.PREVIEW_FAILED': 'فشل إنشاء المعاينة.',
+    'backend.PREVIEW_INVALID_TABLE': 'تنسيق اسم الجدول غير صالح.',
+    'backend.PREVIEW_INVALID_COLUMN': 'اسم العمود غير صالح.',
+    'backend.CONNECTION_NOT_FOUND': 'الاتصال غير موجود.',
+    'backend.CONNECTION_TEST_FAILED': 'فشل اختبار الاتصال.',
+    'backend.AI_UNAVAILABLE': 'اقتراحات الذكاء الاصطناعي غير متاحة. يرجى إعداد مفتاح GEMINI_API_KEY.',
+    'backend.AI_INVALID_RESPONSE': 'استجابة الذكاء الاصطناعي غير صالحة. يرجى المحاولة مرة أخرى.',
+    'backend.AI_GENERATION_FAILED': 'فشل إنشاء اقتراحات الذكاء الاصطناعي. يرجى المحاولة لاحقاً.',
+    'backend.AI_PROVIDER_OVERLOADED': 'خدمة الذكاء الاصطناعي مشغولة حالياً. يرجى المحاولة بعد بضع دقائق.',
+    'backend.AUTH_INVALID_CREDENTIALS': 'بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى.',
+    'backend.AUTH_USER_INACTIVE': 'حساب المستخدم غير نشط.',
+    'backend.AUTH_TOKEN_EXPIRED': 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+    'backend.AUTH_TENANT_REQUIRED': 'معرف المؤسسة مطلوب.',
+    'backend.AUTH_TENANT_INVALID': 'معرف المؤسسة غير صالح.',
+    'backend.NOT_FOUND': 'المورد غير موجود.',
+    'backend.VALIDATION_FAILED': 'فشل التحقق.',
+    'backend.COMPANY_NOT_FOUND': 'الشركة غير موجودة.',
+    'backend.DEFAULT': 'حدث خطأ. يرجى المحاولة مرة أخرى.',
   },
 };

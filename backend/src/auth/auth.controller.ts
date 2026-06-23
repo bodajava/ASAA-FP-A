@@ -26,6 +26,7 @@ import { AuthService, AuthUser } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ErrorCodes } from '../common/error-codes';
 
 interface RequestWithUser extends ExpressRequest {
   user: AuthUser;
@@ -64,7 +65,7 @@ export class AuthController {
     @Res({ passthrough: true }) res?: ExpressRes,
   ) {
     if (!tenantIdHeader) {
-      throw new BadRequestException('x-tenant-id header is required for login');
+      throw new BadRequestException({ message: 'x-tenant-id header is required for login', code: ErrorCodes.AUTH_TENANT_REQUIRED });
     }
 
     let tenantId: bigint;
@@ -72,7 +73,7 @@ export class AuthController {
       tenantId = BigInt(tenantIdHeader);
     } catch {
       throw new BadRequestException(
-        'Invalid x-tenant-id header. Must be a numeric value.',
+        { message: 'Invalid x-tenant-id header. Must be a numeric value.', code: ErrorCodes.AUTH_TENANT_INVALID },
       );
     }
 

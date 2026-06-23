@@ -148,7 +148,7 @@ export default function ReportsPage() {
         setTotalPages(1);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to retrieve report data.';
+      const msg = err instanceof Error ? err.message : t('page.reports.fetchFailed');
       setError(msg);
       toastError(msg);
       setReportData([]);
@@ -189,14 +189,14 @@ export default function ReportsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      let msg = 'Unknown error';
+      let msg = t('error.unexpectedError');
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosErr = err as { response?: { data?: { message?: string } }; message?: string };
         msg = axiosErr.response?.data?.message ?? axiosErr.message ?? msg;
       } else if (err instanceof Error) {
         msg = err.message;
       }
-      toastError(`Export failed: ${msg}`);
+      toastError(t('page.reports.exportFailed', { error: msg }));
     }
   }, [activeCompanyId, selectedReport, fiscalYear, periodMonth, selectedSiteId, selectedProductId, selectedCustomerId, toastError]);
 

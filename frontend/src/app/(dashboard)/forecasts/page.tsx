@@ -165,7 +165,7 @@ export default function ForecastsPage() {
       setTotal(res.total);
       setTotalPages(res.totalPages);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch forecast cycles.');
+      setError(err instanceof Error ? err.message : t('page.forecasts.fetchFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -215,7 +215,7 @@ export default function ForecastsPage() {
       const res = await apiGet<ForecastCycle>(`/forecasts/${id}`);
       setSelectedCycle(res);
     } catch (err: unknown) {
-      setDetailError(err instanceof Error ? err.message : 'Failed to fetch details.');
+      setDetailError(err instanceof Error ? err.message : t('page.forecasts.detailsFailed'));
     } finally {
       setIsLoadingDetail(false);
     }
@@ -250,8 +250,8 @@ export default function ForecastsPage() {
       }
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Failed to update status')
-        : 'Failed to update status';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.forecasts.statusUpdateFailed'))
+        : t('page.forecasts.statusUpdateFailed');
       toastError(msg);
     } finally {
       setIsTransitioning(false);
@@ -267,8 +267,8 @@ export default function ForecastsPage() {
       void fetchCycleDetail(id);
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Failed to generate forecast lines')
-        : 'Failed to generate forecast lines';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.forecasts.generateLinesFailed'))
+        : t('page.forecasts.generateLinesFailed');
       toastError(msg);
     } finally {
       setIsGenerating(false);
@@ -288,8 +288,8 @@ export default function ForecastsPage() {
       }
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: string })?.message ?? 'Failed to delete forecast')
-        : 'Failed to delete forecast';
+        ? ((err.response?.data as { message?: string })?.message ?? t('page.forecasts.deleteFailed'))
+        : t('page.forecasts.deleteFailed');
       toastError(msg);
     } finally {
       setDeleteLoading(false);
@@ -734,10 +734,10 @@ export default function ForecastsPage() {
             try {
               if (editCycle) {
                 await apiPatch<ForecastCycle>(`/forecasts/${editCycle.id}`, payload);
-                toastSuccess('Forecast updated successfully.');
+                toastSuccess(t('page.forecasts.updatedSuccess'));
               } else {
                 await apiPost<ForecastCycle>('/forecasts', payload);
-                toastSuccess('Forecast created successfully.');
+                toastSuccess(t('page.forecasts.createdSuccess'));
               }
               setFormOpen(false);
               setEditCycle(null);
@@ -747,8 +747,8 @@ export default function ForecastsPage() {
               }
             } catch (err: unknown) {
               const msg = axios.isAxiosError(err)
-                ? ((err.response?.data as { message?: string })?.message ?? 'Failed to save forecast cycle')
-                : 'Failed to save forecast cycle';
+                ? ((err.response?.data as { message?: string })?.message ?? t('page.forecasts.saveFailed'))
+                : t('page.forecasts.saveFailed');
               setFormError(msg);
               toastError(msg);
             } finally {

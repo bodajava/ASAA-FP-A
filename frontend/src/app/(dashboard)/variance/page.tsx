@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Filter,
   RefreshCw
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
-
 import { Input } from '@/components/ui/input';
 import { TableWrapper, type Column } from '@/components/ui/table-wrapper';
 import { Pagination } from '@/components/ui/pagination';
@@ -17,6 +17,8 @@ import { useAuth } from '@/lib/auth-context';
 import { apiGet } from '@/lib/api';
 import { MONTH_NAMES, getCurrentFiscalYear } from '@/lib/constants';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { getApiErrorMessage } from '@/lib/api-error-handler';
+import { queryKeys } from '@/lib/query-keys';
 import type {
   VarianceRecord,
   Account,
@@ -26,14 +28,12 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 
-import { useToast } from '@/components/ui/toast';
-
 type CompareType = 'budget-vs-actual' | 'budget-vs-forecast' | 'actual-vs-forecast' | 'budget-actual-forecast';
 
 export default function VariancePage() {
   const { activeCompanyId } = useAuth();
-  const { error: toastError } = useToast();
   const { t } = useI18n();
+  const queryClient = useQueryClient();
 
   // Comparison Tab
   const [compareType, setCompareType] = useState<CompareType>('budget-vs-actual');
@@ -46,89 +46,88 @@ export default function VariancePage() {
   const [productId, setProductId] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [search, setSearch] = useState('');
-
-  // Paginated List State
-  const [records, setRecords] = useState<VarianceRecord[]>([]);
-  const [total, setTotal] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Master Data
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-
-  // ---------------------------------------------------------------------------
-  // Load Master Data
-  // ---------------------------------------------------------------------------
+  // Debounce search
   useEffect(() => {
-    if (!activeCompanyId) return;
-    async function loadFiltersData() {
-      try {
-        const [accs, sts, prds, custs] = await Promise.all([
-          apiGet<PaginatedResponse<Account>>('/accounts?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Site>>('/sites?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Product>>('/products?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Customer>>('/customers?limit=1000').then((r) => r.data),
-        ]);
-        setAccounts(accs);
-        setSites(sts);
-        setProducts(prds);
-        setCustomers(custs);
-      } catch {
-        // Handle silently
-      }
-    }
-    void loadFiltersData();
-  }, [activeCompanyId]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page on filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [compareType, fiscalYear, periodMonth, accountId, siteId, productId, customerId]);
 
   // ---------------------------------------------------------------------------
-  // Load Variance Report Data
+  // Load Master Data via TanStack Query
   // ---------------------------------------------------------------------------
-  const fetchVarianceReport = useCallback(async () => {
-    if (!activeCompanyId) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: '15',
-      });
+  const masterDataQuery = useQuery({
+    queryKey: [...queryKeys.variance.all, 'master-data', activeCompanyId],
+    queryFn: async ({ signal }) => {
+      const [accs, sts, prds, custs] = await Promise.all([
+        apiGet<PaginatedResponse<Account>>('/accounts?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Site>>('/sites?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Product>>('/products?limit=1000', { signal }).then((r) => r.data),
+        apiGet<PaginatedResponse<Customer>>('/customers?limit=1000', { signal }).then((r) => r.data),
+      ]);
+      return { accs, sts, prds, custs };
+    },
+    enabled: Boolean(activeCompanyId),
+    staleTime: 10 * 60 * 1000,
+    meta: { persist: true },
+  });
+
+  const accounts = masterDataQuery.data?.accs ?? [];
+  const sites = masterDataQuery.data?.sts ?? [];
+  const products = masterDataQuery.data?.prds ?? [];
+  const customers = masterDataQuery.data?.custs ?? [];
+
+  // ---------------------------------------------------------------------------
+  // Load Variance Report Data via TanStack Query
+  // ---------------------------------------------------------------------------
+  const varianceQuery = useQuery({
+    queryKey: [
+      ...queryKeys.variance.all,
+      activeCompanyId,
+      compareType,
+      page,
+      fiscalYear,
+      periodMonth,
+      accountId,
+      siteId,
+      productId,
+      customerId,
+      debouncedSearch,
+    ],
+    queryFn: async ({ signal }) => {
+      const params = new URLSearchParams({ page: String(page), limit: '15' });
       if (fiscalYear) params.set('fiscal_year', fiscalYear);
       if (periodMonth) params.set('period_month', periodMonth);
       if (accountId) params.set('account_id', accountId);
       if (siteId) params.set('site_id', siteId);
       if (productId) params.set('product_id', productId);
       if (customerId) params.set('customer_id', customerId);
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      return apiGet<PaginatedResponse<VarianceRecord>>(`/variance/${compareType}?${params.toString()}`, { signal });
+    },
+    enabled: Boolean(activeCompanyId),
+    placeholderData: (prev) => prev,
+    staleTime: 2 * 60 * 1000,
+  });
 
-      const res = await apiGet<PaginatedResponse<VarianceRecord>>(`/variance/${compareType}?${params.toString()}`);
-      setRecords(res.data);
-      setTotal(res.total);
-      setTotalPages(res.totalPages);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to retrieve variance data.';
-      setError(msg);
-      toastError(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeCompanyId, compareType, page, fiscalYear, periodMonth, accountId, siteId, productId, customerId, search]);
+  const records = varianceQuery.data?.data ?? [];
+  const total = varianceQuery.data?.total ?? 0;
+  const totalPages = varianceQuery.data?.totalPages ?? 1;
 
-  useEffect(() => {
-    void Promise.resolve().then(() => void fetchVarianceReport());
-  }, [fetchVarianceReport]);
-
-  // Reset page on filter/tab changes
-  useEffect(() => {
-    void Promise.resolve().then(() => setPage(1));
-  }, [compareType, fiscalYear, periodMonth, accountId, siteId, productId, customerId]);
+  const error = varianceQuery.error ? getApiErrorMessage(varianceQuery.error, t) : null;
 
   // ---------------------------------------------------------------------------
-  // Color-Coding Helpers based on Account Type & Variance Direction
+  // Color-Coding Helpers
   // ---------------------------------------------------------------------------
   function renderVariance(amount: number, percentage: number | null, accId: string) {
     if (amount === 0) {
@@ -138,9 +137,6 @@ export default function VariancePage() {
     const acc = accounts.find((a) => a.id === accId);
     const accType = acc?.accountType ?? 'expense';
 
-    // Decide if positive variance is favorable or unfavorable.
-    // For revenue and assets, positive variance is favorable (actual > budget).
-    // For expense, liabilities, and equity, positive variance is unfavorable (actual > budget).
     let isFavorable = amount > 0;
     if (accType === 'expense' || accType === 'liability') {
       isFavorable = amount < 0;
@@ -165,106 +161,108 @@ export default function VariancePage() {
   // ---------------------------------------------------------------------------
   // Columns Configuration
   // ---------------------------------------------------------------------------
-  const columns: Column<VarianceRecord>[] = [
-    {
-      key: 'account_id',
-      header: t('page.variance.account'),
-      render: (v) => {
-        const acc = accounts.find((a) => a.id === String(v));
-        return (
-          <div>
-            <p className="font-semibold text-slate-800">{acc?.name ?? 'Unknown'}</p>
-            <p className="font-mono text-[10px] text-slate-400">Code: {acc?.code ?? String(v)}</p>
-          </div>
-        );
+  const columns: Column<VarianceRecord>[] = useMemo(() => {
+    const cols: Column<VarianceRecord>[] = [
+      {
+        key: 'account_id',
+        header: t('page.variance.account'),
+        render: (v) => {
+          const acc = accounts.find((a) => a.id === String(v));
+          return (
+            <div>
+              <p className="font-semibold text-slate-800">{acc?.name ?? 'Unknown'}</p>
+              <p className="font-mono text-[10px] text-slate-400">Code: {acc?.code ?? String(v)}</p>
+            </div>
+          );
+        },
       },
-    },
-    {
-      key: 'period_month',
-      header: t('page.variance.period'),
-      render: (v, row) => `FY${row.fiscal_year} M${String(v)}`,
-    },
-    {
-      key: 'site_id',
-      header: t('page.variance.site'),
-      render: (v) => sites.find((s) => s.id === String(v))?.name ?? '—',
-    },
-    {
-      key: 'product_id',
-      header: t('page.variance.productCustomer'),
-      render: (v, row) => {
-        const prod = products.find((p) => p.id === String(v))?.name;
-        const cust = customers.find((c) => c.id === row.customer_id)?.name;
-        return (
-          <div className="max-w-[150px] truncate" title={[prod, cust].filter(Boolean).join(' / ')}>
-            <p className="text-slate-700 text-xs">{prod ?? '—'}</p>
-            {cust && <p className="text-slate-400 text-[10px] italic">Cust: {cust}</p>}
-          </div>
-        );
+      {
+        key: 'period_month',
+        header: t('page.variance.period'),
+        render: (v, row) => `FY${row.fiscal_year} M${String(v)}`,
       },
-    },
-  ];
+      {
+        key: 'site_id',
+        header: t('page.variance.site'),
+        render: (v) => sites.find((s) => s.id === String(v))?.name ?? '—',
+      },
+      {
+        key: 'product_id',
+        header: t('page.variance.productCustomer'),
+        render: (v, row) => {
+          const prod = products.find((p) => p.id === String(v))?.name;
+          const cust = customers.find((c) => c.id === row.customer_id)?.name;
+          return (
+            <div className="max-w-[150px] truncate" title={[prod, cust].filter(Boolean).join(' / ')}>
+              <p className="text-slate-700 text-xs">{prod ?? '—'}</p>
+              {cust && <p className="text-slate-400 text-[10px] italic">Cust: {cust}</p>}
+            </div>
+          );
+        },
+      },
+    ];
 
-  // Dynamically append comparison columns
-  if (compareType === 'budget-vs-actual') {
-    columns.push(
-      { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
-      {
-        key: 'variance_amount',
-        header: t('page.variance.varianceActBud'),
-        className: 'text-right',
-        render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
-      }
-    );
-  } else if (compareType === 'budget-vs-forecast') {
-    columns.push(
-      { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
-      {
-        key: 'variance_amount',
-        header: t('page.variance.varianceForBud'),
-        className: 'text-right',
-        render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
-      }
-    );
-  } else if (compareType === 'actual-vs-forecast') {
-    columns.push(
-      { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
-      {
-        key: 'variance_amount',
-        header: t('page.variance.varianceForAct'),
-        className: 'text-right',
-        render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
-      }
-    );
-  } else {
-    // Three-way
-    columns.push(
-      { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs text-slate-500', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs text-slate-700', render: (v) => `$${Number(v).toLocaleString()}` },
-      { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs text-slate-700 border-r border-slate-100', render: (v) => `$${Number(v).toLocaleString()}` },
-      {
-        key: 'actual_vs_budget_amount',
-        header: t('page.variance.actVsBud'),
-        className: 'text-right',
-        render: (_, row) => renderVariance(row.actual_vs_budget_amount ?? 0, row.actual_vs_budget_pct ?? null, row.account_id),
-      },
-      {
-        key: 'forecast_vs_budget_amount',
-        header: t('page.variance.forVsBud'),
-        className: 'text-right',
-        render: (_, row) => renderVariance(row.forecast_vs_budget_amount ?? 0, row.forecast_vs_budget_pct ?? null, row.account_id),
-      },
-      {
-        key: 'forecast_vs_actual_amount',
-        header: t('page.variance.forVsAct'),
-        className: 'text-right',
-        render: (_, row) => renderVariance(row.forecast_vs_actual_amount ?? 0, row.forecast_vs_actual_pct ?? null, row.account_id),
-      }
-    );
-  }
+    if (compareType === 'budget-vs-actual') {
+      cols.push(
+        { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
+        { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
+        {
+          key: 'variance_amount',
+          header: t('page.variance.varianceActBud'),
+          className: 'text-right',
+          render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
+        }
+      );
+    } else if (compareType === 'budget-vs-forecast') {
+      cols.push(
+        { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
+        { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
+        {
+          key: 'variance_amount',
+          header: t('page.variance.varianceForBud'),
+          className: 'text-right',
+          render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
+        }
+      );
+    } else if (compareType === 'actual-vs-forecast') {
+      cols.push(
+        { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs', render: (v) => `$${Number(v).toLocaleString()}` },
+        { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs font-semibold', render: (v) => `$${Number(v).toLocaleString()}` },
+        {
+          key: 'variance_amount',
+          header: t('page.variance.varianceForAct'),
+          className: 'text-right',
+          render: (_, row) => renderVariance(row.variance_amount, row.variance_pct, row.account_id),
+        }
+      );
+    } else {
+      cols.push(
+        { key: 'budget_amount', header: t('page.variance.budget'), className: 'text-right font-mono text-xs text-slate-500', render: (v) => `$${Number(v).toLocaleString()}` },
+        { key: 'actual_amount', header: t('page.variance.actual'), className: 'text-right font-mono text-xs text-slate-700', render: (v) => `$${Number(v).toLocaleString()}` },
+        { key: 'forecast_amount', header: t('page.variance.forecast'), className: 'text-right font-mono text-xs text-slate-700 border-r border-slate-100', render: (v) => `$${Number(v).toLocaleString()}` },
+        {
+          key: 'actual_vs_budget_amount',
+          header: t('page.variance.actVsBud'),
+          className: 'text-right',
+          render: (_, row) => renderVariance(row.actual_vs_budget_amount ?? 0, row.actual_vs_budget_pct ?? null, row.account_id),
+        },
+        {
+          key: 'forecast_vs_budget_amount',
+          header: t('page.variance.forVsBud'),
+          className: 'text-right',
+          render: (_, row) => renderVariance(row.forecast_vs_budget_amount ?? 0, row.forecast_vs_budget_pct ?? null, row.account_id),
+        },
+        {
+          key: 'forecast_vs_actual_amount',
+          header: t('page.variance.forVsAct'),
+          className: 'text-right',
+          render: (_, row) => renderVariance(row.forecast_vs_actual_amount ?? 0, row.forecast_vs_actual_pct ?? null, row.account_id),
+        }
+      );
+    }
+
+    return cols;
+  }, [compareType, accounts, sites, products, customers, t]);
 
   if (!activeCompanyId) {
     return (
@@ -291,17 +289,17 @@ export default function VariancePage() {
             { value: 'actual-vs-forecast', label: t('page.variance.actualVsForecast') },
             { value: 'budget-actual-forecast', label: t('page.variance.threeWay') },
           ] as const
-        ).map((t) => (
+        ).map((tab) => (
           <button
-            key={t.value}
-            onClick={() => setCompareType(t.value)}
+            key={tab.value}
+            onClick={() => setCompareType(tab.value)}
             className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-150 ${
-              compareType === t.value
+              compareType === tab.value
                 ? 'border-emerald-600 text-emerald-600 font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -393,7 +391,7 @@ export default function VariancePage() {
           </div>
         </div>
 
-        {/* Global search within filtered variance records */}
+        {/* Search */}
         <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
           <div className="relative flex-1 max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -405,17 +403,25 @@ export default function VariancePage() {
               className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
-          <Button variant="outline" size="sm" className="h-8 px-3 ml-auto flex gap-1 items-center" onClick={fetchVarianceReport}>
-            <RefreshCw className="h-3.5 w-3.5" /> {t('page.variance.refresh')}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 ml-auto flex gap-1 items-center"
+            onClick={() => void queryClient.invalidateQueries({ queryKey: queryKeys.variance.all })}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${varianceQuery.isFetching ? 'animate-spin' : ''}`} /> {t('page.variance.refresh')}
           </Button>
         </div>
       </div>
 
       {/* Main Table */}
-      {isLoading ? (
+      {varianceQuery.isLoading ? (
         <LoadingState rows={8} message="Aggregating performance dimensions..." />
-      ) : error ? (
-        <ErrorState message={error} onRetry={fetchVarianceReport} />
+      ) : error && !records.length ? (
+        <ErrorState
+          message={error}
+          onRetry={() => void queryClient.invalidateQueries({ queryKey: queryKeys.variance.all })}
+        />
       ) : records.length === 0 ? (
         <EmptyState
           title={t('page.variance.noData')}
@@ -423,6 +429,13 @@ export default function VariancePage() {
         />
       ) : (
         <>
+          {/* Background refresh indicator */}
+          {varianceQuery.isFetching && !varianceQuery.isLoading && (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-3 w-3 animate-spin rounded-full border border-emerald-600 border-t-transparent" />
+              Refreshing…
+            </div>
+          )}
           <TableWrapper<VarianceRecord>
             data={records}
             columns={columns}

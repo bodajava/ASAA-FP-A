@@ -14,12 +14,14 @@ export type TranslationKey =
   | 'nav.reportsAnalysis'
   | 'nav.reports'
   | 'nav.varianceAnalysis'
+  | 'nav.yearComparison'
   | 'nav.operations'
   | 'nav.inventory'
   | 'nav.approvals'
   | 'nav.promotions'
   | 'nav.rawMaterialPrices'
-  | 'nav.dataIntegrations'
+  | 'nav.excelImports'
+  | 'nav.excelIntegration'
   | 'nav.actualImports'
   | 'nav.connections'
   | 'nav.importMappings'
@@ -42,6 +44,8 @@ export type TranslationKey =
   | 'nav.auditLogs'
   | 'nav.settings'
   | 'nav.users'
+  | 'nav.tenants'
+  | 'nav.roles'
   | 'nav.overview'
   | 'nav.modules'
   | 'nav.notifications'
@@ -53,6 +57,7 @@ export type TranslationKey =
   | 'common.cancel'
   | 'common.delete'
   | 'common.edit'
+  | 'common.view'
   | 'common.create'
   | 'common.update'
   | 'common.close'
@@ -116,6 +121,11 @@ export type TranslationKey =
   | 'common.noUnreadAlerts'
   | 'common.everythingRunning'
   | 'common.markAsRead'
+  | 'common.timeAgo.justNow'
+  | 'common.timeAgo.minutesAgo'
+  | 'common.timeAgo.hoursAgo'
+  | 'common.timeAgo.daysAgo'
+  | 'common.timeAgo.monthsAgo'
   | 'common.viewAllAlerts'
   | 'common.confirmDelete'
   | 'common.confirmDeleteMessage'
@@ -366,6 +376,73 @@ export type TranslationKey =
   | 'page.dashboard.noDataYet'
   | 'page.dashboard.noCompanyTitle'
   | 'page.dashboard.noCompanyDesc'
+  | 'page.dashboard.refreshing'
+  | 'page.dashboard.executiveSummary'
+  | 'page.dashboard.ebitda'
+  | 'page.dashboard.operatingProfit'
+  | 'page.dashboard.cashFlow'
+  | 'page.dashboard.workingCapital'
+  | 'page.dashboard.accountsReceivable'
+  | 'page.dashboard.accountsPayable'
+  | 'page.dashboard.inventoryValue'
+  | 'page.dashboard.inventoryCoverage'
+  | 'page.dashboard.productionCost'
+  | 'page.dashboard.manufacturingCost'
+  | 'page.dashboard.totalBudget'
+  | 'page.dashboard.actualCost'
+  | 'page.dashboard.remainingBudget'
+  | 'page.dashboard.totalIncome'
+  | 'page.dashboard.totalCustomers'
+  | 'page.dashboard.totalSuppliers'
+  | 'page.dashboard.totalProducts'
+  | 'page.dashboard.totalMaterials'
+  | 'page.dashboard.totalUsers'
+  | 'page.dashboard.pendingApprovals'
+  | 'page.dashboard.notificationCount'
+  | 'page.dashboard.failedImports'
+  | 'page.dashboard.successfulImports'
+  | 'page.dashboard.exchangeRates'
+  | 'page.dashboard.marketOverview'
+  | 'page.dashboard.lastSync'
+  | 'page.dashboard.staleRates'
+  | 'page.dashboard.staleRatesDesc'
+  | 'page.dashboard.dailyChange'
+  | 'page.dashboard.vsPreviousYear'
+  | 'page.dashboard.vsPreviousMonth'
+  | 'page.dashboard.kpiSectionLabel'
+  | 'page.dashboard.revenueVsExpense'
+  | 'page.dashboard.budgetVsActual'
+  | 'page.dashboard.profitabilityTrend'
+  | 'page.dashboard.monthlyComparison'
+  | 'page.dashboard.days'
+  | 'page.dashboard.financialPerformance'
+  | 'page.dashboard.planningForecast'
+  | 'page.dashboard.operations'
+  | 'page.dashboard.alertsActions'
+  | 'page.dashboard.moduleSummary'
+  | 'page.dashboard.noActiveAlerts'
+  | 'page.dashboard.moduleCompanies'
+  | 'page.dashboard.moduleSites'
+  | 'page.dashboard.moduleUsers'
+  | 'page.dashboard.moduleProducts'
+  | 'page.dashboard.moduleMaterials'
+  | 'page.dashboard.moduleSuppliers'
+  | 'page.dashboard.moduleCustomers'
+  | 'page.dashboard.moduleBoms'
+  | 'page.dashboard.moduleBudgets'
+  | 'page.dashboard.moduleForecasts'
+  | 'page.dashboard.moduleActuals'
+  | 'page.dashboard.moduleScenarios'
+  | 'page.dashboard.moduleAuditLogs'
+  | 'page.dashboard.moduleNotifications'
+  | 'page.dashboard.filterBar'
+  | 'page.dashboard.periodYtd'
+  | 'page.dashboard.periodQ1'
+  | 'page.dashboard.periodQ2'
+  | 'page.dashboard.periodQ3'
+  | 'page.dashboard.periodQ4'
+  | 'page.dashboard.periodLast12'
+  | 'page.dashboard.lastUpdated'
   /* ── Budgets page ───────────────────────────────────────────────────── */
   | 'page.budgets.title'
   | 'page.budgets.createTitle'
@@ -527,6 +604,144 @@ export type TranslationKey =
   | 'page.scenarios.impactGrossMargin'
   | 'page.scenarios.impactNetProfit'
   | 'page.scenarios.impactCashFlow'
+  /* ── Scenario Costing Impact ────────────────────────────────────────── */
+  | 'page.scenarios.costingImpact'
+  | 'page.scenarios.costingImpactDesc'
+  | 'page.scenarios.noCostingData'
+  | 'page.scenarios.noCostingDataDesc'
+  | 'page.scenarios.before'
+  | 'page.scenarios.after'
+  | 'page.scenarios.marginChange'
+  | 'page.scenarios.affectedProducts'
+  | 'page.scenarios.productName'
+  | 'page.scenarios.currentMargin'
+  | 'page.scenarios.projectedMargin'
+  | 'page.scenarios.marginDelta'
+  | 'page.scenarios.positiveImpact'
+  | 'page.scenarios.negativeImpact'
+  | 'page.scenarios.neutralImpact'
+  | 'page.scenarios.costingBreakdown'
+  | 'page.scenarios.materialCostChange'
+  | 'page.scenarios.laborCostChange'
+  | 'page.scenarios.overheadCostChange'
+  | 'page.scenarios.profitImpact'
+  | 'page.scenarios.primaryDriver'
+  /* ── Forecast Costing Summary ────────────────────────────────────────── */
+  | 'page.forecasts.costingSummary'
+  | 'page.forecasts.costingSummaryDesc'
+  | 'page.forecasts.noCostingData'
+  | 'page.forecasts.noCostingDataDesc'
+  | 'page.forecasts.totalRevenue'
+  | 'page.forecasts.totalCOGS'
+  | 'page.forecasts.grossMargin'
+  | 'page.forecasts.forecastMargin'
+  | 'page.forecasts.marginTarget'
+  | 'page.forecasts.marginStatus'
+  | 'page.forecasts.aboveTarget'
+  | 'page.forecasts.belowTarget'
+  | 'page.forecasts.onTarget'
+  | 'page.forecasts.productMarginBreakdown'
+  | 'page.forecasts.topProducts'
+  | 'page.forecasts.lowMarginProducts'
+  | 'page.forecasts.negativeMarginProducts'
+  | 'page.forecasts.costPerUnit'
+  | 'page.forecasts.quantity'
+  /* ── Year Comparison ────────────────────────────────────────────────── */
+  | 'page.yearComparison.title'
+  | 'page.yearComparison.description'
+  | 'page.yearComparison.currentYear'
+  | 'page.yearComparison.previousYear'
+  | 'page.yearComparison.selectYears'
+  | 'page.yearComparison.revenue'
+  | 'page.yearComparison.cogs'
+  | 'page.yearComparison.grossProfit'
+  | 'page.yearComparison.expenses'
+  | 'page.yearComparison.netProfit'
+  | 'page.yearComparison.grossMargin'
+  | 'page.yearComparison.netMargin'
+  | 'page.yearComparison.varianceAmount'
+  | 'page.yearComparison.variancePercent'
+  | 'page.yearComparison.trend'
+  | 'page.yearComparison.trendUp'
+  | 'page.yearComparison.trendDown'
+  | 'page.yearComparison.trendStable'
+  | 'page.yearComparison.statusImproving'
+  | 'page.yearComparison.statusDeclining'
+  | 'page.yearComparison.statusStable'
+  | 'page.yearComparison.monthlyComparison'
+  | 'page.yearComparison.productComparison'
+  | 'page.yearComparison.overallSummary'
+  | 'page.yearComparison.month'
+  | 'page.yearComparison.current'
+  | 'page.yearComparison.previous'
+  | 'page.yearComparison.emptyTitle'
+  | 'page.yearComparison.emptyDesc'
+  | 'page.yearComparison.noCompanyTitle'
+  | 'page.yearComparison.noCompanyDesc'
+  | 'page.yearComparison.costLabel'
+  | 'page.yearComparison.marginLabel'
+  | 'page.yearComparison.revenueLabel'
+  | 'page.yearComparison.netProfitLabel'
+  /* ── Dashboard Costing Section ───────────────────────────────────────── */
+  | 'page.dashboard.costingOverview'
+  | 'page.dashboard.costingOverviewDesc'
+  | 'page.dashboard.totalProductsCosted'
+  | 'page.dashboard.avgGrossMargin'
+  | 'page.dashboard.avgNetMargin'
+  | 'page.dashboard.totalCostOfGoods'
+  | 'page.dashboard.topMarginProducts'
+  | 'page.dashboard.lowMarginProducts'
+  | 'page.dashboard.costBreakdown'
+  | 'page.dashboard.marginTrend'
+  | 'page.dashboard.costBreakdownByCategory'
+  | 'page.dashboard.rawMaterialCost'
+  | 'page.dashboard.packagingCost'
+  | 'page.dashboard.laborCost'
+  | 'page.dashboard.overheadCost'
+  | 'page.dashboard.warehouseCost'
+  | 'page.dashboard.freightCost'
+  | 'page.dashboard.sellingCost'
+  | 'page.dashboard.viewAllProducts'
+  | 'page.dashboard.costingDetails'
+  /* ── Alert i18n keys ─────────────────────────────────────────────────── */
+  | 'alert.costing.forecastNegativeMargin.title'
+  | 'alert.costing.forecastNegativeMargin.message'
+  | 'alert.costing.forecastLowMargin.title'
+  | 'alert.costing.forecastLowMargin.message'
+  /* ── Dashboard costing section ─────────────────────────────────────── */
+  | 'page.dashboard.costingSectionTitle'
+  | 'page.dashboard.costingUnavailable'
+  | 'page.dashboard.costingAvgProductCost'
+  | 'page.dashboard.costingAvgProductCostTip'
+  | 'page.dashboard.costingHighestCostProduct'
+  | 'page.dashboard.costingHighestCostProductTip'
+  | 'page.dashboard.costingHighCost'
+  | 'page.dashboard.costingLowestCostProduct'
+  | 'page.dashboard.costingLowestCostProductTip'
+  | 'page.dashboard.costingHighestMarginProduct'
+  | 'page.dashboard.costingHighestMarginProductTip'
+  | 'page.dashboard.costingHighMargin'
+  | 'page.dashboard.costingLowestMarginProduct'
+  | 'page.dashboard.costingLowestMarginProductTip'
+  | 'page.dashboard.costingLowMargin'
+  | 'page.dashboard.costingMaterialCost'
+  | 'page.dashboard.costingMaterialCostTip'
+  | 'page.dashboard.costingPackagingCost'
+  | 'page.dashboard.costingPackagingCostTip'
+  | 'page.dashboard.costingManufacturingCost'
+  | 'page.dashboard.costingManufacturingCostTip'
+  | 'page.dashboard.costingWastageRate'
+  | 'page.dashboard.costingWastageRateTip'
+  | 'page.dashboard.costingHighWaste'
+  | 'page.dashboard.costingTrendTitle'
+  | 'page.dashboard.costingNoTrendData'
+  | 'page.dashboard.costingAvgStandard'
+  | 'page.dashboard.costingAvgActual'
+  | 'page.dashboard.costingTop10Profitable'
+  | 'page.dashboard.costingTop10Loss'
+  | 'page.dashboard.costingNoSalesData'
+  | 'page.dashboard.costingVarianceTitle'
+  | 'page.dashboard.costingVarianceDesc'
   /* ── Reports page ───────────────────────────────────────────────────── */
   | 'page.reports.title'
   | 'page.reports.description'
@@ -552,8 +767,6 @@ export type TranslationKey =
   | 'page.settings.companyProfileDesc'
   | 'page.settings.activeSession'
   | 'page.settings.activeSessionDesc'
-  | 'page.settings.subscriptionPlans'
-  | 'page.settings.subscriptionPlansDesc'
   | 'page.settings.companyName'
   | 'page.settings.companyCode'
   | 'page.settings.defaultCurrency'
@@ -566,28 +779,16 @@ export type TranslationKey =
   | 'page.settings.role'
   | 'page.settings.userId'
   | 'page.settings.activeCompanyId'
-  | 'page.settings.subscriptionPlan'
   | 'page.settings.sessionDisclaimer'
   | 'page.settings.discardReload'
   | 'page.settings.saving'
   | 'page.settings.saveChanges'
   | 'page.settings.savedSuccess'
-  | 'page.settings.monthly'
-  | 'page.settings.yearly'
-  | 'page.settings.savePercent'
-  | 'page.settings.mostPopular'
-  | 'page.settings.completeSuite'
-  | 'page.settings.activePlan'
-  | 'page.settings.upgrading'
-  | 'page.settings.selectPlan'
   | 'page.settings.companies'
   | 'page.settings.users'
   | 'page.settings.branches'
   | 'page.settings.unlimited'
   | 'page.settings.dashboardLabel'
-  | 'page.settings.perMonth'
-  | 'page.settings.perYear'
-  | 'page.settings.billedAnnually'
   /* ── Other page titles ──────────────────────────────────────────────── */
   | 'page.variance.title'
   | 'page.inventory.title'
@@ -619,6 +820,40 @@ export type TranslationKey =
   | 'page.approvals.commentPlaceholder'
   | 'page.promotions.title'
   | 'page.rawMaterialPrices.title'
+  | 'page.excelIntegration.title'
+  | 'page.excelIntegration.description'
+  | 'page.excelIntegration.uploadButton'
+  | 'page.excelIntegration.dragDrop'
+  | 'page.excelIntegration.browse'
+  | 'page.excelIntegration.analyzing'
+  | 'page.excelIntegration.readyToImport'
+  | 'page.excelIntegration.importNow'
+  | 'page.excelIntegration.dryRun'
+  | 'page.excelIntegration.skipErrors'
+  | 'page.excelIntegration.importComplete'
+  | 'page.excelIntegration.importFailed'
+  | 'page.excelIntegration.rowsInserted'
+  | 'page.excelIntegration.rowsFailed'
+  | 'page.excelIntegration.duration'
+  | 'page.excelIntegration.sheetsDetected'
+  | 'page.excelIntegration.warnings'
+  | 'page.excelIntegration.noWarnings'
+  | 'page.excelIntegration.errors'
+  | 'page.excelIntegration.noErrors'
+  | 'page.excelIntegration.sheetName'
+  | 'page.excelIntegration.module'
+  | 'page.excelIntegration.rows'
+  | 'page.excelIntegration.status'
+  | 'page.excelIntegration.valid'
+  | 'page.excelIntegration.invalid'
+  | 'page.excelIntegration.duplicate'
+  | 'page.excelIntegration.unmappedModule'
+  | 'page.excelIntegration.manualMapping'
+  | 'page.excelIntegration.backToUpload'
+  | 'page.excelIntegration.templateDownloads'
+  | 'page.excelIntegration.templateWarning'
+  | 'page.excelIntegration.downloadClientWorkbook'
+  | 'page.excelIntegration.downloadModuleTemplate'
   | 'page.actualImports.title'
   | 'page.companies.title'
   | 'page.sites.title'
@@ -635,6 +870,31 @@ export type TranslationKey =
   | 'page.notificationRules.title'
   | 'page.auditLogs.title'
   | 'page.users.title'
+  | 'page.tenants.title'
+  | 'page.tenants.description'
+  | 'page.tenants.emptyTitle'
+  | 'page.tenants.emptyDescription'
+  | 'page.tenants.createTenant'
+  | 'page.tenants.editTenant'
+  | 'page.tenants.tenantName'
+  | 'page.tenants.slug'
+  | 'page.tenants.slugPlaceholder'
+  | 'page.tenants.deleteConfirmMsg'
+  | 'page.tenants.accessDenied'
+  | 'page.tenants.accessDeniedDesc'
+  | 'page.roles.title'
+  | 'page.roles.description'
+  | 'page.roles.emptyTitle'
+  | 'page.roles.emptyDescription'
+  | 'page.roles.createRole'
+  | 'page.roles.editRole'
+  | 'page.roles.roleName'
+  | 'page.roles.permissions'
+  | 'page.roles.permissionsPlaceholder'
+  | 'page.roles.usersCount'
+  | 'page.roles.deleteConfirmMsg'
+  | 'page.roles.accessDenied'
+  | 'page.roles.accessDeniedDesc'
   | 'page.exchangeRates.title'
   | 'page.connections.title'
   | 'page.importMappings.title'
@@ -647,6 +907,43 @@ export type TranslationKey =
   | 'page.notifications.description'
   | 'page.notifications.emptyTitle'
   | 'page.notifications.emptyDescription'
+  | 'page.notifications.alerts'
+  | 'page.notifications.markAllRead'
+  | 'page.notifications.archive'
+  | 'page.notifications.unreadCount'
+  | 'page.notifications.noAlerts'
+  | 'page.notifications.noAlertsDesc'
+  | 'page.notifications.alertLow'
+  | 'page.notifications.alertMedium'
+  | 'page.notifications.alertHigh'
+  | 'page.notifications.alertCritical'
+  | 'page.notifications.categoryBudget'
+  | 'page.notifications.categoryInventory'
+  | 'page.notifications.categoryApproval'
+  | 'page.notifications.categoryImport'
+  | 'page.notifications.categoryExchange'
+  | 'page.notifications.categorySystem'
+  | 'page.notifications.categoryProduction'
+  | 'page.notifications.categoryForecast'
+  | 'page.notifications.filterAll'
+  | 'page.notifications.filterUnread'
+  | 'page.notifications.filterRead'
+  | 'page.notifications.filterArchived'
+  | 'page.notifications.viewAlerts'
+  | 'page.notifications.markRead'
+  | 'page.notifications.delete'
+  | 'page.notifications.selectAll'
+  | 'page.notifications.deselectAll'
+  | 'page.notifications.selectedCount'
+  | 'page.notifications.markSelectedRead'
+  | 'page.notifications.archiveSelected'
+  | 'page.notifications.deleteSelected'
+  | 'page.notifications.bulkDeleteConfirm'
+  | 'page.notifications.groupToday'
+  | 'page.notifications.groupYesterday'
+  | 'page.notifications.groupThisWeek'
+  | 'page.notifications.groupEarlier'
+  | 'page.notifications.notificationsCount'
   /* ── Actual Imports page ──────────────────────────────────────────────── */
   | 'page.actualImports.description'
   | 'page.actualImports.importButton'
@@ -780,6 +1077,18 @@ export type TranslationKey =
   | 'component.importModal.fileName'
   | 'component.importModal.noCommit'
   | 'component.importModal.rowFail'
+  | 'component.importModal.progressValidating'
+  | 'component.importModal.progressUploading'
+  | 'component.importModal.progressComplete'
+  | 'component.importModal.rowSummary'
+  | 'component.importModal.downloadErrors'
+  | 'component.importModal.downloadSkipped'
+  | 'component.importModal.cancelImport'
+  | 'component.importModal.importComplete'
+  | 'component.importModal.statSuccess'
+  | 'component.importModal.statFailed'
+  | 'component.importModal.statSkipped'
+  | 'component.importModal.statTime'
   /* ── Auth page ──────────────────────────────────────────────────────── */
   | 'auth.signInTitle'
   | 'auth.signInSubtitle'
@@ -805,6 +1114,24 @@ export type TranslationKey =
   | 'page.companies.deletedSuccess'
   | 'page.companies.deleteFailed'
   | 'page.companies.unexpectedDeleteError'
+  | 'page.companies.wizardTitle'
+  | 'page.companies.wizardDesc'
+  | 'page.companies.step1Label'
+  | 'page.companies.step2Label'
+  | 'page.companies.step3Label'
+  | 'page.companies.step4Label'
+  | 'page.companies.step5Label'
+  | 'page.companies.step6Label'
+  | 'page.companies.industryType'
+  | 'page.companies.taxNumber'
+  | 'page.companies.defaultUnits'
+  | 'page.companies.defaultAccounts'
+  | 'page.companies.defaultChartOfAccounts'
+  | 'page.companies.createDefaultUnits'
+  | 'page.companies.createDefaultAccounts'
+  | 'page.companies.accountCategories'
+  | 'page.companies.preview'
+  | 'page.companies.review'
   /* ── Exchange rates page ─────────────────────────────────────────────── */
   | 'page.exchangeRates.description'
   | 'page.exchangeRates.fromCurrency'
@@ -1106,13 +1433,34 @@ export type TranslationKey =
   | 'page.notificationRules.ruleName'
   | 'page.notificationRules.triggerType'
   | 'page.notificationRules.threshold'
+  | 'page.notificationRules.targetAccount'
   | 'page.notificationRules.channel'
+  | 'page.notificationRules.site'
+  | 'page.notificationRules.status'
   | 'page.notificationRules.triggerEvent'
   | 'page.notificationRules.thresholdPct'
   | 'page.notificationRules.thresholdAmount'
+  | 'page.notificationRules.thresholdValue'
   | 'page.notificationRules.accountScope'
   | 'page.notificationRules.siteScope'
+  | 'page.notificationRules.targetGlAccount'
+  | 'page.notificationRules.targetSite'
+  | 'page.notificationRules.notifyRoles'
+  | 'page.notificationRules.notificationChannels'
+  | 'page.notificationRules.ruleActive'
   | 'page.notificationRules.createRule'
+  | 'page.notificationRules.createTitle'
+  | 'page.notificationRules.editTitle'
+  | 'page.notificationRules.ruleNamePlaceholder'
+  | 'page.notificationRules.thresholdPlaceholder'
+  | 'page.notificationRules.notifyRolesPlaceholder'
+  | 'page.notificationRules.channelsPlaceholder'
+  | 'page.notificationRules.triggerVariancePct'
+  | 'page.notificationRules.triggerVarianceAmount'
+  | 'page.notificationRules.triggerKpiBreach'
+  | 'page.notificationRules.triggerBudgetApproval'
+  | 'page.notificationRules.triggerForecastApproval'
+  | 'page.notificationRules.triggerImportFailed'
   | 'page.notificationRules.description'
   | 'page.notificationRules.emptyDescription'
   | 'page.notificationRules.emptyTitle'
@@ -1330,9 +1678,6 @@ export type TranslationKey =
   | 'page.reports.fetchFailed'
   | 'page.reports.exportFailed'
   /* ── Settings keys ──────────────────────────────────────────────────── */
-  | 'page.settings.loadPlansFailed'
-  | 'page.settings.upgradeSuccess'
-  | 'page.settings.upgradeFailed'
   | 'page.settings.loadCompanyFailed'
   | 'page.settings.saveCompanyFailed'
   /* ── Variance keys ──────────────────────────────────────────────────── */
@@ -1375,7 +1720,35 @@ export type TranslationKey =
   | 'backend.NOT_FOUND'
   | 'backend.VALIDATION_FAILED'
   | 'backend.COMPANY_NOT_FOUND'
-  | 'backend.DEFAULT';
+  | 'backend.DEFAULT'
+  /* ── Enterprise Import ──────────────────────────────────────────────── */
+  | 'import.enterprise.title'
+  | 'import.enterprise.subtitle'
+  | 'import.enterprise.selectModule'
+  | 'import.enterprise.chooseFile'
+  | 'import.enterprise.dragDrop'
+  | 'import.enterprise.orClick'
+  | 'import.enterprise.supportedFormats'
+  | 'import.enterprise.maxSize'
+  | 'import.enterprise.uploadAndValidate'
+  | 'import.enterprise.cancel'
+  | 'import.enterprise.validating'
+  | 'import.enterprise.preview'
+  | 'import.enterprise.validRows'
+  | 'import.enterprise.errorRows'
+  | 'import.enterprise.commit'
+  | 'import.enterprise.committing'
+  | 'import.enterprise.done'
+  | 'import.enterprise.history'
+  | 'import.enterprise.noHistory'
+  | 'import.enterprise.status'
+  | 'import.enterprise.rowsInserted'
+  | 'import.enterprise.rowsUpdated'
+  | 'import.enterprise.rowsFailed'
+  | 'import.enterprise.timestamp'
+  | 'import.enterprise.module'
+  | 'import.enterprise.fileName'
+  | 'import.enterprise.close';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -1393,12 +1766,14 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'nav.reportsAnalysis': 'Reports & Analysis',
     'nav.reports': 'Reports',
     'nav.varianceAnalysis': 'Variance Analysis',
+    'nav.yearComparison': 'Year-over-Year',
     'nav.operations': 'Operations',
     'nav.inventory': 'Inventory',
     'nav.approvals': 'Approvals',
     'nav.promotions': 'Promotions',
     'nav.rawMaterialPrices': 'Raw Mat. Prices',
-    'nav.dataIntegrations': 'Data Integrations',
+    'nav.excelImports': 'Excel Imports',
+    'nav.excelIntegration': 'Excel Integration',
     'nav.actualImports': 'Actual Imports',
     'nav.connections': 'Connections',
     'nav.importMappings': 'Import Mappings',
@@ -1421,6 +1796,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'nav.auditLogs': 'Audit Logs',
     'nav.settings': 'Settings',
     'nav.users': 'Users',
+    'nav.tenants': 'Tenants',
+    'nav.roles': 'Roles',
     'nav.overview': 'Overview',
     'nav.modules': 'Modules',
     'nav.notifications': 'Notifications',
@@ -1433,6 +1810,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.cancel': 'Cancel',
     'common.delete': 'Delete',
     'common.edit': 'Edit',
+    'common.view': 'View',
     'common.create': 'Create',
     'common.update': 'Update',
     'common.close': 'Close',
@@ -1495,6 +1873,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.noUnreadAlerts': 'No unread alerts',
     'common.everythingRunning': 'Everything is running smoothly.',
     'common.markAsRead': 'Mark as Read',
+    'common.timeAgo.justNow': 'just now',
+    'common.timeAgo.minutesAgo': '{n}m ago',
+    'common.timeAgo.hoursAgo': '{n}h ago',
+    'common.timeAgo.daysAgo': '{n}d ago',
+    'common.timeAgo.monthsAgo': '{n}mo ago',
     'common.viewAllAlerts': 'View All Alerts',
     'common.confirmDelete': 'Confirm Delete',
     'common.confirmDeleteMessage': 'Are you sure you want to delete this item? This action cannot be undone.',
@@ -1768,6 +2151,73 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.dashboard.noDataYet': 'No data yet.',
     'page.dashboard.noCompanyTitle': 'No active company',
     'page.dashboard.noCompanyDesc': 'Select a company from the sidebar to view your dashboard.',
+    'page.dashboard.refreshing': 'Refreshing…',
+    'page.dashboard.executiveSummary': 'Executive Summary',
+    'page.dashboard.ebitda': 'EBITDA',
+    'page.dashboard.operatingProfit': 'Operating Profit',
+    'page.dashboard.cashFlow': 'Cash Flow',
+    'page.dashboard.workingCapital': 'Working Capital',
+    'page.dashboard.accountsReceivable': 'Accounts Receivable',
+    'page.dashboard.accountsPayable': 'Accounts Payable',
+    'page.dashboard.inventoryValue': 'Inventory Value',
+    'page.dashboard.inventoryCoverage': 'Inventory Coverage',
+    'page.dashboard.productionCost': 'Production Cost',
+    'page.dashboard.manufacturingCost': 'Manufacturing Cost',
+    'page.dashboard.totalBudget': 'Total Budget',
+    'page.dashboard.actualCost': 'Actual Cost',
+    'page.dashboard.remainingBudget': 'Remaining Budget',
+    'page.dashboard.totalIncome': 'Total Income',
+    'page.dashboard.totalCustomers': 'Total Customers',
+    'page.dashboard.totalSuppliers': 'Total Suppliers',
+    'page.dashboard.totalProducts': 'Total Products',
+    'page.dashboard.totalMaterials': 'Total Materials',
+    'page.dashboard.totalUsers': 'Total Users',
+    'page.dashboard.pendingApprovals': 'Pending Approvals',
+    'page.dashboard.notificationCount': 'Notifications',
+    'page.dashboard.failedImports': 'Failed Imports',
+    'page.dashboard.successfulImports': 'Successful Imports',
+    'page.dashboard.exchangeRates': 'Exchange Rates',
+    'page.dashboard.marketOverview': 'Market Overview',
+    'page.dashboard.lastSync': 'Last Sync',
+    'page.dashboard.staleRates': 'Stale Rates',
+    'page.dashboard.staleRatesDesc': 'Live APIs unavailable; showing cached rates.',
+    'page.dashboard.dailyChange': 'Daily Change',
+    'page.dashboard.vsPreviousYear': 'vs Previous Year',
+    'page.dashboard.vsPreviousMonth': 'vs Previous Month',
+    'page.dashboard.kpiSectionLabel': 'Key Performance Indicators',
+    'page.dashboard.revenueVsExpense': 'Revenue vs Expense',
+    'page.dashboard.budgetVsActual': 'Budget vs Actual',
+    'page.dashboard.profitabilityTrend': 'Profitability Trend',
+    'page.dashboard.monthlyComparison': 'Monthly Comparison',
+    'page.dashboard.days': 'days',
+    'page.dashboard.financialPerformance': 'Financial Performance',
+    'page.dashboard.planningForecast': 'Planning & Forecast',
+    'page.dashboard.operations': 'Operations',
+    'page.dashboard.alertsActions': 'Alerts & Actions',
+    'page.dashboard.moduleSummary': 'Module Summary',
+    'page.dashboard.noActiveAlerts': 'No active alerts — all clear!',
+    'page.dashboard.moduleCompanies': 'Companies',
+    'page.dashboard.moduleSites': 'Sites',
+    'page.dashboard.moduleUsers': 'Users',
+    'page.dashboard.moduleProducts': 'Products',
+    'page.dashboard.moduleMaterials': 'Materials',
+    'page.dashboard.moduleSuppliers': 'Suppliers',
+    'page.dashboard.moduleCustomers': 'Customers',
+    'page.dashboard.moduleBoms': 'BOMs',
+    'page.dashboard.moduleBudgets': 'Budgets',
+    'page.dashboard.moduleForecasts': 'Forecasts',
+    'page.dashboard.moduleActuals': 'Actual Imports',
+    'page.dashboard.moduleScenarios': 'Scenarios',
+    'page.dashboard.moduleAuditLogs': 'Audit Logs',
+    'page.dashboard.moduleNotifications': 'Notifications',
+    'page.dashboard.filterBar': 'Filters',
+    'page.dashboard.periodYtd': 'Year to Date',
+    'page.dashboard.periodQ1': 'Q1',
+    'page.dashboard.periodQ2': 'Q2',
+    'page.dashboard.periodQ3': 'Q3',
+    'page.dashboard.periodQ4': 'Q4',
+    'page.dashboard.periodLast12': 'Last 12 Months',
+    'page.dashboard.lastUpdated': 'Last updated',
 
     /* Budgets */
     'page.budgets.title': 'Budgets',
@@ -1934,6 +2384,150 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.scenarios.impactNetProfit': 'Net Profit',
     'page.scenarios.impactCashFlow': 'Cash Flow',
 
+    /* Scenario Costing Impact */
+    'page.scenarios.costingImpact': 'Costing Impact',
+    'page.scenarios.costingImpactDesc': 'Preview how this scenario affects product costs and margins.',
+    'page.scenarios.noCostingData': 'No Costing Data',
+    'page.scenarios.noCostingDataDesc': 'No product costing data available for this scenario.',
+    'page.scenarios.before': 'Before',
+    'page.scenarios.after': 'After',
+    'page.scenarios.marginChange': 'Margin Change',
+    'page.scenarios.affectedProducts': 'Affected Products',
+    'page.scenarios.productName': 'Product',
+    'page.scenarios.currentMargin': 'Current Margin',
+    'page.scenarios.projectedMargin': 'Projected Margin',
+    'page.scenarios.marginDelta': 'Margin Delta',
+    'page.scenarios.positiveImpact': 'Positive Impact',
+    'page.scenarios.negativeImpact': 'Negative Impact',
+    'page.scenarios.neutralImpact': 'Neutral',
+    'page.scenarios.costingBreakdown': 'Costing Breakdown',
+    'page.scenarios.materialCostChange': 'Material Cost Change',
+    'page.scenarios.laborCostChange': 'Labor Cost Change',
+    'page.scenarios.overheadCostChange': 'Overhead Cost Change',
+    'page.scenarios.profitImpact': 'Profit Impact',
+    'page.scenarios.primaryDriver': 'Primary Driver',
+
+    /* Forecast Costing Summary */
+    'page.forecasts.costingSummary': 'Costing Summary',
+    'page.forecasts.costingSummaryDesc': 'Cost and margin analysis for this forecast.',
+    'page.forecasts.noCostingData': 'No Costing Data',
+    'page.forecasts.noCostingDataDesc': 'No product costing data available for this forecast cycle.',
+    'page.forecasts.totalRevenue': 'Total Revenue',
+    'page.forecasts.totalCOGS': 'Total COGS',
+    'page.forecasts.grossMargin': 'Gross Margin',
+    'page.forecasts.forecastMargin': 'Forecast Margin',
+    'page.forecasts.marginTarget': 'Margin Target',
+    'page.forecasts.marginStatus': 'Margin Status',
+    'page.forecasts.aboveTarget': 'Above Target',
+    'page.forecasts.belowTarget': 'Below Target',
+    'page.forecasts.onTarget': 'On Target',
+    'page.forecasts.productMarginBreakdown': 'Product Margin Breakdown',
+    'page.forecasts.topProducts': 'Top Products',
+    'page.forecasts.lowMarginProducts': 'Low Margin Products',
+    'page.forecasts.negativeMarginProducts': 'Negative Margin Products',
+    'page.forecasts.costPerUnit': 'Cost/Unit',
+    'page.forecasts.quantity': 'Quantity',
+
+    /* Year Comparison */
+    'page.yearComparison.title': 'Year-over-Year Comparison',
+    'page.yearComparison.description': 'Compare financial performance across years.',
+    'page.yearComparison.currentYear': 'Current Year',
+    'page.yearComparison.previousYear': 'Previous Year',
+    'page.yearComparison.selectYears': 'Select Years',
+    'page.yearComparison.revenue': 'Revenue',
+    'page.yearComparison.cogs': 'COGS',
+    'page.yearComparison.grossProfit': 'Gross Profit',
+    'page.yearComparison.expenses': 'Expenses',
+    'page.yearComparison.netProfit': 'Net Profit',
+    'page.yearComparison.grossMargin': 'Gross Margin',
+    'page.yearComparison.netMargin': 'Net Margin',
+    'page.yearComparison.varianceAmount': 'Variance Amount',
+    'page.yearComparison.variancePercent': 'Variance %',
+    'page.yearComparison.trend': 'Trend',
+    'page.yearComparison.trendUp': 'Improving',
+    'page.yearComparison.trendDown': 'Declining',
+    'page.yearComparison.trendStable': 'Stable',
+    'page.yearComparison.statusImproving': 'Improving',
+    'page.yearComparison.statusDeclining': 'Declining',
+    'page.yearComparison.statusStable': 'Stable',
+    'page.yearComparison.monthlyComparison': 'Monthly Comparison',
+    'page.yearComparison.productComparison': 'Product Comparison',
+    'page.yearComparison.overallSummary': 'Overall Summary',
+    'page.yearComparison.month': 'Month',
+    'page.yearComparison.current': 'Current',
+    'page.yearComparison.previous': 'Previous',
+    'page.yearComparison.emptyTitle': 'No comparison data',
+    'page.yearComparison.emptyDesc': 'Select two years to compare financial performance.',
+    'page.yearComparison.noCompanyTitle': 'No active company',
+    'page.yearComparison.noCompanyDesc': 'Please select a company from the sidebar before viewing year comparison.',
+    'page.yearComparison.costLabel': 'Cost',
+    'page.yearComparison.marginLabel': 'Margin',
+    'page.yearComparison.revenueLabel': 'Revenue',
+    'page.yearComparison.netProfitLabel': 'Net Profit',
+
+    /* Dashboard Costing Section */
+    'page.dashboard.costingOverview': 'Product Costing Overview',
+    'page.dashboard.costingOverviewDesc': 'Key product costing metrics and analysis.',
+    'page.dashboard.totalProductsCosted': 'Products Costed',
+    'page.dashboard.avgGrossMargin': 'Avg Gross Margin',
+    'page.dashboard.avgNetMargin': 'Avg Net Margin',
+    'page.dashboard.totalCostOfGoods': 'Total Cost of Goods',
+    'page.dashboard.topMarginProducts': 'Top Margin Products',
+    'page.dashboard.lowMarginProducts': 'Low Margin Products',
+    'page.dashboard.costBreakdown': 'Cost Breakdown',
+    'page.dashboard.marginTrend': 'Margin Trend',
+    'page.dashboard.costBreakdownByCategory': 'Cost Breakdown by Category',
+    'page.dashboard.rawMaterialCost': 'Raw Materials',
+    'page.dashboard.packagingCost': 'Packaging',
+    'page.dashboard.laborCost': 'Labor',
+    'page.dashboard.overheadCost': 'Overhead',
+    'page.dashboard.warehouseCost': 'Warehouse',
+    'page.dashboard.freightCost': 'Freight',
+    'page.dashboard.sellingCost': 'Selling',
+    'page.dashboard.viewAllProducts': 'View All Products',
+    'page.dashboard.costingDetails': 'Costing Details',
+
+    /* Alert i18n keys */
+    'alert.costing.forecastNegativeMargin.title': 'Forecast Negative Margin',
+    'alert.costing.forecastNegativeMargin.message': 'Forecasted margin for {product} in cycle {cycle} is negative at {margin}%. Revenue: {revenue}, COGS: {cogs}.',
+    'alert.costing.forecastLowMargin.title': 'Forecast Low Margin',
+    'alert.costing.forecastLowMargin.message': 'Forecasted margin for {product} in cycle {cycle} is below target at {margin}%.',
+
+    /* ── Dashboard costing section ─────────────────────────────────────── */
+    'page.dashboard.costingSectionTitle': 'Enterprise Costing & Profitability',
+    'page.dashboard.costingUnavailable': 'Costing summary data is currently unavailable',
+    'page.dashboard.costingAvgProductCost': 'Avg Product Cost',
+    'page.dashboard.costingAvgProductCostTip': 'Average standard cost per unit for all finished goods',
+    'page.dashboard.costingHighestCostProduct': 'Highest Cost Product',
+    'page.dashboard.costingHighestCostProductTip': 'Finished good with the highest standard manufacturing cost',
+    'page.dashboard.costingHighCost': 'High Cost',
+    'page.dashboard.costingLowestCostProduct': 'Lowest Cost Product',
+    'page.dashboard.costingLowestCostProductTip': 'Finished good with the lowest standard manufacturing cost',
+    'page.dashboard.costingHighestMarginProduct': 'Highest Margin Product',
+    'page.dashboard.costingHighestMarginProductTip': 'Finished good with the highest standard net margin percentage',
+    'page.dashboard.costingHighMargin': 'High Margin',
+    'page.dashboard.costingLowestMarginProduct': 'Lowest Margin Product',
+    'page.dashboard.costingLowestMarginProductTip': 'Finished good with the lowest standard net margin percentage',
+    'page.dashboard.costingLowMargin': 'Low Margin',
+    'page.dashboard.costingMaterialCost': 'Material Cost',
+    'page.dashboard.costingMaterialCostTip': 'Average raw materials cost component share',
+    'page.dashboard.costingPackagingCost': 'Packaging Cost',
+    'page.dashboard.costingPackagingCostTip': 'Average packaging materials cost component share',
+    'page.dashboard.costingManufacturingCost': 'Manufacturing Cost',
+    'page.dashboard.costingManufacturingCostTip': 'Average direct labor and manufacturing overhead cost share',
+    'page.dashboard.costingWastageRate': 'Wastage Rate',
+    'page.dashboard.costingWastageRateTip': 'Average production recipe wastage and scrap rate',
+    'page.dashboard.costingHighWaste': 'High Waste',
+    'page.dashboard.costingTrendTitle': 'Average Product Cost Trend (Last 6 Months)',
+    'page.dashboard.costingNoTrendData': 'No historical trend data available',
+    'page.dashboard.costingAvgStandard': 'Avg Standard',
+    'page.dashboard.costingAvgActual': 'Avg Actual',
+    'page.dashboard.costingTop10Profitable': 'Top 10 Profitable Products',
+    'page.dashboard.costingTop10Loss': 'Top 10 Loss / Low Margin Products',
+    'page.dashboard.costingNoSalesData': 'No sales data yet',
+    'page.dashboard.costingVarianceTitle': 'Cost Variance & Performance Control',
+    'page.dashboard.costingVarianceDesc': 'This section integrates standard cost estimations from production recipe BOMs with actual imported raw material prices and overhead allocations. Click on any card KPI to drill down and trace cost variances from the finished product level down to the underlying material imports.',
+
     /* Reports */
     'page.reports.title': 'Reports & Analytics',
     'page.reports.description': 'Run real-time intelligence reports generated from ledgers, BOMs, and forecasts.',
@@ -1960,8 +2554,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.settings.companyProfileDesc': 'Active company: {name} · ID {id}',
     'page.settings.activeSession': 'Active Session',
     'page.settings.activeSessionDesc': 'Current authenticated user and tenant details — read only',
-    'page.settings.subscriptionPlans': 'Subscription Plan & Billing',
-    'page.settings.subscriptionPlansDesc': 'Choose the right features and scale for your organization',
     'page.settings.companyName': 'Company Name',
     'page.settings.companyCode': 'Company Code',
     'page.settings.defaultCurrency': 'Default Currency',
@@ -1974,28 +2566,16 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.settings.role': 'Role',
     'page.settings.userId': 'User ID',
     'page.settings.activeCompanyId': 'Active Company ID',
-    'page.settings.subscriptionPlan': 'Subscription Plan',
     'page.settings.sessionDisclaimer': 'Session details are managed by the authentication system and cannot be modified here. To change your password or email, contact your tenant administrator.',
     'page.settings.discardReload': 'Discard & reload',
     'page.settings.saving': 'Saving…',
     'page.settings.saveChanges': 'Save Changes',
     'page.settings.savedSuccess': 'Company profile updated successfully.',
-    'page.settings.monthly': 'Monthly',
-    'page.settings.yearly': 'Yearly',
-    'page.settings.savePercent': 'Save ~17%',
-    'page.settings.mostPopular': 'Most Popular',
-    'page.settings.completeSuite': 'Complete Suite',
-    'page.settings.activePlan': 'Active Plan',
-    'page.settings.upgrading': 'Upgrading...',
-    'page.settings.selectPlan': 'Select {name}',
     'page.settings.companies': 'Companies',
     'page.settings.users': 'Users',
     'page.settings.branches': 'Branches',
     'page.settings.unlimited': 'Unlimited',
     'page.settings.dashboardLabel': 'Dashboard',
-    'page.settings.perMonth': '/ month',
-    'page.settings.perYear': '/ year',
-    'page.settings.billedAnnually': '${price}/mo billed annually',
 
     /* Page titles */
     'page.variance.title': 'Variance Analysis',
@@ -2028,6 +2608,40 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.approvals.commentPlaceholder': 'Add a note...',
     'page.promotions.title': 'Promotions',
     'page.rawMaterialPrices.title': 'Raw Material Prices',
+    'page.excelIntegration.title': 'Excel Integration',
+    'page.excelIntegration.description': 'Upload an Excel workbook to automatically import data into your ERP. The app adapts to your Excel structure.',
+    'page.excelIntegration.uploadButton': 'Upload Workbook',
+    'page.excelIntegration.dragDrop': 'Drag & drop your Excel file here, or',
+    'page.excelIntegration.browse': 'browse',
+    'page.excelIntegration.analyzing': 'Analyzing workbook structure...',
+    'page.excelIntegration.readyToImport': 'Ready to Import',
+    'page.excelIntegration.importNow': 'Import Now',
+    'page.excelIntegration.dryRun': 'Dry Run',
+    'page.excelIntegration.skipErrors': 'Skip Rows with Errors',
+    'page.excelIntegration.importComplete': 'Import Complete',
+    'page.excelIntegration.importFailed': 'Import Failed',
+    'page.excelIntegration.rowsInserted': 'rows inserted',
+    'page.excelIntegration.rowsFailed': 'rows failed',
+    'page.excelIntegration.duration': 'Duration',
+    'page.excelIntegration.sheetsDetected': 'Sheets Detected',
+    'page.excelIntegration.warnings': 'Warnings',
+    'page.excelIntegration.noWarnings': 'No warnings',
+    'page.excelIntegration.errors': 'Errors',
+    'page.excelIntegration.noErrors': 'No errors',
+    'page.excelIntegration.sheetName': 'Sheet Name',
+    'page.excelIntegration.module': 'ERP Module',
+    'page.excelIntegration.rows': 'Rows',
+    'page.excelIntegration.status': 'Status',
+    'page.excelIntegration.valid': 'Valid',
+    'page.excelIntegration.invalid': 'Invalid',
+    'page.excelIntegration.duplicate': 'Duplicate',
+    'page.excelIntegration.unmappedModule': 'Unmapped Module',
+    'page.excelIntegration.manualMapping': 'Manual Mapping Required',
+    'page.excelIntegration.backToUpload': 'Back to Upload',
+    'page.excelIntegration.templateDownloads': 'Download Templates',
+    'page.excelIntegration.templateWarning': 'Use this exact template for best import results. The templates match the client workbook structure with the correct sheet names, column order, and data types.',
+    'page.excelIntegration.downloadClientWorkbook': 'Download Full Workbook Template',
+    'page.excelIntegration.downloadModuleTemplate': 'Download Module Template',
     'page.actualImports.title': 'Actual Imports',
     'page.companies.title': 'Companies',
     'page.sites.title': 'Sites',
@@ -2044,6 +2658,31 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.notificationRules.title': 'Notification Rules',
     'page.auditLogs.title': 'Audit Logs',
     'page.users.title': 'Users',
+    'page.tenants.title': 'Tenants',
+    'page.tenants.description': 'Manage system tenants and multi-tenant configuration.',
+    'page.tenants.emptyTitle': 'No tenants yet',
+    'page.tenants.emptyDescription': 'Create your first tenant to get started.',
+    'page.tenants.createTenant': 'Create Tenant',
+    'page.tenants.editTenant': 'Edit Tenant',
+    'page.tenants.tenantName': 'Tenant Name',
+    'page.tenants.slug': 'Slug',
+    'page.tenants.slugPlaceholder': 'e.g. acme-corp',
+    'page.tenants.deleteConfirmMsg': 'Are you sure you want to delete this tenant? This action cannot be undone.',
+    'page.tenants.accessDenied': 'Access Denied',
+    'page.tenants.accessDeniedDesc': 'Super Admin access is required to manage tenants.',
+    'page.roles.title': 'Roles',
+    'page.roles.description': 'Manage system roles and their permissions.',
+    'page.roles.emptyTitle': 'No roles yet',
+    'page.roles.emptyDescription': 'Create your first role to get started.',
+    'page.roles.createRole': 'Create Role',
+    'page.roles.editRole': 'Edit Role',
+    'page.roles.roleName': 'Role Name',
+    'page.roles.permissions': 'Permissions',
+    'page.roles.permissionsPlaceholder': '{"users": ["read", "write"], "budgets": ["read"]}',
+    'page.roles.usersCount': 'Users',
+    'page.roles.deleteConfirmMsg': 'Are you sure you want to delete this role? This action cannot be undone.',
+    'page.roles.accessDenied': 'Access Denied',
+    'page.roles.accessDeniedDesc': 'Super Admin access is required to manage roles.',
     'page.exchangeRates.title': 'Exchange Rates',
     'page.connections.title': 'Connections',
     'page.importMappings.title': 'Import Mappings',
@@ -2056,6 +2695,44 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.notifications.description': 'System notifications and compliance warnings.',
     'page.notifications.emptyTitle': 'Inbox is clean!',
     'page.notifications.emptyDescription': 'No new notifications. Everything matches standard tolerances.',
+
+    'page.notifications.alerts': 'Alerts',
+    'page.notifications.markAllRead': 'Mark All Read',
+    'page.notifications.archive': 'Archive',
+    'page.notifications.unreadCount': '{count} unread',
+    'page.notifications.noAlerts': 'No alerts',
+    'page.notifications.noAlertsDesc': 'All clear! No active alerts at this time.',
+    'page.notifications.alertLow': 'Low',
+    'page.notifications.alertMedium': 'Medium',
+    'page.notifications.alertHigh': 'High',
+    'page.notifications.alertCritical': 'Critical',
+    'page.notifications.categoryBudget': 'Budget',
+    'page.notifications.categoryInventory': 'Inventory',
+    'page.notifications.categoryApproval': 'Approval',
+    'page.notifications.categoryImport': 'Import',
+    'page.notifications.categoryExchange': 'Exchange Rate',
+    'page.notifications.categorySystem': 'System',
+    'page.notifications.categoryProduction': 'Production',
+    'page.notifications.categoryForecast': 'Forecast',
+    'page.notifications.filterAll': 'All',
+    'page.notifications.filterUnread': 'Unread',
+    'page.notifications.filterRead': 'Read',
+    'page.notifications.filterArchived': 'Archived',
+    'page.notifications.viewAlerts': 'View Alerts',
+    'page.notifications.markRead': 'Mark as Read',
+    'page.notifications.delete': 'Delete',
+    'page.notifications.selectAll': 'Select All',
+    'page.notifications.deselectAll': 'Deselect All',
+    'page.notifications.selectedCount': '{count} selected',
+    'page.notifications.markSelectedRead': 'Mark as Read',
+    'page.notifications.archiveSelected': 'Archive',
+    'page.notifications.deleteSelected': 'Delete',
+    'page.notifications.bulkDeleteConfirm': 'Are you sure you want to delete {count} alert(s)? This action cannot be undone.',
+    'page.notifications.groupToday': 'Today',
+    'page.notifications.groupYesterday': 'Yesterday',
+    'page.notifications.groupThisWeek': 'This Week',
+    'page.notifications.groupEarlier': 'Earlier',
+    'page.notifications.notificationsCount': '{count} notifications',
 
     /* Actual Imports */
     'page.actualImports.description': 'Import accounting transactions from ERP or spreadsheets.',
@@ -2190,6 +2867,18 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'component.importModal.importSuccess': 'Imported {count} record{plural} successfully.{failMsg}',
     'component.importModal.noCommit': 'Import completed, but no records were committed.',
     'component.importModal.rowFail': '{n} row(s) failed.',
+    'component.importModal.progressValidating': 'Validating...',
+    'component.importModal.progressUploading': 'Uploading...',
+    'component.importModal.progressComplete': 'Complete',
+    'component.importModal.rowSummary': '{valid} valid, {invalid} invalid, {total} total',
+    'component.importModal.downloadErrors': 'Download Error File',
+    'component.importModal.downloadSkipped': 'Download Skipped Rows',
+    'component.importModal.cancelImport': 'Cancel Import',
+    'component.importModal.importComplete': 'Import Complete',
+    'component.importModal.statSuccess': '{n} rows imported successfully',
+    'component.importModal.statFailed': '{n} rows failed',
+    'component.importModal.statSkipped': '{n} rows skipped (duplicates)',
+    'component.importModal.statTime': 'Time taken: {s}s',
     'component.importModal.close': 'Close',
     'component.importModal.fileName': 'Loaded {name} successfully.',
 
@@ -2219,6 +2908,24 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.companies.deletedSuccess': 'Company deleted successfully.',
     'page.companies.deleteFailed': 'Failed to delete company.',
     'page.companies.unexpectedDeleteError': 'An unexpected error occurred while deleting the company.',
+    'page.companies.wizardTitle': 'Create New Company',
+    'page.companies.wizardDesc': 'Set up your company in a few steps',
+    'page.companies.step1Label': 'Company Info',
+    'page.companies.step2Label': 'Currency',
+    'page.companies.step3Label': 'Fiscal Year',
+    'page.companies.step4Label': 'Default Units',
+    'page.companies.step5Label': 'Default Accounts',
+    'page.companies.step6Label': 'Review & Create',
+    'page.companies.industryType': 'Industry Type',
+    'page.companies.taxNumber': 'Tax Number',
+    'page.companies.defaultUnits': 'Default Units',
+    'page.companies.defaultAccounts': 'Default Accounts',
+    'page.companies.defaultChartOfAccounts': 'Default Chart of Accounts',
+    'page.companies.createDefaultUnits': 'Create default measurement units',
+    'page.companies.createDefaultAccounts': 'Create default chart of accounts',
+    'page.companies.accountCategories': 'Account Categories',
+    'page.companies.preview': 'Preview',
+    'page.companies.review': 'Review',
 
     /* Exchange rates page */
     'page.exchangeRates.description': 'Manage exchange rates for currency conversion and reporting',
@@ -2532,13 +3239,34 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.notificationRules.ruleName': 'Rule Name',
     'page.notificationRules.triggerType': 'Trigger Type',
     'page.notificationRules.threshold': 'Threshold',
-    'page.notificationRules.channel': 'Notification Channels',
+    'page.notificationRules.targetAccount': 'Target Account',
+    'page.notificationRules.channel': 'Channels',
+    'page.notificationRules.site': 'Site',
+    'page.notificationRules.status': 'Status',
     'page.notificationRules.triggerEvent': 'Trigger Event',
     'page.notificationRules.thresholdPct': 'Threshold Percentage (%)',
     'page.notificationRules.thresholdAmount': 'Threshold Amount',
+    'page.notificationRules.thresholdValue': 'Threshold Value',
     'page.notificationRules.accountScope': 'Account Scope (Optional)',
     'page.notificationRules.siteScope': 'Site Scope (Optional)',
+    'page.notificationRules.targetGlAccount': 'Target GL Account (Optional)',
+    'page.notificationRules.targetSite': 'Target Site (Optional)',
+    'page.notificationRules.notifyRoles': 'Notify Roles (comma separated)',
+    'page.notificationRules.notificationChannels': 'Notification Channels',
+    'page.notificationRules.ruleActive': 'Rule is active',
     'page.notificationRules.createRule': 'Create Rule',
+    'page.notificationRules.createTitle': 'Create Alert Rule',
+    'page.notificationRules.editTitle': 'Edit Alert Rule',
+    'page.notificationRules.ruleNamePlaceholder': 'e.g. Variance Alert > 10%',
+    'page.notificationRules.thresholdPlaceholder': 'e.g. 10.0 for 10%',
+    'page.notificationRules.notifyRolesPlaceholder': 'admin, finance',
+    'page.notificationRules.channelsPlaceholder': 'system, email',
+    'page.notificationRules.triggerVariancePct': 'Variance Percentage Threshold',
+    'page.notificationRules.triggerVarianceAmount': 'Variance Absolute Amount Threshold',
+    'page.notificationRules.triggerKpiBreach': 'KPI Target Breach',
+    'page.notificationRules.triggerBudgetApproval': 'Budget Approval Required',
+    'page.notificationRules.triggerForecastApproval': 'Forecast Approval Required',
+    'page.notificationRules.triggerImportFailed': 'Data Import Failed',
     'page.notificationRules.changeable': 'Changeable',
     'page.notificationRules.description': 'Configure rules for automated alerts and notifications.',
     'page.notificationRules.emptyDescription': 'Create notification rules to receive alerts on key events.',
@@ -2763,9 +3491,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.reports.exportFailed': 'Failed to export report.',
 
     /* ── Settings keys ──────────────────────────────────────────────────── */
-    'page.settings.loadPlansFailed': 'Failed to load subscription plans.',
-    'page.settings.upgradeSuccess': 'Plan upgraded successfully.',
-    'page.settings.upgradeFailed': 'Failed to upgrade plan.',
     'page.settings.loadCompanyFailed': 'Failed to load company details.',
     'page.settings.saveCompanyFailed': 'Failed to save company profile.',
 
@@ -2816,6 +3541,34 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'backend.VALIDATION_FAILED': 'Validation failed.',
     'backend.COMPANY_NOT_FOUND': 'Company not found.',
     'backend.DEFAULT': 'An error occurred. Please try again.',
+    /* Enterprise Import */
+    'import.enterprise.title': 'Import Data',
+    'import.enterprise.subtitle': 'Upload a CSV or Excel file to import data into the system',
+    'import.enterprise.selectModule': 'Select Module',
+    'import.enterprise.chooseFile': 'Choose File',
+    'import.enterprise.dragDrop': 'Drag and drop your file here',
+    'import.enterprise.orClick': 'or click to browse',
+    'import.enterprise.supportedFormats': 'Supported formats: CSV, XLSX, XLS',
+    'import.enterprise.maxSize': 'Maximum file size: 10MB',
+    'import.enterprise.uploadAndValidate': 'Upload & Validate',
+    'import.enterprise.cancel': 'Cancel',
+    'import.enterprise.validating': 'Validating...',
+    'import.enterprise.preview': 'Preview',
+    'import.enterprise.validRows': 'Valid Rows',
+    'import.enterprise.errorRows': 'Error Rows',
+    'import.enterprise.commit': 'Commit Import',
+    'import.enterprise.committing': 'Committing...',
+    'import.enterprise.done': 'Import Complete',
+    'import.enterprise.history': 'Import History',
+    'import.enterprise.noHistory': 'No import history yet',
+    'import.enterprise.status': 'Status',
+    'import.enterprise.rowsInserted': 'Rows Inserted',
+    'import.enterprise.rowsUpdated': 'Rows Updated',
+    'import.enterprise.rowsFailed': 'Rows Failed',
+    'import.enterprise.timestamp': 'Timestamp',
+    'import.enterprise.module': 'Module',
+    'import.enterprise.fileName': 'File Name',
+    'import.enterprise.close': 'Close',
   },
 
   ar: {
@@ -2833,12 +3586,14 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'nav.reportsAnalysis': 'التقارير والتحليل',
     'nav.reports': 'التقارير',
     'nav.varianceAnalysis': 'تحليل الانحراف',
+    'nav.yearComparison': 'مقارنة سنة بسنة',
     'nav.operations': 'العمليات',
     'nav.inventory': 'المخزون',
     'nav.approvals': 'الموافقات',
     'nav.promotions': 'العروض الترويجية',
     'nav.rawMaterialPrices': 'أسعار المواد الخام',
-    'nav.dataIntegrations': 'تكامل البيانات',
+    'nav.excelImports': 'استيراد إكسل',
+    'nav.excelIntegration': 'تكامل الإكسل',
     'nav.actualImports': 'استيراد الفعلي',
     'nav.connections': 'الاتصالات',
     'nav.importMappings': 'تعيينات الاستيراد',
@@ -2861,6 +3616,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'nav.auditLogs': 'سجل التدقيق',
     'nav.settings': 'الإعدادات',
     'nav.users': 'المستخدمين',
+    'nav.tenants': 'المؤسسات',
+    'nav.roles': 'الأدوار',
     'nav.overview': 'نظرة عامة',
     'nav.modules': 'الوحدات',
     'nav.notifications': 'الإشعارات',
@@ -2873,6 +3630,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.cancel': 'إلغاء',
     'common.delete': 'حذف',
     'common.edit': 'تعديل',
+    'common.view': 'عرض',
     'common.create': 'إنشاء',
     'common.update': 'تحديث',
     'common.close': 'إغلاق',
@@ -2935,6 +3693,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.noUnreadAlerts': 'لا توجد إشعارات غير مقروءة',
     'common.everythingRunning': 'كل شيء يعمل بسلاسة.',
     'common.markAsRead': 'تحديد كمقروء',
+    'common.timeAgo.justNow': 'الآن',
+    'common.timeAgo.minutesAgo': 'منذ {n} د',
+    'common.timeAgo.hoursAgo': 'منذ {n} س',
+    'common.timeAgo.daysAgo': 'منذ {n} ي',
+    'common.timeAgo.monthsAgo': 'منذ {n} ش',
     'common.viewAllAlerts': 'عرض كل الإشعارات',
     'common.confirmDelete': 'تأكيد الحذف',
     'common.confirmDeleteMessage': 'هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.',
@@ -3221,6 +3984,73 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.dashboard.noDataYet': 'لا توجد بيانات بعد.',
     'page.dashboard.noCompanyTitle': 'لا توجد شركة نشطة',
     'page.dashboard.noCompanyDesc': 'اختر شركة من الشريط الجانبي لعرض لوحة التحكم.',
+    'page.dashboard.refreshing': 'جاري التحديث…',
+    'page.dashboard.executiveSummary': 'ملخص تنفيذي',
+    'page.dashboard.ebitda': 'إيرادات قبل الفوائد والضرائب',
+    'page.dashboard.operatingProfit': 'الربح التشغيلي',
+    'page.dashboard.cashFlow': 'التدفقات النقدية',
+    'page.dashboard.workingCapital': 'رأس المال العامل',
+    'page.dashboard.accountsReceivable': 'الحسابات المدينة',
+    'page.dashboard.accountsPayable': 'الحسابات الدائنة',
+    'page.dashboard.inventoryValue': 'قيمة المخزون',
+    'page.dashboard.inventoryCoverage': 'تغطية المخزون',
+    'page.dashboard.productionCost': 'تكلفة الإنتاج',
+    'page.dashboard.manufacturingCost': 'تكلفة التصنيع',
+    'page.dashboard.totalBudget': 'إجمالي الميزانية',
+    'page.dashboard.actualCost': 'التكلفة الفعلية',
+    'page.dashboard.remainingBudget': 'الميزانية المتبقية',
+    'page.dashboard.totalIncome': 'إجمالي الإيرادات',
+    'page.dashboard.totalCustomers': 'إجمالي العملاء',
+    'page.dashboard.totalSuppliers': 'إجمالي الموردين',
+    'page.dashboard.totalProducts': 'إجمالي المنتجات',
+    'page.dashboard.totalMaterials': 'إجمالي المواد',
+    'page.dashboard.totalUsers': 'إجمالي المستخدمين',
+    'page.dashboard.pendingApprovals': 'الموافقات المعلقة',
+    'page.dashboard.notificationCount': 'الإشعارات',
+    'page.dashboard.failedImports': 'عمليات الاستيراد الفاشلة',
+    'page.dashboard.successfulImports': 'عمليات الاستيراد الناجحة',
+    'page.dashboard.exchangeRates': 'أسعار الصرف',
+    'page.dashboard.marketOverview': 'نظرة عامة على السوق',
+    'page.dashboard.lastSync': 'آخر مزامنة',
+    'page.dashboard.staleRates': 'أسعار قديمة',
+    'page.dashboard.staleRatesDesc': 'واجهات البث المباشر غير متاحة؛ عرض الأسعار المخزنة.',
+    'page.dashboard.dailyChange': 'التغيير اليومي',
+    'page.dashboard.vsPreviousYear': 'مقارنة بالسنة السابقة',
+    'page.dashboard.vsPreviousMonth': 'مقارنة بالشهر السابق',
+    'page.dashboard.kpiSectionLabel': 'مؤشرات الأداء الرئيسية',
+    'page.dashboard.revenueVsExpense': 'الإيرادات مقابل المصروفات',
+    'page.dashboard.budgetVsActual': 'الميزانية مقابل الفعلي',
+    'page.dashboard.profitabilityTrend': 'اتجاه الربحية',
+    'page.dashboard.monthlyComparison': 'المقارنة الشهرية',
+    'page.dashboard.days': 'يوم',
+    'page.dashboard.financialPerformance': 'الأداء المالي',
+    'page.dashboard.planningForecast': 'التخطيط والتوقعات',
+    'page.dashboard.operations': 'العمليات',
+    'page.dashboard.alertsActions': 'التنبيهات والإجراءات',
+    'page.dashboard.moduleSummary': 'ملخص الوحدات',
+    'page.dashboard.noActiveAlerts': 'لا توجد تنبيهات نشطة — كل شيء على ما يرام!',
+    'page.dashboard.moduleCompanies': 'الشركات',
+    'page.dashboard.moduleSites': 'المواقع',
+    'page.dashboard.moduleUsers': 'المستخدمون',
+    'page.dashboard.moduleProducts': 'المنتجات',
+    'page.dashboard.moduleMaterials': 'المواد',
+    'page.dashboard.moduleSuppliers': 'الموردون',
+    'page.dashboard.moduleCustomers': 'العملاء',
+    'page.dashboard.moduleBoms': 'قوائم المواد',
+    'page.dashboard.moduleBudgets': 'الميزانيات',
+    'page.dashboard.moduleForecasts': 'التوقعات',
+    'page.dashboard.moduleActuals': 'البيانات الفعلية',
+    'page.dashboard.moduleScenarios': 'السيناريوهات',
+    'page.dashboard.moduleAuditLogs': 'سجلات المراجعة',
+    'page.dashboard.moduleNotifications': 'الإشعارات',
+    'page.dashboard.filterBar': 'الفلاتر',
+    'page.dashboard.periodYtd': 'منذ بداية السنة',
+    'page.dashboard.periodQ1': 'الربع الأول',
+    'page.dashboard.periodQ2': 'الربع الثاني',
+    'page.dashboard.periodQ3': 'الربع الثالث',
+    'page.dashboard.periodQ4': 'الربع الرابع',
+    'page.dashboard.periodLast12': 'آخر 12 شهر',
+    'page.dashboard.lastUpdated': 'آخر تحديث',
 
     /* Budgets */
     'page.budgets.title': 'الميزانيات',
@@ -3387,6 +4217,150 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.scenarios.impactNetProfit': 'صافي الربح',
     'page.scenarios.impactCashFlow': 'التدفق النقدي',
 
+    /* Scenario Costing Impact */
+    'page.scenarios.costingImpact': 'تأثير التكلفة',
+    'page.scenarios.costingImpactDesc': 'معاينة كيف يؤثر هذا السيناريو على تكاليف وهواشم المنتجات.',
+    'page.scenarios.noCostingData': 'لا توجد بيانات تكلفة',
+    'page.scenarios.noCostingDataDesc': 'لا توجد بيانات تكلفة منتجات متاحة لهذا السيناريو.',
+    'page.scenarios.before': 'قبل',
+    'page.scenarios.after': 'بعد',
+    'page.scenarios.marginChange': 'تغيير الهامش',
+    'page.scenarios.affectedProducts': 'المنتجات المتأثرة',
+    'page.scenarios.productName': 'المنتج',
+    'page.scenarios.currentMargin': 'الهامش الحالي',
+    'page.scenarios.projectedMargin': 'الهامش المتوقع',
+    'page.scenarios.marginDelta': 'فرق الهامش',
+    'page.scenarios.positiveImpact': 'تأثير إيجابي',
+    'page.scenarios.negativeImpact': 'تأثير سلبي',
+    'page.scenarios.neutralImpact': 'محايد',
+    'page.scenarios.costingBreakdown': 'تفصيل التكاليف',
+    'page.scenarios.materialCostChange': 'تغيير تكلفة المواد',
+    'page.scenarios.laborCostChange': 'تغيير تكلفة العمالة',
+    'page.scenarios.overheadCostChange': 'تغيير تكلفة الصيانة',
+    'page.scenarios.profitImpact': 'التأثير على الأرباح',
+    'page.scenarios.primaryDriver': 'المحرك الرئيسي',
+
+    /* Forecast Costing Summary */
+    'page.forecasts.costingSummary': 'ملخص التكلفة',
+    'page.forecasts.costingSummaryDesc': 'تحليل التكاليف والهوامش لهذا التوقع.',
+    'page.forecasts.noCostingData': 'لا توجد بيانات تكلفة',
+    'page.forecasts.noCostingDataDesc': 'لا توجد بيانات تكلفة منتجات متاحة لهذا دورة التوقع.',
+    'page.forecasts.totalRevenue': 'إجمالي الإيرادات',
+    'page.forecasts.totalCOGS': 'إجمالي تكلفة البضاعة المباعة',
+    'page.forecasts.grossMargin': 'هامش الربح الإجمالي',
+    'page.forecasts.forecastMargin': 'هامش التوقع',
+    'page.forecasts.marginTarget': 'هدف الهامش',
+    'page.forecasts.marginStatus': 'حالة الهامش',
+    'page.forecasts.aboveTarget': 'فوق الهدف',
+    'page.forecasts.belowTarget': 'تحت الهدف',
+    'page.forecasts.onTarget': 'على الهدف',
+    'page.forecasts.productMarginBreakdown': 'تفصيل هامش المنتجات',
+    'page.forecasts.topProducts': 'أفضل المنتجات',
+    'page.forecasts.lowMarginProducts': 'منتجات بهامش منخفض',
+    'page.forecasts.negativeMarginProducts': 'منتجات بهامش سالب',
+    'page.forecasts.costPerUnit': 'التكلفة للوحدة',
+    'page.forecasts.quantity': 'الكمية',
+
+    /* Year Comparison */
+    'page.yearComparison.title': 'مقارنة سنة بسنة',
+    'page.yearComparison.description': 'مقارنة الأداء المالي عبر السنوات.',
+    'page.yearComparison.currentYear': 'السنة الحالية',
+    'page.yearComparison.previousYear': 'السنة السابقة',
+    'page.yearComparison.selectYears': 'اختيار السنوات',
+    'page.yearComparison.revenue': 'الإيرادات',
+    'page.yearComparison.cogs': 'تكلفة البضاعة المباعة',
+    'page.yearComparison.grossProfit': 'الربح الإجمالي',
+    'page.yearComparison.expenses': 'المصروفات',
+    'page.yearComparison.netProfit': 'صافي الربح',
+    'page.yearComparison.grossMargin': 'هامش الربح الإجمالي',
+    'page.yearComparison.netMargin': 'هامش صافي الربح',
+    'page.yearComparison.varianceAmount': 'مبلغ الانحراف',
+    'page.yearComparison.variancePercent': 'نسبة الانحراف %',
+    'page.yearComparison.trend': 'الاتجاه',
+    'page.yearComparison.trendUp': 'تحسن',
+    'page.yearComparison.trendDown': 'تراجع',
+    'page.yearComparison.trendStable': 'مستقر',
+    'page.yearComparison.statusImproving': 'يتحسن',
+    'page.yearComparison.statusDeclining': 'يتراجع',
+    'page.yearComparison.statusStable': 'مستقر',
+    'page.yearComparison.monthlyComparison': 'المقارنة الشهرية',
+    'page.yearComparison.productComparison': 'مقارنة المنتجات',
+    'page.yearComparison.overallSummary': 'الملخص العام',
+    'page.yearComparison.month': 'الشهر',
+    'page.yearComparison.current': 'الحالي',
+    'page.yearComparison.previous': 'السابق',
+    'page.yearComparison.emptyTitle': 'لا توجد بيانات مقارنة',
+    'page.yearComparison.emptyDesc': 'اختر سنتين لمقارنة الأداء المالي.',
+    'page.yearComparison.noCompanyTitle': 'لا توجد شركة نشطة',
+    'page.yearComparison.noCompanyDesc': 'يرجى اختيار شركة من الشريط الجانبي قبل عرض المقارنة السنوية.',
+    'page.yearComparison.costLabel': 'التكلفة',
+    'page.yearComparison.marginLabel': 'الهامش',
+    'page.yearComparison.revenueLabel': 'الإيرادات',
+    'page.yearComparison.netProfitLabel': 'صافي الربح',
+
+    /* Dashboard Costing Section */
+    'page.dashboard.costingOverview': 'نظرة عامة على تكاليف المنتجات',
+    'page.dashboard.costingOverviewDesc': 'مؤشرات تحليل التكاليف الرئيسية للمنتجات.',
+    'page.dashboard.totalProductsCosted': 'المنتجات المكلفة',
+    'page.dashboard.avgGrossMargin': 'متوسط هامش الربح',
+    'page.dashboard.avgNetMargin': 'متوسط هامش صافي الربح',
+    'page.dashboard.totalCostOfGoods': 'إجمالي تكلفة البضاعة',
+    'page.dashboard.topMarginProducts': 'أفضل المنتجات هامشاً',
+    'page.dashboard.lowMarginProducts': 'المنتجات بهامش منخفض',
+    'page.dashboard.costBreakdown': 'تفصيل التكاليف',
+    'page.dashboard.marginTrend': 'اتجاه الهوامش',
+    'page.dashboard.costBreakdownByCategory': 'تفصيل التكاليف حسب الفئة',
+    'page.dashboard.rawMaterialCost': 'المواد الخام',
+    'page.dashboard.packagingCost': 'التعبئة',
+    'page.dashboard.laborCost': 'العمالة',
+    'page.dashboard.overheadCost': 'التكاليف غير المباشرة',
+    'page.dashboard.warehouseCost': 'المستودع',
+    'page.dashboard.freightCost': 'الشحن',
+    'page.dashboard.sellingCost': 'البيع',
+    'page.dashboard.viewAllProducts': 'عرض جميع المنتجات',
+    'page.dashboard.costingDetails': 'تفاصيل التكلفة',
+
+    /* Alert i18n keys */
+    'alert.costing.forecastNegativeMargin.title': 'هامش ربح تنبؤي سالب',
+    'alert.costing.forecastNegativeMargin.message': 'هامش الربح المتوقع للمنتج "{product}" في دورة "{cycle}" سالب عند {margin}%. الإيرادات: {revenue}، تكلفة البضاعة المباعة: {cogs}.',
+    'alert.costing.forecastLowMargin.title': 'هامش ربح تنبؤي منخفض',
+    'alert.costing.forecastLowMargin.message': 'هامش الربح المتوقع للمنتج "{product}" في دورة "{cycle}" أقل من المستهدف عند {margin}%.',
+
+    /* ── Dashboard costing section ─────────────────────────────────────── */
+    'page.dashboard.costingSectionTitle': 'تكاليف المنتجات وهامش الربحية',
+    'page.dashboard.costingUnavailable': 'لا تتوفر بيانات التكاليف حالياً',
+    'page.dashboard.costingAvgProductCost': 'متوسط تكلفة المنتج',
+    'page.dashboard.costingAvgProductCostTip': 'متوسط التكلفة القياسية للمنتجات التامة الصنع',
+    'page.dashboard.costingHighestCostProduct': 'المنتج الأعلى تكلفة',
+    'page.dashboard.costingHighestCostProductTip': 'المنتج صاحب أعلى تكلفة تصنيع قياسية',
+    'page.dashboard.costingHighCost': 'تكلفة عالية',
+    'page.dashboard.costingLowestCostProduct': 'المنتج الأقل تكلفة',
+    'page.dashboard.costingLowestCostProductTip': 'المنتج صاحب أدنى تكلفة تصنيع قياسية',
+    'page.dashboard.costingHighestMarginProduct': 'الأعلى هامش ربح',
+    'page.dashboard.costingHighestMarginProductTip': 'المنتج صاحب أعلى هامش ربح صافي',
+    'page.dashboard.costingHighMargin': 'ربحية عالية',
+    'page.dashboard.costingLowestMarginProduct': 'الأقل هامش ربح',
+    'page.dashboard.costingLowestMarginProductTip': 'المنتج صاحب أدنى أو هامش ربح سالب',
+    'page.dashboard.costingLowMargin': 'ربح متدنٍ',
+    'page.dashboard.costingMaterialCost': 'تكلفة المواد الخام',
+    'page.dashboard.costingMaterialCostTip': 'متوسط تكلفة المواد الخام للمنتجات',
+    'page.dashboard.costingPackagingCost': 'تكلفة التعبئة والتغليف',
+    'page.dashboard.costingPackagingCostTip': 'متوسط تكلفة مواد التعبئة والتغليف للمنتجات',
+    'page.dashboard.costingManufacturingCost': 'تكاليف التصنيع',
+    'page.dashboard.costingManufacturingCostTip': 'متوسط تكاليف التصنيع والعمالة والخدمات غير المباشرة',
+    'page.dashboard.costingWastageRate': 'تكلفة الفاقد والهدر',
+    'page.dashboard.costingWastageRateTip': 'متوسط نسبة الهدر والفاقد من وصفات الإنتاج',
+    'page.dashboard.costingHighWaste': 'هدر مرتفع',
+    'page.dashboard.costingTrendTitle': 'اتجاه متوسط تكلفة المنتج (آخر 6 أشهر)',
+    'page.dashboard.costingNoTrendData': 'لا تتوفر بيانات تاريخية كافية لرسم المنحنى',
+    'page.dashboard.costingAvgStandard': 'متوسط القياسي',
+    'page.dashboard.costingAvgActual': 'متوسط الفعلي',
+    'page.dashboard.costingTop10Profitable': 'أعلى 10 منتجات ربحية',
+    'page.dashboard.costingTop10Loss': 'المنتجات الأقل ربحية / الخاسرة',
+    'page.dashboard.costingNoSalesData': 'لا تتوفر بيانات مبيعات حالياً',
+    'page.dashboard.costingVarianceTitle': 'نظام تتبع وتحليل الانحرافات والتكلفة',
+    'page.dashboard.costingVarianceDesc': 'يقوم هذا الجزء بتحليل هيكل تكاليف المنتجات والتعبئة ومطابقتها بالتكلفة الفعلية المستخرجة من شحنات الاستيراد ومصاريف التصنيع الموزعة. يرجى الضغط على أي كرت من الكروت العلوية للانتقال مباشرة للتقرير المفصل والتتبع من مستوى المنتج حتى فواتير المواد الخام الفعلية.',
+
     /* Reports */
     'page.reports.title': 'التقارير والتحليلات',
     'page.reports.description': 'تشغيل تقارير ذكية في الوقت الفعلي من دفاتر الأستاذ وقوائم التصنيع والتوقعات.',
@@ -3413,8 +4387,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.settings.companyProfileDesc': 'الشركة النشطة: {name} · المعرف {id}',
     'page.settings.activeSession': 'الجلسة النشطة',
     'page.settings.activeSessionDesc': 'تفاصيل المستخدم والمؤسسة الحالية — للقراءة فقط',
-    'page.settings.subscriptionPlans': 'خطة الاشتراك والفواتير',
-    'page.settings.subscriptionPlansDesc': 'اختر الميزات والحجم المناسب لمؤسستك',
     'page.settings.companyName': 'اسم الشركة',
     'page.settings.companyCode': 'كود الشركة',
     'page.settings.defaultCurrency': 'العملة الافتراضية',
@@ -3427,28 +4399,16 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.settings.role': 'الدور',
     'page.settings.userId': 'معرف المستخدم',
     'page.settings.activeCompanyId': 'معرف الشركة النشطة',
-    'page.settings.subscriptionPlan': 'خطة الاشتراك',
     'page.settings.sessionDisclaimer': 'تتم إدارة تفاصيل الجلسة بواسطة نظام المصادقة ولا يمكن تعديلها هنا. لتغيير كلمة المرور أو البريد الإلكتروني، اتصل بمسؤول المؤسسة.',
     'page.settings.discardReload': 'تجاهل وإعادة تحميل',
     'page.settings.saving': 'جارٍ الحفظ...',
     'page.settings.saveChanges': 'حفظ التغييرات',
     'page.settings.savedSuccess': 'تم تحديث ملف الشركة بنجاح.',
-    'page.settings.monthly': 'شهري',
-    'page.settings.yearly': 'سنوي',
-    'page.settings.savePercent': 'وفر ~17%',
-    'page.settings.mostPopular': 'الأكثر شيوعًا',
-    'page.settings.completeSuite': 'الباقة المتكاملة',
-    'page.settings.activePlan': 'الخطة النشطة',
-    'page.settings.upgrading': 'جارٍ الترقية...',
-    'page.settings.selectPlan': 'اختر {name}',
     'page.settings.companies': 'الشركات',
     'page.settings.users': 'المستخدمين',
     'page.settings.branches': 'الفروع',
     'page.settings.unlimited': 'غير محدود',
     'page.settings.dashboardLabel': 'لوحة التحكم',
-    'page.settings.perMonth': '/ شهريًا',
-    'page.settings.perYear': '/ سنويًا',
-    'page.settings.billedAnnually': '${price}/شهر مدفوع سنويًا',
 
     /* Page titles */
     'page.variance.title': 'تحليل الانحراف',
@@ -3481,6 +4441,40 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.approvals.commentPlaceholder': 'أضف ملاحظة...',
     'page.promotions.title': 'العروض الترويجية',
     'page.rawMaterialPrices.title': 'أسعار المواد الخام',
+    'page.excelIntegration.title': 'تكامل الإكسل',
+    'page.excelIntegration.description': 'ارفع ملف Excel لاستيراد البيانات تلقائياً إلى نظام ERP. التطبيق يتكيّف مع هيكل ملف Excel الخاص بك.',
+    'page.excelIntegration.uploadButton': 'رفع ملف',
+    'page.excelIntegration.dragDrop': 'اسحب وأفلت ملف Excel هنا، أو',
+    'page.excelIntegration.browse': 'تصفح',
+    'page.excelIntegration.analyzing': 'جاري تحليل هيكل الملف...',
+    'page.excelIntegration.readyToImport': 'جاهز للاستيراد',
+    'page.excelIntegration.importNow': 'استيراد الآن',
+    'page.excelIntegration.dryRun': 'تجريبي',
+    'page.excelIntegration.skipErrors': 'تخطي الصفوف التي تحتوي على أخطاء',
+    'page.excelIntegration.importComplete': 'اكتمل الاستيراد',
+    'page.excelIntegration.importFailed': 'فشل الاستيراد',
+    'page.excelIntegration.rowsInserted': 'صفوف تم إدراجها',
+    'page.excelIntegration.rowsFailed': 'صفوف فشلت',
+    'page.excelIntegration.duration': 'المدة',
+    'page.excelIntegration.sheetsDetected': 'أوراق مكتشفة',
+    'page.excelIntegration.warnings': 'تحذيرات',
+    'page.excelIntegration.noWarnings': 'لا توجد تحذيرات',
+    'page.excelIntegration.errors': 'أخطاء',
+    'page.excelIntegration.noErrors': 'لا توجد أخطاء',
+    'page.excelIntegration.sheetName': 'اسم الورقة',
+    'page.excelIntegration.module': 'وحدة ERP',
+    'page.excelIntegration.rows': 'صفوف',
+    'page.excelIntegration.status': 'الحالة',
+    'page.excelIntegration.valid': 'صالح',
+    'page.excelIntegration.invalid': 'غير صالح',
+    'page.excelIntegration.duplicate': 'مكرر',
+    'page.excelIntegration.unmappedModule': 'وحدة غير مربوطة',
+    'page.excelIntegration.manualMapping': 'يتطلب تعيين يدوياً',
+    'page.excelIntegration.backToUpload': 'العودة للرفع',
+    'page.excelIntegration.templateDownloads': 'تحميل القوالب',
+    'page.excelIntegration.templateWarning': 'استخدم هذا القالب بالضبط لأفضل نتائج استيراد. القوالب تتطابق مع هيكل دفتر العمل العميل مع أسماء الأوراق الصحيحة وترتيب الأعمدة وأنواع البيانات.',
+    'page.excelIntegration.downloadClientWorkbook': 'تحميل قالب دفتر العمل الكامل',
+    'page.excelIntegration.downloadModuleTemplate': 'تحميل قالب الوحدة',
     'page.actualImports.title': 'استيراد الفعلي',
     'page.companies.title': 'الشركات',
     'page.sites.title': 'المواقع',
@@ -3497,6 +4491,31 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.notificationRules.title': 'قواعد الإشعارات',
     'page.auditLogs.title': 'سجل التدقيق',
     'page.users.title': 'المستخدمين',
+    'page.tenants.title': 'المؤسسات',
+    'page.tenants.description': 'إدارة مؤسسات النظام والتكوين متعدد المؤسسات.',
+    'page.tenants.emptyTitle': 'لا توجد مؤسسات بعد',
+    'page.tenants.emptyDescription': 'أنشئ أول مؤسسة للبدء.',
+    'page.tenants.createTenant': 'إنشاء مؤسسة',
+    'page.tenants.editTenant': 'تعديل المؤسسة',
+    'page.tenants.tenantName': 'اسم المؤسسة',
+    'page.tenants.slug': 'الاسم المختصر',
+    'page.tenants.slugPlaceholder': 'مثال: acme-corp',
+    'page.tenants.deleteConfirmMsg': 'هل أنت متأكد من حذف هذه المؤسسة؟ لا يمكن التراجع عن هذا الإجراء.',
+    'page.tenants.accessDenied': 'تم رفض الوصول',
+    'page.tenants.accessDeniedDesc': 'يتطلب صلاحية المدير العام للوصول إلى إدارة المؤسسات.',
+    'page.roles.title': 'الأدوار',
+    'page.roles.description': 'إدارة أدوار النظام وصلاحياتها.',
+    'page.roles.emptyTitle': 'لا توجد أدوار بعد',
+    'page.roles.emptyDescription': 'أنشئ أول دور للبدء.',
+    'page.roles.createRole': 'إنشاء دور',
+    'page.roles.editRole': 'تعديل الدور',
+    'page.roles.roleName': 'اسم الدور',
+    'page.roles.permissions': 'الصلاحيات',
+    'page.roles.permissionsPlaceholder': '{"users": ["read", "write"], "budgets": ["read"]}',
+    'page.roles.usersCount': 'المستخدمين',
+    'page.roles.deleteConfirmMsg': 'هل أنت متأكد من حذف هذا الدور؟ لا يمكن التراجع عن هذا الإجراء.',
+    'page.roles.accessDenied': 'تم رفض الوصول',
+    'page.roles.accessDeniedDesc': 'يتطلب صلاحية المدير العام للوصول إلى إدارة الأدوار.',
     'page.exchangeRates.title': 'أسعار الصرف',
     'page.connections.title': 'الاتصالات',
     'page.importMappings.title': 'تعيينات الاستيراد',
@@ -3509,6 +4528,44 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.notifications.description': 'إشعارات النظام وتحذيرات الامتثال.',
     'page.notifications.emptyTitle': 'صندوق الإشعارات نظيف!',
     'page.notifications.emptyDescription': 'لا توجد إشعارات جديدة. كل شيء ضمن الحدود الطبيعية.',
+
+    'page.notifications.alerts': 'التنبيهات',
+    'page.notifications.markAllRead': 'تعليم الكل كمقروء',
+    'page.notifications.archive': 'أرشفة',
+    'page.notifications.unreadCount': '{count} غير مقروء',
+    'page.notifications.noAlerts': 'لا توجد تنبيهات',
+    'page.notifications.noAlertsDesc': 'كل شيء على ما يرام! لا توجد تنبيهات نشطة حالياً.',
+    'page.notifications.alertLow': 'منخفض',
+    'page.notifications.alertMedium': 'متوسط',
+    'page.notifications.alertHigh': 'عالي',
+    'page.notifications.alertCritical': 'حرج',
+    'page.notifications.categoryBudget': 'الميزانية',
+    'page.notifications.categoryInventory': 'المخزون',
+    'page.notifications.categoryApproval': 'الموافقات',
+    'page.notifications.categoryImport': 'الاستيراد',
+    'page.notifications.categoryExchange': 'أسعار الصرف',
+    'page.notifications.categorySystem': 'النظام',
+    'page.notifications.categoryProduction': 'الإنتاج',
+    'page.notifications.categoryForecast': 'التوقعات',
+    'page.notifications.filterAll': 'الكل',
+    'page.notifications.filterUnread': 'غير مقروء',
+    'page.notifications.filterRead': 'مقروء',
+    'page.notifications.filterArchived': 'مؤرشف',
+    'page.notifications.viewAlerts': 'عرض التنبيهات',
+    'page.notifications.markRead': 'تعليم كمقروء',
+    'page.notifications.delete': 'حذف',
+    'page.notifications.selectAll': 'تحديد الكل',
+    'page.notifications.deselectAll': 'إلغاء التحديد',
+    'page.notifications.selectedCount': '{count} محدد',
+    'page.notifications.markSelectedRead': 'تعليم كمقروء',
+    'page.notifications.archiveSelected': 'أرشفة',
+    'page.notifications.deleteSelected': 'حذف',
+    'page.notifications.bulkDeleteConfirm': 'هل أنت متأكد من حذف {count} تنبيه(ات)؟ لا يمكن التراجع عن هذا الإجراء.',
+    'page.notifications.groupToday': 'اليوم',
+    'page.notifications.groupYesterday': 'أمس',
+    'page.notifications.groupThisWeek': 'هذا الأسبوع',
+    'page.notifications.groupEarlier': 'سابقاً',
+    'page.notifications.notificationsCount': '{count} إشعارات',
 
     /* Actual Imports */
     'page.actualImports.description': 'استيراد معاملات المحاسبة من ERP أو جداول البيانات.',
@@ -3643,6 +4700,18 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'component.importModal.importSuccess': 'تم استيراد {count} سجل بنجاح.{failMsg}',
     'component.importModal.noCommit': 'اكتمل الاستيراد، ولكن لم يتم تنفيذ أي سجلات.',
     'component.importModal.rowFail': 'فشل {n} صف.',
+    'component.importModal.progressValidating': 'جارٍ التحقق...',
+    'component.importModal.progressUploading': 'جارٍ الرفع...',
+    'component.importModal.progressComplete': 'مكتمل',
+    'component.importModal.rowSummary': '{valid} صالح، {invalid} غير صالح، {total} إجمالي',
+    'component.importModal.downloadErrors': 'تنزيل ملف الأخطاء',
+    'component.importModal.downloadSkipped': 'تنزيل الصفوف المتجاوزة',
+    'component.importModal.cancelImport': 'إلغاء الاستيراد',
+    'component.importModal.importComplete': 'اكتمل الاستيراد',
+    'component.importModal.statSuccess': 'تم استيراد {n} صف بنجاح',
+    'component.importModal.statFailed': 'فشل {n} صف',
+    'component.importModal.statSkipped': 'تم تجاوز {n} صف (مكرر)',
+    'component.importModal.statTime': 'الوقت المستغرق: {s} ثانية',
     'component.importModal.close': 'إغلاق',
     'component.importModal.fileName': 'تم تحميل {name} بنجاح.',
 
@@ -3672,6 +4741,24 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.companies.deletedSuccess': 'تم حذف الشركة بنجاح.',
     'page.companies.deleteFailed': 'فشل حذف الشركة.',
     'page.companies.unexpectedDeleteError': 'حدث خطأ غير متوقع أثناء حذف الشركة.',
+    'page.companies.wizardTitle': 'إنشاء شركة جديدة',
+    'page.companies.wizardDesc': 'إعداد شركتك في بضع خطوات',
+    'page.companies.step1Label': 'معلومات الشركة',
+    'page.companies.step2Label': 'العملة',
+    'page.companies.step3Label': 'السنة المالية',
+    'page.companies.step4Label': 'الوحدات الافتراضية',
+    'page.companies.step5Label': 'الحسابات الافتراضية',
+    'page.companies.step6Label': 'مراجعة وإنشاء',
+    'page.companies.industryType': 'نوع النشاط',
+    'page.companies.taxNumber': 'الرقم الضريبي',
+    'page.companies.defaultUnits': 'الوحدات الافتراضية',
+    'page.companies.defaultAccounts': 'الحسابات الافتراضية',
+    'page.companies.defaultChartOfAccounts': 'دليل الحسابات الافتراضي',
+    'page.companies.createDefaultUnits': 'إنشاء وحدات قياس افتراضية',
+    'page.companies.createDefaultAccounts': 'إنشاء دليل حسابات افتراضي',
+    'page.companies.accountCategories': 'فئات الحسابات',
+    'page.companies.preview': 'معاينة',
+    'page.companies.review': 'مراجعة',
 
     /* Exchange rates page */
     'page.exchangeRates.description': 'إدارة أسعار الصرف لتحويل العملات والتقارير',
@@ -3985,13 +5072,34 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.notificationRules.ruleName': 'اسم القاعدة',
     'page.notificationRules.triggerType': 'نوع المشغل',
     'page.notificationRules.threshold': 'الحد الأدنى',
-    'page.notificationRules.channel': 'قنوات الإشعارات',
+    'page.notificationRules.targetAccount': 'الحساب المستهدف',
+    'page.notificationRules.channel': 'القنوات',
+    'page.notificationRules.site': 'الموقع',
+    'page.notificationRules.status': 'الحالة',
     'page.notificationRules.triggerEvent': 'الحدث المشغل',
     'page.notificationRules.thresholdPct': 'نسبة الحد الأدنى (%)',
     'page.notificationRules.thresholdAmount': 'المبلغ الأدنى',
+    'page.notificationRules.thresholdValue': 'قيمة الحد الأدنى',
     'page.notificationRules.accountScope': 'نطاق الحساب (اختياري)',
     'page.notificationRules.siteScope': 'نطاق الموقع (اختياري)',
+    'page.notificationRules.targetGlAccount': 'حساب الدفتر العام المستهدف (اختياري)',
+    'page.notificationRules.targetSite': 'الموقع المستهدف (اختياري)',
+    'page.notificationRules.notifyRoles': 'الأدوار المُبلغ عنها (مفصولة بفاصلة)',
+    'page.notificationRules.notificationChannels': 'قنوات الإشعارات',
+    'page.notificationRules.ruleActive': 'القاعدة نشطة',
     'page.notificationRules.createRule': 'إنشاء قاعدة',
+    'page.notificationRules.createTitle': 'إنشاء قاعدة تنبيه',
+    'page.notificationRules.editTitle': 'تعديل قاعدة التنبيه',
+    'page.notificationRules.ruleNamePlaceholder': 'مثال: تنبيه التباين > 10%',
+    'page.notificationRules.thresholdPlaceholder': 'مثال: 10.0 لـ 10%',
+    'page.notificationRules.notifyRolesPlaceholder': 'admin, finance',
+    'page.notificationRules.channelsPlaceholder': 'system, email',
+    'page.notificationRules.triggerVariancePct': 'حد التباين النسبي',
+    'page.notificationRules.triggerVarianceAmount': 'حد التباين المطلق',
+    'page.notificationRules.triggerKpiBreach': 'انتهاك مستهدف مؤشر الأداء',
+    'page.notificationRules.triggerBudgetApproval': 'مطلوب موافقة الميزانية',
+    'page.notificationRules.triggerForecastApproval': 'مطلوب موافقة التوقعات',
+    'page.notificationRules.triggerImportFailed': 'فشل استيراد البيانات',
     'page.notificationRules.changeable': 'قابل للتغيير',
     'page.notificationRules.description': 'تكوين قواعد التنبيهات والإشعارات الآلية.',
     'page.notificationRules.emptyDescription': 'أنشئ قواعد إشعارات لتلقي تنبيهات حول الأحداث الرئيسية.',
@@ -4203,9 +5311,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.reports.exportFailed': 'فشل تصدير التقرير.',
 
     /* ── Settings keys ──────────────────────────────────────────────────── */
-    'page.settings.loadPlansFailed': 'فشل تحميل خطط الاشتراك.',
-    'page.settings.upgradeSuccess': 'تم ترقية الخطة بنجاح.',
-    'page.settings.upgradeFailed': 'فشل ترقية الخطة.',
     'page.settings.loadCompanyFailed': 'فشل تحميل تفاصيل الشركة.',
     'page.settings.saveCompanyFailed': 'فشل حفظ ملف الشركة.',
 
@@ -4256,5 +5361,33 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'backend.VALIDATION_FAILED': 'فشل التحقق.',
     'backend.COMPANY_NOT_FOUND': 'الشركة غير موجودة.',
     'backend.DEFAULT': 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+    /* Enterprise Import */
+    'import.enterprise.title': 'استيراد البيانات',
+    'import.enterprise.subtitle': 'ارفع ملف CSV أو Excel لاستيراد البيانات إلى النظام',
+    'import.enterprise.selectModule': 'اختر الوحدة',
+    'import.enterprise.chooseFile': 'اختر الملف',
+    'import.enterprise.dragDrop': 'اسحب وأفلت الملف هنا',
+    'import.enterprise.orClick': 'أو انقر للتصفح',
+    'import.enterprise.supportedFormats': 'الصيغ المدعومة: CSV، XLSX، XLS',
+    'import.enterprise.maxSize': 'الحد الأقصى لحجم الملف: 10 ميجابايت',
+    'import.enterprise.uploadAndValidate': 'رفع وتحقق',
+    'import.enterprise.cancel': 'إلغاء',
+    'import.enterprise.validating': 'جاري التحقق...',
+    'import.enterprise.preview': 'معاينة',
+    'import.enterprise.validRows': 'الصفوف الصحيحة',
+    'import.enterprise.errorRows': 'الصفوف الخاطئة',
+    'import.enterprise.commit': 'تنفيذ الاستيراد',
+    'import.enterprise.committing': 'جاري التنفيذ...',
+    'import.enterprise.done': 'اكتمل الاستيراد',
+    'import.enterprise.history': 'سجل الاستيراد',
+    'import.enterprise.noHistory': 'لا يوجد سجل استيراد بعد',
+    'import.enterprise.status': 'الحالة',
+    'import.enterprise.rowsInserted': 'صفوف مضافة',
+    'import.enterprise.rowsUpdated': 'صفوف محدثة',
+    'import.enterprise.rowsFailed': 'صفوف فاشلة',
+    'import.enterprise.timestamp': 'الوقت',
+    'import.enterprise.module': 'الوحدة',
+    'import.enterprise.fileName': 'اسم الملف',
+    'import.enterprise.close': 'إغلاق',
   },
 };

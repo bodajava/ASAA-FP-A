@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { SimpleCache } from '../common/utils/cache.util';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
@@ -53,19 +54,10 @@ function mapPromotionToResponse(promo: QueryPromotion): PromotionResponseDto {
 
 @Injectable()
 export class PromotionsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ): Promise<void> {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException('Company not found under this tenant');
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   private validateForeignEntity<T extends { id: bigint }>(
     entity: T | null,
@@ -97,7 +89,7 @@ export class PromotionsService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<PromotionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     if (createDto.productId) {
       const product = await this.prisma.product.findFirst({
@@ -174,7 +166,7 @@ export class PromotionsService {
       endDate?: string;
     },
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const page = paginationDto.page ?? 1;
     const limit = paginationDto.limit ?? 10;
@@ -248,7 +240,7 @@ export class PromotionsService {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<PromotionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const promotion = await this.prisma.promotion.findFirst({
       where: { id, companyId },
@@ -275,7 +267,7 @@ export class PromotionsService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<PromotionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const oldPromotion = await this.prisma.promotion.findFirst({
       where: { id, companyId },

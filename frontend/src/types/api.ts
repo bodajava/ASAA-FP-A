@@ -380,6 +380,68 @@ export interface DashboardKpis {
   forecast_accuracy: number;
 }
 
+export interface ExecutiveKpi {
+  current: number;
+  previousMonth: number;
+  previousYear: number;
+  growthPct: number;
+  trend: 'up' | 'down' | 'neutral';
+}
+
+export interface ExecutiveSummary {
+  revenue: ExecutiveKpi;
+  grossProfit: ExecutiveKpi;
+  netProfit: ExecutiveKpi;
+  ebitda: ExecutiveKpi;
+  operatingProfit: ExecutiveKpi;
+  cashFlow: ExecutiveKpi;
+  cashBalance: ExecutiveKpi;
+  workingCapital: ExecutiveKpi;
+  accountsReceivable: ExecutiveKpi;
+  accountsPayable: ExecutiveKpi;
+  inventoryValue: ExecutiveKpi;
+  inventoryCoverage: ExecutiveKpi;
+  productionCost: ExecutiveKpi;
+  manufacturingCost: ExecutiveKpi;
+  totalBudget: ExecutiveKpi;
+  actualCost: ExecutiveKpi;
+  remainingBudget: ExecutiveKpi;
+  budgetUtilization: ExecutiveKpi;
+  forecastAccuracy: ExecutiveKpi;
+  totalExpenses: ExecutiveKpi;
+  totalIncome: ExecutiveKpi;
+  totalCustomers: ExecutiveKpi;
+  totalSuppliers: ExecutiveKpi;
+  totalProducts: ExecutiveKpi;
+  totalMaterials: ExecutiveKpi;
+  totalUsers: ExecutiveKpi;
+  pendingApprovals: ExecutiveKpi;
+  notificationCount: ExecutiveKpi;
+  failedImports: ExecutiveKpi;
+  successfulImports: ExecutiveKpi;
+}
+
+export interface MarketRate {
+  currency: string;
+  rate: number;
+  previousRate: number;
+  change: number;
+  changePct: number;
+  trend: 'up' | 'down' | 'neutral';
+  lastUpdate: string;
+  source: string;
+  provider?: string;
+  stale?: boolean;
+  staleReason?: string;
+}
+
+export interface MarketWidget {
+  rates: MarketRate[];
+  lastSyncAt: string | null;
+  baseCurrency: string;
+  provider?: string;
+}
+
 export interface MonthlyTrendItem {
   period_month: number;
   actual: number;
@@ -1099,9 +1161,21 @@ export interface Plan {
 // ---------------------------------------------------------------------------
 // Users & Roles
 // ---------------------------------------------------------------------------
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Role {
   id: string;
   name: string;
+  permissions?: Record<string, unknown>;
+  _count?: { users: number };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -1115,6 +1189,27 @@ export interface User {
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Alerts (Enterprise Alert Center)
+// ---------------------------------------------------------------------------
+export interface Alert {
+  id: string;
+  companyId: string;
+  userId: string | null;
+  title: string;
+  description: string | null;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  severity: 'info' | 'warning' | 'error' | 'success';
+  category: 'budget' | 'forecast' | 'inventory' | 'exchange_rate' | 'production' | 'import' | 'approval' | 'system';
+  entityType: string | null;
+  entityId: string | null;
+  actionUrl: string | null;
+  isRead: boolean;
+  isArchived: boolean;
+  expiresAt: string | null;
+  createdAt: string;
 }
 
 

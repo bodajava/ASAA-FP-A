@@ -1,25 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class SitesService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ) {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException(`Company not found under this tenant`);
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   async create(
     createSiteDto: CreateSiteDto,
@@ -27,7 +19,7 @@ export class SitesService {
     tenantId: bigint,
     userId: bigint,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const site = await this.prisma.site.create({
       data: {
@@ -63,7 +55,7 @@ export class SitesService {
     tenantId: bigint,
     paginationDto: PaginationDto,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const page = paginationDto.page ?? 1;
     const limit = paginationDto.limit ?? 10;
@@ -99,7 +91,7 @@ export class SitesService {
   }
 
   async findOne(id: bigint, companyId: bigint, tenantId: bigint) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const site = await this.prisma.site.findFirst({
       where: { id, companyId },

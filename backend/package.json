@@ -20,7 +20,14 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register prisma/seed.ts",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "backup:business-data": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register scripts/backup-business-data.ts",
+    "reset:business-data": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register scripts/reset-business-data.ts --confirm-reset",
+    "reset:full": "npm run backup:business-data && npm run reset:business-data && npm run seed",
+    "generate:dataset": "npx ts-node -r tsconfig-paths/register Enterprise_Test_Dataset/generate-all.ts",
+    "generate:dataset:full": "npx ts-node -r tsconfig-paths/register Enterprise_Test_Dataset/generate-all.ts --scale=full",
+    "generate:validation": "npx ts-node -r tsconfig-paths/register Enterprise_Test_Dataset/generate-validation.ts",
+    "generate:benchmark": "npx ts-node -r tsconfig-paths/register Enterprise_Test_Dataset/generate-benchmark.ts"
   },
   "prisma": {
     "seed": "npm run seed"
@@ -33,6 +40,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.4",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bcrypt": "^6.0.0",
@@ -41,6 +49,7 @@
     "cookie-parser": "^1.4.7",
     "csv-parse": "^6.2.1",
     "decimal.js": "^10.6.0",
+    "exceljs": "^4.4.0",
     "mariadb": "^3.5.3",
     "oracledb": "^7.0.0",
     "passport": "^0.7.0",

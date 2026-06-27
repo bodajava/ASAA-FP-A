@@ -27,6 +27,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ErrorCodes } from '../common/error-codes';
+import { Throttle } from '@nestjs/throttler';
 
 interface RequestWithUser extends ExpressRequest {
   user: AuthUser;
@@ -38,6 +39,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
   @ApiHeader({

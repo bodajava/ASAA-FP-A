@@ -14,6 +14,8 @@ export interface UsePaginatedListOptions {
   enabled?: boolean;
   /** Query key prefix for cache management */
   queryKeyPrefix?: string;
+  /** If false, query runs even without activeCompanyId (default: true) */
+  requireCompany?: boolean;
 }
 
 export interface UsePaginatedListReturn<T> {
@@ -38,6 +40,7 @@ export function usePaginatedList<T>({
   limit = 20,
   enabled = true,
   queryKeyPrefix,
+  requireCompany = true,
 }: UsePaginatedListOptions): UsePaginatedListReturn<T> {
   const { activeCompanyId } = useAuth();
   const { t } = useI18n();
@@ -83,7 +86,7 @@ export function usePaginatedList<T>({
     queryFn: async ({ signal }) => {
       return apiGet<PaginatedResponse<T> | T[]>(buildUrl(), { signal });
     },
-    enabled: enabled && Boolean(activeCompanyId),
+    enabled: enabled && (!requireCompany || Boolean(activeCompanyId)),
     placeholderData: (prev) => prev, // keepPreviousData
     staleTime: 2 * 60 * 1000, // 2 minutes for lists
   });

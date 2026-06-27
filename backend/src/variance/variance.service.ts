@@ -6,6 +6,11 @@ import {
   VarianceRecordDto,
   PaginatedVarianceResponseDto,
 } from './dto/variance-response.dto';
+import {
+  YoYComparisonQueryDto,
+  YoYComparisonResponseDto,
+  YoYMetricRecordDto,
+} from './dto/yoy-comparison.dto';
 
 interface RawBudgetVsActual {
   company_id: bigint;
@@ -329,5 +334,244 @@ export class VarianceService {
       totalPages: Math.ceil(total / limit),
       data: mappedData,
     };
+  }
+
+  private getFiscalYearDateRange(fiscalYear: number, startMonth: number): { start: Date; end: Date } {
+    const start = new Date(fiscalYear, startMonth - 1, 1);
+    const end = new Date(fiscalYear + (startMonth === 1 ? 0 : 1), startMonth === 1 ? 12 : startMonth - 1, 0, 23, 59, 59, 999);
+    return { start, end };
+  }
+
+  async getYoYComparison(
+    companyId: bigint,
+    tenantId: bigint,
+    queryDto: YoYComparisonQueryDto,
+  ): Promise<YoYComparisonResponseDto> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
+    if (!company) {
+      throw new NotFoundException(`Company not found`);
+    }
+    const startMonth = company.fiscalYearStartMonth ?? 1;
+    const currentYear = queryDto.fiscalYear;
+    const previousYear = currentYear - 1;
+
+    const currentRange = this.getFiscalYearDateRange(currentYear, startMonth);
+    const previousRange = this.getFiscalYearDateRange(previousYear, startMonth);
+
+    // Build actual filters
+    const actualWhereCurrent: Prisma.ActualLineWhereInput = {
+      actualImport: { companyId, status: 'posted' },
+      transactionDate: { gte: currentRange.start, lte: currentRange.end },
+    };
+    const actualWherePrevious: Prisma.ActualLineWhereInput = {
+      actualImport: { companyId, status: 'posted' },
+      transactionDate: { gte: previousRange.start, lte: previousRange.end },
+    };
+
+    if (queryDto.siteId) {
+      actualWhereCurrent.siteId = BigInt(queryDto.siteId);
+      actualWherePrevious.siteId = BigInt(queryDto.siteId);
+    }
+    if (queryDto.productId) {
+      actualWhereCurrent.productId = BigInt(queryDto.productId);
+      actualWherePrevious.productId = BigInt(queryDto.productId);
+    }
+    if (queryDto.categoryId) {
+      actualWhereCurrent.product = { categoryId: BigInt(queryDto.categoryId) };
+      actualWherePrevious.product = { categoryId: BigInt(queryDto.categoryId) };
+    }
+    if (queryDto.customerId) {
+      actualWhereCurrent.customerId = BigInt(queryDto.customerId);
+      actualWherePrevious.customerId = BigInt(queryDto.customerId);
+    }
+    if (queryDto.materialId) {
+      actualWhereCurrent.materialId = BigInt(queryDto.materialId);
+      actualWherePrevious.materialId = BigInt(queryDto.materialId);
+    }
+
+    // Get all accounts once to map account types and names
+    const accounts = await this.prisma.account.findMany({
+      where: { companyId },
+      select: { id: true, type: true, name: true },
+    });
+    const accountMap = new Map<string, { type: string; name: string }>();
+    accounts.forEach(a => accountMap.set(a.id.toString(), { type: a.type, name: a.name }));
+
+    // Group actuals by account ID
+    const actualsCurrentGroup = await this.prisma.actualLine.groupBy({
+      by: ['accountId'],
+      where: actualWhereCurrent,
+      _sum: { amount: true },
+    });
+
+    const actualsPreviousGroup = await this.prisma.actualLine.groupBy({
+      by: ['accountId'],
+      where: actualWherePrevious,
+      _sum: { amount: true },
+    });
+
+    // Group budgets by account ID for current year
+    const activeBudget = await this.prisma.budgetCycle.findFirst({
+      where: { companyId, fiscalYear: currentYear, status: 'approved' },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const budgetWhere: Prisma.BudgetLineWhereInput = {
+      budgetCycleId: activeBudget?.id ?? -1n,
+    };
+    if (queryDto.siteId) budgetWhere.siteId = BigInt(queryDto.siteId);
+    if (queryDto.productId) budgetWhere.productId = BigInt(queryDto.productId);
+    if (queryDto.categoryId) budgetWhere.product = { categoryId: BigInt(queryDto.categoryId) };
+    if (queryDto.customerId) budgetWhere.customerId = BigInt(queryDto.customerId);
+    if (queryDto.materialId) budgetWhere.materialId = BigInt(queryDto.materialId);
+
+    const budgetGroup = activeBudget ? await this.prisma.budgetLine.groupBy({
+      by: ['accountId'],
+      where: budgetWhere,
+      _sum: { amount: true },
+    }) : [];
+
+    // Map amounts into categories
+    let revCur = 0, revPrev = 0, revPlan = 0;
+    let cogsCur = 0, cogsPrev = 0, cogsPlan = 0;
+    let expCur = 0, expPrev = 0, expPlan = 0;
+    let matCur = 0, matPrev = 0, matPlan = 0;
+    let packCur = 0, packPrev = 0, packPlan = 0;
+
+    const getCat = (accIdStr: string) => {
+      const acc = accountMap.get(accIdStr);
+      if (!acc) return 'other';
+      const nameLower = acc.name.toLowerCase();
+      if (acc.type === 'cogs') {
+        if (nameLower.includes('material') || nameLower.includes('raw')) return 'material';
+        if (nameLower.includes('package') || nameLower.includes('can') || nameLower.includes('carton') || nameLower.includes('box')) return 'packaging';
+        return 'cogs';
+      }
+      return acc.type;
+    };
+
+    actualsCurrentGroup.forEach(g => {
+      const amt = Number(g._sum.amount ?? 0);
+      const cat = getCat(g.accountId.toString());
+      if (cat === 'revenue') revCur += amt;
+      else if (cat === 'cogs') cogsCur += amt;
+      else if (cat === 'expense') expCur += amt;
+      else if (cat === 'material') { cogsCur += amt; matCur += amt; }
+      else if (cat === 'packaging') { cogsCur += amt; packCur += amt; }
+    });
+
+    actualsPreviousGroup.forEach(g => {
+      const amt = Number(g._sum.amount ?? 0);
+      const cat = getCat(g.accountId.toString());
+      if (cat === 'revenue') revPrev += amt;
+      else if (cat === 'cogs') cogsPrev += amt;
+      else if (cat === 'expense') expPrev += amt;
+      else if (cat === 'material') { cogsPrev += amt; matPrev += amt; }
+      else if (cat === 'packaging') { cogsPrev += amt; packPrev += amt; }
+    });
+
+    budgetGroup.forEach(g => {
+      const amt = Number(g._sum.amount ?? 0);
+      const cat = getCat(g.accountId.toString());
+      if (cat === 'revenue') revPlan += amt;
+      else if (cat === 'cogs') cogsPlan += amt;
+      else if (cat === 'expense') expPlan += amt;
+      else if (cat === 'material') { cogsPlan += amt; matPlan += amt; }
+      else if (cat === 'packaging') { cogsPlan += amt; packPlan += amt; }
+    });
+
+    // Compute Production volumes from ProductionPlan
+    const prodPlansCurrent = await this.prisma.productionPlan.aggregate({
+      where: {
+        companyId,
+        fiscalYear: currentYear,
+        productId: queryDto.productId ? BigInt(queryDto.productId) : undefined,
+        siteId: queryDto.siteId ? BigInt(queryDto.siteId) : undefined,
+      },
+      _sum: { actualQty: true, plannedQty: true },
+    });
+
+    const prodPlansPrevious = await this.prisma.productionPlan.aggregate({
+      where: {
+        companyId,
+        fiscalYear: previousYear,
+        productId: queryDto.productId ? BigInt(queryDto.productId) : undefined,
+        siteId: queryDto.siteId ? BigInt(queryDto.siteId) : undefined,
+      },
+      _sum: { actualQty: true },
+    });
+
+    const prodCur = Number(prodPlansCurrent._sum.actualQty ?? 0);
+    const prodPrev = Number(prodPlansPrevious._sum.actualQty ?? 0);
+    const prodPlan = Number(prodPlansCurrent._sum.plannedQty ?? 0);
+
+    // Compute average wastage percent from recipes
+    const bomsCurrent = await this.prisma.bomRecipe.aggregate({
+      where: {
+        companyId,
+        isActive: true,
+        productId: queryDto.productId ? BigInt(queryDto.productId) : undefined,
+      },
+      _avg: { wastagePct: true },
+    });
+    const wasteCur = Number(bomsCurrent._avg.wastagePct ?? 0);
+    const wastePrev = wasteCur;
+    const wastePlan = wasteCur;
+
+    const buildMetric = (
+      metric: string,
+      metricName: string,
+      cur: number,
+      prev: number,
+      plan: number,
+      isExpense: boolean,
+    ): YoYMetricRecordDto => {
+      const varianceAmount = cur - prev;
+      const variancePct = prev === 0 ? null : Math.round((varianceAmount / prev) * 100 * 100) / 100;
+      const planVarianceAmount = cur - plan;
+      const planVariancePct = plan === 0 ? null : Math.round((planVarianceAmount / plan) * 100 * 100) / 100;
+
+      let trend: 'up' | 'down' | 'stable' = 'stable';
+      if (varianceAmount > 0) trend = 'up';
+      else if (varianceAmount < 0) trend = 'down';
+
+      let status: 'good' | 'warning' | 'bad' = 'good';
+      if (isExpense) {
+        status = varianceAmount > 0 ? 'bad' : 'good';
+      } else {
+        status = varianceAmount >= 0 ? 'good' : 'bad';
+      }
+
+      return {
+        metric,
+        metricName,
+        previousYearValue: prev,
+        currentYearValue: cur,
+        planValue: plan,
+        varianceAmount,
+        variancePct,
+        planVarianceAmount,
+        planVariancePct,
+        trend,
+        status,
+      };
+    };
+
+    const metrics: YoYMetricRecordDto[] = [];
+    metrics.push(buildMetric('revenue', 'Revenue', revCur, revPrev, revPlan, false));
+    metrics.push(buildMetric('cogs', 'Cost of Goods Sold (COGS)', cogsCur, cogsPrev, cogsPlan, true));
+    metrics.push(buildMetric('gross_profit', 'Gross Profit', revCur - cogsCur, revPrev - cogsPrev, revPlan - cogsPlan, false));
+    metrics.push(buildMetric('expenses', 'Expenses', expCur, expPrev, expPlan, true));
+    metrics.push(buildMetric('net_profit', 'Net Profit', (revCur - cogsCur - expCur), (revPrev - cogsPrev - expPrev), (revPlan - cogsPlan - expPlan), false));
+    metrics.push(buildMetric('production', 'Production Volume', prodCur, prodPrev, prodPlan, false));
+    metrics.push(buildMetric('wastage', 'Wastage Rate (%)', wasteCur, wastePrev, wastePlan, true));
+    metrics.push(buildMetric('material_costs', 'Raw Material Costs', matCur, matPrev, matPlan, true));
+    metrics.push(buildMetric('packaging_costs', 'Packaging Costs', packCur, packPrev, packPlan, true));
+
+    return { metrics };
   }
 }

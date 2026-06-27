@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeftRight } from 'lucide-react';
 import { CrudPage } from '@/components/crud-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,16 +9,18 @@ import { boolBadge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/toast';
 import { apiGet } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { BomCompareModal } from '@/components/bom-compare-modal';
+import { Modal } from '@/components/ui/modal';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { BomRecipe, Product, Material, PaginatedResponse } from '@/types/api';
-import { useAuth } from '@/lib/auth-context';
-import { LockedState } from '@/components/ui/feedback-states';
 
 interface FormBomLine {
   materialId: string;
   qtyPerOutput: number;
   unitCost?: number;
   wastagePct?: number;
+  yieldPct?: number;
+  costCategory?: string;
 }
 
 interface BomLineRowProps {
@@ -32,8 +34,9 @@ interface BomLineRowProps {
 function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowProps) {
   const { t } = useI18n();
   return (
-    <div className="grid grid-cols-[1fr_80px_80px_32px] items-end gap-2">
-      <div className="flex flex-col gap-1.5">
+    <div className="grid grid-cols-[2fr_1.2fr_100px_90px_90px_90px_32px] items-end gap-2 text-xs">
+      {/* 1. Material Select */}
+      <div className="flex flex-col gap-1">
         {index === 0 && <label htmlFor={`bom-line-mat-${index}`} className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('page.bomRecipes.material')}</label>}
         <select
           id={`bom-line-mat-${index}`}
@@ -50,6 +53,26 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
           ))}
         </select>
       </div>
+
+      {/* 2. Cost Category Select */}
+      <div className="flex flex-col gap-1">
+        {index === 0 && <label htmlFor={`bom-line-cat-${index}`} className="text-xs font-semibold text-slate-500 dark:text-slate-400">Category</label>}
+        <select
+          id={`bom-line-cat-${index}`}
+          value={line.costCategory || 'Raw Material'}
+          onChange={(e) => onChange(index, { ...line, costCategory: e.target.value })}
+          className="h-9 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          required
+        >
+          <option value="Raw Material">Raw Material</option>
+          <option value="Packaging">Packaging</option>
+          <option value="Manufacturing">Manufacturing</option>
+          <option value="Logistics">Logistics</option>
+          <option value="Selling">Selling</option>
+        </select>
+      </div>
+
+      {/* 3. Qty Per Output */}
       <Input
         id={`bom-line-qty-${index}`}
         type="number"
@@ -61,6 +84,8 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
         placeholder="1"
         required
       />
+
+      {/* 4. Custom Unit Cost */}
       <Input
         id={`bom-line-cost-${index}`}
         type="number"
@@ -72,6 +97,38 @@ function BomLineRow({ line, index, materials, onChange, onRemove }: BomLineRowPr
         }
         placeholder="0.00"
       />
+
+      {/* 5. Line wastage % */}
+      <Input
+        id={`bom-line-waste-${index}`}
+        type="number"
+        step="0.1"
+        min="0"
+        max="100"
+        label={index === 0 ? 'Waste %' : ''}
+        value={(line.wastagePct ?? '0').toString()}
+        onChange={(e) =>
+          onChange(index, { ...line, wastagePct: e.target.value ? Number(e.target.value) : 0 })
+        }
+        placeholder="0"
+      />
+
+      {/* 6. Line yield % */}
+      <Input
+        id={`bom-line-yield-${index}`}
+        type="number"
+        step="0.1"
+        min="0.1"
+        max="100"
+        label={index === 0 ? 'Yield %' : ''}
+        value={(line.yieldPct ?? '100').toString()}
+        onChange={(e) =>
+          onChange(index, { ...line, yieldPct: e.target.value ? Number(e.target.value) : 100 })
+        }
+        placeholder="100"
+      />
+
+      {/* 7. Action Button */}
       <button
         type="button"
         onClick={() => onRemove(index)}
@@ -111,6 +168,8 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
       qtyPerOutput: (l as unknown as { qtyPerOutput?: number }).qtyPerOutput ?? l.qty,
       unitCost: l.unitCost,
       wastagePct: l.wastagePct,
+      yieldPct: (l as any).yieldPct ?? 100,
+      costCategory: (l as any).costCategory ?? 'Raw Material',
     })) ?? [],
   );
 
@@ -131,7 +190,10 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
   }, [toastError, t]);
 
   function addLine() {
-    setBomLines((prev) => [...prev, { materialId: '', qtyPerOutput: 1, wastagePct: 0 }]);
+    setBomLines((prev) => [
+      ...prev,
+      { materialId: '', qtyPerOutput: 1, wastagePct: 0, yieldPct: 100, costCategory: 'Raw Material' },
+    ]);
   }
 
   function updateLine(index: number, updated: FormBomLine) {
@@ -178,6 +240,8 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
         qtyPerOutput: Number(line.qtyPerOutput),
         unitCost: line.unitCost ? Number(line.unitCost) : 0,
         wastagePct: line.wastagePct ? Number(line.wastagePct) : 0,
+        yieldPct: line.yieldPct ? Number(line.yieldPct) : 100,
+        costCategory: line.costCategory || 'Raw Material',
       })),
     });
   }
@@ -247,26 +311,49 @@ function BomRecipeForm({ item, onClose, onSubmit, isLoading }: FormProps) {
   );
 }
 
-export default function BomRecipesPage() {
-  const { tenant } = useAuth();
-  const { t } = useI18n();
-  const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
+// Helper calculation function for rows
+function calculateBomShares(recipe: BomRecipe) {
+  let materialCost = 0;
+  let packagingCost = 0;
+  const lines = recipe.bomLines || [];
+  
+  lines.forEach((line: any) => {
+    const qty = Number(line.qtyPerOutput);
+    const unitCost = Number(line.unitCost || line.material?.purchasePrice || 0);
+    const waste = Number(line.wastagePct || 0);
+    const yieldPct = Number(line.yieldPct || 100);
+    const lineCost = (qty * unitCost * (1 + waste/100)) / (yieldPct/100);
+    
+    const cat = String(line.costCategory || '').toLowerCase();
+    if (cat.includes('pack')) {
+      packagingCost += lineCost;
+    } else {
+      materialCost += lineCost;
+    }
+  });
 
-  if (planName === 'starter' || planName === 'business') {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{t('page.bomRecipes.title')}</h1>
-          <p className="text-sm text-slate-500">{t('page.bomRecipes.description')}</p>
-        </div>
-        <LockedState
-          title={t('page.bomRecipes.lockedTitle')}
-          description={t('page.bomRecipes.lockedDescription')}
-          requiredPlan="Enterprise"
-        />
-      </div>
-    );
-  }
+  const labor = Number(recipe.laborCost || 0);
+  const overhead = Number(recipe.overheadCost || 0);
+  const totalRecipeCost = (materialCost + packagingCost + labor + overhead) * (1 + Number(recipe.wastagePct || 0)/100);
+  const costPerUnit = recipe.outputQty > 0 ? totalRecipeCost / Number(recipe.outputQty) : 0;
+  
+  const totalMatPack = materialCost + packagingCost || 1;
+  const materialPct = (materialCost / totalMatPack) * 100;
+  const packagingPct = (packagingCost / totalMatPack) * 100;
+
+  return {
+    totalRecipeCost,
+    costPerUnit,
+    materialPct,
+    packagingPct,
+    yieldPct: 100 - Number(recipe.wastagePct || 0),
+    wastePct: Number(recipe.wastagePct || 0),
+  };
+}
+
+export default function BomRecipesPage() {
+  const { t, locale } = useI18n();
+  const [compareRecipeId, setCompareRecipeId] = useState<string | null>(null);
 
   const columns: Column<BomRecipe>[] = useMemo(() => [
     {
@@ -275,32 +362,99 @@ export default function BomRecipesPage() {
       render: (_, row) => row.product ? `[${row.product.sku}] ${row.product.name}` : row.productId,
     },
     { key: 'version', header: t('page.bomRecipes.version') },
-    { key: 'outputQty', header: t('page.bomRecipes.outputQty'), render: (v) => Number(v).toFixed(4) },
-    { key: 'laborCost', header: t('page.bomRecipes.laborCost'), render: (v) => Number(v).toFixed(2) },
-    { key: 'overheadCost', header: t('page.bomRecipes.overheadCost'), render: (v) => Number(v).toFixed(2) },
     {
-      key: 'bomLines',
-      header: t('page.bomRecipes.linesHeader'),
-      render: (v) => {
-        const arr = v as BomRecipe['bomLines'];
-        return <span className="text-xs text-slate-500 font-semibold dark:text-slate-400">{Array.isArray(arr) ? arr.length : 0} {t('page.bomRecipes.itemsUnit')}</span>;
-      },
+      key: 'yieldPct',
+      header: 'Yield %',
+      render: (_, row) => {
+        const metrics = calculateBomShares(row);
+        return `${metrics.yieldPct.toFixed(1)}%`;
+      }
+    },
+    {
+      key: 'wastePct',
+      header: 'Waste %',
+      render: (_, row) => {
+        const metrics = calculateBomShares(row);
+        return `${metrics.wastePct.toFixed(1)}%`;
+      }
+    },
+    {
+      key: 'materialPct',
+      header: 'Material %',
+      render: (_, row) => {
+        const metrics = calculateBomShares(row);
+        return `${metrics.materialPct.toFixed(0)}%`;
+      }
+    },
+    {
+      key: 'packagingPct',
+      header: 'Packaging %',
+      render: (_, row) => {
+        const metrics = calculateBomShares(row);
+        return `${metrics.packagingPct.toFixed(0)}%`;
+      }
+    },
+    {
+      key: 'estimatedCost',
+      header: 'Total Cost',
+      render: (_, row) => {
+        const metrics = calculateBomShares(row);
+        return `$${metrics.totalRecipeCost.toFixed(2)}`;
+      }
+    },
+    {
+      key: 'estimatedCostPerUnit',
+      header: 'Cost per Unit',
+      render: (_, row) => {
+        const metrics = calculateBomShares(row);
+        return `$${metrics.costPerUnit.toFixed(4)}`;
+      }
+    },
+    {
+      key: 'createdAt',
+      header: 'Effective Date',
+      render: (v) => v ? new Date(String(v)).toLocaleDateString() : '—'
     },
     { key: 'isActive', header: t('common.status'), render: (v) => boolBadge(Boolean(v)) },
   ], [t]);
 
   return (
-    <CrudPage<BomRecipe>
-      title={t('page.bomRecipes.title')}
-      importModule="bom-recipes"
-      description={t('page.bomRecipes.description')}
-      endpoint="/bom-recipes"
-      columns={columns}
-      emptyTitle={t('page.bomRecipes.emptyTitle')}
-      emptyDescription={t('page.bomRecipes.emptyDescription')}
-      renderForm={({ item, onClose, onSubmit, isLoading }) => (
-        <BomRecipeForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
+    <>
+      <CrudPage<BomRecipe>
+        title={t('page.bomRecipes.title')}
+        importModule="bom-recipes"
+        description={t('page.bomRecipes.description')}
+        endpoint="/bom-recipes"
+        columns={columns}
+        emptyTitle={t('page.bomRecipes.emptyTitle')}
+        emptyDescription={t('page.bomRecipes.emptyDescription')}
+        extraRowActions={(item) => (
+          <button
+            onClick={() => setCompareRecipeId(item.id)}
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 cursor-pointer"
+            title={locale === 'ar' ? 'مقارنة إصدارات الوصفة' : 'Compare Recipe Versions'}
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+          </button>
+        )}
+        renderForm={({ item, onClose, onSubmit, isLoading }) => (
+          <BomRecipeForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
+        )}
+      />
+
+      {compareRecipeId && (
+        <Modal
+          open={compareRecipeId !== null}
+          onClose={() => setCompareRecipeId(null)}
+          title={locale === 'ar' ? 'مقارنة إصدارات وصفة الإنتاج' : 'Compare Production Recipe Versions'}
+          size="xl"
+        >
+          <BomCompareModal
+            recipeId={compareRecipeId}
+            onClose={() => setCompareRecipeId(null)}
+          />
+        </Modal>
       )}
-    />
+    </>
   );
 }

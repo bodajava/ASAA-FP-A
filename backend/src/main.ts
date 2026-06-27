@@ -20,14 +20,23 @@ async function bootstrap() {
   app.set('trust proxy', 1);
 
   // Enable CORS with credentials support
+  const isProduction = process.env.NODE_ENV === 'production';
+  const corsOriginRaw = process.env.CORS_ORIGIN;
+
+  // In production, only use explicitly configured CORS origins (no localhost fallback)
+  // In development, allow localhost defaults as fallback
+  const defaultOrigins = isProduction
+    ? []
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+  const configuredOrigins = corsOriginRaw
+    ? corsOriginRaw.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
+
+  const allowedOrigins = [...new Set([...configuredOrigins, ...defaultOrigins])];
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-      : [
-          'http://localhost:5173',
-          'http://localhost:3000',
-          'https://asaa-fp-a.vercel.app',
-        ],
+    origin: allowedOrigins.length > 0 ? allowedOrigins : false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -56,23 +65,30 @@ async function bootstrap() {
   // Register global cache clearing interceptor
   app.useGlobalInterceptors(new ClearCacheInterceptor());
 
-  // Swagger Configuration
-  const config = new DocumentBuilder()
-    .setTitle('idiibi FP&A Suite API')
-    .setDescription('The API documentation for the idiibi FP&A SaaS system.')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // Swagger — only in non-production unless ENABLE_SWAGGER=true
+  const enableSwagger =
+    process.env.ENABLE_SWAGGER === 'true' || !isProduction;
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  if (enableSwagger) {
+    const config = new DocumentBuilder()
+      .setTitle('idiibi FP&A Suite API')
+      .setDescription('The API documentation for the idiibi FP&A SaaS system.')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}/api`);
-  console.log(
-    `Swagger documentation available at: http://localhost:${port}/api/docs`,
-  );
+  if (enableSwagger) {
+    console.log(
+      `Swagger documentation available at: http://localhost:${port}/api/docs`,
+    );
+  }
 }
 bootstrap().catch((err: unknown) => {
   console.error('Error starting server:', err);

@@ -16,6 +16,7 @@ import { CreateBudgetCycleDto } from './dto/create-budget-cycle.dto';
 import { UpdateBudgetCycleDto } from './dto/update-budget-cycle.dto';
 import { UpdateBudgetStatusDto } from './dto/update-budget-status.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { SimpleCache } from '../common/utils/cache.util';
 
 export type QueryBudgetCycle = BudgetCycle & {
   budgetLines: BudgetLine[];
@@ -53,6 +54,18 @@ export interface BudgetCycleResponseDto {
   createdAt: Date | null;
   updatedAt: Date | null;
   budgetLines?: BudgetLineResponseDto[];
+}
+
+export interface BudgetCostCategoryDto {
+  budgetCycleId: string;
+  budgetName: string;
+  fiscalYear: number;
+  categories: {
+    category: string;
+    budgetAmount: number;
+    lineCount: number;
+  }[];
+  totalBudget: number;
 }
 
 export function mapBudgetCycleToResponse(
@@ -604,5 +617,189 @@ export class BudgetsService {
     }
 
     return mapBudgetCycleToResponse(updatedCycle);
+  }
+
+  async seedForecastFromBudget(
+    budgetCycleId: bigint,
+    companyId: bigint,
+    tenantId: bigint,
+    userId: bigint,
+  ): Promise<string> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const budgetCycle = await this.prisma.budgetCycle.findFirst({
+      where: { id: budgetCycleId, companyId },
+      include: { budgetLines: true },
+    });
+
+    if (!budgetCycle) {
+      throw new NotFoundException(
+        `Budget cycle with ID ${budgetCycleId} not found under this company`,
+      );
+    }
+
+    if (!budgetCycle.budgetLines || budgetCycle.budgetLines.length === 0) {
+      throw new BadRequestException(
+        'Budget cycle has no lines to seed forecast from',
+      );
+    }
+
+    const forecastCycle = await this.prisma.$transaction(async (tx) => {
+      const cycle = await tx.forecastCycle.create({
+        data: {
+          companyId,
+          name: `Forecast from ${budgetCycle.name}`,
+          fiscalYear: budgetCycle.fiscalYear,
+          basePeriod: new Date(budgetCycle.fiscalYear, 0, 1),
+          method: 'manual',
+          status: 'draft',
+          createdBy: userId,
+        },
+      });
+
+      await tx.forecastLine.createMany({
+        data: budgetCycle.budgetLines.map((line) => ({
+          forecastCycleId: cycle.id,
+          accountId: line.accountId,
+          siteId: line.siteId,
+          costCenterId: line.costCenterId,
+          productId: line.productId,
+          materialId: line.materialId,
+          customerId: line.customerId,
+          periodMonth: line.periodMonth,
+          quantity: line.quantity ?? 0,
+          unitPrice: line.unitPrice ?? 0,
+          amount: line.amount,
+          driverType: 'budget',
+          notes: `Seeded from budget cycle "${budgetCycle.name}"`,
+        })),
+      });
+
+      return cycle;
+    });
+
+    SimpleCache.clear();
+
+    return forecastCycle.id.toString();
+  }
+
+  async getBudgetByCostCategory(
+    budgetCycleId: bigint,
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<BudgetCostCategoryDto> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const cycle = await this.prisma.budgetCycle.findFirst({
+      where: { id: budgetCycleId, companyId },
+      include: { budgetLines: true },
+    });
+
+    if (!cycle) {
+      throw new NotFoundException(
+        `Budget cycle with ID ${budgetCycleId} not found under this company`,
+      );
+    }
+
+    const lines = cycle.budgetLines;
+
+    const accountIds = [...new Set(lines.map((l) => l.accountId))];
+    const materialIds = [...new Set(lines.filter((l) => l.materialId).map((l) => l.materialId!))];
+
+    const [accounts, materials] = await Promise.all([
+      this.prisma.account.findMany({
+        where: { id: { in: accountIds }, companyId },
+      }),
+      materialIds.length > 0
+        ? this.prisma.material.findMany({
+            where: { id: { in: materialIds }, companyId },
+          })
+        : [],
+    ]);
+
+    const accountMap = new Map(accounts.map((a) => [a.id, a]));
+    const materialMap = new Map(materials.map((m) => [m.id, m]));
+
+    const categoryAgg = new Map<string, { budgetAmount: number; lineCount: number }>();
+
+    for (const line of lines) {
+      const account = accountMap.get(line.accountId);
+      if (!account) continue;
+
+      let category = 'other';
+      const accType = account.type;
+      const accName = account.name.toLowerCase();
+
+      if (accType === 'revenue') {
+        category = 'revenue';
+      } else if (accType === 'cogs') {
+        if (line.materialId) {
+          const material = materialMap.get(line.materialId);
+          const matType = (material?.materialType ?? 'raw_material').toLowerCase();
+          if (['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(matType)) {
+            category = 'packaging';
+          } else {
+            category = 'raw_materials';
+          }
+        } else if (accName.includes('labor') || accName.includes('salary') || accName.includes('payroll')) {
+          category = 'labor';
+        } else if (accName.includes('utilit') || accName.includes('power') || accName.includes('water') || accName.includes('electricity')) {
+          category = 'utilities';
+        } else if (accName.includes('overhead') || accName.includes('indirect')) {
+          category = 'overhead';
+        } else if (accName.includes('freight') || accName.includes('shipping') || accName.includes('transport') || accName.includes('delivery')) {
+          category = 'freight';
+        } else {
+          category = 'raw_materials';
+        }
+      } else if (accType === 'expense') {
+        if (accName.includes('labor') || accName.includes('salary') || accName.includes('payroll')) {
+          category = 'labor';
+        } else if (accName.includes('utilit') || accName.includes('power') || accName.includes('water') || accName.includes('electricity')) {
+          category = 'utilities';
+        } else if (accName.includes('freight') || accName.includes('shipping') || accName.includes('transport') || accName.includes('delivery')) {
+          category = 'freight';
+        } else if (accName.includes('selling') || accName.includes('marketing') || accName.includes('advertising') || accName.includes('commission')) {
+          category = 'selling_expense';
+        } else if (accName.includes('overhead') || accName.includes('indirect') || accName.includes('depreciation') || accName.includes('rent')) {
+          category = 'overhead';
+        } else {
+          category = 'other';
+        }
+      } else {
+        category = 'other';
+      }
+
+      const amount = Number(line.amount);
+      let entry = categoryAgg.get(category);
+      if (!entry) {
+        entry = { budgetAmount: 0, lineCount: 0 };
+        categoryAgg.set(category, entry);
+      }
+      entry.budgetAmount += amount;
+      entry.lineCount += 1;
+    }
+
+    const categories: BudgetCostCategoryDto['categories'] = [];
+    let totalBudget = 0;
+
+    for (const [category, data] of categoryAgg) {
+      categories.push({
+        category,
+        budgetAmount: Number(data.budgetAmount.toFixed(2)),
+        lineCount: data.lineCount,
+      });
+      totalBudget += data.budgetAmount;
+    }
+
+    categories.sort((a, b) => Math.abs(b.budgetAmount) - Math.abs(a.budgetAmount));
+
+    return {
+      budgetCycleId: cycle.id.toString(),
+      budgetName: cycle.name,
+      fiscalYear: cycle.fiscalYear,
+      categories,
+      totalBudget: Number(totalBudget.toFixed(2)),
+    };
   }
 }

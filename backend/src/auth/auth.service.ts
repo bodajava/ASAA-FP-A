@@ -33,6 +33,17 @@ interface JwtPayload {
   tenantId: string;
 }
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${name}. ` +
+      `Set a strong random string (minimum 32 characters) before starting the server.`,
+    );
+  }
+  return value;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -100,14 +111,12 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET ?? 'super-secret-key-change-in-production',
+      secret: requireEnv('JWT_SECRET'),
       expiresIn: (process.env.JWT_ACCESS_EXPIRATION ?? '15m') as ms.StringValue,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret:
-        process.env.JWT_REFRESH_SECRET ??
-        'super-secret-refresh-key-change-in-production',
+      secret: requireEnv('JWT_REFRESH_SECRET'),
       expiresIn: (process.env.JWT_REFRESH_EXPIRATION ?? '7d') as ms.StringValue,
     });
 
@@ -141,9 +150,7 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
-        secret:
-          process.env.JWT_REFRESH_SECRET ??
-          'super-secret-refresh-key-change-in-production',
+        secret: requireEnv('JWT_REFRESH_SECRET'),
       });
 
       const userId = BigInt(payload.sub);
@@ -194,16 +201,13 @@ export class AuthService {
       };
 
       const newAccessToken = this.jwtService.sign(newPayload, {
-        secret:
-          process.env.JWT_SECRET ?? 'super-secret-key-change-in-production',
+        secret: requireEnv('JWT_SECRET'),
         expiresIn: (process.env.JWT_ACCESS_EXPIRATION ??
           '15m') as ms.StringValue,
       });
 
       const newRefreshToken = this.jwtService.sign(newPayload, {
-        secret:
-          process.env.JWT_REFRESH_SECRET ??
-          'super-secret-refresh-key-change-in-production',
+        secret: requireEnv('JWT_REFRESH_SECRET'),
         expiresIn: (process.env.JWT_REFRESH_EXPIRATION ??
           '7d') as ms.StringValue,
       });

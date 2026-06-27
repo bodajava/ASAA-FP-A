@@ -17,6 +17,7 @@ import { CreateActualImportDto } from './dto/create-actual-import.dto';
 import { UpdateActualImportDto } from './dto/update-actual-import.dto';
 import { PreviewActualImportDto } from './dto/preview-actual-import.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { SimpleCache } from '../common/utils/cache.util';
 
 export type QueryActualImport = ActualImport & {
   actualLines: ActualLine[];
@@ -134,61 +135,50 @@ export class ActualImportsService {
     }
   }
 
-  private async resolveEntityByCode(
-    modelName:
-      | 'account'
-      | 'site'
-      | 'costCenter'
-      | 'product'
-      | 'material'
-      | 'customer',
+  private buildEntityMaps(companyId: bigint) {
+    return Promise.all([
+      this.prisma.account.findMany({
+        where: { companyId },
+        select: { id: true, code: true },
+      }),
+      this.prisma.site.findMany({
+        where: { companyId },
+        select: { id: true, name: true },
+      }),
+      this.prisma.costCenter.findMany({
+        where: { companyId },
+        select: { id: true, code: true },
+      }),
+      this.prisma.product.findMany({
+        where: { companyId },
+        select: { id: true, sku: true },
+      }),
+      this.prisma.material.findMany({
+        where: { companyId },
+        select: { id: true, code: true },
+      }),
+      this.prisma.customer.findMany({
+        where: { companyId },
+        select: { id: true, code: true },
+      }),
+    ]).then(([accounts, sites, costCenters, products, materials, customers]) => ({
+      accounts: new Map(accounts.map((a) => [a.code, a.id])),
+      sites: new Map(sites.map((s) => [s.name, s.id])),
+      costCenters: new Map(costCenters.map((c) => [c.code ?? '', c.id])),
+      products: new Map(products.map((p) => [p.sku, p.id])),
+      materials: new Map(materials.map((m) => [m.code, m.id])),
+      customers: new Map(customers.map((c) => [c.code, c.id])),
+    }));
+  }
+
+  private resolveFromMap(
+    map: Map<string, bigint>,
     codeValue: string,
-    companyId: bigint,
-  ): Promise<bigint | null> {
+  ): bigint | null {
     if (!codeValue) return null;
     const cleanCode = codeValue.toString().trim();
     if (!cleanCode) return null;
-
-    switch (modelName) {
-      case 'account': {
-        const account = await this.prisma.account.findFirst({
-          where: { code: cleanCode, companyId },
-        });
-        return account ? account.id : null;
-      }
-      case 'site': {
-        const site = await this.prisma.site.findFirst({
-          where: { name: cleanCode, companyId },
-        });
-        return site ? site.id : null;
-      }
-      case 'costCenter': {
-        const cc = await this.prisma.costCenter.findFirst({
-          where: { code: cleanCode, companyId },
-        });
-        return cc ? cc.id : null;
-      }
-      case 'product': {
-        const product = await this.prisma.product.findFirst({
-          where: { sku: cleanCode, companyId },
-        });
-        return product ? product.id : null;
-      }
-      case 'material': {
-        const material = await this.prisma.material.findFirst({
-          where: { code: cleanCode, companyId },
-        });
-        return material ? material.id : null;
-      }
-      case 'customer': {
-        const customer = await this.prisma.customer.findFirst({
-          where: { code: cleanCode, companyId },
-        });
-        return customer ? customer.id : null;
-      }
-      default:
-        return null;
-    }
+    return map.get(cleanCode) ?? null;
   }
 
   private async validateLineReferences(
@@ -304,6 +294,9 @@ export class ActualImportsService {
     const config = JSON.parse(mapping.mappingConfig) as Record<string, string | undefined>;
     const results: MappedRowResult[] = [];
 
+    // Pre-load all entities for this company into maps (6 queries instead of N*6)
+    const maps = await this.buildEntityMaps(companyId);
+
     let rowIdx = 0;
     for (const row of rawRows) {
       const errors: string[] = [];
@@ -312,11 +305,7 @@ export class ActualImportsService {
       const accountCodeVal = accountCodeKey ? row[accountCodeKey] : undefined;
       let accountId: bigint | null = null;
       if (accountCodeVal !== undefined && accountCodeVal !== null) {
-        accountId = await this.resolveEntityByCode(
-          'account',
-          accountCodeVal.toString(),
-          companyId,
-        );
+        accountId = this.resolveFromMap(maps.accounts, accountCodeVal.toString());
         if (!accountId) {
           errors.push(
             `Account code "${accountCodeVal}" not found under this company`,
@@ -334,11 +323,7 @@ export class ActualImportsService {
         siteCodeVal !== null &&
         siteCodeVal !== ''
       ) {
-        siteId = await this.resolveEntityByCode(
-          'site',
-          siteCodeVal.toString(),
-          companyId,
-        );
+        siteId = this.resolveFromMap(maps.sites, siteCodeVal.toString());
         if (!siteId) {
           errors.push(
             `Site name "${siteCodeVal}" not found under this company`,
@@ -356,11 +341,7 @@ export class ActualImportsService {
         costCenterCodeVal !== null &&
         costCenterCodeVal !== ''
       ) {
-        costCenterId = await this.resolveEntityByCode(
-          'costCenter',
-          costCenterCodeVal.toString(),
-          companyId,
-        );
+        costCenterId = this.resolveFromMap(maps.costCenters, costCenterCodeVal.toString());
         if (!costCenterId) {
           errors.push(
             `Cost center code "${costCenterCodeVal}" not found under this company`,
@@ -376,11 +357,7 @@ export class ActualImportsService {
         productSkuVal !== null &&
         productSkuVal !== ''
       ) {
-        productId = await this.resolveEntityByCode(
-          'product',
-          productSkuVal.toString(),
-          companyId,
-        );
+        productId = this.resolveFromMap(maps.products, productSkuVal.toString());
         if (!productId) {
           errors.push(
             `Product SKU "${productSkuVal}" not found under this company`,
@@ -398,11 +375,7 @@ export class ActualImportsService {
         materialCodeVal !== null &&
         materialCodeVal !== ''
       ) {
-        materialId = await this.resolveEntityByCode(
-          'material',
-          materialCodeVal.toString(),
-          companyId,
-        );
+        materialId = this.resolveFromMap(maps.materials, materialCodeVal.toString());
         if (!materialId) {
           errors.push(
             `Material code "${materialCodeVal}" not found under this company`,
@@ -420,11 +393,7 @@ export class ActualImportsService {
         customerCodeVal !== null &&
         customerCodeVal !== ''
       ) {
-        customerId = await this.resolveEntityByCode(
-          'customer',
-          customerCodeVal.toString(),
-          companyId,
-        );
+        customerId = this.resolveFromMap(maps.customers, customerCodeVal.toString());
         if (!customerId) {
           errors.push(
             `Customer code "${customerCodeVal}" not found under this company`,
@@ -1066,6 +1035,8 @@ export class ActualImportsService {
         newValues: JSON.stringify(updatedImport),
       },
     });
+
+    SimpleCache.clear();
 
     return mapActualImportToResponse(updatedImport);
   }

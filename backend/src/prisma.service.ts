@@ -26,8 +26,9 @@ export class PrismaService
     if (!urlObj.searchParams.has('allowPublicKeyRetrieval')) {
       urlObj.searchParams.set('allowPublicKeyRetrieval', 'true');
     }
-    if (!urlObj.searchParams.has('connectionLimit')) {
-      urlObj.searchParams.set('connectionLimit', '10');
+    const currentLimit = parseInt(urlObj.searchParams.get('connectionLimit') || '10', 10);
+    if (currentLimit < 3) {
+      urlObj.searchParams.set('connectionLimit', '5');
     }
     url = urlObj.toString();
     console.log(

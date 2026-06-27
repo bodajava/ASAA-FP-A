@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateBomRecipeDto } from './dto/create-bom-recipe.dto';
 import { UpdateBomRecipeDto } from './dto/update-bom-recipe.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -57,6 +58,8 @@ export interface BomRecipeResponseDto {
     qtyPerOutput: number;
     unitCost: number;
     wastagePct: number;
+    yieldPct: number;
+    costCategory: string | null;
     material: {
       id: string;
       name: string;
@@ -79,11 +82,13 @@ export function mapRecipeToResponse(
     const unitCostNum = Number(line.unitCost);
     const price = unitCostNum > 0 ? unitCostNum : defaultPrice;
     const lineWastage = Number(line.wastagePct);
+    const lineYield = Number(line.yieldPct ?? 100);
     const qty = Number(line.qtyPerOutput);
 
     const lineCost = new Decimal(qty)
       .times(price)
-      .times(new Decimal(1).plus(new Decimal(lineWastage).div(100)));
+      .times(new Decimal(1).plus(new Decimal(lineWastage).div(100)))
+      .div(new Decimal(lineYield).div(100));
     totalMaterialCost = totalMaterialCost.plus(lineCost);
 
     return {
@@ -92,6 +97,8 @@ export function mapRecipeToResponse(
       qtyPerOutput: qty,
       unitCost: unitCostNum,
       wastagePct: lineWastage,
+      yieldPct: lineYield,
+      costCategory: line.costCategory,
       material: {
         id: line.material.id.toString(),
         name: line.material.name,
@@ -140,19 +147,10 @@ export function mapRecipeToResponse(
 
 @Injectable()
 export class BomRecipesService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ) {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException(`Company not found under this tenant`);
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   async create(
     createDto: CreateBomRecipeDto,
@@ -160,7 +158,7 @@ export class BomRecipesService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<BomRecipeResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     // Validate that product belongs to the active company
     const product = await this.prisma.product.findFirst({
@@ -211,6 +209,8 @@ export class BomRecipesService {
             qtyPerOutput: line.qtyPerOutput,
             unitCost: line.unitCost ?? 0,
             wastagePct: line.wastagePct ?? 0,
+            yieldPct: line.yieldPct ?? 100.0,
+            costCategory: line.costCategory ?? null,
           })),
         });
       }
@@ -267,7 +267,7 @@ export class BomRecipesService {
     tenantId: bigint,
     paginationDto: PaginationDto,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const page = paginationDto.page ?? 1;
     const limit = paginationDto.limit ?? 10;
@@ -338,7 +338,7 @@ export class BomRecipesService {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<BomRecipeResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const recipe = await this.prisma.bomRecipe.findFirst({
       where: { id, companyId },
@@ -381,7 +381,7 @@ export class BomRecipesService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<BomRecipeResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     // Check if recipe exists and belongs to active company
     const oldRecipe = await this.prisma.bomRecipe.findFirst({
@@ -473,6 +473,8 @@ export class BomRecipesService {
               qtyPerOutput: line.qtyPerOutput,
               unitCost: line.unitCost ?? 0,
               wastagePct: line.wastagePct ?? 0,
+              yieldPct: line.yieldPct ?? 100.0,
+              costCategory: line.costCategory ?? null,
             })),
           });
         }

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -100,4 +101,20 @@ export class CreateCompanyDto {
   @IsString({ message: 'Company code must be a string' })
   @IsOptional()
   code?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether to create default measurement units',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  createDefaultUnits?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether to create default chart of accounts',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  createDefaultAccounts?: boolean;
 }

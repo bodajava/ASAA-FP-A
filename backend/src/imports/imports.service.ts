@@ -5,9 +5,12 @@ import * as XLSX from 'xlsx';
 import { parse as csvParse } from 'csv-parse/sync';
 import { SimpleCache } from '../common/utils/cache.util';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RowData = any;
+
 export interface RowPreviewResult {
   index: number;
-  data: Record<string, any>;
+  data: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   isValid: boolean;
   errors: string[];
 }
@@ -16,8 +19,8 @@ export interface RowPreviewResult {
 export class ImportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private normalizeKeys(row: Record<string, any>): Record<string, any> {
-    const normalized: Record<string, any> = {};
+  private normalizeKeys(row: RowData): RowData {
+    const normalized: RowData = {};
     for (const key of Object.keys(row)) {
       const cleanKey = key
         .replace(/\s+/g, '')
@@ -65,9 +68,63 @@ export class ImportsService {
       case 'actuallines':
       case 'actual-lines':
         return 'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo\n4000,Cairo HQ,CC-MKT,PROD-JUICE,,,2025-01-15,950,15,14250,TX-99812';
+      case 'materialprices':
+      case 'material-prices':
+        return 'materialCode,price,effectiveDate,notes\nMAT-SUGAR,32.50,2025-06-01,June price update';
+      case 'packagingprices':
+      case 'packaging-prices':
+        return 'materialCode,price,effectiveDate,notes\nMAT-BOTTLE,5.75,2025-06-01,New packaging supplier rate';
+      case 'productionallocations':
+      case 'production-allocations':
+        return 'siteCode,period,allocatedAmount,allocationBasis,notes\nCairo HQ,2026-06,15000,production_volume,June production allocation';
+      case 'yieldwaste':
+      case 'yield-waste':
+        return 'productSku,yieldPct,wastagePct,notes\nPROD-JUICE,92.5,7.5,Yield improved after recipe update';
       default:
         throw new BadRequestException(`Unknown module template: ${module}`);
     }
+  }
+
+  generateErrorCsv(
+    rows: Array<{
+      index: number;
+      data: Record<string, unknown>;
+      isValid: boolean;
+      errors: string[];
+    }>,
+    module: string,
+    type: 'errors' | 'skipped',
+  ): string {
+    const filtered =
+      type === 'errors'
+        ? rows.filter((r) => !r.isValid)
+        : rows.filter((r) => r.isValid);
+
+    if (filtered.length === 0) return '';
+
+    const allKeys = new Set<string>();
+    for (const row of filtered) {
+      for (const key of Object.keys(row.data)) {
+        allKeys.add(key);
+      }
+    }
+    const columns = Array.from(allKeys);
+
+    const header = ['Row', ...columns, 'Errors'].join(',');
+    const lines = filtered.map((row) => {
+      const values = columns.map((col) => {
+        const val = row.data[col];
+        if (val == null) return '';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      });
+      return [row.index, ...values, row.errors.join('; ')].join(',');
+    });
+
+    return [header, ...lines].join('\n');
   }
 
   async preview(
@@ -77,7 +134,7 @@ export class ImportsService {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<RowPreviewResult[]> {
-    let rawRows: any[] = [];
+    let rawRows: RowData[] = [];
     const isCsv = fileName.toLowerCase().endsWith('.csv');
 
     try {
@@ -94,8 +151,9 @@ export class ImportsService {
         const sheet = workbook.Sheets[sheetName];
         rawRows = XLSX.utils.sheet_to_json(sheet);
       }
-    } catch (err: any) {
-      throw new BadRequestException(`Failed to parse file: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new BadRequestException(`Failed to parse file: ${message}`);
     }
 
     const results: RowPreviewResult[] = [];
@@ -121,7 +179,7 @@ export class ImportsService {
 
   private async validateRow(
     module: string,
-    row: Record<string, any>,
+    row: RowData,
     companyId: bigint,
     tenantId: bigint,
     errors: string[],
@@ -539,6 +597,69 @@ export class ImportsService {
         }
         break;
       }
+      case 'materialprices': {
+        if (!row.materialcode) errors.push('Material Code is required.');
+        if (!row.price) errors.push('Price is required.');
+        else if (isNaN(Number(row.price)))
+          errors.push('Price must be a number.');
+        if (row.materialcode && companyId) {
+          const mat = await this.prisma.material.findFirst({
+            where: { code: String(row.materialcode).trim(), companyId },
+          });
+          if (!mat)
+            errors.push(`Material Code "${row.materialcode}" does not exist.`);
+        }
+        break;
+      }
+      case 'packagingprices': {
+        if (!row.materialcode) errors.push('Material Code is required.');
+        if (!row.price) errors.push('Price is required.');
+        else if (isNaN(Number(row.price)))
+          errors.push('Price must be a number.');
+        if (row.materialcode && companyId) {
+          const mat = await this.prisma.material.findFirst({
+            where: { code: String(row.materialcode).trim(), companyId },
+          });
+          if (!mat)
+            errors.push(`Material Code "${row.materialcode}" does not exist.`);
+        }
+        break;
+      }
+      case 'productionallocations': {
+        if (!row.sitecode) errors.push('Site Code is required.');
+        if (!row.period) errors.push('Period is required.');
+        if (!row.allocatedamount) errors.push('Allocated Amount is required.');
+        else if (isNaN(Number(row.allocatedamount)))
+          errors.push('Allocated Amount must be a number.');
+        if (row.sitecode && companyId) {
+          const site = await this.prisma.site.findFirst({
+            where: { name: String(row.sitecode).trim(), companyId },
+          });
+          if (!site) errors.push(`Site "${row.sitecode}" does not exist.`);
+        }
+        break;
+      }
+      case 'yieldwaste': {
+        if (!row.productsku) errors.push('Product SKU is required.');
+        if (row.yieldpct !== undefined && row.yieldpct !== '') {
+          const y = Number(row.yieldpct);
+          if (isNaN(y) || y < 0 || y > 100)
+            errors.push('Yield % must be a number between 0 and 100.');
+        }
+        if (row.wastagepct !== undefined && row.wastagepct !== '') {
+          const w = Number(row.wastagepct);
+          if (isNaN(w) || w < 0 || w > 100)
+            errors.push('Wastage % must be a number between 0 and 100.');
+        }
+        if (row.productsku && companyId) {
+          const prod = await this.prisma.product.findFirst({
+            where: { sku: String(row.productsku).trim(), companyId },
+          });
+          if (!prod)
+            errors.push(`Product SKU "${row.productsku}" does not exist.`);
+        }
+        break;
+      }
       default:
         break;
     }
@@ -546,12 +667,12 @@ export class ImportsService {
 
   async commit(
     module: string,
-    rows: any[],
+    rows: RowData[],
     companyId: bigint,
     tenantId: bigint,
     userId: bigint,
   ): Promise<{ successCount: number; failCount: number }> {
-    const validRows: any[] = [];
+    const validRows: RowData[] = [];
     let failCount = 0;
 
     for (const rawRow of rows) {
@@ -1047,6 +1168,105 @@ export class ImportsService {
                   : null,
               },
             });
+            break;
+          }
+          case 'materialprices': {
+            const material = await tx.material.findFirst({
+              where: { code: String(row.materialcode).trim(), companyId },
+            });
+            if (!material) break;
+
+            const effectiveDate = row.effectivedate
+              ? new Date(String(row.effectivedate))
+              : new Date();
+
+            await tx.material.update({
+              where: { id: material.id },
+              data: { purchasePrice: Number(row.price) },
+            });
+
+            await tx.rawMaterialPrice.create({
+              data: {
+                companyId,
+                materialId: material.id,
+                price: Number(row.price),
+                priceDate: effectiveDate,
+              },
+            });
+            break;
+          }
+          case 'packagingprices': {
+            const material = await tx.material.findFirst({
+              where: { code: String(row.materialcode).trim(), companyId },
+            });
+            if (!material) break;
+
+            const effectiveDate = row.effectivedate
+              ? new Date(String(row.effectivedate))
+              : new Date();
+
+            await tx.material.update({
+              where: { id: material.id },
+              data: { purchasePrice: Number(row.price) },
+            });
+
+            await tx.rawMaterialPrice.create({
+              data: {
+                companyId,
+                materialId: material.id,
+                price: Number(row.price),
+                priceDate: effectiveDate,
+              },
+            });
+            break;
+          }
+          case 'productionallocations': {
+            const site = await tx.site.findFirst({
+              where: { name: String(row.sitecode).trim(), companyId },
+            });
+            if (!site) break;
+
+            await tx.productionCostAllocation.create({
+              data: {
+                companyId,
+                siteId: site.id,
+                period: String(row.period).trim(),
+                allocatedAmount: Number(row.allocatedamount),
+                costCategory: row.costcategory
+                  ? String(row.costcategory).trim()
+                  : 'overhead',
+                allocationMethod: row.allocationbasis
+                  ? String(row.allocationbasis).trim()
+                  : 'production_volume',
+              },
+            });
+            break;
+          }
+          case 'yieldwaste': {
+            const product = await tx.product.findFirst({
+              where: { sku: String(row.productsku).trim(), companyId },
+            });
+            if (!product) break;
+
+            const recipe = await tx.bomRecipe.findFirst({
+              where: { productId: product.id, companyId, isActive: true },
+            });
+            if (!recipe) break;
+
+            const updateData: Record<string, unknown> = {};
+            if (row.yieldpct !== undefined && row.yieldpct !== '') {
+              updateData.yieldPct = Number(row.yieldpct);
+            }
+            if (row.wastagepct !== undefined && row.wastagepct !== '') {
+              updateData.wastagePct = Number(row.wastagepct);
+            }
+
+            if (Object.keys(updateData).length > 0) {
+              await tx.bomRecipe.update({
+                where: { id: recipe.id },
+                data: updateData,
+              });
+            }
             break;
           }
           default:

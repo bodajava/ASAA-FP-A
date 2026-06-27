@@ -9,6 +9,14 @@ interface JwtPayload {
   tenantId: string;
 }
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error(
+    'Missing required environment variable: JWT_SECRET. ' +
+    'Set a strong random string (minimum 32 characters) before starting the server.',
+  );
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly prisma: PrismaService) {
@@ -23,8 +31,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey:
-        process.env.JWT_SECRET ?? 'super-secret-key-change-in-production',
+      secretOrKey: jwtSecret!,
     });
   }
 

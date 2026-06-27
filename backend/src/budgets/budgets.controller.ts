@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -145,6 +146,19 @@ export class BudgetsController {
       req.user.tenantId,
       req.user.id,
     );
+  }
+
+  @Get('by-cost-category/:id')
+  @ApiOperation({ summary: 'Get budget lines grouped by cost category' })
+  async getBudgetByCostCategory(
+    @Param('id') id: string,
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ) {
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException('Budget ID must be a numeric string');
+    }
+    return this.budgetsService.getBudgetByCostCategory(BigInt(id), companyId, req.user.tenantId);
   }
 
   @Patch(':id/status')

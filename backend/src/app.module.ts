@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma.module';
@@ -40,10 +41,17 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { RawMaterialPricesModule } from './raw-material-prices/raw-material-prices.module';
 import { UsersModule } from './users/users.module';
 import { PlansModule } from './plans/plans.module';
+import { CostingModule } from './costing/costing.module';
+import { ExcelIntegrationModule } from './excel-integration/excel-integration.module';
+import { BenchmarkController } from './common/controllers/benchmark.controller';
+import { BenchmarkService } from './common/services/benchmark.service';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     PrismaModule,
+    CommonModule,
     AuthModule,
     TenantsModule,
     CompaniesModule,
@@ -79,11 +87,15 @@ import { PlansModule } from './plans/plans.module';
     RawMaterialPricesModule,
     UsersModule,
     PlansModule,
+    CostingModule,
+    ExcelIntegrationModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, BenchmarkController],
   providers: [
     AppService,
+    BenchmarkService,
     { provide: APP_INTERCEPTOR, useClass: ClearCacheInterceptor },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule implements NestModule {

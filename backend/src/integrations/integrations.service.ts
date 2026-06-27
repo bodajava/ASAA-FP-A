@@ -16,6 +16,7 @@ import {
 
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateConnectionDto } from './dto/create-connection.dto';
 import { UpdateConnectionDto } from './dto/update-connection.dto';
 import { CreateMappingDto } from './dto/create-mapping.dto';
@@ -88,23 +89,12 @@ export class IntegrationsService implements OnApplicationBootstrap {
     private readonly prisma: PrismaService,
     private readonly actualImportsService: ActualImportsService,
     private readonly notificationsService: NotificationsService,
+    private readonly tenantService: TenantService,
   ) {
     console.log('IntegrationsService constructor called!');
     console.log('prisma param:', prisma);
     console.log('actualImportsService param:', actualImportsService);
     console.log('notificationsService param:', notificationsService);
-  }
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ): Promise<void> {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException(`Company not found under this tenant`);
-    }
   }
 
   private validateMappingConfig(config: Record<string, any>): void {
@@ -195,7 +185,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<any[]> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id: connectionId, companyId },
@@ -275,7 +265,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<any[]> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id: connectionId, companyId },
@@ -369,7 +359,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<any[]> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id: connectionId, companyId },
@@ -1108,7 +1098,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<ConnectionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const passwordEnc = dto.password ? encrypt(dto.password) : null;
     const apiKeyEnc = dto.apiKey ? encrypt(dto.apiKey) : null;
@@ -1152,7 +1142,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     paginationDto: PaginationDto,
   ): Promise<{ total: number; data: ConnectionResponseDto[] }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const whereClause: Prisma.IntegrationConnectionWhereInput = {
       companyId,
@@ -1190,7 +1180,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<ConnectionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id, companyId },
@@ -1212,7 +1202,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<ConnectionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id, companyId },
@@ -1278,7 +1268,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<ConnectionResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id, companyId },
@@ -1318,7 +1308,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<MappingResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
     this.validateMappingConfig(dto.mappingConfig);
 
     let connectionId: bigint | null = null;
@@ -1368,7 +1358,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     paginationDto: PaginationDto,
   ): Promise<{ total: number; data: MappingResponseDto[] }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const whereClause: Prisma.ImportMappingWhereInput = {
       companyId,
@@ -1406,7 +1396,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<MappingResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const mapping = await this.prisma.importMapping.findFirst({
       where: { id, companyId },
@@ -1428,7 +1418,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<MappingResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const mapping = await this.prisma.importMapping.findFirst({
       where: { id, companyId },
@@ -1498,7 +1488,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<MappingResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const mapping = await this.prisma.importMapping.findFirst({
       where: { id, companyId },
@@ -2716,7 +2706,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     userId: bigint,
   ): Promise<{ success: boolean; message: string }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     let connectionType = dto.connectionType;
     let host = dto.host;
@@ -2931,7 +2921,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     recordsSynced: number;
     message: string;
   }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const mappingId = BigInt(dto.mappingId);
     const mapping = await this.prisma.importMapping.findFirst({
@@ -3802,7 +3792,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<{ success: boolean; message: string }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const connection = await this.prisma.integrationConnection.findFirst({
       where: { id: connectionId, companyId },

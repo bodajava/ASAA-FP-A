@@ -17,6 +17,8 @@ import { CreateForecastCycleDto } from './dto/create-forecast-cycle.dto';
 import { UpdateForecastCycleDto } from './dto/update-forecast-cycle.dto';
 import { UpdateForecastStatusDto } from './dto/update-forecast-status.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { CostingService } from '../costing/costing.service';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 export type QueryForecastCycle = ForecastCycle & {
   forecastLines: ForecastLine[];
@@ -56,6 +58,29 @@ export interface ForecastCycleResponseDto {
   createdAt: Date | null;
   updatedAt: Date | null;
   forecastLines?: ForecastLineResponseDto[];
+}
+
+export interface ForecastCostingSummaryDto {
+  forecastCycleId: string;
+  forecastName: string;
+  fiscalYear: number;
+  productCostSummaries: {
+    productId: string;
+    productName: string;
+    sku: string;
+    forecastedRevenue: number;
+    forecastedCogs: number;
+    forecastedGrossProfit: number;
+    forecastedGrossMarginPct: number;
+    standardCostPerUnit: number;
+    forecastedQuantity: number;
+  }[];
+  totals: {
+    totalForecastedRevenue: number;
+    totalForecastedCogs: number;
+    totalForecastedGrossProfit: number;
+    overallGrossMarginPct: number;
+  };
 }
 
 export function mapForecastCycleToResponse(
@@ -112,6 +137,8 @@ export class ForecastsService {
     private readonly prisma: PrismaService,
     private readonly forecastEngine: ForecastEngineService,
     private readonly notificationsService: NotificationsService,
+    private readonly costingService: CostingService,
+    private readonly exchangeRatesService: ExchangeRatesService,
   ) {}
 
   private async ensureCompanyBelongsToTenant(
@@ -685,30 +712,34 @@ export class ForecastsService {
       include: { budgetLines: true },
     });
 
-    // 3. Fetch all actual lines for this company and year from posted actual imports
-    const actualLines = await this.prisma.actualLine.findMany({
-      where: {
-        actualImport: {
-          companyId,
-          status: 'posted',
-        },
-        transactionDate: {
-          gte: new Date(fiscalYear, 0, 1),
-          lte: new Date(fiscalYear, 11, 31),
-        },
-      },
-      include: { account: true },
-    });
+    // 3. Aggregate actual lines by account+month using SQL instead of loading all rows
+    const dateFrom = new Date(fiscalYear, 0, 1);
+    const dateTo = new Date(fiscalYear, 11, 31);
 
-    // Group actual lines by account + month
+    const actualsAggregated = await this.prisma.$queryRaw<
+      { account_id: bigint; month: number; total_qty: unknown; total_amount: unknown }[]
+    >`
+      SELECT
+        al.account_id,
+        MONTH(al.transaction_date) AS month,
+        SUM(COALESCE(al.quantity, 0)) AS total_qty,
+        SUM(COALESCE(al.amount, 0)) AS total_amount
+      FROM actual_lines al
+      INNER JOIN actual_imports ai ON al.actual_import_id = ai.id
+      WHERE ai.company_id = ${companyId}
+        AND ai.status = 'posted'
+        AND al.transaction_date >= ${dateFrom}
+        AND al.transaction_date <= ${dateTo}
+      GROUP BY al.account_id, MONTH(al.transaction_date)
+    `;
+
+    // Build actualsMap from aggregated SQL results
     const actualsMap = new Map<string, { qty: number; amount: number }>();
-    for (const line of actualLines) {
-      const month = new Date(line.transactionDate).getMonth() + 1;
-      const key = `${line.accountId}:${month}`;
-      const existing = actualsMap.get(key) || { qty: 0, amount: 0 };
+    for (const row of actualsAggregated) {
+      const key = `${row.account_id}:${row.month}`;
       actualsMap.set(key, {
-        qty: existing.qty + Number(line.quantity ?? 0),
-        amount: existing.amount + Number(line.amount),
+        qty: Number(row.total_qty),
+        amount: Number(row.total_amount),
       });
     }
 
@@ -750,7 +781,7 @@ export class ForecastsService {
     let monthlyInflation = 0;
     if (cycle.scenario && cycle.scenario.assumptionsJson) {
       const assumptions = cycle.scenario.assumptionsJson
-        ? (JSON.parse(cycle.scenario.assumptionsJson) as Record<string, any>)
+        ? (JSON.parse(cycle.scenario.assumptionsJson) as Record<string, string | number | boolean>)
         : {};
       revenueGrowth = Number(
         assumptions['sales_volume_growth'] ??
@@ -783,14 +814,26 @@ export class ForecastsService {
 
     const forecastLinesData: Prisma.ForecastLineCreateManyInput[] = [];
 
-    // Gather historical data per account for smart methods
+    // Build historical data from aggregated actuals for smart methods
     const historicalMonthlyMap = new Map<
       string,
       { year: number; month: number; amount: number }[]
     >();
-    for (const line of actualLines) {
-      const dt = new Date(line.transactionDate);
-      const key = line.accountId.toString();
+    // Re-fetch actual line details only for historical analysis (needed for time-series)
+    const actualLineDetails = await this.prisma.$queryRaw<
+      { account_id: bigint; transaction_date: Date; amount: unknown }[]
+    >`
+      SELECT al.account_id, al.transaction_date, COALESCE(al.amount, 0) AS amount
+      FROM actual_lines al
+      INNER JOIN actual_imports ai ON al.actual_import_id = ai.id
+      WHERE ai.company_id = ${companyId}
+        AND ai.status = 'posted'
+        AND al.transaction_date >= ${dateFrom}
+        AND al.transaction_date <= ${dateTo}
+    `;
+    for (const line of actualLineDetails) {
+      const dt = new Date(line.transaction_date);
+      const key = line.account_id.toString();
       if (!historicalMonthlyMap.has(key)) historicalMonthlyMap.set(key, []);
       historicalMonthlyMap.get(key)!.push({
         year: dt.getFullYear(),
@@ -840,6 +883,39 @@ export class ForecastsService {
             productId = budget.productId;
             materialId = budget.materialId;
             customerId = budget.customerId;
+          }
+
+          if (productId) {
+            const scenarioAssumptions = cycle.scenario?.assumptionsJson
+              ? JSON.parse(cycle.scenario.assumptionsJson)
+              : undefined;
+            const costing = await this.costingService.calculateStandardCost(
+              productId,
+              companyId,
+              tenantId,
+              undefined,
+              scenarioAssumptions,
+            );
+
+            const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+            const companyCurrency = company?.currencyCode ?? 'EGP';
+
+            if (acc.type === 'cogs') {
+              unitPrice = costing.totalCost;
+            } else if (acc.type === 'revenue') {
+              unitPrice = costing.sellingPrice;
+            }
+
+            if (scenarioAssumptions && scenarioAssumptions.subtype === 'currency_rate_change') {
+              const fromCurrency = (scenarioAssumptions.fromCurrency as string) || 'USD';
+              const toCurrency = (scenarioAssumptions.toCurrency as string) || companyCurrency;
+              const liveRate = await this.exchangeRatesService.getRate(companyId, fromCurrency, toCurrency);
+              const oldRate = scenarioAssumptions.oldRate ? Number(scenarioAssumptions.oldRate) : 1;
+              const rateMultiplier = oldRate > 0 ? liveRate / oldRate : 1;
+              unitPrice = unitPrice * rateMultiplier;
+            }
+
+            amount = qty * unitPrice;
           }
 
           if (cycle.method === ForecastMethod.rolling) {
@@ -1152,5 +1228,124 @@ export class ForecastsService {
     }));
 
     return { total, data };
+  }
+
+  async getForecastCostingSummary(
+    forecastCycleId: bigint,
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<ForecastCostingSummaryDto> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const cycle = await this.prisma.forecastCycle.findFirst({
+      where: { id: forecastCycleId, companyId },
+      include: { forecastLines: true },
+    });
+
+    if (!cycle) {
+      throw new NotFoundException(
+        `Forecast cycle with ID ${forecastCycleId} not found under this company`,
+      );
+    }
+
+    const lines = cycle.forecastLines;
+
+    const productLineMap = new Map<
+      bigint,
+      { totalRevenue: number; totalCogs: number; totalQuantity: number }
+    >();
+
+    const accountIds = [...new Set(lines.map((l) => l.accountId))];
+    const accounts = await this.prisma.account.findMany({
+      where: { id: { in: accountIds }, companyId },
+    });
+    const accountTypeMap = new Map(accounts.map((a) => [a.id, a.type]));
+
+    const productIds = [...new Set(lines.filter((l) => l.productId).map((l) => l.productId!))];
+    const products = productIds.length > 0
+      ? await this.prisma.product.findMany({
+          where: { id: { in: productIds }, companyId },
+        })
+      : [];
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    for (const line of lines) {
+      if (!line.productId) continue;
+
+      const accType = accountTypeMap.get(line.accountId);
+      const amount = Number(line.amount);
+      const qty = line.quantity ? Number(line.quantity) : 0;
+
+      let entry = productLineMap.get(line.productId);
+      if (!entry) {
+        entry = { totalRevenue: 0, totalCogs: 0, totalQuantity: 0 };
+        productLineMap.set(line.productId, entry);
+      }
+
+      if (accType === 'revenue') {
+        entry.totalRevenue += amount;
+      } else if (accType === 'cogs') {
+        entry.totalCogs += amount;
+      }
+      entry.totalQuantity += qty;
+    }
+
+    const productCostSummaries: ForecastCostingSummaryDto['productCostSummaries'] = [];
+
+    for (const [productId, lineData] of productLineMap) {
+      const product = productMap.get(productId);
+      if (!product) continue;
+
+      let standardCostPerUnit = 0;
+      try {
+        const costing = await this.costingService.calculateStandardCost(
+          productId,
+          companyId,
+          tenantId,
+        );
+        standardCostPerUnit = costing.totalCost;
+      } catch {
+        standardCostPerUnit = 0;
+      }
+
+      const forecastedRevenue = lineData.totalRevenue;
+      const forecastedCogs = lineData.totalCogs;
+      const forecastedGrossProfit = forecastedRevenue - forecastedCogs;
+      const forecastedGrossMarginPct = forecastedRevenue > 0
+        ? (forecastedGrossProfit / forecastedRevenue) * 100
+        : 0;
+
+      productCostSummaries.push({
+        productId: product.id.toString(),
+        productName: product.name,
+        sku: product.sku,
+        forecastedRevenue: Number(forecastedRevenue.toFixed(2)),
+        forecastedCogs: Number(forecastedCogs.toFixed(2)),
+        forecastedGrossProfit: Number(forecastedGrossProfit.toFixed(2)),
+        forecastedGrossMarginPct: Number(forecastedGrossMarginPct.toFixed(2)),
+        standardCostPerUnit,
+        forecastedQuantity: lineData.totalQuantity,
+      });
+    }
+
+    const totalForecastedRevenue = productCostSummaries.reduce((s, p) => s + p.forecastedRevenue, 0);
+    const totalForecastedCogs = productCostSummaries.reduce((s, p) => s + p.forecastedCogs, 0);
+    const totalForecastedGrossProfit = totalForecastedRevenue - totalForecastedCogs;
+    const overallGrossMarginPct = totalForecastedRevenue > 0
+      ? (totalForecastedGrossProfit / totalForecastedRevenue) * 100
+      : 0;
+
+    return {
+      forecastCycleId: cycle.id.toString(),
+      forecastName: cycle.name,
+      fiscalYear: cycle.fiscalYear,
+      productCostSummaries,
+      totals: {
+        totalForecastedRevenue: Number(totalForecastedRevenue.toFixed(2)),
+        totalForecastedCogs: Number(totalForecastedCogs.toFixed(2)),
+        totalForecastedGrossProfit: Number(totalForecastedGrossProfit.toFixed(2)),
+        overallGrossMarginPct: Number(overallGrossMarginPct.toFixed(2)),
+      },
+    };
   }
 }

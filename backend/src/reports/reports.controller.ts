@@ -36,6 +36,8 @@ import {
   CashFlowForecastReportDto,
   ExportResultDto,
   PaginatedReportResponseDto,
+  PnLCostingReportDto,
+  YearComparisonResponseDto,
 } from './dto/report-response.dto';
 import { ReportMetaResponseDto } from './dto/report-meta-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -310,6 +312,42 @@ export class ReportsController {
       req.user.tenantId,
       queryDto,
     );
+  }
+
+  @Get('pnl-costing')
+  @ApiOperation({ summary: 'P&L report using real costing engine data' })
+  @ApiResponse({ status: 200, type: PnLCostingReportDto })
+  getPnLWithCosting(
+    @CompanyId() companyId: bigint,
+    @Query() queryDto: ReportQueryDto,
+    @Request() req: RequestWithUser,
+  ): Promise<PnLCostingReportDto> {
+    return this.reportsService.getPnLWithCosting(companyId, req.user.tenantId, {
+      fiscalYear: queryDto.fiscal_year ?? new Date().getFullYear(),
+      periodMonth: queryDto.period_month,
+      siteId: queryDto.site_id,
+    });
+  }
+
+  @Get('year-comparison')
+  @ApiOperation({ summary: 'Year-over-year comparison: current year vs previous year with variance analysis' })
+  @ApiResponse({ status: 200, type: YearComparisonResponseDto })
+  getYearComparison(
+    @CompanyId() companyId: bigint,
+    @Query('currentYear') currentYear: string,
+    @Query('previousYear') previousYear: string,
+    @Query('siteId') siteId: string,
+    @Query('productId') productId: string,
+    @Query('customerId') customerId: string,
+    @Request() req: RequestWithUser,
+  ): Promise<YearComparisonResponseDto> {
+    return this.reportsService.getYearComparison(companyId, req.user.tenantId, {
+      currentYear: currentYear ? Number(currentYear) : new Date().getFullYear(),
+      previousYear: previousYear ? Number(previousYear) : undefined,
+      siteId: siteId || undefined,
+      productId: productId || undefined,
+      customerId: customerId || undefined,
+    });
   }
 
   @Get('export/:reportType')

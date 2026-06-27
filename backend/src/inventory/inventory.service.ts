@@ -114,7 +114,6 @@ export class InventoryService {
   }
 
   async getCoverageDays(companyId: bigint, siteId?: number) {
-    // 1. Get latest inventory snapshot for each item
     const whereConditions: Prisma.Sql[] = [
       Prisma.sql`company_id = ${companyId}`,
     ];
@@ -124,7 +123,7 @@ export class InventoryService {
     const whereClause = Prisma.join(whereConditions, ' AND ');
 
     const latestSnapshots = await this.prisma.$queryRaw<any[]>`
-      SELECT s1.*
+      SELECT s1.*, s2.max_date
       FROM inventory_snapshots s1
       INNER JOIN (
         SELECT company_id, site_id, product_id, material_id, MAX(snapshot_date) as max_date
@@ -139,7 +138,8 @@ export class InventoryService {
       AND s1.snapshot_date = s2.max_date
     `;
 
-    // 2. Fetch daily sales/usage rates from Actual Lines over last 90 days
+    if (latestSnapshots.length === 0) return [];
+
     const dateLimit = new Date();
     dateLimit.setDate(dateLimit.getDate() - 90);
 
@@ -180,7 +180,42 @@ export class InventoryService {
       }
     }
 
-    // Resolve site, product, material details
+    // Collect unique IDs for batch resolution
+    const productIds = new Set<bigint>();
+    const materialIds = new Set<bigint>();
+    const siteIds = new Set<bigint>();
+    for (const row of latestSnapshots) {
+      if (row.product_id) productIds.add(row.product_id);
+      else if (row.material_id) materialIds.add(row.material_id);
+      siteIds.add(row.site_id);
+    }
+
+    // Batch-fetch all entities to avoid N+1
+    const [products, materials, sites] = await Promise.all([
+      productIds.size > 0
+        ? this.prisma.product.findMany({
+            where: { id: { in: Array.from(productIds) } },
+            select: { id: true, name: true, sku: true },
+          })
+        : [],
+      materialIds.size > 0
+        ? this.prisma.material.findMany({
+            where: { id: { in: Array.from(materialIds) } },
+            select: { id: true, name: true, code: true },
+          })
+        : [],
+      siteIds.size > 0
+        ? this.prisma.site.findMany({
+            where: { id: { in: Array.from(siteIds) } },
+            select: { id: true, name: true },
+          })
+        : [],
+    ]);
+
+    const productMap = new Map(products.map((p) => [p.id.toString(), p]));
+    const materialMap = new Map(materials.map((m) => [m.id.toString(), m]));
+    const siteMap = new Map(sites.map((s) => [s.id.toString(), s]));
+
     const resolvedSnapshots = [];
     for (const row of latestSnapshots) {
       const isProduct = !!row.product_id;
@@ -193,28 +228,20 @@ export class InventoryService {
       let codeOrSku = '';
 
       if (isProduct) {
-        rate = salesRateMap.get(itemId) ?? 0.1; // fallback to avoid division by zero
-        const prod = await this.prisma.product.findUnique({
-          where: { id: row.product_id },
-        });
+        rate = salesRateMap.get(itemId) ?? 0.1;
+        const prod = productMap.get(itemId);
         name = prod?.name ?? 'Unknown Product';
         codeOrSku = prod?.sku ?? '';
       } else {
         rate = consumptionRateMap.get(itemId) ?? 0.1;
-        const mat = await this.prisma.material.findUnique({
-          where: { id: row.material_id },
-        });
+        const mat = materialMap.get(itemId);
         name = mat?.name ?? 'Unknown Material';
         codeOrSku = mat?.code ?? '';
       }
 
       const qty = this.n(row.qty_on_hand);
       const coverageDays = rate > 0 ? qty / rate : 999;
-
-      const site = await this.prisma.site.findUnique({
-        where: { id: row.site_id },
-        select: { name: true },
-      });
+      const site = siteMap.get(row.site_id.toString());
 
       resolvedSnapshots.push({
         id: row.id.toString(),

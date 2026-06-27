@@ -15,6 +15,9 @@ import {
 import { PaginationDto } from '../common/dto/pagination.dto';
 import Decimal from 'decimal.js';
 
+type DecimalValue = InstanceType<typeof Decimal>;
+import { CostingService } from '../costing/costing.service';
+
 export interface ScenarioResponseDto {
   id: string;
   companyId: string;
@@ -46,6 +49,35 @@ export interface SimulationResultDto {
   lines: SimulatedLineDto[];
 }
 
+export interface ScenarioCostingImpactDto {
+  scenarioId: string;
+  scenarioName: string;
+  affectedProducts: {
+    productId: string;
+    productName: string;
+    sku: string;
+    previousStandardCost: number;
+    newSimulatedStandardCost: number;
+    costIncreaseAmount: number;
+    costIncreasePct: number;
+    previousGrossMarginPct: number;
+    newGrossMarginPct: number;
+    profitImpact: number;
+    marginImpact: number;
+  }[];
+  topCostDrivers: {
+    name: string;
+    impactPct: number;
+    description: string;
+  }[];
+  summary: {
+    totalProducts: number;
+    affectedCount: number;
+    averageCostIncreasePct: number;
+    totalProfitImpact: number;
+  };
+}
+
 export function mapScenarioToResponse(scenario: Scenario): ScenarioResponseDto {
   return {
     id: scenario.id.toString(),
@@ -62,7 +94,10 @@ export function mapScenarioToResponse(scenario: Scenario): ScenarioResponseDto {
 
 @Injectable()
 export class ScenariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly costingService: CostingService,
+  ) {}
 
   private async ensureCompanyBelongsToTenant(
     companyId: bigint,
@@ -212,6 +247,22 @@ export class ScenariosService {
       if (dbAccounts.length !== 2) {
         throw new BadRequestException(
           'One or both simulated account IDs do not exist or belong to another company',
+        );
+      }
+    } else if (
+      assumptions.subtype === 'labor_cost_increase' ||
+      assumptions.subtype === 'utilities_cost_increase' ||
+      assumptions.subtype === 'freight_cost_increase' ||
+      assumptions.subtype === 'waste_increase' ||
+      assumptions.subtype === 'yield_decrease' ||
+      assumptions.subtype === 'selling_price_change'
+    ) {
+      if (
+        assumptions.percentage === undefined ||
+        assumptions.percentage === null
+      ) {
+        throw new BadRequestException(
+          `percentage is required for ${assumptions.subtype} assumptions`,
         );
       }
     } else {
@@ -478,63 +529,55 @@ export class ScenariosService {
     let originalTotal = new Decimal(0);
     let simulatedTotal = new Decimal(0);
 
-    if (assumptions.subtype === 'increase_material_prices') {
+    const costingSubtypes = [
+      'increase_material_prices',
+      'labor_cost_increase',
+      'utilities_cost_increase',
+      'freight_cost_increase',
+      'waste_increase',
+      'yield_decrease',
+      'selling_price_change',
+    ];
+
+    if (costingSubtypes.includes(assumptions.subtype)) {
       const recipes = await this.prisma.bomRecipe.findMany({
         where: { companyId, isActive: true },
-        include: { bomLines: { include: { material: true } } },
       });
 
-      const productCostFactors = new Map<bigint, InstanceType<typeof Decimal>>();
+      const productCostFactors = new Map<bigint, DecimalValue>();
+      const productPriceFactors = new Map<bigint, DecimalValue>();
+
       for (const recipe of recipes) {
-        let originalMatCost = new Decimal(0);
-        let simulatedMatCost = new Decimal(0);
+        const originalCost = await this.costingService.calculateStandardCost(
+          recipe.productId,
+          companyId,
+          tenantId,
+          recipe.id,
+        );
+        const simulatedCost = await this.costingService.calculateStandardCost(
+          recipe.productId,
+          companyId,
+          tenantId,
+          recipe.id,
+          assumptions,
+        );
 
-        for (const line of recipe.bomLines) {
-          const rawPrice = Number(line.material.purchasePrice);
-          const qty = Number(line.qtyPerOutput);
-          const lineWastage = Number(line.wastagePct);
-
-          const originalLineCost = new Decimal(qty)
-            .times(rawPrice)
-            .times(new Decimal(1).plus(lineWastage));
-          originalMatCost = originalMatCost.plus(originalLineCost);
-
-          let isAffected = true;
-          if (assumptions.materialIds && assumptions.materialIds.length > 0) {
-            isAffected = assumptions.materialIds.includes(
-              line.materialId.toString(),
-            );
-          }
-
-          const simPrice = isAffected
-            ? new Decimal(rawPrice).times(
-                new Decimal(1).plus(new Decimal(assumptions.percentage ?? 0).div(100)),
-              )
-            : new Decimal(rawPrice);
-          const simLineCost = new Decimal(qty)
-            .times(simPrice)
-            .times(new Decimal(1).plus(lineWastage));
-          simulatedMatCost = simulatedMatCost.plus(simLineCost);
-        }
-
-        const wastage = Number(recipe.wastagePct);
-        const labor = Number(recipe.laborCost);
-        const overhead = Number(recipe.overheadCost);
-
-        const originalTotalCost = originalMatCost
-          .times(new Decimal(1).plus(wastage))
-          .plus(labor)
-          .plus(overhead);
-        const simulatedTotalCost = simulatedMatCost
-          .times(new Decimal(1).plus(wastage))
-          .plus(labor)
-          .plus(overhead);
-
-        if (originalTotalCost.gt(0)) {
+        if (originalCost.totalCost > 0) {
           productCostFactors.set(
             recipe.productId,
-            simulatedTotalCost.div(originalTotalCost),
+            new Decimal(simulatedCost.totalCost).div(originalCost.totalCost),
           );
+        } else {
+          productCostFactors.set(recipe.productId, new Decimal(1));
+        }
+
+        if (originalCost.sellingPrice > 0) {
+          productPriceFactors.set(
+            recipe.productId,
+            new Decimal(simulatedCost.sellingPrice).div(originalCost.sellingPrice),
+          );
+        } else {
+          productPriceFactors.set(recipe.productId, new Decimal(1));
         }
       }
 
@@ -542,12 +585,25 @@ export class ScenariosService {
         const origAmt = new Decimal(Number(line.amount));
         let simAmt = origAmt;
 
-        if (line.materialId) {
+        if (line.materialId && assumptions.subtype === 'increase_material_prices') {
           let isAffected = true;
           if (assumptions.materialIds && assumptions.materialIds.length > 0) {
             isAffected = assumptions.materialIds.includes(
               line.materialId.toString(),
             );
+          }
+          if (isAffected) {
+            // Check packaging flag if set
+            const dbMat = await this.prisma.material.findFirst({ where: { id: line.materialId } });
+            if (dbMat) {
+              const rawCat = (dbMat.materialType ?? 'raw_material').toLowerCase();
+              const isPackaging = ['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(rawCat);
+              if (assumptions.isPackagingOnly && !isPackaging) {
+                isAffected = false;
+              } else if (!assumptions.isPackagingOnly && isPackaging) {
+                isAffected = false;
+              }
+            }
           }
           if (isAffected) {
             simAmt = origAmt.times(
@@ -559,6 +615,32 @@ export class ScenariosService {
           if (accType === 'cogs' || accType === 'expense') {
             const factor = productCostFactors.get(line.productId) ?? new Decimal(1);
             simAmt = origAmt.times(factor);
+          } else if (accType === 'revenue') {
+            const factor = productPriceFactors.get(line.productId) ?? new Decimal(1);
+            simAmt = origAmt.times(factor);
+          }
+        } else {
+          // General GL accounts for labor, utilities, or freight without a product
+          const accType = accountMap.get(line.accountId);
+          if (accType === 'expense' || accType === 'cogs') {
+            const dbAcc = await this.prisma.account.findUnique({ where: { id: line.accountId } });
+            if (dbAcc) {
+              const accName = dbAcc.name.toLowerCase();
+              let isAffected = false;
+              const percentage = Number(assumptions.percentage ?? 0);
+
+              if (assumptions.subtype === 'labor_cost_increase' && (accName.includes('labor') || accName.includes('salary') || accName.includes('payroll'))) {
+                isAffected = true;
+              } else if (assumptions.subtype === 'utilities_cost_increase' && (accName.includes('utility') || accName.includes('utilities') || accName.includes('power') || accName.includes('water') || accName.includes('electricity'))) {
+                isAffected = true;
+              } else if (assumptions.subtype === 'freight_cost_increase' && (accName.includes('freight') || accName.includes('shipping') || accName.includes('transport') || accName.includes('delivery'))) {
+                isAffected = true;
+              }
+
+              if (isAffected) {
+                simAmt = origAmt.times(new Decimal(1).plus(new Decimal(percentage).div(100)));
+              }
+            }
           }
         }
 
@@ -749,6 +831,136 @@ export class ScenariosService {
           ? simulatedTotal.minus(originalTotal).div(originalTotal).times(100).toNumber()
           : 0,
       lines: simulatedLines,
+    };
+  }
+
+  async getCostingImpact(
+    scenarioId: bigint,
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<ScenarioCostingImpactDto> {
+    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+
+    const scenario = await this.prisma.scenario.findFirst({
+      where: { id: scenarioId, companyId },
+    });
+    if (!scenario) {
+      throw new NotFoundException(`Scenario with ID ${scenarioId} not found under this company`);
+    }
+
+    const assumptions: ScenarioAssumptionsDto = scenario.assumptionsJson
+      ? (JSON.parse(scenario.assumptionsJson) as ScenarioAssumptionsDto)
+      : ({} as ScenarioAssumptionsDto);
+
+    const recipes = await this.prisma.bomRecipe.findMany({
+      where: { companyId, isActive: true },
+    });
+
+    const productIds = [...new Set(recipes.map((r) => r.productId))];
+    if (productIds.length === 0) {
+      return {
+        scenarioId: scenario.id.toString(),
+        scenarioName: scenario.name,
+        affectedProducts: [],
+        topCostDrivers: [],
+        summary: {
+          totalProducts: 0,
+          affectedCount: 0,
+          averageCostIncreasePct: 0,
+          totalProfitImpact: 0,
+        },
+      };
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds }, companyId },
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    const recipeMap = new Map<bigint, bigint>();
+    for (const recipe of recipes) {
+      if (!recipeMap.has(recipe.productId)) {
+        recipeMap.set(recipe.productId, recipe.id);
+      }
+    }
+
+    const affectedProducts: ScenarioCostingImpactDto['affectedProducts'] = [];
+
+    for (const productId of productIds) {
+      const product = productMap.get(productId);
+      if (!product) continue;
+
+      const recipeId = recipeMap.get(productId);
+      const originalCost = await this.costingService.calculateStandardCost(
+        productId,
+        companyId,
+        tenantId,
+        recipeId,
+      );
+      const simulatedCost = await this.costingService.calculateStandardCost(
+        productId,
+        companyId,
+        tenantId,
+        recipeId,
+        assumptions,
+      );
+
+      const previousStandardCost = originalCost.totalCost;
+      const newSimulatedStandardCost = simulatedCost.totalCost;
+      const costIncreaseAmount = newSimulatedStandardCost - previousStandardCost;
+      const costIncreasePct = previousStandardCost > 0
+        ? (costIncreaseAmount / previousStandardCost) * 100
+        : 0;
+      const previousGrossMarginPct = originalCost.grossMarginPct;
+      const newGrossMarginPct = simulatedCost.grossMarginPct;
+      const profitImpact = simulatedCost.grossProfit - originalCost.grossProfit;
+      const marginImpact = newGrossMarginPct - previousGrossMarginPct;
+
+      affectedProducts.push({
+        productId: product.id.toString(),
+        productName: product.name,
+        sku: product.sku,
+        previousStandardCost,
+        newSimulatedStandardCost,
+        costIncreaseAmount,
+        costIncreasePct: Number(costIncreasePct.toFixed(2)),
+        previousGrossMarginPct,
+        newGrossMarginPct,
+        profitImpact,
+        marginImpact: Number(marginImpact.toFixed(2)),
+      });
+    }
+
+    affectedProducts.sort((a, b) => Math.abs(b.costIncreasePct) - Math.abs(a.costIncreasePct));
+
+    const totalProducts = affectedProducts.length;
+    const affectedCount = affectedProducts.filter((p) => p.costIncreaseAmount !== 0).length;
+    const averageCostIncreasePct = totalProducts > 0
+      ? affectedProducts.reduce((sum, p) => sum + p.costIncreasePct, 0) / totalProducts
+      : 0;
+    const totalProfitImpact = affectedProducts.reduce((sum, p) => sum + p.profitImpact, 0);
+
+    const topCostDrivers: ScenarioCostingImpactDto['topCostDrivers'] = [];
+    if (assumptions.subtype && assumptions.percentage) {
+      const driverName = assumptions.subtype.replace(/_/g, ' ');
+      topCostDrivers.push({
+        name: driverName,
+        impactPct: assumptions.percentage,
+        description: `Scenario assumption: ${driverName} of ${assumptions.percentage}%`,
+      });
+    }
+
+    return {
+      scenarioId: scenario.id.toString(),
+      scenarioName: scenario.name,
+      affectedProducts,
+      topCostDrivers,
+      summary: {
+        totalProducts,
+        affectedCount,
+        averageCostIncreasePct: Number(averageCostIncreasePct.toFixed(2)),
+        totalProfitImpact: Number(totalProfitImpact.toFixed(2)),
+      },
     };
   }
 }

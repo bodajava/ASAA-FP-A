@@ -24,8 +24,6 @@ import { ExplodeSalesPlanDto } from './dto/explode-sales-plan.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { SubscriptionGuard } from '../common/guards/subscription.guard';
-import { RequiredPlan } from '../common/decorators/required-plan.decorator';
 import { CompanyId } from '../common/decorators/company.decorator';
 import { AuthUser } from '../auth/auth.service';
 import { Request as ExpressRequest } from 'express';
@@ -41,8 +39,7 @@ interface RequestWithUser extends ExpressRequest {
   description: 'Company ID header is required',
   required: true,
 })
-@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
-@RequiredPlan('Enterprise')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('bom-recipes')
 export class BomRecipesController {
   constructor(private readonly bomRecipesService: BomRecipesService) {}

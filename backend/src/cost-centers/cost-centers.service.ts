@@ -5,25 +5,17 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateCostCenterDto } from './dto/create-cost-center.dto';
 import { UpdateCostCenterDto } from './dto/update-cost-center.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class CostCentersService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ) {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException(`Company not found under this tenant`);
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   async create(
     createCostCenterDto: CreateCostCenterDto,
@@ -31,7 +23,7 @@ export class CostCentersService {
     tenantId: bigint,
     userId: bigint,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     // Validate site ID if provided
     if (createCostCenterDto.siteId) {
@@ -92,7 +84,7 @@ export class CostCentersService {
     tenantId: bigint,
     paginationDto: PaginationDto,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const page = paginationDto.page ?? 1;
     const limit = paginationDto.limit ?? 10;
@@ -144,7 +136,7 @@ export class CostCentersService {
   }
 
   async findOne(id: bigint, companyId: bigint, tenantId: bigint) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const costCenter = await this.prisma.costCenter.findFirst({
       where: { id, companyId },

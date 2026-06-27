@@ -50,7 +50,9 @@ export type ReportType =
   | 'customer-profitability'
   | 'product-cost-variance'
   | 'production-capacity'
-  | 'cash-flow-forecast';
+  | 'cash-flow-forecast'
+  | 'standard-vs-actual'
+  | 'cost-drivers';
 
 export interface ReportMeta {
   value: ReportType;
@@ -77,6 +79,8 @@ export const REPORT_METAS: ReportMeta[] = [
   { value: 'slow-moving-items', label: 'Slow Moving Stock', description: 'Items with slow movement speeds over the last 90 days', category: 'operations', paginated: true },
   { value: 'wastage-analysis', label: 'Standard vs Actual Wastage', description: 'Raw material yield variances and product wastage', category: 'operations', paginated: false },
   { value: 'product-cost-variance', label: 'Product Cost Variance', description: 'Planned vs actual cost comparison by product (material, labor, overhead)', category: 'operations', paginated: true },
+  { value: 'standard-vs-actual', label: 'Standard vs Actual Costing', description: 'Comparison of planned standard product costs against actual production runs', category: 'operations', paginated: false },
+  { value: 'cost-drivers', label: 'Cost Driver Analysis', description: 'Analysis of major cost components and margin impact drivers', category: 'operations', paginated: false },
   { value: 'production-capacity', label: 'Production Capacity', description: 'Capacity utilization analysis by factory and product line', category: 'operations', paginated: true },
   { value: 'cash-flow-forecast', label: 'Cash Flow Forecast', description: 'AR/AP-based cash flow forecasting with working capital analysis', category: 'financial', paginated: false },
 ];
@@ -122,11 +126,11 @@ export const IMPORT_TYPES: { value: ImportType; label: string }[] = [
   { value: 'payroll', label: 'Payroll Summaries' },
 ];
 
-export const TRIGGER_TYPES: { value: TriggerType; label: string }[] = [
-  { value: 'variance_pct', label: 'Variance Percentage Threshold' },
-  { value: 'variance_amount', label: 'Variance Absolute Amount Threshold' },
-  { value: 'kpi_breach', label: 'KPI Target Breach' },
-  { value: 'budget_approval', label: 'Budget Approval Required' },
-  { value: 'forecast_approval', label: 'Forecast Approval Required' },
-  { value: 'import_failed', label: 'Data Import Failed' },
+export const TRIGGER_TYPES: { value: TriggerType; labelKey: string }[] = [
+  { value: 'variance_pct', labelKey: 'page.notificationRules.triggerVariancePct' },
+  { value: 'variance_amount', labelKey: 'page.notificationRules.triggerVarianceAmount' },
+  { value: 'kpi_breach', labelKey: 'page.notificationRules.triggerKpiBreach' },
+  { value: 'budget_approval', labelKey: 'page.notificationRules.triggerBudgetApproval' },
+  { value: 'forecast_approval', labelKey: 'page.notificationRules.triggerForecastApproval' },
+  { value: 'import_failed', labelKey: 'page.notificationRules.triggerImportFailed' },
 ];

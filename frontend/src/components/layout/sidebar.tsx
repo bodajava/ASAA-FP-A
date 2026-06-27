@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -24,7 +24,6 @@ import {
   Target,
   RefreshCw,
   BellRing,
-  Layers,
   UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -66,6 +65,7 @@ const NAV: NavGroup[] = [
     items: [
       { tKey: 'nav.reports', href: '/reports', icon: FileText },
       { tKey: 'nav.varianceAnalysis', href: '/variance', icon: BarChart3 },
+      { tKey: 'nav.yearComparison', href: '/year-comparison', icon: BarChart3 },
     ],
   },
   {
@@ -78,11 +78,10 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    tKey: 'nav.dataIntegrations',
+    tKey: 'nav.excelImports',
     items: [
+      { tKey: 'nav.excelIntegration', href: '/excel-integration', icon: FileText },
       { tKey: 'nav.actualImports', href: '/actuals', icon: ClipboardList },
-      { tKey: 'nav.connections', href: '/integrations', icon: GitMerge },
-      { tKey: 'nav.importMappings', href: '/integrations?tab=mappings', icon: Layers },
       { tKey: 'nav.exchangeRates', href: '/exchange-rates', icon: RefreshCw },
     ],
   },
@@ -105,11 +104,13 @@ const NAV: NavGroup[] = [
   {
     tKey: 'nav.systemControl',
     items: [
+      { tKey: 'nav.tenants', href: '/tenants', icon: Building2 },
       { tKey: 'nav.kpiTargets', href: '/kpi-targets', icon: Target },
       { tKey: 'nav.notificationRules', href: '/notification-rules', icon: BellRing },
       { tKey: 'nav.auditLogs', href: '/audit-logs', icon: ClipboardList },
       { tKey: 'nav.settings', href: '/settings', icon: Settings },
       { tKey: 'nav.users', href: '/users', icon: UserCog },
+      { tKey: 'nav.roles', href: '/roles', icon: Shield },
     ],
   },
 ];
@@ -121,42 +122,15 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout, availableCompanies, activeCompanyId, setActiveCompany, tenant } =
+  const { user, logout, availableCompanies, activeCompanyId, setActiveCompany } =
     useAuth();
   const { t } = useI18n();
   const { prefetch } = usePrefetchRouteData();
-
-  const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
-  const isLocked = (href: string): boolean => {
-    if (href === '/scenarios' || href === '/integrations' || href.startsWith('/integrations?')) {
-      return planName === 'starter';
-    }
-    if (href === '/bom-recipes' || href === '/production-planning') {
-      return planName === 'starter' || planName === 'business';
-    }
-    return false;
-  };
 
   const activeCompany = availableCompanies.find((c) => c.id === activeCompanyId);
 
   function isActive(href: string): boolean {
     if (href === '/dashboard') return pathname === '/dashboard';
-    if (href.includes('?')) {
-      if (typeof window !== 'undefined') {
-        const url = new URL(href, window.location.origin);
-        const tab = url.searchParams.get('tab');
-        const currentParams = new URLSearchParams(window.location.search);
-        return pathname === url.pathname && currentParams.get('tab') === tab;
-      }
-    } else {
-      if (href === '/integrations') {
-        if (typeof window !== 'undefined') {
-          const currentParams = new URLSearchParams(window.location.search);
-          const tab = currentParams.get('tab');
-          return pathname === '/integrations' && (!tab || tab === 'connections');
-        }
-      }
-    }
     return pathname.startsWith(href);
   }
 
@@ -241,7 +215,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
-                  const locked = isLocked(item.href);
                   return (
                     <li key={item.href}>
                       <Link
@@ -253,7 +226,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                           active
                             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                             : 'text-secondary-foreground hover:bg-secondary hover:text-foreground',
-                          locked && 'opacity-60 hover:bg-transparent'
                         )}
                         aria-current={active ? 'page' : undefined}
                       >
@@ -267,24 +239,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                           />
                           {t(item.tKey)}
                         </span>
-                        {locked && (
-                          <span className="flex items-center text-muted-foreground" title="Upgrade plan to unlock">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
-                          </span>
-                        )}
                       </Link>
                     </li>
                   );

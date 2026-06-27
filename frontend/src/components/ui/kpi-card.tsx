@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Link from 'next/link';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -13,6 +14,7 @@ export interface KpiCardProps {
   description?: string;
   className?: string;
   isLoading?: boolean;
+  href?: string;
 }
 
 function KpiCard({
@@ -24,6 +26,7 @@ function KpiCard({
   description,
   className,
   isLoading = false,
+  href,
 }: KpiCardProps) {
   const trendColour =
     trendDirection === 'up'
@@ -39,11 +42,12 @@ function KpiCard({
         ? TrendingDown
         : null;
 
-  return (
+  const cardContent = (
     <div
       className={cn(
-        'relative rounded-xl border border-border bg-card p-5 shadow-sm',
-        'transition-shadow duration-200 hover:shadow-md',
+        'relative rounded-xl border border-border p-5 shadow-sm cursor-pointer',
+        'bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950',
+        'transition-all duration-200 hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700',
         className,
       )}
     >
@@ -59,7 +63,7 @@ function KpiCard({
       {isLoading ? (
         <div className="mt-2 h-8 w-32 animate-pulse rounded bg-secondary" />
       ) : (
-        <p className="mt-2 text-2xl font-bold text-card-foreground">{value}</p>
+        <p className="mt-2 text-2xl font-extrabold tracking-tight text-card-foreground">{value}</p>
       )}
 
       <div className="mt-1 flex items-center gap-1.5">
@@ -78,8 +82,20 @@ function KpiCard({
           <span className="text-xs text-muted-foreground">{description}</span>
         )}
       </div>
+
+      {href && (
+        <p className="mt-3 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          View report →
+        </p>
+      )}
     </div>
   );
+
+  if (href) {
+    return <Link href={href} className="block focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-xl">{cardContent}</Link>;
+  }
+
+  return cardContent;
 }
 
 export { KpiCard };

@@ -119,6 +119,7 @@ export default function RawMaterialPricesPage() {
   return (
     <CrudPage<RawMaterialPrice>
       title={t('page.rawMaterialPrices.title')}
+      importModule="raw-material-prices"
       description={t('page.rawMaterialPrices.description')}
       endpoint="/raw-material-prices"
       columns={columns}

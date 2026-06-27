@@ -8,6 +8,7 @@ import {
   Terminal,
   RefreshCw,
   FileText,
+  Download,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,30 @@ export default function AuditLogsPage() {
 
   // Detail Modal State
   const [selectedLog, setSelectedLog] = useState<AuditLogRecord | null>(null);
+
+  // Export handler
+  async function handleExport() {
+    if (!activeCompanyId) return;
+    try {
+      const params = new URLSearchParams();
+      if (searchTerm.trim()) params.set('search', searchTerm.trim());
+      if (entityTypeFilter) params.set('entityType', entityTypeFilter);
+      if (actionFilter) params.set('action', actionFilter);
+      const { default: api } = await import('@/lib/api');
+      const res = await api.get(`/audit-logs/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audit-logs.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Export failed silently
+    }
+  }
 
   // Fetch Audit Logs
   const fetchLogs = useCallback(async () => {
@@ -207,9 +232,14 @@ export default function AuditLogsPage() {
           <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
             <History className="h-4 w-4 text-emerald-600" /> {t('page.auditLogs.recordsTracked', { n: total })}
           </span>
-          <Button size="sm" variant="outline" onClick={fetchLogs} className="flex items-center gap-1">
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /> {t('page.auditLogs.refreshLogs')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleExport} className="flex items-center gap-1">
+              <Download className="h-3.5 w-3.5" /> {t('common.export')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={fetchLogs} className="flex items-center gap-1">
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /> {t('page.auditLogs.refreshLogs')}
+            </Button>
+          </div>
         </div>
 
         {/* Data Table */}

@@ -38,6 +38,7 @@ export interface CrudPageProps<T extends { id: string }> {
   requiresCompany?: boolean;
   importModule?: string;
   extraHeaderActions?: React.ReactNode;
+  extraRowActions?: (item: T) => React.ReactNode;
 }
 
 export function CrudPage<T extends { id: string }>({
@@ -55,6 +56,7 @@ export function CrudPage<T extends { id: string }>({
   requiresCompany = true,
   importModule,
   extraHeaderActions,
+  extraRowActions,
 }: CrudPageProps<T>) {
   const { activeCompanyId } = useAuth();
   const { t } = useI18n();
@@ -155,6 +157,7 @@ export function CrudPage<T extends { id: string }>({
     className: 'w-24',
     render: (_val, row) => (
       <div className="flex items-center justify-end gap-1">
+        {extraRowActions && extraRowActions(row)}
         {canEdit && (
           <button
             onClick={() => openEdit(row)}

@@ -11,6 +11,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,8 +31,6 @@ import { PreviewSimulationDto } from './dto/preview-simulation.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { SubscriptionGuard } from '../common/guards/subscription.guard';
-import { RequiredPlan } from '../common/decorators/required-plan.decorator';
 import { CompanyId } from '../common/decorators/company.decorator';
 import { AuthUser } from '../auth/auth.service';
 import { Request as ExpressRequest } from 'express';
@@ -47,8 +46,7 @@ interface RequestWithUser extends ExpressRequest {
   description: 'Company ID header is required',
   required: true,
 })
-@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
-@RequiredPlan('Business')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('scenarios')
 export class ScenariosController {
   constructor(private readonly scenariosService: ScenariosService) {}
@@ -159,5 +157,18 @@ export class ScenariosController {
       companyId,
       req.user.tenantId,
     );
+  }
+
+  @Get('costing-impact/:id')
+  @ApiOperation({ summary: 'Get costing impact analysis for a scenario' })
+  async getCostingImpact(
+    @Param('id') id: string,
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ) {
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException('Scenario ID must be a numeric string');
+    }
+    return this.scenariosService.getCostingImpact(BigInt(id), companyId, req.user.tenantId);
   }
 }

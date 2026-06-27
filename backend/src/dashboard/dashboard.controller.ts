@@ -15,6 +15,7 @@ import {
   AccuracyDto,
   RankedItemDto,
 } from './dto/dashboard-response.dto';
+import { ExecutiveSummaryDto } from './dto/executive-summary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CompanyId } from '../common/decorators/company.decorator';
@@ -46,6 +47,21 @@ export class DashboardController {
     @Request() req: RequestWithUser,
   ): Promise<DashboardKpisDto> {
     return this.dashboardService.getSummary(
+      companyId,
+      req.user.tenantId,
+      queryDto,
+    );
+  }
+
+  @Get('executive-summary')
+  @ApiOperation({ summary: 'Enterprise executive KPIs with MoM, YoY, growth %, and trend' })
+  @ApiResponse({ status: 200, type: ExecutiveSummaryDto })
+  getExecutiveSummary(
+    @CompanyId() companyId: bigint,
+    @Query() queryDto: DashboardQueryDto,
+    @Request() req: RequestWithUser,
+  ): Promise<ExecutiveSummaryDto> {
+    return this.dashboardService.getExecutiveSummary(
       companyId,
       req.user.tenantId,
       queryDto,
@@ -200,5 +216,25 @@ export class DashboardController {
       req.user.tenantId,
       queryDto,
     );
+  }
+
+  @Get('costing')
+  @ApiOperation({ summary: 'Get costing and profitability summary for dashboard' })
+  async getCostingSummary(
+    @CompanyId() companyId: bigint,
+    @Query() queryDto: DashboardQueryDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.dashboardService.getCostingSummary(companyId, req.user.tenantId, queryDto);
+  }
+
+  @Get('module-summary')
+  @ApiOperation({ summary: 'Counts from every module in the ERP system' })
+  @ApiResponse({ status: 200, description: 'Module entity counts' })
+  getModuleSummary(
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ): Promise<Record<string, number>> {
+    return this.dashboardService.getModuleSummary(companyId, req.user.tenantId);
   }
 }

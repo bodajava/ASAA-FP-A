@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/page-header';
@@ -125,6 +126,33 @@ export default function VariancePage() {
   const totalPages = varianceQuery.data?.totalPages ?? 1;
 
   const error = varianceQuery.error ? getApiErrorMessage(varianceQuery.error, t) : null;
+
+  // Export handler
+  async function handleExport() {
+    if (!activeCompanyId) return;
+    try {
+      const params = new URLSearchParams();
+      if (fiscalYear) params.set('fiscal_year', fiscalYear);
+      if (periodMonth) params.set('period_month', periodMonth);
+      if (accountId) params.set('account_id', accountId);
+      if (siteId) params.set('site_id', siteId);
+      if (productId) params.set('product_id', productId);
+      if (customerId) params.set('customer_id', customerId);
+      const { default: api } = await import('@/lib/api');
+      const res = await api.get(`/variance/${compareType}/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `variance-${compareType}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Export failed silently
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Color-Coding Helpers
@@ -403,14 +431,24 @@ export default function VariancePage() {
               className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-3 ml-auto flex gap-1 items-center"
-            onClick={() => void queryClient.invalidateQueries({ queryKey: queryKeys.variance.all })}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${varianceQuery.isFetching ? 'animate-spin' : ''}`} /> {t('page.variance.refresh')}
-          </Button>
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 flex gap-1 items-center"
+              onClick={handleExport}
+            >
+              <Download className="h-3.5 w-3.5" /> {t('common.export')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 flex gap-1 items-center"
+              onClick={() => void queryClient.invalidateQueries({ queryKey: queryKeys.variance.all })}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${varianceQuery.isFetching ? 'animate-spin' : ''}`} /> {t('page.variance.refresh')}
+            </Button>
+          </div>
         </div>
       </div>
 

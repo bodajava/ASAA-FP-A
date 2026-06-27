@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   DollarSign,
   Loader2,
-  Upload
+  Upload,
+  Download
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -258,6 +259,29 @@ export default function BudgetsPage() {
       toastError(msg);
     } finally {
       setIsTransitioning(false);
+    }
+  }
+
+  async function handleExport() {
+    if (!activeCompanyId) return;
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      params.set('page', String(page));
+      params.set('limit', '1000');
+      const { default: api } = await import('@/lib/api');
+      const res = await api.get(`/budgets/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'budget-cycles.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Export failed silently
     }
   }
 
@@ -613,6 +637,9 @@ export default function BudgetsPage() {
         <div className="space-y-5">
           <PageHeader title={t('page.budgets.title')} description={t('page.budgets.description')}>
             <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleExport}>
+                <Download className="h-4 w-4" /> {t('common.export')}
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} id="budget-lines-import-btn">
                 <Upload className="h-4 w-4" /> {t('page.budgets.importLines')}
               </Button>

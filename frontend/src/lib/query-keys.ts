@@ -10,11 +10,15 @@ export const queryKeys = {
   // Dashboard
   dashboard: {
     all: ['dashboard'] as const,
-    kpis: (companyId: string) => ['dashboard', 'kpis', companyId] as const,
-    revenue: (companyId: string, year: number) => ['dashboard', 'revenue', companyId, year] as const,
-    topProducts: (companyId: string, year: number) => ['dashboard', 'top-products', companyId, year] as const,
-    topCustomers: (companyId: string, year: number) => ['dashboard', 'top-customers', companyId, year] as const,
-    utilization: (companyId: string, year: number) => ['dashboard', 'utilization', companyId, year] as const,
+    kpis: (companyId: string, year: number, period?: string) => ['dashboard', 'kpis', companyId, year, period] as const,
+    revenue: (companyId: string, year: number, period?: string) => ['dashboard', 'revenue', companyId, year, period] as const,
+    topProducts: (companyId: string, year: number, period?: string) => ['dashboard', 'top-products', companyId, year, period] as const,
+    topCustomers: (companyId: string, year: number, period?: string) => ['dashboard', 'top-customers', companyId, year, period] as const,
+    utilization: (companyId: string, year: number, period?: string) => ['dashboard', 'utilization', companyId, year, period] as const,
+    executive: (companyId: string, year: number, period?: string) => ['dashboard', 'executive', companyId, year, period] as const,
+    marketWidget: (companyId: string) => ['dashboard', 'market-widget', companyId] as const,
+    moduleSummary: (companyId: string) => ['dashboard', 'module-summary', companyId] as const,
+    alerts: (companyId: string) => ['dashboard', 'alerts', companyId] as const,
   },
 
   // Master data lists (small, refetched often)

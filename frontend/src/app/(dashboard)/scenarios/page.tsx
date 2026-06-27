@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TableWrapper, type Column } from '@/components/ui/table-wrapper';
 import { Pagination } from '@/components/ui/pagination';
-import { LoadingState, EmptyState, ErrorState, LockedState } from '@/components/ui/feedback-states';
+import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-states';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/lib/auth-context';
@@ -26,6 +26,7 @@ import { useI18n } from '@/lib/i18n/i18n-context';
 import { translateErrorCode } from '@/lib/i18n/error-code-map';
 import { useTranslateApi } from '@/lib/i18n/translate-api';
 import { AiScenarioPlanner } from '@/components/ai-scenario-planner';
+import { ScenarioCostingImpact } from '@/components/scenario-costing-impact';
 import { queryKeys } from '@/lib/query-keys';
 import type {
   Scenario,
@@ -53,7 +54,7 @@ const APPROVED_SCENARIO_TYPES: { value: ScenarioSubtype; label: string }[] = [
 ];
 
 export default function ScenariosPage() {
-  const { activeCompanyId, tenant } = useAuth();
+  const { activeCompanyId } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
   const { t } = useI18n();
   const { tScenarioSubtype } = useTranslateApi();
@@ -308,20 +309,6 @@ export default function ScenariosPage() {
         <ErrorState
           title={t('page.scenarios.noCompanyTitle')}
           message={t('page.scenarios.noCompanyDesc')}
-        />
-      </div>
-    );
-  }
-
-  const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
-  if (planName === 'starter') {
-    return (
-      <div className="space-y-6">
-        <PageHeader title={t('page.scenarios.title')} description={t('page.scenarios.description')} />
-        <LockedState
-          title={t('page.scenarios.lockedTitle')}
-          description={t('page.scenarios.lockedDesc')}
-          requiredPlan="Business"
         />
       </div>
     );
@@ -604,6 +591,16 @@ export default function ScenariosPage() {
                       </table>
                     </div>
                   </div>
+
+                  {/* Costing Impact Preview */}
+                  {simScenarioId && (
+                    <div className="space-y-2.5">
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                        <Layers className="h-4 w-4 text-emerald-600" /> {t('page.scenarios.costingImpact')}
+                      </h3>
+                      <ScenarioCostingImpact scenarioId={simScenarioId} />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center border border-dashed border-slate-200 bg-slate-50/50 rounded-2xl p-16 text-slate-400">

@@ -8,6 +8,9 @@ import { boolBadge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Column } from '@/components/ui/table-wrapper';
 import type { Product, ProductType } from '@/types/api';
+import { ProductCostingModal } from '@/components/product-costing-modal';
+import { Modal } from '@/components/ui/modal';
+import { DollarSign } from 'lucide-react';
 
 const PRODUCT_TYPES: ProductType[] = ['finished_good', 'semi_finished', 'raw_material', 'service', 'other'];
 
@@ -71,7 +74,9 @@ function ProductForm({ item, onClose, onSubmit, isLoading }: FormProps) {
 }
 
 export default function ProductsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const [costingProductId, setCostingProductId] = useState<string | null>(null);
+
   const columns: Column<Product>[] = useMemo(() => [
     { key: 'sku', header: t('page.products.sku'), className: 'font-mono text-xs' },
     { key: 'name', header: t('common.name') },
@@ -82,17 +87,42 @@ export default function ProductsPage() {
   ], [t]);
 
   return (
-    <CrudPage<Product>
-      title={t('page.products.title')}
-      importModule="products"
-      description={t('page.products.description')}
-      endpoint="/products"
-      columns={columns}
-      emptyTitle={t('page.products.emptyTitle')}
-      emptyDescription={t('page.products.emptyDescription')}
-      renderForm={({ item, onClose, onSubmit, isLoading }) => (
-        <ProductForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
+    <>
+      <CrudPage<Product>
+        title={t('page.products.title')}
+        importModule="products"
+        description={t('page.products.description')}
+        endpoint="/products"
+        columns={columns}
+        emptyTitle={t('page.products.emptyTitle')}
+        emptyDescription={t('page.products.emptyDescription')}
+        extraRowActions={(item) => (
+          <button
+            onClick={() => setCostingProductId(item.id)}
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 cursor-pointer"
+            title={locale === 'ar' ? 'تكاليف المنتج وهامش الربح' : 'Product Costing & Profitability'}
+          >
+            <DollarSign className="h-3.5 w-3.5" />
+          </button>
+        )}
+        renderForm={({ item, onClose, onSubmit, isLoading }) => (
+          <ProductForm item={item} onClose={onClose} onSubmit={onSubmit} isLoading={isLoading} />
+        )}
+      />
+
+      {costingProductId && (
+        <Modal
+          open={costingProductId !== null}
+          onClose={() => setCostingProductId(null)}
+          title={locale === 'ar' ? 'تكاليف المنتج وتحليل هامش الربح' : 'Product Costing & Margin Analysis'}
+          size="xl"
+        >
+          <ProductCostingModal
+            productId={costingProductId}
+            onClose={() => setCostingProductId(null)}
+          />
+        </Modal>
       )}
-    />
+    </>
   );
 }

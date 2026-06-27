@@ -405,3 +405,109 @@ export class PaginatedReportResponseDto<T> {
   totalPages!: number;
   data!: T[];
 }
+
+export class YearComparisonItemDto {
+  @ApiProperty({ example: 'revenue' })
+  metric!: string;
+
+  @ApiProperty({ example: 150000 })
+  currentYearValue!: number;
+
+  @ApiProperty({ example: 120000 })
+  previousYearValue!: number;
+
+  @ApiProperty({ example: 30000 })
+  varianceAmount!: number;
+
+  @ApiProperty({ example: 25.0 })
+  variancePct!: number;
+
+  @ApiProperty({ example: 'up' })
+  trend!: 'up' | 'down' | 'neutral';
+
+  @ApiProperty({ example: 'good' })
+  status!: 'good' | 'warning' | 'bad';
+}
+
+export class YearComparisonResponseDto {
+  @ApiProperty({ example: 2026 })
+  currentYear!: number;
+
+  @ApiProperty({ example: 2025 })
+  previousYear!: number;
+
+  @ApiProperty({ type: [YearComparisonItemDto] })
+  metrics!: YearComparisonItemDto[];
+
+  @ApiProperty({ type: [Object] })
+  monthlyComparison!: {
+    period_month: number;
+    currentYear: { revenue: number; cogs: number; expenses: number; grossProfit: number; netProfit: number };
+    previousYear: { revenue: number; cogs: number; expenses: number; grossProfit: number; netProfit: number };
+    variance: { revenue: number; cogs: number; expenses: number; grossProfit: number; netProfit: number };
+  }[];
+
+  @ApiProperty({ type: [Object] })
+  productComparison!: {
+    productId: string;
+    productName: string;
+    sku: string;
+    currentYearCost: number;
+    previousYearCost: number;
+    varianceAmount: number;
+    variancePct: number;
+    currentYearMargin: number;
+    previousYearMargin: number;
+    marginImpact: number;
+  }[];
+}
+
+export class PnLCostingReportDto {
+  @ApiProperty({ example: '2026-06' })
+  period!: string;
+
+  @ApiProperty({ example: 150000 })
+  revenue!: number;
+
+  @ApiProperty()
+  costOfGoodsSold!: {
+    rawMaterials: number;
+    packaging: number;
+    manufacturing: number;
+    total: number;
+  };
+
+  @ApiProperty({ example: 45000 })
+  grossProfit!: number;
+
+  @ApiProperty({ example: 30.0 })
+  grossMarginPct!: number;
+
+  @ApiProperty()
+  operatingExpenses!: {
+    labor: number;
+    utilities: number;
+    overhead: number;
+    freight: number;
+    warehouse: number;
+    selling: number;
+    total: number;
+  };
+
+  @ApiProperty({ example: 25000 })
+  netProfit!: number;
+
+  @ApiProperty({ example: 16.67 })
+  netMarginPct!: number;
+
+  @ApiProperty({ type: [Object] })
+  productBreakdown!: {
+    productId: string;
+    productName: string;
+    sku: string;
+    revenue: number;
+    cogs: number;
+    grossProfit: number;
+    marginPct: number;
+  }[];
+}

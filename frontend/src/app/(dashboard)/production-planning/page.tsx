@@ -20,8 +20,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { apiGet, apiPost } from '@/lib/api';
 import type { Product, PaginatedResponse, Site } from '@/types/api';
-import { useAuth } from '@/lib/auth-context';
-import { LockedState } from '@/components/ui/feedback-states';
 import { Modal } from '@/components/ui/modal';
 import { MONTH_NAMES } from '@/lib/constants';
 import { useI18n } from '@/lib/i18n/i18n-context';
@@ -250,11 +248,8 @@ function MaterialsTable({ materials, t }: { materials: MaterialRequirement[]; t:
 // Main page
 // ---------------------------------------------------------------------------
 export default function ProductionPlanningPage() {
-  const { tenant } = useAuth();
   const { t } = useI18n();
   const { error: toastError, success: toastSuccess } = useToast();
-
-  const planName = tenant?.plan?.name?.toLowerCase() || 'starter';
 
   const [products, setProducts] = useState<Product[]>([]);
   const [planLines, setPlanLines] = useState<SalesPlanLine[]>([
@@ -377,23 +372,6 @@ export default function ProductionPlanningPage() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  // Enterprise-only gate
-  if (planName === 'starter' || planName === 'business') {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('page.productionPlanning.title')}</h1>
-          <p className="text-sm text-slate-500">{t('page.productionPlanning.description')}</p>
-        </div>
-        <LockedState
-          title={t('page.productionPlanning.lockedTitle')}
-          description={t('page.productionPlanning.lockedDescription')}
-          requiredPlan="Enterprise"
-        />
-      </div>
-    );
   }
 
   return (

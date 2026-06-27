@@ -16,6 +16,7 @@ import {
   DollarSign,
   Loader2,
   Upload,
+  Download,
   CheckCircle2
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -28,6 +29,7 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/ui/feedback-s
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { ImportModal } from '@/components/import-modal';
+import { ForecastCostingSummary } from '@/components/forecast-costing-summary';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import { useTranslateApi } from '@/lib/i18n/translate-api';
@@ -272,6 +274,29 @@ export default function ForecastsPage() {
       toastError(msg);
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function handleExport() {
+    if (!activeCompanyId) return;
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      params.set('page', String(page));
+      params.set('limit', '1000');
+      const { default: api } = await import('@/lib/api');
+      const res = await api.get(`/forecasts/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'forecast-cycles.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Export failed silently
     }
   }
 
@@ -643,12 +668,23 @@ export default function ForecastsPage() {
               </div>
             )}
           </div>
+
+          {/* Costing Summary */}
+          {selectedCycle.status === 'approved' && (
+            <div className="space-y-3">
+              <h3 className="text-base font-bold text-slate-900">{t('page.forecasts.costingSummary')}</h3>
+              <ForecastCostingSummary forecastCycleId={selectedCycle.id} />
+            </div>
+          )}
         </div>
       ) : (
         // LIST VIEW
         <div className="space-y-5">
           <PageHeader title={t('page.forecasts.title')} description={t('page.forecasts.description')}>
             <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleExport}>
+                <Download className="h-4 w-4" /> {t('common.export')}
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} id="forecast-lines-import-btn">
                 <Upload className="h-4 w-4" /> {t('page.forecasts.importLines')}
               </Button>

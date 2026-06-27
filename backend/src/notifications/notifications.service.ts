@@ -12,11 +12,13 @@ import {
   NotificationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateNotificationRuleDto } from './dto/create-notification-rule.dto';
 import { UpdateNotificationRuleDto } from './dto/update-notification-rule.dto';
 import { NotificationRuleResponseDto } from './dto/notification-rule-response.dto';
 import { NotificationResponseDto } from './dto/notification-response.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { AlertsService } from './alerts.service';
 
 function parseJsonArraySafe(val: any): string[] {
   if (!val) return [];
@@ -76,19 +78,11 @@ function mapNotificationToResponse(
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ): Promise<void> {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException(`Company not found under this tenant`);
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly alertsService: AlertsService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   // ============================================================
   // NOTIFICATION RULES CRUD
@@ -100,7 +94,7 @@ export class NotificationsService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<NotificationRuleResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     if (
       (dto.triggerType === TriggerType.variance_pct ||
@@ -174,7 +168,7 @@ export class NotificationsService {
     tenantId: bigint,
     paginationDto: PaginationDto,
   ): Promise<{ total: number; data: NotificationRuleResponseDto[] }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const whereClause: Prisma.NotificationRuleWhereInput = {
       companyId,
@@ -212,7 +206,7 @@ export class NotificationsService {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<NotificationRuleResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const rule = await this.prisma.notificationRule.findFirst({
       where: { id, companyId },
@@ -232,7 +226,7 @@ export class NotificationsService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<NotificationRuleResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const rule = await this.prisma.notificationRule.findFirst({
       where: { id, companyId },
@@ -320,7 +314,7 @@ export class NotificationsService {
     tenantId: bigint,
     userId: bigint,
   ): Promise<NotificationRuleResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const rule = await this.prisma.notificationRule.findFirst({
       where: { id, companyId },
@@ -358,7 +352,7 @@ export class NotificationsService {
     paginationDto: PaginationDto,
     statusFilter?: NotificationStatus,
   ): Promise<{ total: number; data: NotificationResponseDto[] }> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const whereClause: Prisma.NotificationWhereInput = {
       companyId,
@@ -398,7 +392,7 @@ export class NotificationsService {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<NotificationResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const notif = await this.prisma.notification.findFirst({
       where: { id, companyId },
@@ -418,7 +412,7 @@ export class NotificationsService {
     companyId: bigint,
     tenantId: bigint,
   ): Promise<NotificationResponseDto> {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const notif = await this.prisma.notification.findFirst({
       where: { id, companyId },
@@ -439,6 +433,28 @@ export class NotificationsService {
     });
 
     return mapNotificationToResponse(updated);
+  }
+
+  async getUnreadCount(
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<number> {
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
+    return this.prisma.notification.count({
+      where: { companyId, status: { not: NotificationStatus.read } },
+    });
+  }
+
+  async markAllAsRead(
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<{ count: number }> {
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
+    const result = await this.prisma.notification.updateMany({
+      where: { companyId, status: { not: NotificationStatus.read } },
+      data: { status: NotificationStatus.read, readAt: new Date() },
+    });
+    return { count: result.count };
   }
 
   // ============================================================
@@ -509,9 +525,9 @@ export class NotificationsService {
       const title = 'Actual Data Import Failed';
       const body = `Import (ID: ${importId}) failed validation. Logs: ${errorLog.slice(0, 300)}`;
 
-      for (const uId of userIds) {
-        await this.prisma.notification.create({
-          data: {
+      if (userIds.length > 0) {
+        await this.prisma.notification.createMany({
+          data: userIds.map((uId) => ({
             companyId,
             ruleId: rule.id,
             userId: uId,
@@ -525,10 +541,12 @@ export class NotificationsService {
               importId: importId.toString(),
               errorLog,
             }),
-          },
+          })),
         });
       }
     }
+
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
   }
 
   async triggerBudgetApproval(
@@ -550,9 +568,9 @@ export class NotificationsService {
       const title = 'Budget Approved';
       const body = `Budget Cycle "${budgetName}" has been approved.`;
 
-      for (const uId of userIds) {
-        await this.prisma.notification.create({
-          data: {
+      if (userIds.length > 0) {
+        await this.prisma.notification.createMany({
+          data: userIds.map((uId) => ({
             companyId,
             ruleId: rule.id,
             userId: uId,
@@ -566,10 +584,12 @@ export class NotificationsService {
               budgetCycleId: budgetCycleId.toString(),
               name: budgetName,
             }),
-          },
+          })),
         });
       }
     }
+
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
   }
 
   async triggerForecastApproval(
@@ -591,9 +611,9 @@ export class NotificationsService {
       const title = 'Forecast Approved';
       const body = `Forecast Cycle "${forecastName}" has been approved.`;
 
-      for (const uId of userIds) {
-        await this.prisma.notification.create({
-          data: {
+      if (userIds.length > 0) {
+        await this.prisma.notification.createMany({
+          data: userIds.map((uId) => ({
             companyId,
             ruleId: rule.id,
             userId: uId,
@@ -607,10 +627,12 @@ export class NotificationsService {
               forecastCycleId: forecastCycleId.toString(),
               name: forecastName,
             }),
-          },
+          })),
         });
       }
     }
+
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
   }
 
   async checkAndTriggerVarianceBreaches(
@@ -732,5 +754,7 @@ export class NotificationsService {
         }
       }
     }
+
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
   }
 }

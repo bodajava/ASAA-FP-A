@@ -18,6 +18,12 @@ export class ScenarioAssumptionsDto {
       'currency_rate_change',
       'demand_decrease',
       'branch_expansion',
+      'labor_cost_increase',
+      'utilities_cost_increase',
+      'freight_cost_increase',
+      'waste_increase',
+      'yield_decrease',
+      'selling_price_change',
     ],
     example: 'increase_material_prices',
   })
@@ -27,7 +33,13 @@ export class ScenarioAssumptionsDto {
     | 'increase_material_prices'
     | 'currency_rate_change'
     | 'demand_decrease'
-    | 'branch_expansion';
+    | 'branch_expansion'
+    | 'labor_cost_increase'
+    | 'utilities_cost_increase'
+    | 'freight_cost_increase'
+    | 'waste_increase'
+    | 'yield_decrease'
+    | 'selling_price_change';
 
   @ApiPropertyOptional({
     description:

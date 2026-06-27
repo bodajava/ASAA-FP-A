@@ -17,6 +17,8 @@ import { useI18n } from '@/lib/i18n/i18n-context';
 import type { Company } from '@/types/api';
 import { MONTH_NAMES } from '@/lib/constants';
 import axios from 'axios';
+import { apiPost } from '@/lib/api';
+import { CompanyWizard } from '@/components/company-wizard';
 
 interface FormProps {
   item: Company | null;
@@ -85,6 +87,7 @@ export default function CompaniesPage() {
     endpoint: '/companies',
     limit: 20,
     enabled: true,
+    requireCompany: false,
   });
 
   const [formOpen, setFormOpen] = useState(false);
@@ -124,6 +127,78 @@ export default function CompaniesPage() {
           setActiveCompany(created.id);
           setTimeout(() => router.push('/'), 300);
         }
+      }
+      await refreshUser();
+      closeForm();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const msg =
+          (err.response?.data as { message?: string } | undefined)?.message ??
+          t('common.error');
+        setFormError(msg);
+      } else {
+        setFormError(t('common.error'));
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  }
+
+  async function handleWizardSubmit(wizardData: {
+    name: string;
+    code: string;
+    industryType: string;
+    taxNumber: string;
+    currency: string;
+    fiscalYearStart: number;
+    createDefaultUnits: boolean;
+    createDefaultAccounts: boolean;
+  }) {
+    setFormLoading(true);
+    setFormError(null);
+    try {
+      const companyPayload = {
+        name: wizardData.name,
+        code: wizardData.code,
+        currency: wizardData.currency,
+        fiscalYearStart: wizardData.fiscalYearStart,
+      };
+      const created = await list.create(companyPayload);
+
+      if (wizardData.createDefaultUnits) {
+        const defaultUnits = [
+          { name: 'Pieces', symbol: 'pc' },
+          { name: 'Kg', symbol: 'kg' },
+          { name: 'Liters', symbol: 'L' },
+          { name: 'Meters', symbol: 'm' },
+          { name: 'Box', symbol: 'box' },
+          { name: 'Carton', symbol: 'ctn' },
+        ];
+        for (const unit of defaultUnits) {
+          await apiPost('/units', unit);
+        }
+      }
+
+      if (wizardData.createDefaultAccounts) {
+        const defaultAccounts = [
+          { code: '1000', name: 'Cash', accountType: 'asset' },
+          { code: '1100', name: 'Accounts Receivable', accountType: 'asset' },
+          { code: '1200', name: 'Inventory', accountType: 'asset' },
+          { code: '2000', name: 'Accounts Payable', accountType: 'liability' },
+          { code: '3000', name: 'Owner Equity', accountType: 'equity' },
+          { code: '4000', name: 'Sales Revenue', accountType: 'revenue' },
+          { code: '5000', name: 'Cost of Goods Sold', accountType: 'expense' },
+          { code: '5100', name: 'Rent Expense', accountType: 'expense' },
+          { code: '5200', name: 'Salary Expense', accountType: 'expense' },
+        ];
+        for (const acc of defaultAccounts) {
+          await apiPost('/accounts', acc);
+        }
+      }
+
+      if (!activeCompanyId) {
+        setActiveCompany(created.id);
+        setTimeout(() => router.push('/'), 300);
       }
       await refreshUser();
       closeForm();
@@ -292,7 +367,7 @@ export default function CompaniesPage() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={closeForm}
           />
-          <div className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+          <div className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="border-b border-slate-100 px-6 py-4">
               <h2 className="text-base font-semibold text-slate-900">
                 {editItem ? t('page.companies.editTitle') : t('page.companies.createTitle')}
@@ -307,12 +382,19 @@ export default function CompaniesPage() {
                   {formError}
                 </div>
               )}
-              <CompanyForm
-                item={editItem}
-                onClose={closeForm}
-                onSubmit={handleSubmit}
-                isLoading={formLoading}
-              />
+              {editItem ? (
+                <CompanyForm
+                  item={editItem}
+                  onClose={closeForm}
+                  onSubmit={handleSubmit}
+                  isLoading={formLoading}
+                />
+              ) : (
+                <CompanyWizard
+                  onSubmit={handleWizardSubmit}
+                  isLoading={formLoading}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -25,6 +25,12 @@ export class ExchangeRatesController {
     return this.service.syncUsdRate(companyId, userId);
   }
 
+  @Post('sync-all')
+  syncAllRates(@Request() req: any, @CompanyId() companyId: bigint) {
+    const userId = BigInt(req.user.id);
+    return this.service.syncAllRates(companyId, userId);
+  }
+
   @Post()
   create(
     @Request() req: any,
@@ -53,6 +59,11 @@ export class ExchangeRatesController {
   @Get('latest')
   getLatestRates(@CompanyId() companyId: bigint) {
     return this.service.getLatestRates(companyId);
+  }
+
+  @Get('market-widget')
+  getMarketWidget(@CompanyId() companyId: bigint) {
+    return this.service.getMarketWidget(companyId);
   }
 
   @Get('convert')

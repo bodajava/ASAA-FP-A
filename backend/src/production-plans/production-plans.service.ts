@@ -1,24 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateProductionPlanDto } from './dto/create-production-plan.dto';
 import { SaveFromExplosionDto } from './dto/save-from-explosion.dto';
 import { PlanSource } from '@prisma/client';
 
 @Injectable()
 export class ProductionPlansService {
-  constructor(private prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ) {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException(`Company not found under this tenant`);
-    }
-  }
+  constructor(
+    private prisma: PrismaService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   private s(v: any) {
     return v?.toString() ?? null;
@@ -92,7 +84,7 @@ export class ProductionPlansService {
     tenantId: bigint,
     userId: bigint,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const existing = await this.prisma.productionPlan.findFirst({
       where: { id, companyId },
@@ -133,7 +125,7 @@ export class ProductionPlansService {
     tenantId: bigint,
     userId: bigint,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const existing = await this.prisma.productionPlan.findFirst({
       where: { id, companyId },

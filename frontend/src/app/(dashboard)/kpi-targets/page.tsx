@@ -164,6 +164,7 @@ export default function KpiTargetsPage() {
   return (
     <CrudPage<KpiTarget>
       title={t('page.kpiTargets.title')}
+      importModule="kpi-targets"
       description={t('page.kpiTargets.description')}
       endpoint="/kpi-targets"
       columns={columns}

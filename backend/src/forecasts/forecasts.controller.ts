@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -198,6 +199,19 @@ export class ForecastsController {
       companyId,
       req.user.tenantId,
     );
+  }
+
+  @Get('costing-summary/:id')
+  @ApiOperation({ summary: 'Get costing summary for a forecast cycle' })
+  async getForecastCostingSummary(
+    @Param('id') id: string,
+    @CompanyId() companyId: bigint,
+    @Request() req: RequestWithUser,
+  ) {
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException('Forecast ID must be a numeric string');
+    }
+    return this.forecastsService.getForecastCostingSummary(BigInt(id), companyId, req.user.tenantId);
   }
 
   @Get('accuracy')

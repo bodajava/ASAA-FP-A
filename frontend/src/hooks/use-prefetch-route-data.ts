@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { apiGet } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
+import { getCurrentFiscalYear } from '@/lib/constants';
 
 /**
  * Route prefetch configuration.
@@ -15,10 +16,13 @@ const ROUTE_PREFETCH_CONFIG: Record<string, (companyId: string) => {
   queryKey: readonly unknown[];
   endpoint: string;
 }> = {
-  '/dashboard': (companyId) => ({
-    queryKey: queryKeys.dashboard.kpis(companyId),
-    endpoint: `/dashboard/kpis?companyId=${companyId}`,
-  }),
+  '/dashboard': (companyId) => {
+    const year = getCurrentFiscalYear();
+    return {
+      queryKey: queryKeys.dashboard.kpis(companyId, year, 'ytd'),
+      endpoint: `/dashboard/summary?fiscal_year=${year}&period=ytd`,
+    };
+  },
   '/budgets': (companyId) => ({
     queryKey: queryKeys.budgets.list(companyId, { page: '1', limit: '10' }),
     endpoint: `/budget-cycles?companyId=${companyId}&page=1&limit=10`,

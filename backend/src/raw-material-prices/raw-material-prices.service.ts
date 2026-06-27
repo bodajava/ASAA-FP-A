@@ -5,24 +5,16 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { TenantService } from '../common/services/tenant.service';
 import { CreateRawMaterialPriceDto } from './dto/create-raw-material-price.dto';
 import { UpdateRawMaterialPricesDto } from './dto/update-raw-material-prices.dto';
 
 @Injectable()
 export class RawMaterialPricesService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureCompanyBelongsToTenant(
-    companyId: bigint,
-    tenantId: bigint,
-  ) {
-    const company = await this.prisma.company.findFirst({
-      where: { id: companyId, tenantId },
-    });
-    if (!company) {
-      throw new NotFoundException('Company not found under this tenant');
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantService: TenantService,
+  ) {}
 
   private async ensureMaterialBelongsToCompany(
     materialId: bigint,
@@ -43,7 +35,7 @@ export class RawMaterialPricesService {
     tenantId: bigint,
     userId: bigint,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const materialId = BigInt(dto.materialId);
     await this.ensureMaterialBelongsToCompany(materialId, companyId);
@@ -105,7 +97,7 @@ export class RawMaterialPricesService {
     dateFrom?: string,
     dateTo?: string,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
@@ -163,7 +155,7 @@ export class RawMaterialPricesService {
   }
 
   async findOne(id: bigint, companyId: bigint, tenantId: bigint) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     const record = await this.prisma.rawMaterialPrice.findFirst({
       where: { id, companyId },
@@ -201,7 +193,7 @@ export class RawMaterialPricesService {
     companyId: bigint,
     tenantId: bigint,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
     await this.ensureMaterialBelongsToCompany(materialId, companyId);
 
     const record = await this.prisma.rawMaterialPrice.findFirst({
@@ -243,7 +235,7 @@ export class RawMaterialPricesService {
     dateFrom?: string,
     dateTo?: string,
   ) {
-    await this.ensureCompanyBelongsToTenant(companyId, tenantId);
+    await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
     await this.ensureMaterialBelongsToCompany(materialId, companyId);
 
     const where: Prisma.RawMaterialPriceWhereInput = {

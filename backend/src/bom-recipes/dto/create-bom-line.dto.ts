@@ -43,4 +43,23 @@ export class CreateBomLineDto {
   @Min(0, { message: 'wastagePct cannot be negative' })
   @IsOptional()
   wastagePct?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Yield percentage for this specific material line (e.g. 95.0 for 95%)',
+    example: 95.0,
+  })
+  @IsNumber({}, { message: 'yieldPct must be a number' })
+  @Min(0, { message: 'yieldPct cannot be negative' })
+  @IsOptional()
+  yieldPct?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Cost category for this specific material line (e.g. Raw Material, Packaging)',
+    example: 'Raw Material',
+  })
+  @IsString({ message: 'costCategory must be a string' })
+  @IsOptional()
+  costCategory?: string;
 }

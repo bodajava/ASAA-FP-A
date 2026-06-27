@@ -14,3 +14,8 @@ build/
 scratch/
 READ/
 .vercel
+
+backend/Enterprise_Test_Dataset/
+backend/prisma/backups/
+prisma/backups/
+opencode.json

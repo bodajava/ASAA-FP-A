@@ -87,9 +87,8 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
           className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
           {TRIGGER_TYPES.map((trigger) => {
-            const key = trigger.value.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
             return (
-              <option key={trigger.value} value={trigger.value}>{t(`triggerType.${key}` as TranslationKey)}</option>
+              <option key={trigger.value} value={trigger.value}>{t(trigger.labelKey as never)}</option>
             );
           })}
         </select>
@@ -185,6 +184,7 @@ export default function NotificationRulesPage() {
   return (
     <CrudPage<NotificationRule>
       title={t('page.notificationRules.title')}
+      importModule="notification-rules"
       description={t('page.notificationRules.description')}
       endpoint="/notifications/rules"
       columns={columns}

@@ -99,6 +99,29 @@ export default function ScenariosPage() {
     name: string;
   } | null>(null);
 
+  // Comparison State
+  const [compPreviousYear, setCompPreviousYear] = useState(new Date().getFullYear() - 1);
+  const [compCurrentYear, setCompCurrentYear] = useState(new Date().getFullYear());
+  const [compScenarioId, setCompScenarioId] = useState('');
+  const [compProductId, setCompProductId] = useState('');
+
+  const comparisonQuery = useQuery({
+    queryKey: ['scenarios', 'comparison', activeCompanyId, compPreviousYear, compCurrentYear, compScenarioId, compProductId],
+    queryFn: async ({ signal }) => {
+      const params = new URLSearchParams({
+        previousYear: String(compPreviousYear),
+        currentYear: String(compCurrentYear),
+      });
+      if (compScenarioId) params.set('scenarioId', compScenarioId);
+      if (compProductId) params.set('productId', compProductId);
+      return apiGet<Array<{
+        category: string; previousYear: number; currentYear: number;
+        scenarioValue: number; variance: number; variancePct: number;
+      }>>(`/scenarios/comparison?${params.toString()}`, { signal });
+    },
+    enabled: activeTab === 'comparison' && !!activeCompanyId,
+  });
+
   // ---------------------------------------------------------------------------
   // Load Scenarios via TanStack Query
   // ---------------------------------------------------------------------------
@@ -630,27 +653,24 @@ export default function ScenariosPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-border bg-card p-4">
               <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('page.scenarios.previousYear') || 'Previous Year'}</label>
-              <select className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
+              <select value={compPreviousYear} onChange={(e) => setCompPreviousYear(Number(e.target.value))} className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value={2024}>2024</option>
+                <option value={2025}>2025</option>
+                <option value={2026}>2026</option>
               </select>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('page.scenarios.currentYear') || 'Current Year'}</label>
-              <select className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
+              <select value={compCurrentYear} onChange={(e) => setCompCurrentYear(Number(e.target.value))} className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value={2025}>2025</option>
+                <option value={2026}>2026</option>
+                <option value={2027}>2027</option>
               </select>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('page.scenarios.selectScenario') || 'Scenario'}</label>
-              <select
-                id="compare-scenario"
-                value={simScenarioId}
-                onChange={(e) => setSimScenarioId(e.target.value)}
-                className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">{t('page.scenarios.selectTemplate')}</option>
+              <select value={compScenarioId} onChange={(e) => setCompScenarioId(e.target.value)} className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">No Scenario</option>
                 {scenarios.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -658,7 +678,7 @@ export default function ScenariosPage() {
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('nav.products')}</label>
-              <select className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+              <select value={compProductId} onChange={(e) => setCompProductId(e.target.value)} className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">{t('common.all') || 'All Products'}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>[{p.sku}] {p.name}</option>
@@ -669,45 +689,37 @@ export default function ScenariosPage() {
 
           {/* Comparison Table */}
           <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-secondary/50 border-b border-border">
-                <tr>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.scenarios.category') || 'Category'}</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.previousYear') || 'Previous Year'}</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.currentYear') || 'Current Year'}</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.simulatedVariance') || 'Variance'}</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.variance') || 'Variance %'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {[
-                  { key: 'sales', label: t('page.dashboard.costingSectionTitle')?.split(' ')[0] || 'Sales' },
-                  { key: 'inventory', label: t('page.dashboard.inventoryValue') || 'Inventory' },
-                  { key: 'rawMaterials', label: t('page.dashboard.costingMaterialCost') || 'Raw Materials' },
-                  { key: 'packaging', label: t('page.dashboard.costingPackagingCost') || 'Packaging' },
-                  { key: 'labor', label: 'Labor' },
-                  { key: 'utilities', label: 'Utilities' },
-                  { key: 'overhead', label: 'Overhead' },
-                  { key: 'productionQty', label: 'Production Quantity' },
-                  { key: 'waste', label: 'Waste' },
-                  { key: 'yield', label: 'Yield' },
-                  { key: 'grossMargin', label: 'Gross Margin' },
-                  { key: 'netMargin', label: 'Net Margin' },
-                ].map((row) => (
-                  <tr key={row.key} className="hover:bg-secondary/50">
-                    <td className="px-4 py-2.5 font-medium text-card-foreground">{row.label}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">—</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-card-foreground">—</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">—</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">—</td>
+            {comparisonQuery.isLoading ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">Loading comparison data...</div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="bg-secondary/50 border-b border-border">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.scenarios.category') || 'Category'}</th>
+                    <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.previousYear') || 'Previous Year'}</th>
+                    <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.currentYear') || 'Current Year'}</th>
+                    <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.simulatedVariance') || 'Scenario Value'}</th>
+                    <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.variance') || 'Variance %'}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground text-sm">
-            <p>Select a scenario and click Run Simulation in the Simulation tab to populate comparison data.</p>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {(comparisonQuery.data ?? []).map((row) => (
+                    <tr key={row.category} className="hover:bg-secondary/50">
+                      <td className="px-4 py-2.5 font-medium text-card-foreground">{row.category}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{row.previousYear.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-card-foreground">{row.currentYear.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-card-foreground">{row.scenarioValue.toLocaleString()}</td>
+                      <td className={`px-4 py-2.5 text-right font-mono ${row.variancePct > 0 ? 'text-emerald-600 dark:text-emerald-400' : row.variancePct < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                        {row.variancePct > 0 ? '+' : ''}{row.variancePct.toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+                  {(!comparisonQuery.data || comparisonQuery.data.length === 0) && (
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">Select parameters above to view comparison data.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request, Res } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiHeader,
   ApiResponse,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { VarianceService } from './variance.service';
 import { VarianceQueryDto } from './dto/variance-query.dto';
 import { PaginatedVarianceResponseDto } from './dto/variance-response.dto';
@@ -143,5 +144,59 @@ export class VarianceController {
       req.user.tenantId,
       queryDto,
     );
+  }
+
+  @Get(':compareType/export')
+  @ApiOperation({
+    summary: 'Export variance comparison as CSV',
+    description: 'Exports the selected comparison type (budget-vs-actual, budget-vs-forecast, actual-vs-forecast, budget-actual-forecast) as a downloadable CSV file.',
+  })
+  @ApiResponse({ status: 200, description: 'CSV file returned.' })
+  async exportComparison(
+    @CompanyId() companyId: bigint,
+    @Query() queryDto: VarianceQueryDto,
+    @Request() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    const compareType = (req.params as Record<string, string>).compareType;
+    const serviceMethods: Record<string, (cid: bigint, tid: bigint, q: VarianceQueryDto) => Promise<PaginatedVarianceResponseDto>> = {
+      'budget-vs-actual': (cid, tid, q) => this.varianceService.compareBudgetVsActual(cid, tid, q),
+      'budget-vs-forecast': (cid, tid, q) => this.varianceService.compareBudgetVsForecast(cid, tid, q),
+      'actual-vs-forecast': (cid, tid, q) => this.varianceService.compareActualVsForecast(cid, tid, q),
+      'budget-actual-forecast': (cid, tid, q) => this.varianceService.compareBudgetVsActualVsForecast(cid, tid, q),
+    };
+
+    const method = serviceMethods[compareType];
+    if (!method) {
+      res.status(400).json({ message: `Invalid comparison type: ${compareType}` });
+      return;
+    }
+
+    const result = await method(companyId, req.user.tenantId, { ...queryDto, limit: 10000, page: 1 });
+    const records = result.data;
+
+    const headers = ['Account', 'Fiscal Year', 'Period Month', 'Site', 'Product', 'Customer', 'Budget Amount', 'Actual Amount', 'Forecast Amount', 'Variance Amount', 'Variance %'];
+    const csvRows = [headers.join(',')];
+
+    for (const r of records) {
+      const row = [
+        `"${r.account_id ?? ''}"`,
+        r.fiscal_year,
+        r.period_month,
+        `"${r.site_id ?? ''}"`,
+        `"${r.product_id ?? ''}"`,
+        `"${r.customer_id ?? ''}"`,
+        r.budget_amount ?? '',
+        r.actual_amount ?? '',
+        r.forecast_amount ?? '',
+        r.variance_amount ?? '',
+        r.variance_pct ? `${Number(r.variance_pct).toFixed(2)}%` : '',
+      ];
+      csvRows.push(row.join(','));
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="variance_${compareType}_export.csv"`);
+    res.send(csvRows.join('\n'));
   }
 }

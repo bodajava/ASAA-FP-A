@@ -171,4 +171,27 @@ export class ScenariosController {
     }
     return this.scenariosService.getCostingImpact(BigInt(id), companyId, req.user.tenantId);
   }
+
+  @Get('comparison')
+  @ApiOperation({
+    summary: 'Scenario comparison data',
+    description: 'Returns Previous Year, Current Year, and Scenario data side-by-side for comparison.',
+  })
+  async getComparison(
+    @CompanyId() companyId: bigint,
+    @Query('previousYear') previousYear: string,
+    @Query('currentYear') currentYear: string,
+    @Query('scenarioId') scenarioId: string,
+    @Query('productId') productId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.scenariosService.getComparison(
+      companyId,
+      req.user.tenantId,
+      Number(previousYear) || new Date().getFullYear() - 1,
+      Number(currentYear) || new Date().getFullYear(),
+      scenarioId ? BigInt(scenarioId) : undefined,
+      productId ? BigInt(productId) : undefined,
+    );
+  }
 }

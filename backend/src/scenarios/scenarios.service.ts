@@ -963,4 +963,133 @@ export class ScenariosService {
       },
     };
   }
+
+  async getComparison(
+    companyId: bigint,
+    tenantId: bigint,
+    previousYear: number,
+    currentYear: number,
+    scenarioId?: bigint,
+    productId?: bigint,
+  ) {
+    const productFilter = productId ? { productId } : {};
+
+    const getYearTotals = async (fy: number) => {
+      const budgetLines = await this.prisma.budgetLine.findMany({
+        where: {
+          budgetCycle: { companyId, fiscalYear: fy },
+          ...productFilter,
+        },
+      });
+      const actualLines = await this.prisma.actualLine.findMany({
+        where: {
+          actualImport: { companyId },
+          transactionDate: {
+            gte: new Date(fy, 0, 1),
+            lt: new Date(fy + 1, 0, 1),
+          },
+          ...productFilter,
+        },
+      });
+
+      const accounts = await this.prisma.account.findMany({ where: { companyId } });
+      const accountMap = new Map(accounts.map(a => [a.id.toString(), a.type]));
+
+      let sales = 0, inventory = 0, rawMaterials = 0, packaging = 0, labor = 0, utilities = 0, overhead = 0;
+      let productionQty = 0, waste = 0;
+
+      const allLines = [...budgetLines, ...actualLines];
+      for (const line of allLines) {
+        const amt = Number(line.amount);
+        const acctType = accountMap.get(line.accountId.toString());
+        if (acctType === 'revenue') sales += amt;
+        else if (acctType === 'cogs') rawMaterials += amt;
+        else if (acctType === 'expense') overhead += amt;
+      }
+
+      const productionPlans = await this.prisma.productionPlan.findMany({
+        where: { companyId, fiscalYear: fy, ...productFilter },
+      });
+      for (const p of productionPlans) {
+        productionQty += Number(p.plannedQty) || Number(p.actualQty) || 0;
+      }
+
+      const inventorySnapshots = await this.prisma.inventorySnapshot.findMany({
+        where: { companyId, snapshotDate: { gte: new Date(fy, 0, 1), lt: new Date(fy + 1, 0, 1) }, ...productFilter },
+      });
+      inventory = inventorySnapshots.reduce((sum, s) => sum + Number(s.inventoryValue), 0);
+
+      const bomRecipes = await this.prisma.bomRecipe.findMany({
+        where: { companyId, isActive: true },
+        include: { bomLines: { include: { material: true } } },
+      });
+      for (const bom of bomRecipes) {
+        const outputQty = Number(bom.outputQty) || 1;
+        const wastePct = Number(bom.wastagePct) || 0;
+        waste += wastePct;
+        for (const line of bom.bomLines) {
+          const cat = (line.costCategory || line.material.materialType || 'raw_material').toLowerCase();
+          const lineCost = Number(line.qtyPerOutput) * Number(line.unitCost || line.material.purchasePrice);
+          if (cat === 'raw_material') rawMaterials += lineCost / outputQty;
+          else if (['packaging', 'packaging_material', 'can', 'lid', 'carton', 'label'].includes(cat)) packaging += lineCost / outputQty;
+          else if (cat === 'labor') labor += lineCost / outputQty;
+          else if (cat === 'utilities' || cat === 'utility') utilities += lineCost / outputQty;
+          else if (cat === 'overhead') overhead += lineCost / outputQty;
+        }
+      }
+      if (bomRecipes.length > 0) waste = waste / bomRecipes.length;
+
+      const grossMargin = sales > 0 ? ((sales - rawMaterials - packaging) / sales) * 100 : 0;
+      const netMargin = sales > 0 ? ((sales - rawMaterials - packaging - labor - utilities - overhead) / sales) * 100 : 0;
+
+      return { sales, inventory, rawMaterials, packaging, labor, utilities, overhead, productionQty, waste, grossMargin, netMargin };
+    };
+
+    const prevYearData = await getYearTotals(previousYear);
+    const currYearData = await getYearTotals(currentYear);
+
+    let scenarioData = currYearData;
+    if (scenarioId) {
+      const scenario = await this.prisma.scenario.findFirst({
+        where: { id: scenarioId, companyId },
+      });
+      if (scenario) {
+        const assumptions = (scenario.assumptionsJson ? JSON.parse(scenario.assumptionsJson as string) : {}) as ScenarioAssumptionsDto;
+        const percentage = Number(assumptions.percentage ?? 0);
+        scenarioData = { ...currYearData };
+        if (assumptions.subtype === 'increase_material_prices') {
+          scenarioData.rawMaterials = currYearData.rawMaterials * (1 + percentage / 100);
+        } else if (assumptions.subtype === 'demand_decrease') {
+          scenarioData.sales = currYearData.sales * (1 - percentage / 100);
+          scenarioData.productionQty = currYearData.productionQty * (1 - percentage / 100);
+        } else if (assumptions.subtype === 'labor_cost_increase') {
+          scenarioData.labor = currYearData.labor * (1 + percentage / 100);
+        } else if (assumptions.subtype === 'utilities_cost_increase') {
+          scenarioData.utilities = currYearData.utilities * (1 + percentage / 100);
+        }
+      }
+    }
+
+    const categories = ['sales', 'inventory', 'rawMaterials', 'packaging', 'labor', 'utilities', 'overhead', 'productionQty', 'waste', 'grossMargin', 'netMargin'] as const;
+    const labels: Record<string, string> = {
+      sales: 'Sales', inventory: 'Inventory Value', rawMaterials: 'Raw Materials', packaging: 'Packaging',
+      labor: 'Labor', utilities: 'Utilities', overhead: 'Overhead', productionQty: 'Production Quantity',
+      waste: 'Waste %', grossMargin: 'Gross Margin %', netMargin: 'Net Margin %',
+    };
+
+    return categories.map(cat => {
+      const prev = Number(prevYearData[cat]);
+      const curr = Number(currYearData[cat]);
+      const scen = Number(scenarioData[cat]);
+      const variancePct = curr !== 0 ? ((scen - curr) / Math.abs(curr)) * 100 : 0;
+      return {
+        category: labels[cat],
+        previousYear: Number(prev.toFixed(2)),
+        currentYear: Number(curr.toFixed(2)),
+        scenarioValue: Number(scen.toFixed(2)),
+        variance: Number((scen - curr).toFixed(2)),
+        variancePct: Number(variancePct.toFixed(2)),
+      };
+    });
+  }
 }

@@ -1437,9 +1437,9 @@ export class ReportsService {
       totalManufacturing = Number(rawSummary.manufacturingCost ?? 0) * (productBreakdown.length || 1);
     } catch {
       const totalCogs = productBreakdown.reduce((sum, p) => sum + p.cogs, 0);
-      totalRawMaterials = totalCogs * 0.6;
+      totalRawMaterials = totalCogs * 0.55;
       totalPackaging = totalCogs * 0.15;
-      totalManufacturing = totalCogs * 0.25;
+      totalManufacturing = totalCogs * 0.30;
     }
 
     const totalCogsCost = totalRawMaterials + totalPackaging + totalManufacturing;

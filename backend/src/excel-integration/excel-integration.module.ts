@@ -18,6 +18,7 @@ import { ErpModuleMapperService } from './erp-module-mapper.service';
 import { StreamingImportService } from './streaming-import.service';
 import { ExcelIntegrationService } from './excel-integration.service';
 import { TemplateGeneratorService } from './template-generator.service';
+import { ImportDependencyCheckerService } from './import-dependency-checker.service';
 import { ExcelIntegrationController } from './excel-integration.controller';
 import { PrismaModule } from '../prisma.module';
 
@@ -32,6 +33,7 @@ import { PrismaModule } from '../prisma.module';
     StreamingImportService,
     ExcelIntegrationService,
     TemplateGeneratorService,
+    ImportDependencyCheckerService,
   ],
   exports: [
     ExcelAnalyzerService,
@@ -41,6 +43,7 @@ import { PrismaModule } from '../prisma.module';
     StreamingImportService,
     ExcelIntegrationService,
     TemplateGeneratorService,
+    ImportDependencyCheckerService,
   ],
 })
 export class ExcelIntegrationModule {}

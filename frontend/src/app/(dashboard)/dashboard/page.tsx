@@ -74,7 +74,7 @@ import type { TranslationKey } from '@/lib/i18n/translations';
 
 /** Skeleton for a widget */
 function WidgetSkeleton({ className = 'h-48' }: { className?: string }) {
-  return <div className={`${className} animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700`} />;
+  return <div className={`${className} animate-pulse rounded-xl bg-secondary`} />;
 }
 
 /** Collapsible section wrapper */
@@ -98,13 +98,13 @@ function DashboardSection({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-secondary/50"
       >
         <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             {icon}
           </span>
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+          <h2 className="text-sm font-semibold text-card-foreground">{title}</h2>
           {badge && (
             <Badge variant="info" className="text-[10px]">
               {badge}
@@ -112,9 +112,9 @@ function DashboardSection({
           )}
         </div>
         {open ? (
-          <ChevronDown className="h-4 w-4 text-slate-400" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-slate-400" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
       {open && <CardContent className="pt-0">{children}</CardContent>}
@@ -138,19 +138,19 @@ function MetricMini({
 }) {
   const trendColor =
     trend === 'up'
-      ? 'text-emerald-600 dark:text-emerald-400'
+      ? 'text-success'
       : trend === 'down'
-        ? 'text-red-500 dark:text-red-400'
-        : 'text-slate-400';
+        ? 'text-destructive'
+        : 'text-muted-foreground';
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white/50 p-3 transition-shadow hover:shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+    <div className="flex items-center gap-3 rounded-lg border-border bg-card/50 p-3 transition-shadow hover:shadow-sm">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
-        <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{value}</p>
+        <p className="text-[11px] font-medium text-muted-foreground truncate">{label}</p>
+        <p className="text-sm font-bold text-card-foreground">{value}</p>
       </div>
       {change && (
         <span className={`text-[11px] font-semibold ${trendColor}`}>{change}</span>
@@ -180,11 +180,11 @@ function CostingMetricCard({
   return (
     <div
       onClick={onClick}
-      className="group relative cursor-pointer rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-emerald-400"
+      className="group relative cursor-pointer rounded-xl border-border bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md"
       title={tooltip}
     >
       <div className="flex justify-between items-start">
-        <span className="flex h-7 w-7 items-center justify-center rounded bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500">
+        <span className="flex h-7 w-7 items-center justify-center rounded bg-secondary text-muted-foreground">
           {icon}
         </span>
         {badge && (
@@ -199,9 +199,9 @@ function CostingMetricCard({
       </div>
       
       <div className="mt-2.5">
-        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">{label}</p>
-        <p className="text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">{value}</p>
-        {subtext && <p className="text-[9px] text-slate-400 dark:text-slate-500 truncate mt-1" title={subtext}>{subtext}</p>}
+        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate">{label}</p>
+        <p className="text-base font-black text-card-foreground mt-0.5">{value}</p>
+        {subtext && <p className="text-[9px] text-muted-foreground truncate mt-1" title={subtext}>{subtext}</p>}
       </div>
 
       <div className="absolute bottom-1 right-2.5 opacity-0 transition-opacity group-hover:opacity-100 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -241,14 +241,14 @@ function ModuleSummaryGrid({
       {modules.map((m) => (
         <div
           key={m.key}
-          className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white/60 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/40"
+          className="flex items-center gap-2 rounded-lg border-border bg-card/60 px-3 py-2"
         >
-          <span className="text-slate-400">{m.icon}</span>
+          <span className="text-muted-foreground">{m.icon}</span>
           <div className="min-w-0">
-            <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-[10px] font-medium text-muted-foreground truncate">
               {t(m.labelKey as TranslationKey)}
             </p>
-            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            <p className="text-sm font-bold text-card-foreground">
               {data[m.key] ?? 0}
             </p>
           </div>
@@ -365,7 +365,7 @@ export default function DashboardPage() {
         <PageHeader title={t('page.dashboard.title')} description={t('page.dashboard.financialOverview', { year })} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
+            <div key={i} className="h-28 animate-pulse rounded-xl bg-secondary" />
           ))}
         </div>
       </div>
@@ -385,20 +385,20 @@ export default function DashboardPage() {
         description={t('page.dashboard.financialOverview', { year })}
       />
 
-      {/* ── Filter Bar ───────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border py-3 px-1">
+      {/* ── Dashboard Filters ──────────────────────────────────── */}
+      <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           {/* Fiscal Year */}
           <div className="flex items-center gap-2">
-            <Filter className="h-3.5 w-3.5 text-slate-400" />
-            <label htmlFor="dashboard-year" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+            <label htmlFor="dashboard-year" className="text-xs font-semibold text-muted-foreground">
               {t('common.fiscalYear')}:
             </label>
             <select
               id="dashboard-year"
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+              className="h-8 rounded-lg border border-input bg-muted px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value={2024}>2024</option>
               <option value={2025}>2025</option>
@@ -409,14 +409,14 @@ export default function DashboardPage() {
 
           {/* Period */}
           <div className="flex items-center gap-2">
-            <label htmlFor="dashboard-period" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <label htmlFor="dashboard-period" className="text-xs font-semibold text-muted-foreground">
               {t('page.dashboard.filterBar')}:
             </label>
             <select
               id="dashboard-period"
               value={period}
               onChange={(e) => setPeriod(e.target.value as typeof period)}
-              className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+              className="h-8 rounded-lg border border-input bg-muted px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="ytd">{t('page.dashboard.periodYtd')}</option>
               <option value="q1">{t('page.dashboard.periodQ1')}</option>
@@ -429,8 +429,8 @@ export default function DashboardPage() {
 
           {/* Currency (read-only) */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Currency:</span>
-            <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+            <span className="text-xs font-semibold text-muted-foreground">Currency:</span>
+            <span className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
               {currency}
             </span>
           </div>
@@ -438,12 +438,12 @@ export default function DashboardPage() {
           {/* Right side: last updated + refreshing indicator */}
           <div className="ml-auto flex items-center gap-3">
             {isRefreshing && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                <span className="h-2 w-2 animate-spin rounded-full border border-emerald-600 border-t-transparent dark:border-emerald-400 dark:border-t-transparent" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
+                <span className="h-2 w-2 animate-spin rounded-full border border-primary border-t-transparent" />
                 {t('page.dashboard.refreshing')}
               </span>
             )}
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+            <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <Clock className="h-3 w-3" />
               {t('page.dashboard.lastUpdated')}: {lastUpdated.toLocaleTimeString()}
             </span>
@@ -458,7 +458,7 @@ export default function DashboardPage() {
         {executiveQuery.isLoading || !executive ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
+              <div key={i} className="h-28 animate-pulse rounded-xl bg-secondary" />
             ))}
           </div>
         ) : (
@@ -634,7 +634,7 @@ export default function DashboardPage() {
           {costingQuery.isLoading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
+                <div key={i} className="h-28 animate-pulse rounded-xl bg-secondary" />
               ))}
             </div>
           ) : !costingQuery.data ? (
@@ -746,8 +746,8 @@ export default function DashboardPage() {
                     <div className="w-full h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={costingQuery.data.costTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                          <XAxis dataKey="period" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+<XAxis dataKey="period" stroke="var(--color-muted-foreground, #94a3b8)" fontSize={10} tickLine={false} axisLine={false} />
+                           <YAxis stroke="var(--color-muted-foreground, #94a3b8)" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
                           <RechartsTooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
                           <Legend />
                           <Line type="monotone" name={t('page.dashboard.costingAvgStandard')} dataKey="averageStandardCost" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
@@ -857,7 +857,7 @@ export default function DashboardPage() {
         {alertsQuery.isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-700" />
+              <div key={i} className="h-16 animate-pulse rounded-lg bg-secondary" />
             ))}
           </div>
         ) : alerts.length === 0 ? (
@@ -917,7 +917,7 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    <tr className="border-b border-border text-xs text-muted-foreground">
                       <th className="pb-2 text-left font-medium">{t('common.month')}</th>
                       <th className="pb-2 text-right font-medium">{t('page.dashboard.actualLabel')}</th>
                       <th className="pb-2 text-right font-medium">{t('page.dashboard.budgetLabel')}</th>
@@ -927,16 +927,16 @@ export default function DashboardPage() {
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
                     {revenue.map((row) => (
                       <tr key={row.period_month}>
-                        <td className="py-2 text-slate-700 dark:text-slate-300">
+                        <td className="py-2 text-foreground">
                           {translateMonth(row.period_month, locale)}
                         </td>
                         <td className="py-2 text-right font-medium text-emerald-700 dark:text-emerald-400">
                           {fmt(row.actual)}
                         </td>
-                        <td className="py-2 text-right text-slate-500">
+                        <td className="py-2 text-right text-muted-foreground">
                           {fmt(row.budget)}
                         </td>
-                        <td className="py-2 text-right text-slate-500 dark:text-slate-400">
+                        <td className="py-2 text-right text-muted-foreground">
                           {fmt(row.forecast)}
                         </td>
                       </tr>
@@ -963,7 +963,7 @@ export default function DashboardPage() {
         {moduleQuery.isLoading ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
             {[...Array(14)].map((_, i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-700" />
+              <div key={i} className="h-14 animate-pulse rounded-lg bg-secondary" />
             ))}
           </div>
         ) : (

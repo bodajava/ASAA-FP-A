@@ -214,7 +214,7 @@ export class ExcelIntegrationController {
   downloadClientWorkbook(@Res() res: Response) {
     const buffer = this.templateGenerator.generateFullWorkbook();
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="ASAA_FP_A_Workbook_Template.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="Harvest_Workbook_Template.xlsx"');
     return res.status(HttpStatus.OK).send(buffer);
   }
 

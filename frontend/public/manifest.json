@@ -1,6 +1,6 @@
 {
-  "name": "ASAA FP&A",
-  "short_name": "ASAA",
+  "name": "Harvest",
+  "short_name": "Harvest",
   "description": "Enterprise Financial Planning & Analysis platform",
   "start_url": "/",
   "display": "standalone",

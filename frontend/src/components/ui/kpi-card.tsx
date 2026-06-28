@@ -46,7 +46,7 @@ function KpiCard({
     <div
       className={cn(
         'relative rounded-xl border border-border p-5 shadow-sm cursor-pointer',
-        'bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950',
+        'bg-gradient-to-br from-white to-slate-50 dark:from-card dark:to-secondary',
         'transition-all duration-200 hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700',
         className,
       )}
@@ -54,7 +54,7 @@ function KpiCard({
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
         {icon && (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             {icon}
           </span>
         )}

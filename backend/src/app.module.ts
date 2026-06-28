@@ -43,6 +43,8 @@ import { UsersModule } from './users/users.module';
 import { PlansModule } from './plans/plans.module';
 import { CostingModule } from './costing/costing.module';
 import { ExcelIntegrationModule } from './excel-integration/excel-integration.module';
+import { ContactModule } from './contact/contact.module';
+import { AiSettingsModule } from './ai-settings/ai-settings.module';
 import { BenchmarkController } from './common/controllers/benchmark.controller';
 import { BenchmarkService } from './common/services/benchmark.service';
 import { CommonModule } from './common/common.module';
@@ -89,6 +91,7 @@ import { CommonModule } from './common/common.module';
     PlansModule,
     CostingModule,
     ExcelIntegrationModule,
+    AiSettingsModule,
   ],
   controllers: [AppController, BenchmarkController],
   providers: [

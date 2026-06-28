@@ -71,8 +71,8 @@ async function bootstrap() {
 
   if (enableSwagger) {
     const config = new DocumentBuilder()
-      .setTitle('idiibi FP&A Suite API')
-      .setDescription('The API documentation for the idiibi FP&A SaaS system.')
+      .setTitle('Harvest Suite API')
+      .setDescription('The API documentation for the Harvest Financial Planning & Analysis system.')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

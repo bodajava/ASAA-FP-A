@@ -626,6 +626,11 @@ export type TranslationKey =
   | 'page.scenarios.overheadCostChange'
   | 'page.scenarios.profitImpact'
   | 'page.scenarios.primaryDriver'
+  | 'page.scenarios.comparisonTab'
+  | 'page.scenarios.previousYear'
+  | 'page.scenarios.currentYear'
+  | 'page.scenarios.selectScenario'
+  | 'page.scenarios.category'
   /* ── Forecast Costing Summary ────────────────────────────────────────── */
   | 'page.forecasts.costingSummary'
   | 'page.forecasts.costingSummaryDesc'
@@ -854,6 +859,10 @@ export type TranslationKey =
   | 'page.excelIntegration.templateWarning'
   | 'page.excelIntegration.downloadClientWorkbook'
   | 'page.excelIntegration.downloadModuleTemplate'
+  | 'page.excelIntegration.importErrorTitle'
+  | 'page.excelIntegration.importErrorSubtitle'
+  | 'page.excelIntegration.downloadRequiredMaster'
+  | 'page.excelIntegration.goToExcelIntegration'
   | 'page.actualImports.title'
   | 'page.companies.title'
   | 'page.sites.title'
@@ -1770,6 +1779,14 @@ export type TranslationKey =
   | 'page.contactUs.faqAnswer3'
   | 'page.contactUs.faqQuestion4'
   | 'page.contactUs.faqAnswer4'
+  | 'page.contactUs.faqQuestion5'
+  | 'page.contactUs.faqAnswer5'
+  | 'page.contactUs.faqQuestion6'
+  | 'page.contactUs.faqAnswer6'
+  | 'page.contactUs.faqQuestion7'
+  | 'page.contactUs.faqAnswer7'
+  | 'page.contactUs.responseTime'
+  | 'page.contactUs.localDesktopNotice'
   | 'page.contactUs.technicalSupport'
   | 'page.contactUs.salesInquiry'
   | 'page.contactUs.generalInquiry'
@@ -1795,11 +1812,41 @@ export type TranslationKey =
   | 'page.contactUs.sendMessage'
   | 'page.contactUs.sending'
   | 'page.contactUs.messageSent'
-  | 'page.contactUs.inquiryType';
+  | 'page.contactUs.inquiryType'
+  | 'page.contactUs.priority'
+  | 'page.contactUs.messageFailed'
+  | 'page.contactUs.inquiryExcelUpload'
+  | 'page.contactUs.inquiryTemplateDownload'
+  | 'page.contactUs.inquiryDashboardIncorrect'
+  | 'page.contactUs.inquiryDarkMode'
+  | 'page.contactUs.inquiryLogin'
+  | 'page.contactUs.inquiryImportOrder'
+  | 'page.contactUs.inquiryMissingMaster'
+  | 'page.contactUs.inquiryScenario'
+  | 'page.contactUs.inquiryExchangeRate'
+  | 'page.contactUs.inquiryGeneral'
+  | 'page.contactUs.priorityLow'
+  | 'page.contactUs.priorityNormal'
+  | 'page.contactUs.priorityHigh'
+  | 'page.contactUs.priorityUrgent'
+  | 'page.contactUs.faqAnswer7'
+  | 'page.aiSettings.title'
+  | 'page.aiSettings.description'
+  | 'page.aiSettings.provider'
+  | 'page.aiSettings.apiKey'
+  | 'page.aiSettings.apiKeyPlaceholder'
+  | 'page.aiSettings.model'
+  | 'page.aiSettings.testConnection'
+  | 'page.aiSettings.save'
+  | 'page.aiSettings.enabled'
+  | 'page.aiSettings.disabled'
+  | 'page.aiSettings.noKeyConfigured'
+  | 'page.aiSettings.saveSuccess'
+  | 'page.aiSettings.saveFailed';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
-    'app.name': 'ASAA FP&A',
+    'app.name': 'Harvest',
     'app.tagline': 'Financial Planning & Analysis',
 
     /* Navigation */
@@ -1940,7 +1987,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.invalidEmail': 'Invalid email address',
     'common.minLength': 'Must be at least {n} characters',
     'common.installApp': 'Install App',
-    'common.installAppDescription': 'Install ASAA FP&A for the best experience',
+    'common.installAppDescription': 'Install Harvest for the best experience',
     'common.install': 'Install',
     'common.notNow': 'Not now',
     'common.records': 'records',
@@ -2053,7 +2100,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
 
     /* Known names */
     'company.nileFreshRetailChain': 'Nile Fresh Retail Chain',
-    'company.iDiibiManufacturingCo': 'iDiibi Manufacturing Co',
+    'company.iDiibiManufacturingCo': 'Harvest Company',
     'company.foodCompany': 'Food Company',
     'costCenter.administration': 'Administration',
     'costCenter.productionDept': 'Production Dept',
@@ -2453,6 +2500,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.scenarios.overheadCostChange': 'Overhead Cost Change',
     'page.scenarios.profitImpact': 'Profit Impact',
     'page.scenarios.primaryDriver': 'Primary Driver',
+    'page.scenarios.comparisonTab': 'Scenario Comparison',
+    'page.scenarios.previousYear': 'Previous Year',
+    'page.scenarios.currentYear': 'Current Year',
+    'page.scenarios.selectScenario': 'Select Scenario',
+    'page.scenarios.category': 'Category',
 
     /* Forecast Costing Summary */
     'page.forecasts.costingSummary': 'Costing Summary',
@@ -2689,6 +2741,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.excelIntegration.templateWarning': 'Use this exact template for best import results. The templates match the client workbook structure with the correct sheet names, column order, and data types.',
     'page.excelIntegration.downloadClientWorkbook': 'Download Full Workbook Template',
     'page.excelIntegration.downloadModuleTemplate': 'Download Module Template',
+    'page.excelIntegration.importErrorTitle': 'Import cannot proceed',
+    'page.excelIntegration.importErrorSubtitle': 'Some required master data is missing. Please complete the steps below.',
+    'page.excelIntegration.downloadRequiredMaster': 'Download Required Master Data Template',
+    'page.excelIntegration.goToExcelIntegration': 'Go to Excel Integration',
     'page.actualImports.title': 'Actual Imports',
     'page.companies.title': 'Companies',
     'page.sites.title': 'Sites',
@@ -3239,7 +3295,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.integrations.connectionsHeader': 'Connections',
     'page.integrations.mappingsHeader': 'Mappings',
     'page.integrations.connectionsDescription': 'Configure connections to external systems for data synchronization.',
-    'page.integrations.mappingsDescription': 'Define how data fields map between external systems and ASAA FP&A.',
+    'page.integrations.mappingsDescription': 'Define how data fields map between external systems and Harvest.',
     'page.integrations.addConnection': 'Add Connection',
     'page.integrations.addMapping': 'Add Mapping',
     'page.integrations.selectConnection': 'Select connection...',
@@ -3257,7 +3313,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.integrations.manualDataSync': 'Manual Data Sync',
     'page.integrations.triggerManualSync': 'Trigger Manual Sync',
     'page.integrations.triggerSynchronization': 'Trigger Synchronization',
-    'page.integrations.syncDescription': 'Synchronize data between the external system and ASAA FP&A.',
+    'page.integrations.syncDescription': 'Synchronize data between the external system and Harvest.',
     'page.integrations.syncPeriodFrom': 'Sync Period From',
     'page.integrations.syncPeriodTo': 'Sync Period To',
     'page.integrations.recordsSynced': 'Records Synced',
@@ -3268,7 +3324,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.integrations.noConnectionsTitle': 'No connections yet',
     'page.integrations.noConnectionsDescription': 'Add a connection to an external system to start syncing data.',
     'page.integrations.noMappingsTitle': 'No mappings yet',
-    'page.integrations.noMappingsDescription': 'Add a mapping to define how external data is translated into ASAA FP&A.',
+    'page.integrations.noMappingsDescription': 'Add a mapping to define how external data is translated into Harvest.',
     'page.integrations.loadingConnections': 'Loading connections...',
     'page.integrations.loadingMappings': 'Loading mappings...',
 
@@ -3638,6 +3694,14 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.contactUs.faqAnswer3': 'Navigate to System Control > Users and click the Add button. You can assign roles and permissions to new users.',
     'page.contactUs.faqQuestion4': 'Is my data secure?',
     'page.contactUs.faqAnswer4': 'Yes. All data is encrypted in transit and at rest. We use enterprise-grade security with role-based access control.',
+    'page.contactUs.faqQuestion5': 'How do I create a budget?',
+    'page.contactUs.faqAnswer5': 'Go to Budgets, create a new budget cycle, then import budget lines via Excel or enter them manually.',
+    'page.contactUs.faqQuestion6': 'How do I generate reports?',
+    'page.contactUs.faqAnswer6': 'Go to Reports, select the report type (P&L, Balance Sheet, Cash Flow, etc.), set the fiscal year and filters, then export.',
+    'page.contactUs.faqQuestion7': 'Is my data safe?',
+    'page.contactUs.faqAnswer7': 'Yes. All data is stored locally on your desktop installation. No data is sent to external servers unless you configure AI suggestions.',
+    'page.contactUs.responseTime': 'We typically respond within 24 business hours',
+    'page.contactUs.localDesktopNotice': 'This is a local desktop installation. For immediate assistance, contact us via WhatsApp or email.',
     'page.contactUs.technicalSupport': 'Technical Support',
     'page.contactUs.salesInquiry': 'Sales Inquiry',
     'page.contactUs.generalInquiry': 'General Inquiry',
@@ -3664,10 +3728,41 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.contactUs.sending': 'Sending...',
     'page.contactUs.messageSent': 'Your message has been sent successfully!',
     'page.contactUs.inquiryType': 'Inquiry Type',
+    'page.contactUs.priority': 'Priority',
+    'page.contactUs.messageFailed': 'Failed to send message. Please try again.',
+    'page.contactUs.inquiryExcelUpload': 'Excel Upload Problem',
+    'page.contactUs.inquiryTemplateDownload': 'Template Download Problem',
+    'page.contactUs.inquiryDashboardIncorrect': 'Dashboard Numbers Not Correct',
+    'page.contactUs.inquiryDarkMode': 'Dark Mode or Display Issue',
+    'page.contactUs.inquiryLogin': 'Login Problem',
+    'page.contactUs.inquiryImportOrder': 'Data Import Order Problem',
+    'page.contactUs.inquiryMissingMaster': 'Missing Accounts/Products/Sites',
+    'page.contactUs.inquiryScenario': 'Scenario or Forecast Problem',
+    'page.contactUs.inquiryExchangeRate': 'Exchange Rate Problem',
+    'page.contactUs.inquiryGeneral': 'General Question',
+    'page.contactUs.priorityLow': 'Low',
+    'page.contactUs.priorityNormal': 'Normal',
+    'page.contactUs.priorityHigh': 'High',
+    'page.contactUs.priorityUrgent': 'Urgent',
+
+    /* AI Settings */
+    'page.aiSettings.title': 'AI Integration',
+    'page.aiSettings.description': 'Configure AI-powered scenario suggestions',
+    'page.aiSettings.provider': 'AI Provider',
+    'page.aiSettings.apiKey': 'API Key',
+    'page.aiSettings.apiKeyPlaceholder': 'Enter your Gemini API key',
+    'page.aiSettings.model': 'Model',
+    'page.aiSettings.testConnection': 'Test Connection',
+    'page.aiSettings.save': 'Save Settings',
+    'page.aiSettings.enabled': 'AI Enabled',
+    'page.aiSettings.disabled': 'AI Disabled',
+    'page.aiSettings.noKeyConfigured': 'Add your Gemini API key in Settings → AI Integration to enable AI suggestions.',
+    'page.aiSettings.saveSuccess': 'AI settings saved successfully',
+    'page.aiSettings.saveFailed': 'Failed to save AI settings',
   },
 
   ar: {
-    'app.name': 'ASAA FP&A',
+    'app.name': 'Harvest',
     'app.tagline': 'التخطيط والتحليل المالي',
 
     /* Navigation */
@@ -3808,7 +3903,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'common.invalidEmail': 'البريد الإلكتروني غير صالح',
     'common.minLength': 'يجب أن يكون على الأقل {n} أحرف',
     'common.installApp': 'تثبيت التطبيق',
-    'common.installAppDescription': 'قم بتثبيت ASAA FP&A للحصول على أفضل تجربة',
+    'common.installAppDescription': 'قم بتثبيت Harvest للحصول على أفضل تجربة',
     'common.install': 'تثبيت',
     'common.notNow': 'ليس الآن',
     'common.records': 'سجل',
@@ -3934,7 +4029,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
 
     /* Known names */
     'company.nileFreshRetailChain': 'سلسلة نايل فريش للتجزئة',
-    'company.iDiibiManufacturingCo': 'شركة آي ديبي للتصنيع',
+    'company.iDiibiManufacturingCo': 'شركة هارفست',
     'company.foodCompany': 'شركة أغذية',
     'costCenter.administration': 'الإدارة',
     'costCenter.productionDept': 'قسم الإنتاج',
@@ -4334,6 +4429,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.scenarios.overheadCostChange': 'تغيير تكلفة الصيانة',
     'page.scenarios.profitImpact': 'التأثير على الأرباح',
     'page.scenarios.primaryDriver': 'المحرك الرئيسي',
+    'page.scenarios.comparisonTab': 'مقارنة السيناريوهات',
+    'page.scenarios.previousYear': 'السنة السابقة',
+    'page.scenarios.currentYear': 'السنة الحالية',
+    'page.scenarios.selectScenario': 'اختر السيناريو',
+    'page.scenarios.category': 'الفئة',
 
     /* Forecast Costing Summary */
     'page.forecasts.costingSummary': 'ملخص التكلفة',
@@ -4570,6 +4670,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.excelIntegration.templateWarning': 'استخدم هذا القالب بالضبط لأفضل نتائج استيراد. القوالب تتطابق مع هيكل دفتر العمل العميل مع أسماء الأوراق الصحيحة وترتيب الأعمدة وأنواع البيانات.',
     'page.excelIntegration.downloadClientWorkbook': 'تحميل قالب دفتر العمل الكامل',
     'page.excelIntegration.downloadModuleTemplate': 'تحميل قالب الوحدة',
+    'page.excelIntegration.importErrorTitle': 'لا يمكن الاستيراد',
+    'page.excelIntegration.importErrorSubtitle': 'بعض البيانات الأساسية المطلوبة غير مكتملة. يرجى إكمال الخطوات التالية.',
+    'page.excelIntegration.downloadRequiredMaster': 'تحميل نموذج البيانات الأساسية المطلوبة',
+    'page.excelIntegration.goToExcelIntegration': 'الذهاب إلى تكامل Excel',
     'page.actualImports.title': 'استيراد الفعلي',
     'page.companies.title': 'الشركات',
     'page.sites.title': 'المواقع',
@@ -5120,7 +5224,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.integrations.connectionsHeader': 'الاتصالات',
     'page.integrations.mappingsHeader': 'التعيينات',
     'page.integrations.connectionsDescription': 'تكوين اتصالات بالأنظمة الخارجية لمزامنة البيانات.',
-    'page.integrations.mappingsDescription': 'تحديد كيفية تعيين حقول البيانات بين الأنظمة الخارجية و ASAA FP&A.',
+    'page.integrations.mappingsDescription': 'تحديد كيفية تعيين حقول البيانات بين الأنظمة الخارجية و Harvest.',
     'page.integrations.addConnection': 'إضافة اتصال',
     'page.integrations.addMapping': 'إضافة تعيين',
     'page.integrations.selectConnection': 'اختر اتصالاً...',
@@ -5138,7 +5242,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.integrations.manualDataSync': 'مزامنة البيانات اليدوية',
     'page.integrations.triggerManualSync': 'تشغيل المزامنة اليدوية',
     'page.integrations.triggerSynchronization': 'تشغيل المزامنة',
-    'page.integrations.syncDescription': 'مزامنة البيانات بين النظام الخارجي و ASAA FP&A.',
+    'page.integrations.syncDescription': 'مزامنة البيانات بين النظام الخارجي و Harvest.',
     'page.integrations.syncPeriodFrom': 'من فترة المزامنة',
     'page.integrations.syncPeriodTo': 'إلى فترة المزامنة',
     'page.integrations.recordsSynced': 'السجلات المتزامنة',
@@ -5149,7 +5253,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.integrations.noConnectionsTitle': 'لا توجد اتصالات بعد',
     'page.integrations.noConnectionsDescription': 'أضف اتصالاً بنظام خارجي لبدء مزامنة البيانات.',
     'page.integrations.noMappingsTitle': 'لا توجد تعيينات بعد',
-    'page.integrations.noMappingsDescription': 'أضف تعييناً لتحديد كيفية ترجمة البيانات الخارجية إلى ASAA FP&A.',
+    'page.integrations.noMappingsDescription': 'أضف تعييناً لتحديد كيفية ترجمة البيانات الخارجية إلى Harvest.',
     'page.integrations.loadingConnections': 'جارٍ تحميل الاتصالات...',
     'page.integrations.loadingMappings': 'جارٍ تحميل التعيينات...',
 
@@ -5506,6 +5610,14 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.contactUs.faqAnswer3': 'انتقل إلى التحكم في النظام > المستخدمون واضغط على زر إضافة. يمكنك تعيين الأدوار والصلاحيات للمستخدمين الجدد.',
     'page.contactUs.faqQuestion4': 'هل بياناتي آمنة؟',
     'page.contactUs.faqAnswer4': 'نعم. جميع البيانات مشفرة أثناء النقل وفي وضع الراحة. نستخدم أمان على مستوى المؤسسات مع التحكم في الوصول القائم على الأدوار.',
+    'page.contactUs.faqQuestion5': 'كيف أنشئ موازنة؟',
+    'page.contactUs.faqAnswer5': 'انتقل إلى الموازنة، أنشئ دورة موازنة جديدة، ثم استورد أسطر الموازنة عبر Excel أو أدخلها يدوياً.',
+    'page.contactUs.faqQuestion6': 'كيف أنشئ تقارير؟',
+    'page.contactUs.faqAnswer6': 'انتقل إلى التقارير، حدد نوع التقرير (قائمة الدخل، الميزانية العمومية، التدفقات النقدية، إلخ)، حدد السنة المالية والفلاتر، ثمصدر.',
+    'page.contactUs.faqQuestion7': 'هل بياناتي آمنة؟',
+    'page.contactUs.faqAnswer7': 'نعم. جميع البيانات مخزنة محلياً على تثبيت سطح المكتب الخاص بك. لا يتم إرسال أي بيانات إلى خوادم خارجية ما لم تقم بتكوين اقتراحات الذكاء الاصطناعي.',
+    'page.contactUs.responseTime': 'نرد عادةً خلال 24 ساعة عمل',
+    'page.contactUs.localDesktopNotice': 'هذا تثبيت سطح مكتب محلي. للمساعدة الفورية، تواصل معنا عبر واتساب أو البريد الإلكتروني.',
     'page.contactUs.technicalSupport': 'الدعم الفني',
     'page.contactUs.salesInquiry': 'استفسار المبيعات',
     'page.contactUs.generalInquiry': 'استفسار عام',
@@ -5532,5 +5644,36 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.contactUs.sending': 'جاري الإرسال...',
     'page.contactUs.messageSent': 'تم إرسال رسالتك بنجاح!',
     'page.contactUs.inquiryType': 'نوع الاستفسار',
+    'page.contactUs.priority': 'الأولوية',
+    'page.contactUs.messageFailed': 'فشل إرسال الرسالة. يرجى المحاولة مرة أخرى.',
+    'page.contactUs.inquiryExcelUpload': 'مشكلة في رفع ملف Excel',
+    'page.contactUs.inquiryTemplateDownload': 'مشكلة في تحميل نموذج Excel',
+    'page.contactUs.inquiryDashboardIncorrect': 'أرقام لوحة التحكم غير صحيحة',
+    'page.contactUs.inquiryDarkMode': 'مشكلة في الألوان أو العرض',
+    'page.contactUs.inquiryLogin': 'مشكلة في تسجيل الدخول',
+    'page.contactUs.inquiryImportOrder': 'مشكلة في ترتيب استيراد البيانات',
+    'page.contactUs.inquiryMissingMaster': 'حسابات أو منتجات أو فروع غير موجودة',
+    'page.contactUs.inquiryScenario': 'مشكلة في السيناريو أو التوقعات',
+    'page.contactUs.inquiryExchangeRate': 'مشكلة في سعر الصرف',
+    'page.contactUs.inquiryGeneral': 'سؤال عام',
+    'page.contactUs.priorityLow': 'منخفض',
+    'page.contactUs.priorityNormal': 'عادي',
+    'page.contactUs.priorityHigh': 'مرتفع',
+    'page.contactUs.priorityUrgent': 'عاجل',
+
+    /* AI Settings */
+    'page.aiSettings.title': 'تكامل الذكاء الاصطناعي',
+    'page.aiSettings.description': 'تكوين اقتراحات السيناريو بالذكاء الاصطناعي',
+    'page.aiSettings.provider': 'مزود الذكاء الاصطناعي',
+    'page.aiSettings.apiKey': 'مفتاح API',
+    'page.aiSettings.apiKeyPlaceholder': 'أدخل مفتاح Gemini API',
+    'page.aiSettings.model': 'النموذج',
+    'page.aiSettings.testConnection': 'اختبار الاتصال',
+    'page.aiSettings.save': 'حفظ الإعدادات',
+    'page.aiSettings.enabled': 'الذكاء الاصطناعي مفعل',
+    'page.aiSettings.disabled': 'الذكاء الاصطناعي معطل',
+    'page.aiSettings.noKeyConfigured': 'أضف مفتاح Gemini API في الإعدادات ← تكامل الذكاء الاصطناعي لتفعيل اقتراحات السيناريو.',
+    'page.aiSettings.saveSuccess': 'تم حفظ إعدادات الذكاء الاصطناعي بنجاح',
+    'page.aiSettings.saveFailed': 'فشل في حفظ إعدادات الذكاء الاصطناعي',
   },
 };

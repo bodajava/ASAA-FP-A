@@ -21,8 +21,8 @@ const cairo = Cairo({
 
 export const metadata: Metadata = {
   title: {
-    default: 'ASAA FP&A — Financial Planning & Analysis',
-    template: '%s | ASAA FP&A',
+    default: 'Harvest — Financial Planning & Analysis',
+    template: '%s | Harvest',
   },
   description:
     'Enterprise Financial Planning & Analysis platform for budgeting, forecasting, and reporting.',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    title: 'ASAA FP&A',
+    title: 'Harvest',
     statusBarStyle: 'black-translucent',
   },
   icons: {

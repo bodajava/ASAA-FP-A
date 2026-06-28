@@ -165,10 +165,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
           <Link href="/dashboard" className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white shadow-sm">
-              A
+              H
             </span>
             <span className="text-sm font-semibold text-card-foreground">
-              ASAA FP&amp;A
+              Harvest
             </span>
           </Link>
           <button

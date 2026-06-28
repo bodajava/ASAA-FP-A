@@ -38,7 +38,7 @@ async function main() {
   const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
   const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
 
-  console.log(`Connecting to Oracle: ${connectString} as ${connection.username}...`);
+  console.log('Connecting to Oracle...');
 
   const connInstance = await oracledb.getConnection({
     user: connection.username || '',

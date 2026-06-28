@@ -61,7 +61,7 @@ export default function ScenariosPage() {
   const queryClient = useQueryClient();
 
   // Active Tab: 'scenarios' list or 'simulation' preview
-  const [activeTab, setActiveTab] = useState<'list' | 'simulation'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'simulation' | 'comparison'>('list');
 
   // Scenarios List State
   const [page, setPage] = useState(1);
@@ -285,14 +285,14 @@ export default function ScenariosPage() {
               setEditScenario(row);
               setFormOpen(true);
             }}
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
             aria-label={t('common.edit')}
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
             onClick={() => setDeleteConfirmScenario(row)}
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             aria-label={t('common.delete')}
           >
             <Trash2 className="h-4 w-4" />
@@ -317,13 +317,13 @@ export default function ScenariosPage() {
   return (
     <div className="space-y-6">
       {/* TABS HEADER */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab('list')}
           className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors duration-150 ${
             activeTab === 'list'
               ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           {t('page.scenarios.scenarioModels')}
@@ -333,10 +333,20 @@ export default function ScenariosPage() {
           className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors duration-150 ${
             activeTab === 'simulation'
               ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           {t('page.scenarios.simulationPreview')}
+        </button>
+        <button
+          onClick={() => setActiveTab('comparison')}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors duration-150 ${
+            activeTab === 'comparison'
+              ? 'border-emerald-600 text-emerald-600'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('page.scenarios.comparisonTab') || 'Scenario Comparison'}
         </button>
       </div>
 
@@ -358,16 +368,16 @@ export default function ScenariosPage() {
           {/* Search bar */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
                 placeholder={t('page.scenarios.searchPlaceholder')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-9 w-full rounded-lg border border-input bg-muted pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            <p className="text-sm text-slate-400">{t('common.recordsFound', { n: total })}</p>
+            <p className="text-sm text-muted-foreground">{t('common.recordsFound', { n: total })}</p>
           </div>
 
           {/* Table */}
@@ -395,7 +405,7 @@ export default function ScenariosPage() {
             <>
               {/* Background refresh indicator */}
               {scenariosQuery.isFetching && !scenariosQuery.isLoading && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="h-3 w-3 animate-spin rounded-full border border-emerald-600 border-t-transparent" />
                   Refreshing…
                 </div>
@@ -415,19 +425,19 @@ export default function ScenariosPage() {
             </>
           )}
         </div>
-      ) : (
+      ) : activeTab === 'simulation' ? (
         // IMPACT SIMULATION TAB
         <div className="space-y-6">
           <PageHeader title={t('page.scenarios.sensitivitySimulator')} description="Select a planning baseline and a scenario model to project changes." />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Simulation Setup Panel */}
-            <div className="lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">{t('page.scenarios.simulationSetup')}</h3>
+            <div className="lg:col-span-1 rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-card-foreground border-b border-border pb-2">{t('page.scenarios.simulationSetup')}</h3>
 
               {/* Baseline Selection */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-500">{t('page.scenarios.baselineType')}</label>
+                <label className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.baselineType')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -438,7 +448,7 @@ export default function ScenariosPage() {
                     className={`h-9 text-xs font-medium rounded-lg border px-3 transition-colors ${
                       simBaseType === 'budget'
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                        : 'border-border hover:bg-secondary text-secondary-foreground'
                     }`}
                   >
                     {t('page.scenarios.budgetCycle')}
@@ -452,7 +462,7 @@ export default function ScenariosPage() {
                     className={`h-9 text-xs font-medium rounded-lg border px-3 transition-colors ${
                       simBaseType === 'forecast'
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                        : 'border-border hover:bg-secondary text-secondary-foreground'
                     }`}
                   >
                     {t('page.scenarios.forecastCycle')}
@@ -462,12 +472,12 @@ export default function ScenariosPage() {
 
               {/* Cycle Dropdown */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="sim-cycle" className="text-xs font-semibold text-slate-500">{t('page.scenarios.selectCycle')}</label>
+                <label htmlFor="sim-cycle" className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.selectCycle')}</label>
                 <select
                   id="sim-cycle"
                   value={simBaseId}
                   onChange={(e) => setSimBaseId(e.target.value)}
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">{t('page.scenarios.chooseCycle')}</option>
                   {simBaseType === 'budget'
@@ -478,12 +488,12 @@ export default function ScenariosPage() {
 
               {/* Scenario Template Selection */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="sim-scenario" className="text-xs font-semibold text-slate-500">{t('page.scenarios.scenarioModelTemplate')}</label>
+                <label htmlFor="sim-scenario" className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.scenarioModelTemplate')}</label>
                 <select
                   id="sim-scenario"
                   value={simScenarioId}
                   onChange={(e) => setSimScenarioId(e.target.value)}
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">{t('page.scenarios.selectTemplate')}</option>
                   {scenarios.map((s) => (
@@ -496,11 +506,11 @@ export default function ScenariosPage() {
 
               {/* Validation Blocker Warning Card */}
               {validationBlocker && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 flex gap-2.5 items-start mt-2">
-                  <AlertCircle className="h-4.5 w-4.5 shrink-0 text-amber-600 mt-0.5" />
+                <div className="rounded-xl border border-warning/20 bg-warning/5 p-3.5 text-xs text-warning flex gap-2.5 items-start mt-2">
+                  <AlertCircle className="h-4.5 w-4.5 shrink-0 text-warning mt-0.5" />
                   <div>
                     <p className="font-semibold">{t('page.scenarios.simulationBlocked')}</p>
-                    <p className="mt-0.5 text-[11px] leading-relaxed text-amber-700">{validationBlocker}</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-warning">{validationBlocker}</p>
                   </div>
                 </div>
               )}
@@ -519,8 +529,8 @@ export default function ScenariosPage() {
             {/* Simulation Results Display Panel */}
             <div className="lg:col-span-2 space-y-4">
               {simError && (
-                <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex gap-2.5 items-start">
-                  <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
+                <div role="alert" className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive flex gap-2.5 items-start">
+                  <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
                   <div>
                     <p className="font-semibold">{t('page.scenarios.simulationFailed')}</p>
                     <p className="text-xs mt-0.5">{simError}</p>
@@ -532,21 +542,21 @@ export default function ScenariosPage() {
                 <div className="space-y-6">
                   {/* Totals Comparison Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('page.scenarios.baselineAmount')}</p>
-                      <p className="text-lg font-extrabold text-slate-800 mt-1">${simResult.originalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('page.scenarios.baselineAmount')}</p>
+                      <p className="text-lg font-extrabold text-card-foreground mt-1">${simResult.originalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('page.scenarios.simulatedProjection')}</p>
-                      <p className="text-lg font-extrabold text-slate-800 mt-1">${simResult.simulatedTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('page.scenarios.simulatedProjection')}</p>
+                      <p className="text-lg font-extrabold text-card-foreground mt-1">${simResult.simulatedTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('page.scenarios.simulatedVariance')}</p>
+                    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('page.scenarios.simulatedVariance')}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-lg font-extrabold ${simResult.varianceAmount > 0 ? 'text-emerald-700' : simResult.varianceAmount < 0 ? 'text-red-700' : 'text-slate-600'}`}>
+                        <span className={`text-lg font-extrabold ${simResult.varianceAmount > 0 ? 'text-emerald-700' : simResult.varianceAmount < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                           {simResult.varianceAmount > 0 ? '+' : ''}${simResult.varianceAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${simResult.variancePercentage > 0 ? 'bg-emerald-50 text-emerald-700' : simResult.variancePercentage < 0 ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-slate-500'}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${simResult.variancePercentage > 0 ? 'bg-emerald-50 text-emerald-700' : simResult.variancePercentage < 0 ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'}`}>
                           {simResult.variancePercentage > 0 ? '+' : ''}{simResult.variancePercentage.toFixed(2)}%
                         </span>
                       </div>
@@ -555,12 +565,12 @@ export default function ScenariosPage() {
 
                   {/* Simulated Lines Detail */}
                   <div className="space-y-2.5">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-card-foreground flex items-center gap-1.5">
                       <Layers className="h-4 w-4 text-emerald-600" /> {t('page.scenarios.itemizedVariances')}
                     </h3>
-                    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm max-h-[350px] overflow-y-auto">
+                    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm max-h-[350px] overflow-y-auto">
                       <table className="w-full text-xs">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase sticky top-0">
+                        <thead className="bg-secondary/50 border-b border-border text-muted-foreground font-semibold uppercase sticky top-0">
                           <tr>
                             <th className="px-3 py-2 text-left">{t('page.scenarios.account')}</th>
                             <th className="px-3 py-2 text-left">{t('page.scenarios.month')}</th>
@@ -569,19 +579,19 @@ export default function ScenariosPage() {
                             <th className="px-3 py-2 text-right">{t('page.scenarios.variance')}</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-border">
                           {simResult.lines.map((line: SimulatedLine, i: number) => {
                             const accCode = accounts.find((a) => a.id === line.accountId)?.code ?? line.accountId;
                             const accName = accounts.find((a) => a.id === line.accountId)?.name ?? '';
                             return (
-                              <tr key={i} className="hover:bg-slate-50/50">
+                              <tr key={i} className="hover:bg-secondary/50">
                                 <td className="px-3 py-2 font-medium">
                                   [{accCode}] {accName}
                                 </td>
-                                <td className="px-3 py-2 text-slate-500">{t('page.scenarios.month')} {line.periodMonth}</td>
-                                <td className="px-3 py-2 text-right font-mono text-slate-600">${line.originalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                <td className="px-3 py-2 text-right font-mono font-medium text-slate-900">${line.simulatedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                <td className={`px-3 py-2 text-right font-mono font-semibold ${line.variance > 0 ? 'text-emerald-700' : line.variance < 0 ? 'text-red-700' : 'text-slate-400'}`}>
+                                <td className="px-3 py-2 text-muted-foreground">{t('page.scenarios.month')} {line.periodMonth}</td>
+                                <td className="px-3 py-2 text-right font-mono text-muted-foreground">${line.originalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                <td className="px-3 py-2 text-right font-mono font-medium text-card-foreground">${line.simulatedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                <td className={`px-3 py-2 text-right font-mono font-semibold ${line.variance > 0 ? 'text-emerald-700' : line.variance < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                                   {line.variance > 0 ? '+' : ''}{line.variance === 0 ? '—' : `$${line.variance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                                 </td>
                               </tr>
@@ -595,7 +605,7 @@ export default function ScenariosPage() {
                   {/* Costing Impact Preview */}
                   {simScenarioId && (
                     <div className="space-y-2.5">
-                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                      <h3 className="text-sm font-bold text-card-foreground flex items-center gap-1.5">
                         <Layers className="h-4 w-4 text-emerald-600" /> {t('page.scenarios.costingImpact')}
                       </h3>
                       <ScenarioCostingImpact scenarioId={simScenarioId} />
@@ -603,13 +613,101 @@ export default function ScenariosPage() {
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center border border-dashed border-slate-200 bg-slate-50/50 rounded-2xl p-16 text-slate-400">
-                  <Play className="h-10 w-10 text-slate-300 stroke-[1.5]" />
-                  <p className="text-sm font-semibold text-slate-500 mt-3">{t('page.scenarios.readyToSimulate')}</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-xs text-center">{t('page.scenarios.readyToSimulateDesc')}</p>
+                <div className="flex flex-col items-center justify-center border border-dashed border-border bg-secondary/50 rounded-2xl p-16 text-muted-foreground">
+                  <Play className="h-10 w-10 text-muted-foreground stroke-[1.5]" />
+                  <p className="text-sm font-semibold text-foreground mt-3">{t('page.scenarios.readyToSimulate')}</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs text-center">{t('page.scenarios.readyToSimulateDesc')}</p>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      ) : (
+        // SCENARIO COMPARISON TAB
+        <div className="space-y-6">
+          <PageHeader title={t('page.scenarios.comparisonTab') || 'Year-over-Year Comparison'} description="Compare previous year actuals with current year scenario projections." />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('page.scenarios.previousYear') || 'Previous Year'}</label>
+              <select className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+              </select>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('page.scenarios.currentYear') || 'Current Year'}</label>
+              <select className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+              </select>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('page.scenarios.selectScenario') || 'Scenario'}</label>
+              <select
+                id="compare-scenario"
+                value={simScenarioId}
+                onChange={(e) => setSimScenarioId(e.target.value)}
+                className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">{t('page.scenarios.selectTemplate')}</option>
+                {scenarios.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">{t('nav.products')}</label>
+              <select className="h-9 w-full rounded-lg border border-input bg-muted px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">{t('common.all') || 'All Products'}</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>[{p.sku}] {p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Comparison Table */}
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-secondary/50 border-b border-border">
+                <tr>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.scenarios.category') || 'Category'}</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.previousYear') || 'Previous Year'}</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.currentYear') || 'Current Year'}</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.simulatedVariance') || 'Variance'}</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.scenarios.variance') || 'Variance %'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[
+                  { key: 'sales', label: t('page.dashboard.costingSectionTitle')?.split(' ')[0] || 'Sales' },
+                  { key: 'inventory', label: t('page.dashboard.inventoryValue') || 'Inventory' },
+                  { key: 'rawMaterials', label: t('page.dashboard.costingMaterialCost') || 'Raw Materials' },
+                  { key: 'packaging', label: t('page.dashboard.costingPackagingCost') || 'Packaging' },
+                  { key: 'labor', label: 'Labor' },
+                  { key: 'utilities', label: 'Utilities' },
+                  { key: 'overhead', label: 'Overhead' },
+                  { key: 'productionQty', label: 'Production Quantity' },
+                  { key: 'waste', label: 'Waste' },
+                  { key: 'yield', label: 'Yield' },
+                  { key: 'grossMargin', label: 'Gross Margin' },
+                  { key: 'netMargin', label: 'Net Margin' },
+                ].map((row) => (
+                  <tr key={row.key} className="hover:bg-secondary/50">
+                    <td className="px-4 py-2.5 font-medium text-card-foreground">{row.label}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">—</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-card-foreground">—</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">—</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">—</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground text-sm">
+            <p>Select a scenario and click Run Simulation in the Simulation tab to populate comparison data.</p>
           </div>
         </div>
       )}
@@ -812,13 +910,13 @@ function ScenarioFormModal({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-y-auto max-h-[70vh] pr-1">
         {error && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t('page.scenarios.predefinedTemplates')}</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('page.scenarios.predefinedTemplates')}</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {
@@ -864,14 +962,14 @@ function ScenarioFormModal({
                   className={`flex flex-col text-left p-3.5 rounded-xl border transition-all duration-200 cursor-pointer ${
                     isSelected
                       ? 'border-emerald-600 bg-emerald-50/50 shadow-sm shadow-emerald-100/10 ring-1 ring-emerald-600'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                      : 'border-border bg-card hover:border-muted-foreground hover:bg-secondary/50'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{tc.icon}</span>
-                    <span className={`text-xs font-bold ${isSelected ? 'text-emerald-955' : 'text-slate-800'}`}>{tc.label}</span>
+                    <span className={`text-xs font-bold ${isSelected ? 'text-emerald-955' : 'text-card-foreground'}`}>{tc.label}</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{tc.description}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{tc.description}</p>
                 </button>
               );
             })}
@@ -890,7 +988,7 @@ function ScenarioFormModal({
         </div>
 
         {/* SUBTYPE ASSUMPTIONS BLOCK */}
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-4">
+        <div className="rounded-xl border border-border bg-secondary/50 p-4 space-y-4">
           {subtype === 'increase_material_prices' && (
             <>
               <Input
@@ -906,15 +1004,15 @@ function ScenarioFormModal({
               />
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-500">{t('page.scenarios.targetMaterials')}</span>
-                <div className="max-h-[120px] overflow-y-auto border border-slate-200 bg-white rounded-lg p-2 space-y-1">
+                <span className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.targetMaterials')}</span>
+                <div className="max-h-[120px] overflow-y-auto border border-input bg-muted rounded-lg p-2 space-y-1">
                   {materials.map((m) => (
-                    <label key={m.id} className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                    <label key={m.id} className="flex items-center gap-2 text-xs font-medium text-foreground">
                       <input
                         type="checkbox"
                         checked={selMaterialIds.includes(m.id)}
                         onChange={() => handleMultiSelect(m.id, selMaterialIds, setSelMaterialIds)}
-                        className="rounded border-slate-300 accent-emerald-600"
+                        className="rounded border-input accent-emerald-600"
                       />
                       [{m.code}] {m.name}
                     </label>
@@ -934,11 +1032,11 @@ function ScenarioFormModal({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-500">{t('page.scenarios.targetSuppliers')}</span>
-                  <div className="max-h-[100px] overflow-y-auto border border-slate-200 bg-white rounded-lg p-2 space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.targetSuppliers')}</span>
+                  <div className="max-h-[100px] overflow-y-auto border border-input bg-muted rounded-lg p-2 space-y-1">
                     {suppliers.map((s) => (
-                      <label key={s.id} className="flex items-center gap-2 text-xs text-slate-700">
-                        <input type="checkbox" checked={selSupplierIds.includes(s.id)} onChange={() => handleMultiSelect(s.id, selSupplierIds, setSelSupplierIds)} className="rounded border-slate-300 accent-emerald-600" />
+                      <label key={s.id} className="flex items-center gap-2 text-xs text-foreground">
+                        <input type="checkbox" checked={selSupplierIds.includes(s.id)} onChange={() => handleMultiSelect(s.id, selSupplierIds, setSelSupplierIds)} className="rounded border-input accent-emerald-600" />
                         {s.name}
                       </label>
                     ))}
@@ -946,11 +1044,11 @@ function ScenarioFormModal({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-500">{t('page.scenarios.targetAccounts')}</span>
-                  <div className="max-h-[100px] overflow-y-auto border border-slate-200 bg-white rounded-lg p-2 space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.targetAccounts')}</span>
+                  <div className="max-h-[100px] overflow-y-auto border border-input bg-muted rounded-lg p-2 space-y-1">
                     {accounts.map((a) => (
-                      <label key={a.id} className="flex items-center gap-2 text-xs text-slate-700">
-                        <input type="checkbox" checked={selAccountIds.includes(a.id)} onChange={() => handleMultiSelect(a.id, selAccountIds, setSelAccountIds)} className="rounded border-slate-300 accent-emerald-600" />
+                      <label key={a.id} className="flex items-center gap-2 text-xs text-foreground">
+                        <input type="checkbox" checked={selAccountIds.includes(a.id)} onChange={() => handleMultiSelect(a.id, selAccountIds, setSelAccountIds)} className="rounded border-input accent-emerald-600" />
                         [{a.code}] {a.name}
                       </label>
                     ))}
@@ -975,11 +1073,11 @@ function ScenarioFormModal({
               />
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-500">{t('page.scenarios.targetProducts')}</span>
-                <div className="max-h-[120px] overflow-y-auto border border-slate-200 bg-white rounded-lg p-2 space-y-1">
+                <span className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.targetProducts')}</span>
+                <div className="max-h-[120px] overflow-y-auto border border-input bg-muted rounded-lg p-2 space-y-1">
                   {products.map((p) => (
-                    <label key={p.id} className="flex items-center gap-2 text-xs text-slate-700">
-                      <input type="checkbox" checked={selProductIds.includes(p.id)} onChange={() => handleMultiSelect(p.id, selProductIds, setSelProductIds)} className="rounded border-slate-300 accent-emerald-600" />
+                    <label key={p.id} className="flex items-center gap-2 text-xs text-foreground">
+                      <input type="checkbox" checked={selProductIds.includes(p.id)} onChange={() => handleMultiSelect(p.id, selProductIds, setSelProductIds)} className="rounded border-input accent-emerald-600" />
                       [{p.sku}] {p.name}
                     </label>
                   ))}
@@ -1020,12 +1118,12 @@ function ScenarioFormModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="revenue-acc" className="text-xs font-semibold text-slate-500">{t('page.scenarios.revenueAccount')}</label>
+                  <label htmlFor="revenue-acc" className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.revenueAccount')}</label>
                   <select
                     id="revenue-acc"
                     value={revenueAccountId}
                     onChange={(e) => setRevenueAccountId(e.target.value)}
-                    className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                    className="h-8 rounded border border-input bg-muted px-2 text-xs text-foreground"
                     required
                   >
                     {accounts.filter((a) => a.accountType === 'revenue').map((a) => (
@@ -1034,12 +1132,12 @@ function ScenarioFormModal({
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="expense-acc" className="text-xs font-semibold text-slate-500">{t('page.scenarios.expenseAccount')}</label>
+                  <label htmlFor="expense-acc" className="text-xs font-semibold text-muted-foreground">{t('page.scenarios.expenseAccount')}</label>
                   <select
                     id="expense-acc"
                     value={expenseAccountId}
                     onChange={(e) => setExpenseAccountId(e.target.value)}
-                    className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                    className="h-8 rounded border border-input bg-muted px-2 text-xs text-foreground"
                     required
                   >
                     {accounts.filter((a) => a.accountType === 'expense').map((a) => (
@@ -1052,7 +1150,7 @@ function ScenarioFormModal({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button variant="outline" size="sm" type="button" onClick={onClose}>{t('common.cancel')}</Button>
           <Button size="sm" type="submit" isLoading={isLoading}>
             {item ? t('page.scenarios.saveChanges') : t('page.scenarios.createScenario')}

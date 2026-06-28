@@ -29,11 +29,11 @@ function PageHeader({
       )}
     >
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold text-slate-900">
+        <h1 className="truncate text-xl font-semibold text-card-foreground">
           {title}
         </h1>
         {description && (
-          <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
 

@@ -266,7 +266,7 @@ export default function ExcelIntegrationPage() {
                   const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
                   const a = document.createElement('a');
                   a.href = `${baseUrl}/api/v1/excel-integration/templates/client-workbook`;
-                  a.download = 'ASAA_FP_A_Workbook_Template.xlsx';
+                  a.download = 'Harvest_Workbook_Template.xlsx';
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
@@ -618,9 +618,45 @@ export default function ExcelIntegrationPage() {
 
       {/* ─── ERROR STATE ──────────────────────────────────────────────── */}
       {errorMessage && view !== 'analyzing' && view !== 'importing' && (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          <p>{errorMessage}</p>
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5">
+          <div className="flex items-start gap-3 mb-3">
+            <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-destructive mb-1">
+                {t('page.excelIntegration.importErrorTitle') || 'Import cannot proceed'}
+              </p>
+              <p className="text-xs text-destructive/80">
+                {t('page.excelIntegration.importErrorSubtitle') || 'Some required master data is missing. Please complete the steps below.'}
+              </p>
+            </div>
+          </div>
+          <div className="ml-8 text-xs text-destructive/90 bg-destructive/5 rounded-lg p-3 mb-3">
+            <p className="whitespace-pre-wrap">{errorMessage}</p>
+          </div>
+          <div className="ml-8 flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                const a = document.createElement('a');
+                a.href = `${baseUrl}/api/v1/excel-integration/templates/client-workbook`;
+                a.download = 'Harvest_Workbook_Template.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors"
+            >
+              <Download className="h-3.5 w-3.5" />
+              {t('page.excelIntegration.downloadRequiredMaster') || 'Download Required Master Data Template'}
+            </button>
+            <button
+              onClick={resetUpload}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-card-foreground hover:bg-secondary transition-colors"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {t('page.excelIntegration.goToExcelIntegration') || 'Go to Excel Integration'}
+            </button>
+          </div>
         </div>
       )}
     </div>

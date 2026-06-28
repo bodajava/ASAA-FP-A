@@ -135,18 +135,23 @@ export class ImportsService {
         return { resolved: trimmed };
       }
       case 'costCenter': {
-        const byCode = await this.prisma.costCenter.findFirst({
-          where: { code: trimmed, companyId },
-          select: { code: true },
-        });
-        if (byCode) return { resolved: byCode.code ?? trimmed };
+        // 1. Try code match (only if code is not empty)
+        if (trimmed) {
+          const byCode = await this.prisma.costCenter.findFirst({
+            where: { code: trimmed, companyId },
+            select: { code: true, name: true },
+          });
+          if (byCode) return { resolved: byCode.code ?? byCode.name };
+        }
 
+        // 2. Exact name match
         const byName = await this.prisma.costCenter.findFirst({
           where: { name: trimmed, companyId },
           select: { code: true, name: true },
         });
         if (byName) return { resolved: byName.code ?? byName.name };
 
+        // 3. Case-insensitive match
         const all = await this.prisma.costCenter.findMany({
           where: { companyId },
           select: { code: true, name: true },
@@ -295,11 +300,35 @@ export class ImportsService {
       await resolveField('sitecode', 'site', 'Site');
       await resolveField('costcentercode', 'costCenter', 'Cost Center');
       await resolveField('productsku', 'product', 'Product');
-      await resolveField('materialcode', 'material', 'Material');
-      await resolveField('customercode', 'customer', 'Customer');
+      if (resolved['materialcode']) {
+        await resolveField('materialcode', 'material', 'Material');
+      }
+      if (resolved['customercode']) {
+        await resolveField('customercode', 'customer', 'Customer');
+      }
     }
 
     return resolved;
+  }
+
+  /* ─── Month Name Parsing ────────────────────────────────────────────── */
+
+  private parseMonthValue(value: string | number): number | null {
+    const num = Number(value);
+    if (!isNaN(num) && num >= 1 && num <= 12) return num;
+
+    const str = String(value).trim().toLowerCase();
+    const monthMap: Record<string, number> = {
+      january: 1, february: 2, march: 3, april: 4,
+      may: 5, june: 6, july: 7, august: 8,
+      september: 9, october: 10, november: 11, december: 12,
+      jan: 1, feb: 2, mar: 3, apr: 4,
+      jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+      'يناير': 1, 'فبراير': 2, 'مارس': 3, 'أبريل': 4,
+      'مايو': 5, 'يونيو': 6, 'يوليو': 7, 'أغسطس': 8,
+      'سبتمبر': 9, 'أكتوبر': 10, 'نوفمبر': 11, 'ديسمبر': 12,
+    };
+    return monthMap[str] ?? null;
   }
 
   getSampleCSV(module: string): string {
@@ -331,7 +360,7 @@ export class ImportsService {
         return 'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct';
       case 'budgetlines':
       case 'budget-lines':
-        return 'budgetCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,notes';
+        return 'Budget Cycle,Fiscal Year,Account,Site,Cost Center,Product,Material,Customer,Month,Quantity,Unit Price,Amount,Notes';
       case 'forecastlines':
       case 'forecast-lines':
         return 'forecastCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,driverType,notes';
@@ -699,14 +728,14 @@ export class ImportsService {
         break;
       }
       case 'budgetlines': {
-        if (!row.budgetcyclename) errors.push('Budget Cycle Name is required.');
+        if (!row.budgetcyclename) errors.push('Budget Cycle is required.');
         if (!row.fiscalyear) errors.push('Fiscal Year is required.');
-        if (!row.accountcode) errors.push('Account Code is required.');
-        if (!row.periodmonth) errors.push('Period Month is required.');
+        if (!row.accountcode) errors.push('Account is required.');
+        if (!row.periodmonth) errors.push('Month is required.');
         else {
-          const month = Number(row.periodmonth);
-          if (isNaN(month) || month < 1 || month > 12) {
-            errors.push('Period Month must be an integer between 1 and 12.');
+          const parsed = this.parseMonthValue(row.periodmonth);
+          if (parsed === null) {
+            errors.push('Month must be a number (1-12), month name (e.g. January, Jan), or Arabic month name.');
           }
         }
         if (!row.amount) errors.push('Amount is required.');
@@ -715,59 +744,100 @@ export class ImportsService {
 
         if (row.accountcode && companyId) {
           const acc = await this.prisma.account.findFirst({
-            where: { code: String(row.accountcode).trim(), companyId },
+            where: {
+              OR: [
+                { code: String(row.accountcode).trim(), companyId },
+                { name: String(row.accountcode).trim(), companyId },
+              ],
+              isActive: true,
+            },
           });
           if (!acc)
-            errors.push(`Account Code "${row.accountcode}" does not exist.`);
+            errors.push(
+              `Account "${row.accountcode}" was not found.\nPlease import Accounts first, or choose an existing Account from the reference sheet.`,
+            );
         }
         if (row.sitecode && companyId) {
           const site = await this.prisma.site.findFirst({
             where: { name: String(row.sitecode).trim(), companyId },
           });
-          if (!site) errors.push(`Site "${row.sitecode}" does not exist.`);
+          if (!site)
+            errors.push(
+              `Site "${row.sitecode}" was not found.\nPlease import Sites first, or choose an existing Site from the reference sheet.`,
+            );
         }
         if (row.costcentercode && companyId) {
+          const ccVal = String(row.costcentercode).trim();
           const cc = await this.prisma.costCenter.findFirst({
-            where: { code: String(row.costcentercode).trim(), companyId },
+            where: {
+              OR: [
+                { code: ccVal, companyId },
+                { name: ccVal, companyId },
+              ],
+            },
           });
           if (!cc)
             errors.push(
-              `Cost Center Code "${row.costcentercode}" does not exist.`,
+              `Cost Center "${row.costcentercode}" was not found.\nPlease import Cost Centers first, or choose an existing Cost Center from the reference sheet.`,
             );
         }
         if (row.productsku && companyId) {
+          const prodVal = String(row.productsku).trim();
           const prod = await this.prisma.product.findFirst({
-            where: { sku: String(row.productsku).trim(), companyId },
+            where: {
+              OR: [
+                { sku: prodVal, companyId, isActive: true },
+                { name: prodVal, companyId, isActive: true },
+              ],
+            },
           });
           if (!prod)
-            errors.push(`Product SKU "${row.productsku}" does not exist.`);
+            errors.push(
+              `Product "${row.productsku}" was not found.\nPlease import Products first, or choose an existing Product from the reference sheet.`,
+            );
         }
         if (row.materialcode && companyId) {
+          const matVal = String(row.materialcode).trim();
           const mat = await this.prisma.material.findFirst({
-            where: { code: String(row.materialcode).trim(), companyId },
+            where: {
+              OR: [
+                { code: matVal, companyId, isActive: true },
+                { name: matVal, companyId, isActive: true },
+              ],
+            },
           });
           if (!mat)
-            errors.push(`Material Code "${row.materialcode}" does not exist.`);
+            errors.push(
+              `Material "${row.materialcode}" was not found.\nPlease import Materials first, or choose an existing Material from the reference sheet.`,
+            );
         }
         if (row.customercode && companyId) {
+          const custVal = String(row.customercode).trim();
           const cust = await this.prisma.customer.findFirst({
-            where: { code: String(row.customercode).trim(), companyId },
+            where: {
+              OR: [
+                { code: custVal, companyId, isActive: true },
+                { name: custVal, companyId, isActive: true },
+              ],
+            },
           });
           if (!cust)
-            errors.push(`Customer Code "${row.customercode}" does not exist.`);
+            errors.push(
+              `Customer "${row.customercode}" was not found.\nPlease import Customers first, or choose an existing Customer from the reference sheet.`,
+            );
         }
         break;
       }
       case 'forecastlines': {
         if (!row.forecastcyclename)
-          errors.push('Forecast Cycle Name is required.');
+          errors.push('Forecast Cycle is required.');
         if (!row.fiscalyear) errors.push('Fiscal Year is required.');
-        if (!row.accountcode) errors.push('Account Code is required.');
-        if (!row.periodmonth) errors.push('Period Month is required.');
+        if (!row.accountcode) errors.push('Account is required.');
+        if (!row.periodmonth) errors.push('Month is required.');
         else {
-          const month = Number(row.periodmonth);
-          if (isNaN(month) || month < 1 || month > 12) {
-            errors.push('Period Month must be an integer between 1 and 12.');
+          const parsed = this.parseMonthValue(row.periodmonth);
+          if (parsed === null) {
+            errors.push('Month must be a number (1-12), month name (e.g. January, Jan), or Arabic month name.');
           }
         }
         if (!row.amount) errors.push('Amount is required.');
@@ -776,46 +846,87 @@ export class ImportsService {
 
         if (row.accountcode && companyId) {
           const acc = await this.prisma.account.findFirst({
-            where: { code: String(row.accountcode).trim(), companyId },
+            where: {
+              OR: [
+                { code: String(row.accountcode).trim(), companyId },
+                { name: String(row.accountcode).trim(), companyId },
+              ],
+              isActive: true,
+            },
           });
           if (!acc)
-            errors.push(`Account Code "${row.accountcode}" does not exist.`);
+            errors.push(
+              `Account "${row.accountcode}" was not found.\nPlease import Accounts first, or choose an existing Account from the reference sheet.`,
+            );
         }
         if (row.sitecode && companyId) {
           const site = await this.prisma.site.findFirst({
             where: { name: String(row.sitecode).trim(), companyId },
           });
-          if (!site) errors.push(`Site "${row.sitecode}" does not exist.`);
+          if (!site)
+            errors.push(
+              `Site "${row.sitecode}" was not found.\nPlease import Sites first, or choose an existing Site from the reference sheet.`,
+            );
         }
         if (row.costcentercode && companyId) {
+          const ccVal = String(row.costcentercode).trim();
           const cc = await this.prisma.costCenter.findFirst({
-            where: { code: String(row.costcentercode).trim(), companyId },
+            where: {
+              OR: [
+                { code: ccVal, companyId },
+                { name: ccVal, companyId },
+              ],
+            },
           });
           if (!cc)
             errors.push(
-              `Cost Center Code "${row.costcentercode}" does not exist.`,
+              `Cost Center "${row.costcentercode}" was not found.\nPlease import Cost Centers first, or choose an existing Cost Center from the reference sheet.`,
             );
         }
         if (row.productsku && companyId) {
+          const prodVal = String(row.productsku).trim();
           const prod = await this.prisma.product.findFirst({
-            where: { sku: String(row.productsku).trim(), companyId },
+            where: {
+              OR: [
+                { sku: prodVal, companyId, isActive: true },
+                { name: prodVal, companyId, isActive: true },
+              ],
+            },
           });
           if (!prod)
-            errors.push(`Product SKU "${row.productsku}" does not exist.`);
+            errors.push(
+              `Product "${row.productsku}" was not found.\nPlease import Products first, or choose an existing Product from the reference sheet.`,
+            );
         }
         if (row.materialcode && companyId) {
+          const matVal = String(row.materialcode).trim();
           const mat = await this.prisma.material.findFirst({
-            where: { code: String(row.materialcode).trim(), companyId },
+            where: {
+              OR: [
+                { code: matVal, companyId, isActive: true },
+                { name: matVal, companyId, isActive: true },
+              ],
+            },
           });
           if (!mat)
-            errors.push(`Material Code "${row.materialcode}" does not exist.`);
+            errors.push(
+              `Material "${row.materialcode}" was not found.\nPlease import Materials first, or choose an existing Material from the reference sheet.`,
+            );
         }
         if (row.customercode && companyId) {
+          const custVal = String(row.customercode).trim();
           const cust = await this.prisma.customer.findFirst({
-            where: { code: String(row.customercode).trim(), companyId },
+            where: {
+              OR: [
+                { code: custVal, companyId, isActive: true },
+                { name: custVal, companyId, isActive: true },
+              ],
+            },
           });
           if (!cust)
-            errors.push(`Customer Code "${row.customercode}" does not exist.`);
+            errors.push(
+              `Customer "${row.customercode}" was not found.\nPlease import Customers first, or choose an existing Customer from the reference sheet.`,
+            );
         }
         break;
       }
@@ -1216,7 +1327,13 @@ export class ImportsService {
           }
           case 'budgetlines': {
             const acc = await tx.account.findFirst({
-              where: { code: String(row.accountcode).trim(), companyId },
+              where: {
+                OR: [
+                  { code: String(row.accountcode).trim(), companyId },
+                  { name: String(row.accountcode).trim(), companyId },
+                ],
+                isActive: true,
+              },
             });
             if (!acc) break;
 
@@ -1246,29 +1363,53 @@ export class ImportsService {
             }
             let costCenterId: bigint | null = null;
             if (row.costcentercode) {
+              const ccVal = String(row.costcentercode).trim();
               const cc = await tx.costCenter.findFirst({
-                where: { code: String(row.costcentercode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: ccVal, companyId },
+                    { name: ccVal, companyId },
+                  ],
+                },
               });
               costCenterId = cc ? cc.id : null;
             }
             let productId: bigint | null = null;
             if (row.productsku) {
+              const prodVal = String(row.productsku).trim();
               const p = await tx.product.findFirst({
-                where: { sku: String(row.productsku).trim(), companyId },
+                where: {
+                  OR: [
+                    { sku: prodVal, companyId, isActive: true },
+                    { name: prodVal, companyId, isActive: true },
+                  ],
+                },
               });
               productId = p ? p.id : null;
             }
             let materialId: bigint | null = null;
             if (row.materialcode) {
+              const matVal = String(row.materialcode).trim();
               const m = await tx.material.findFirst({
-                where: { code: String(row.materialcode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: matVal, companyId, isActive: true },
+                    { name: matVal, companyId, isActive: true },
+                  ],
+                },
               });
               materialId = m ? m.id : null;
             }
             let customerId: bigint | null = null;
             if (row.customercode) {
+              const custVal = String(row.customercode).trim();
               const c = await tx.customer.findFirst({
-                where: { code: String(row.customercode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: custVal, companyId, isActive: true },
+                    { name: custVal, companyId, isActive: true },
+                  ],
+                },
               });
               customerId = c ? c.id : null;
             }
@@ -1293,7 +1434,13 @@ export class ImportsService {
           }
           case 'forecastlines': {
             const acc = await tx.account.findFirst({
-              where: { code: String(row.accountcode).trim(), companyId },
+              where: {
+                OR: [
+                  { code: String(row.accountcode).trim(), companyId },
+                  { name: String(row.accountcode).trim(), companyId },
+                ],
+                isActive: true,
+              },
             });
             if (!acc) break;
 
@@ -1324,29 +1471,53 @@ export class ImportsService {
             }
             let costCenterId: bigint | null = null;
             if (row.costcentercode) {
+              const ccVal = String(row.costcentercode).trim();
               const cc = await tx.costCenter.findFirst({
-                where: { code: String(row.costcentercode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: ccVal, companyId },
+                    { name: ccVal, companyId },
+                  ],
+                },
               });
               costCenterId = cc ? cc.id : null;
             }
             let productId: bigint | null = null;
             if (row.productsku) {
+              const prodVal = String(row.productsku).trim();
               const p = await tx.product.findFirst({
-                where: { sku: String(row.productsku).trim(), companyId },
+                where: {
+                  OR: [
+                    { sku: prodVal, companyId, isActive: true },
+                    { name: prodVal, companyId, isActive: true },
+                  ],
+                },
               });
               productId = p ? p.id : null;
             }
             let materialId: bigint | null = null;
             if (row.materialcode) {
+              const matVal = String(row.materialcode).trim();
               const m = await tx.material.findFirst({
-                where: { code: String(row.materialcode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: matVal, companyId, isActive: true },
+                    { name: matVal, companyId, isActive: true },
+                  ],
+                },
               });
               materialId = m ? m.id : null;
             }
             let customerId: bigint | null = null;
             if (row.customercode) {
+              const custVal = String(row.customercode).trim();
               const c = await tx.customer.findFirst({
-                where: { code: String(row.customercode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: custVal, companyId, isActive: true },
+                    { name: custVal, companyId, isActive: true },
+                  ],
+                },
               });
               customerId = c ? c.id : null;
             }
@@ -1374,7 +1545,13 @@ export class ImportsService {
           }
           case 'actuallines': {
             const acc = await tx.account.findFirst({
-              where: { code: String(row.accountcode).trim(), companyId },
+              where: {
+                OR: [
+                  { code: String(row.accountcode).trim(), companyId },
+                  { name: String(row.accountcode).trim(), companyId },
+                ],
+                isActive: true,
+              },
             });
             if (!acc) break;
 
@@ -1411,29 +1588,53 @@ export class ImportsService {
             }
             let costCenterId: bigint | null = null;
             if (row.costcentercode) {
+              const ccVal = String(row.costcentercode).trim();
               const cc = await tx.costCenter.findFirst({
-                where: { code: String(row.costcentercode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: ccVal, companyId },
+                    { name: ccVal, companyId },
+                  ],
+                },
               });
               costCenterId = cc ? cc.id : null;
             }
             let productId: bigint | null = null;
             if (row.productsku) {
+              const prodVal = String(row.productsku).trim();
               const p = await tx.product.findFirst({
-                where: { sku: String(row.productsku).trim(), companyId },
+                where: {
+                  OR: [
+                    { sku: prodVal, companyId, isActive: true },
+                    { name: prodVal, companyId, isActive: true },
+                  ],
+                },
               });
               productId = p ? p.id : null;
             }
             let materialId: bigint | null = null;
             if (row.materialcode) {
+              const matVal = String(row.materialcode).trim();
               const m = await tx.material.findFirst({
-                where: { code: String(row.materialcode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: matVal, companyId, isActive: true },
+                    { name: matVal, companyId, isActive: true },
+                  ],
+                },
               });
               materialId = m ? m.id : null;
             }
             let customerId: bigint | null = null;
             if (row.customercode) {
+              const custVal = String(row.customercode).trim();
               const c = await tx.customer.findFirst({
-                where: { code: String(row.customercode).trim(), companyId },
+                where: {
+                  OR: [
+                    { code: custVal, companyId, isActive: true },
+                    { name: custVal, companyId, isActive: true },
+                  ],
+                },
               });
               customerId = c ? c.id : null;
             }

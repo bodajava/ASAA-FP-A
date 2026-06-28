@@ -664,12 +664,12 @@ export function ImportModal({
                 </div>
               )}
 
-              {/* Required Steps Section */}
+              {/* How to Fix Section */}
               {structuredError.steps.length > 0 && (
                 <div className="rounded-xl border border-border bg-card p-4">
                   <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
                     <ListOrdered className="h-3.5 w-3.5 text-primary" />
-                    {t('import.error.requiredSteps')}
+                    {t('import.error.howToFix')}
                   </h4>
                   <ol className="space-y-1.5">
                     {structuredError.steps.map((step, idx) => (
@@ -686,6 +686,33 @@ export function ImportModal({
                   </ol>
                 </div>
               )}
+
+              {/* Required Import Order for Budget Lines */}
+              <div className="rounded-xl border border-border bg-card p-4">
+                <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <ListOrdered className="h-3.5 w-3.5 text-primary" />
+                  {t('import.error.requiredImportOrder')}
+                </h4>
+                <ol className="space-y-1.5">
+                  {[
+                    t('import.error.steps.importAccounts'),
+                    t('import.error.steps.importSites'),
+                    t('import.error.steps.importCostCenters'),
+                    t('import.error.steps.importProducts'),
+                    t('import.error.steps.uploadAgain', { module: moduleLabel }),
+                  ].map((step, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center gap-2 text-xs text-card-foreground"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                        {idx + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
 
               {/* Row-Level Error Details */}
               {structuredError.errorType === 'VALIDATION_ERRORS' && (
@@ -708,7 +735,15 @@ export function ImportModal({
                   isLoading={isDownloading}
                 >
                   <Download className="h-3.5 w-3.5" />
-                  {t('import.error.actions.downloadTemplate')}
+                  {t('import.error.downloadEmptyTemplate')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open('/excel-integration', '_blank')}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {t('import.error.downloadMasterData')}
                 </Button>
                 <Button
                   size="sm"

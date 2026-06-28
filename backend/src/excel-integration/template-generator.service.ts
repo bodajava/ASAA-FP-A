@@ -72,12 +72,8 @@ const IMPORT_ORDER = [
   { key: 'accounts', label: 'Accounts' },
   { key: 'sites', label: 'Sites' },
   { key: 'costcenters', label: 'Cost Centers' },
-  { key: 'units', label: 'Units' },
-  { key: 'suppliers', label: 'Suppliers' },
-  { key: 'customers', label: 'Customers' },
-  { key: 'materials', label: 'Materials' },
-  { key: 'productcategories', label: 'Product Categories' },
   { key: 'products', label: 'Products' },
+  { key: 'budgetcycles', label: 'Budget Cycles' },
 ];
 
 @Injectable()
@@ -165,8 +161,9 @@ export class TemplateGeneratorService {
       ['2. Fill in the required columns (marked with *). Leave optional columns blank if not applicable.'],
       ['3. You can enter either the Code or the Name for Account, Site, Cost Center, Product, Material, and Customer columns.'],
       ['4. Use the dropdown lists in the data columns for quick selection from your existing master data.'],
-      ['5. Month must be a number between 1 and 12.'],
-      ['6. Save the file as .xlsx and upload it.'],
+      ['5. Month must be a number between 1 and 12, a month name (e.g. January, Jan), or an Arabic month name.'],
+      ['6. Material and Customer are optional — leave blank if not applicable.'],
+      ['7. Save the file as .xlsx and upload it.'],
       [],
     ];
 
@@ -180,28 +177,31 @@ export class TemplateGeneratorService {
     rows.push([]);
 
     // Import order
-    rows.push(['Required Import Order:']);
+    rows.push(['Required Import Order for Budget Lines:']);
     rows.push(['Master data must be imported BEFORE transaction data.']);
     rows.push([]);
-    for (let i = 0; i < IMPORT_ORDER.length; i++) {
-      rows.push([`${i + 1}. Import ${IMPORT_ORDER[i].label}`]);
-    }
-    rows.push([`${IMPORT_ORDER.length + 1}. Upload ${sheet.sheetName} data`]);
+    rows.push(['1. Accounts']);
+    rows.push(['2. Sites']);
+    rows.push(['3. Cost Centers']);
+    rows.push(['4. Products']);
+    rows.push(['5. Budget Cycles']);
+    rows.push(['6. Budget Lines (this file)']);
     rows.push([]);
 
     // Accepted values
     rows.push(['Accepted Values:']);
-    rows.push(['- Month: 1, 2, 3, ..., 12']);
+    rows.push(['- Month: 1, 2, 3, ..., 12, or month names (January, Feb, Mar, ..., Dec), or Arabic month names (يناير, فبراير, ...)']);
     rows.push(['- Fiscal Year: e.g. 2024, 2025, 2026']);
-    if (isBudget) {
+    if (isForecast) {
       rows.push(['- Driver Type (Forecast only): driver_based, statistical, manual, trend, seasonal']);
     }
     rows.push([]);
 
     // Missing master data
     rows.push(['If Master Data is Missing:']);
-    rows.push([`If you see errors about missing Accounts, Sites, Cost Centers, Products, Materials, or Customers,`]);
+    rows.push([`If you see errors about missing Accounts, Sites, Cost Centers, or Products,`]);
     rows.push([`first import the required master data using the corresponding templates, then re-upload this file.`]);
+    rows.push([`Material and Customer are optional — you can leave those columns blank.`]);
     rows.push([`Download master data templates from the Excel Integration page.`]);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);

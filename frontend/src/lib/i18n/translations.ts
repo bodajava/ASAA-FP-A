@@ -1876,7 +1876,13 @@ export type TranslationKey =
   | 'import.error.rowDetails'
   | 'import.error.noErrors'
   | 'import.error.invalidRows'
-  | 'import.error.validRows';
+  | 'import.error.validRows'
+  | 'import.error.howToFix'
+  | 'import.error.requiredImportOrder'
+  | 'import.error.downloadEmptyTemplate'
+  | 'import.error.downloadMasterData'
+  | 'import.error.goToExcelIntegration'
+  | 'import.error.importBudgetLines';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -3828,6 +3834,12 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.error.noErrors': 'No errors found',
     'import.error.invalidRows': '{n} row(s) have errors',
     'import.error.validRows': '{n} row(s) are valid',
+    'import.error.howToFix': 'How to Fix',
+    'import.error.requiredImportOrder': 'Required Import Order',
+    'import.error.downloadEmptyTemplate': 'Download Empty Budget Template',
+    'import.error.downloadMasterData': 'Download Master Data Templates',
+    'import.error.goToExcelIntegration': 'Go to Excel Integration',
+    'import.error.importBudgetLines': 'Required import order for Budget Lines:',
   },
 
   ar: {
@@ -5779,5 +5791,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.error.noErrors': 'لا توجد أخطاء',
     'import.error.invalidRows': '{n} صفوف تحتوي على أخطاء',
     'import.error.validRows': '{n} صفوف صالحة',
+    'import.error.howToFix': 'كيفية الإصلاح',
+    'import.error.requiredImportOrder': 'ترتيب الاستيراد المطلوب',
+    'import.error.downloadEmptyTemplate': 'تنزيل قالب الميزانية الفارغ',
+    'import.error.downloadMasterData': 'تنزيل قوالب البيانات الأساسية',
+    'import.error.goToExcelIntegration': 'الانتقال إلى تكامل Excel',
+    'import.error.importBudgetLines': 'ترتيب الاستيراد المطلوب لبنود الميزانية:',
   },
 };

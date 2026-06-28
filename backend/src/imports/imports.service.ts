@@ -35,51 +35,51 @@ export class ImportsService {
   getSampleCSV(module: string): string {
     switch (module.toLowerCase()) {
       case 'companies':
-        return 'name,legalName,industryType,currencyCode,taxNumber\nMy New Company,My Legal Name,mixed,EGP,123-456-789';
+        return 'name,legalName,industryType,currencyCode,taxNumber';
       case 'sites':
-        return 'name,type,region,address\nCairo HQ,office,Cairo,12 El Tahrir St\nAlexandria Plant,factory,Alexandria,Desert Road';
+        return 'name,type,region,address';
       case 'units':
-        return 'name,symbol\nKilogram,kg\nPieces,pcs\nLiters,L';
+        return 'name,symbol,type';
       case 'accounts':
-        return 'code,name,type,parentCode\n4000,Sales Revenue,revenue,\n5000,Cost of Goods Sold,cogs,\n6000,Rent Expense,expense,';
+        return 'code,name,type,parentCode,isActive';
       case 'costcenters':
       case 'cost-centers':
-        return 'code,name,type,siteCode,parentCode\nCC-MKT,Marketing Dept,marketing,,';
+        return 'code,name,type,siteCode,parentCode';
       case 'productcategories':
       case 'product-categories':
-        return 'name,parentCategoryName\nBeverages,\nSoft Drinks,Beverages';
+        return 'name,parentCategoryName';
       case 'suppliers':
-        return 'name,phone,email\nAl Ahram Corp,+2021234567,info@alahram.com';
+        return 'name,phone,email';
       case 'customers':
-        return 'code,name,customerType,region,phone,email,creditLimit,paymentTerms\nCUST-01,Universal Stores,wholesale,Giza,,info@universal.com,50000,30';
+        return 'code,name,customerType,region,phone,email,creditLimit,paymentTerms';
       case 'products':
-        return 'sku,name,productType,salePrice,standardCost,categoryName,unitSymbol\nPROD-JUICE,Apple Juice 250ml,finished_good,15,8,Beverages,pcs';
+        return 'sku,name,productType,salePrice,standardCost,categoryName,unitSymbol';
       case 'materials':
-        return 'code,name,purchasePrice,safetyStockQty,supplierName,unitSymbol\nMAT-SUGAR,Refined White Sugar,30,100,Al-Hoda Raw Materials Co.,kg';
+        return 'code,name,purchasePrice,safetyStockQty,supplierName,unitSymbol';
       case 'bomrecipes':
       case 'bom-recipes':
-        return 'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct\nPROD-JUICE,v1,1,0.02,0.5,0.3,MAT-SUGAR,0.02,0.01';
+        return 'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct';
       case 'budgetlines':
       case 'budget-lines':
-        return 'budgetCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,notes\nFY25 Annual Budget,2025,4000,Cairo HQ,CC-MKT,PROD-JUICE,,,1,1000,15,15000,January sales projection';
+        return 'budgetCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,notes';
       case 'forecastlines':
       case 'forecast-lines':
-        return 'forecastCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,driverType,notes\nFY25 Rolling Q1,2025,4000,Cairo HQ,CC-MKT,PROD-JUICE,,,1,1200,15,18000,driver_based,Q1 updated forecast';
+        return 'forecastCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,driverType,notes';
       case 'actuallines':
       case 'actual-lines':
-        return 'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo\n4000,Cairo HQ,CC-MKT,PROD-JUICE,,,2025-01-15,950,15,14250,TX-99812';
+        return 'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo';
       case 'materialprices':
       case 'material-prices':
-        return 'materialCode,price,effectiveDate,notes\nMAT-SUGAR,32.50,2025-06-01,June price update';
+        return 'materialCode,price,effectiveDate,notes';
       case 'packagingprices':
       case 'packaging-prices':
-        return 'materialCode,price,effectiveDate,notes\nMAT-BOTTLE,5.75,2025-06-01,New packaging supplier rate';
+        return 'materialCode,price,effectiveDate,notes';
       case 'productionallocations':
       case 'production-allocations':
-        return 'siteCode,period,allocatedAmount,allocationBasis,notes\nCairo HQ,2026-06,15000,production_volume,June production allocation';
+        return 'siteCode,period,allocatedAmount,allocationBasis,notes';
       case 'yieldwaste':
       case 'yield-waste':
-        return 'productSku,yieldPct,wastagePct,notes\nPROD-JUICE,92.5,7.5,Yield improved after recipe update';
+        return 'productSku,yieldPct,wastagePct,notes';
       default:
         throw new BadRequestException(`Unknown module template: ${module}`);
     }

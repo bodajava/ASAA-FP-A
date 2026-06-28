@@ -1748,7 +1748,54 @@ export type TranslationKey =
   | 'import.enterprise.timestamp'
   | 'import.enterprise.module'
   | 'import.enterprise.fileName'
-  | 'import.enterprise.close';
+  | 'import.enterprise.close'
+  /* ── Support Center ───────────────────────────────────────────────────── */
+  | 'nav.supportCenter'
+  | 'nav.helpAndSupport'
+  | 'nav.contactUs'
+  | 'nav.documentation'
+  | 'common.openSidebar'
+  | 'page.contactUs.title'
+  | 'page.contactUs.description'
+  | 'page.contactUs.supportInfo'
+  | 'page.contactUs.businessHours'
+  | 'page.contactUs.businessHoursWeekdays'
+  | 'page.contactUs.businessHoursWeekend'
+  | 'page.contactUs.faq'
+  | 'page.contactUs.faqQuestion1'
+  | 'page.contactUs.faqAnswer1'
+  | 'page.contactUs.faqQuestion2'
+  | 'page.contactUs.faqAnswer2'
+  | 'page.contactUs.faqQuestion3'
+  | 'page.contactUs.faqAnswer3'
+  | 'page.contactUs.faqQuestion4'
+  | 'page.contactUs.faqAnswer4'
+  | 'page.contactUs.technicalSupport'
+  | 'page.contactUs.salesInquiry'
+  | 'page.contactUs.generalInquiry'
+  | 'page.contactUs.contactInformation'
+  | 'page.contactUs.website'
+  | 'page.contactUs.email'
+  | 'page.contactUs.whatsapp'
+  | 'page.contactUs.visitWebsite'
+  | 'page.contactUs.sendEmail'
+  | 'page.contactUs.chatOnWhatsApp'
+  | 'page.contactUs.copyToClipboard'
+  | 'page.contactUs.copied'
+  | 'page.contactUs.openINGmail'
+  | 'page.contactUs.contactForm'
+  | 'page.contactUs.fullName'
+  | 'page.contactUs.fullNamePlaceholder'
+  | 'page.contactUs.emailAddress'
+  | 'page.contactUs.emailPlaceholder'
+  | 'page.contactUs.subject'
+  | 'page.contactUs.subjectPlaceholder'
+  | 'page.contactUs.message'
+  | 'page.contactUs.messagePlaceholder'
+  | 'page.contactUs.sendMessage'
+  | 'page.contactUs.sending'
+  | 'page.contactUs.messageSent'
+  | 'page.contactUs.inquiryType';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -3569,6 +3616,54 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.enterprise.module': 'Module',
     'import.enterprise.fileName': 'File Name',
     'import.enterprise.close': 'Close',
+
+    /* Support Center */
+    'nav.supportCenter': 'Support Center',
+    'nav.helpAndSupport': 'Help & Support',
+    'nav.contactUs': 'Contact Us',
+    'nav.documentation': 'Documentation',
+    'common.openSidebar': 'Open sidebar',
+    'page.contactUs.title': 'Contact Us',
+    'page.contactUs.description': 'We are here to help. Reach out to our team for support, sales inquiries, or general questions.',
+    'page.contactUs.supportInfo': 'Support Information',
+    'page.contactUs.businessHours': 'Business Hours',
+    'page.contactUs.businessHoursWeekdays': 'Sunday - Thursday: 9:00 AM - 6:00 PM',
+    'page.contactUs.businessHoursWeekend': 'Friday - Saturday: Closed',
+    'page.contactUs.faq': 'Frequently Asked Questions',
+    'page.contactUs.faqQuestion1': 'How do I import my Excel data?',
+    'page.contactUs.faqAnswer1': 'Go to Excel Integration, download the template, fill in your data, and upload. The system will validate and import automatically.',
+    'page.contactUs.faqQuestion2': 'Can I customize the dashboard?',
+    'page.contactUs.faqAnswer2': 'Yes! You can filter by fiscal year, period, and use the various chart widgets to view data that matters to you.',
+    'page.contactUs.faqQuestion3': 'How do I add new users?',
+    'page.contactUs.faqAnswer3': 'Navigate to System Control > Users and click the Add button. You can assign roles and permissions to new users.',
+    'page.contactUs.faqQuestion4': 'Is my data secure?',
+    'page.contactUs.faqAnswer4': 'Yes. All data is encrypted in transit and at rest. We use enterprise-grade security with role-based access control.',
+    'page.contactUs.technicalSupport': 'Technical Support',
+    'page.contactUs.salesInquiry': 'Sales Inquiry',
+    'page.contactUs.generalInquiry': 'General Inquiry',
+    'page.contactUs.contactInformation': 'Contact Information',
+    'page.contactUs.website': 'Website',
+    'page.contactUs.email': 'Email',
+    'page.contactUs.whatsapp': 'WhatsApp',
+    'page.contactUs.visitWebsite': 'Visit Website',
+    'page.contactUs.sendEmail': 'Send Email',
+    'page.contactUs.chatOnWhatsApp': 'Chat on WhatsApp',
+    'page.contactUs.copyToClipboard': 'Copy',
+    'page.contactUs.copied': 'Copied!',
+    'page.contactUs.openINGmail': 'Open in Gmail',
+    'page.contactUs.contactForm': 'Contact Form',
+    'page.contactUs.fullName': 'Full Name',
+    'page.contactUs.fullNamePlaceholder': 'Enter your full name',
+    'page.contactUs.emailAddress': 'Email Address',
+    'page.contactUs.emailPlaceholder': 'Enter your email address',
+    'page.contactUs.subject': 'Subject',
+    'page.contactUs.subjectPlaceholder': 'How can we help you?',
+    'page.contactUs.message': 'Message',
+    'page.contactUs.messagePlaceholder': 'Tell us more about your inquiry...',
+    'page.contactUs.sendMessage': 'Send Message',
+    'page.contactUs.sending': 'Sending...',
+    'page.contactUs.messageSent': 'Your message has been sent successfully!',
+    'page.contactUs.inquiryType': 'Inquiry Type',
   },
 
   ar: {
@@ -5389,5 +5484,53 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.enterprise.module': 'الوحدة',
     'import.enterprise.fileName': 'اسم الملف',
     'import.enterprise.close': 'إغلاق',
+
+    /* Support Center */
+    'nav.supportCenter': 'مركز الدعم',
+    'nav.helpAndSupport': 'المساعدة والدعم',
+    'nav.contactUs': 'اتصل بنا',
+    'nav.documentation': 'التوثيق',
+    'common.openSidebar': 'فتح القائمة الجانبية',
+    'page.contactUs.title': 'اتصل بنا',
+    'page.contactUs.description': 'نحن هنا لمساعدتك. تواصل مع فريقنا للدعم أو استفسارات المبيعات أو الأسئلة العامة.',
+    'page.contactUs.supportInfo': 'معلومات الدعم',
+    'page.contactUs.businessHours': 'ساعات العمل',
+    'page.contactUs.businessHoursWeekdays': 'الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً',
+    'page.contactUs.businessHoursWeekend': 'الجمعة - السبت: مغلق',
+    'page.contactUs.faq': 'الأسئلة الشائعة',
+    'page.contactUs.faqQuestion1': 'كيف أستورد بيانات Excel؟',
+    'page.contactUs.faqAnswer1': 'انتقل إلى تكامل Excel، حمّل النموذج، أدخل بياناتك، ثم ارفعه. سيقوم النظام بالتحقق والاستيراد تلقائياً.',
+    'page.contactUs.faqQuestion2': 'هل يمكنني تخصيص لوحة التحكم؟',
+    'page.contactUs.faqAnswer2': 'نعم! يمكنك التصفية حسب السنة المالية والفترة واستخدام الرسوم البيانية المختلفة لعرض البيانات التي تهمك.',
+    'page.contactUs.faqQuestion3': 'كيف أضيف مستخدمين جدد؟',
+    'page.contactUs.faqAnswer3': 'انتقل إلى التحكم في النظام > المستخدمون واضغط على زر إضافة. يمكنك تعيين الأدوار والصلاحيات للمستخدمين الجدد.',
+    'page.contactUs.faqQuestion4': 'هل بياناتي آمنة؟',
+    'page.contactUs.faqAnswer4': 'نعم. جميع البيانات مشفرة أثناء النقل وفي وضع الراحة. نستخدم أمان على مستوى المؤسسات مع التحكم في الوصول القائم على الأدوار.',
+    'page.contactUs.technicalSupport': 'الدعم الفني',
+    'page.contactUs.salesInquiry': 'استفسار المبيعات',
+    'page.contactUs.generalInquiry': 'استفسار عام',
+    'page.contactUs.contactInformation': 'معلومات الاتصال',
+    'page.contactUs.website': 'الموقع الإلكتروني',
+    'page.contactUs.email': 'البريد الإلكتروني',
+    'page.contactUs.whatsapp': 'واتساب',
+    'page.contactUs.visitWebsite': 'زيارة الموقع',
+    'page.contactUs.sendEmail': 'إرسال بريد إلكتروني',
+    'page.contactUs.chatOnWhatsApp': 'محادثة عبر واتساب',
+    'page.contactUs.copyToClipboard': 'نسخ',
+    'page.contactUs.copied': 'تم النسخ!',
+    'page.contactUs.openINGmail': 'فتح في Gmail',
+    'page.contactUs.contactForm': 'نموذج الاتصال',
+    'page.contactUs.fullName': 'الاسم الكامل',
+    'page.contactUs.fullNamePlaceholder': 'أدخل اسمك الكامل',
+    'page.contactUs.emailAddress': 'البريد الإلكتروني',
+    'page.contactUs.emailPlaceholder': 'أدخل بريدك الإلكتروني',
+    'page.contactUs.subject': 'الموضوع',
+    'page.contactUs.subjectPlaceholder': 'كيف يمكننا مساعدتك؟',
+    'page.contactUs.message': 'الرسالة',
+    'page.contactUs.messagePlaceholder': 'أخبرنا المزيد عن استفسارك...',
+    'page.contactUs.sendMessage': 'إرسال الرسالة',
+    'page.contactUs.sending': 'جاري الإرسال...',
+    'page.contactUs.messageSent': 'تم إرسال رسالتك بنجاح!',
+    'page.contactUs.inquiryType': 'نوع الاستفسار',
   },
 };

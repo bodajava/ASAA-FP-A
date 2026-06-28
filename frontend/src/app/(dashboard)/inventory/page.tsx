@@ -77,8 +77,8 @@ export default function InventoryPage() {
         if (sitesRes.data && sitesRes.data.length > 0) setSiteId(sitesRes.data[0].id);
         if (prodRes.data && prodRes.data.length > 0) setProductId(prodRes.data[0].id);
         if (matRes.data && matRes.data.length > 0) setMaterialId(matRes.data[0].id);
-      } catch (err) {
-        console.error('Failed to load dropdowns', err);
+      } catch {
+        // Failed to load dropdowns
       }
     }
     void loadDropdowns();

@@ -90,12 +90,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     private readonly actualImportsService: ActualImportsService,
     private readonly notificationsService: NotificationsService,
     private readonly tenantService: TenantService,
-  ) {
-    console.log('IntegrationsService constructor called!');
-    console.log('prisma param:', prisma);
-    console.log('actualImportsService param:', actualImportsService);
-    console.log('notificationsService param:', notificationsService);
-  }
+  ) {}
 
   private validateMappingConfig(config: Record<string, any>): void {
     if (!config || typeof config !== 'object') {
@@ -3558,9 +3553,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     if (this.isHostingerDb()) {
-      console.log(
-        '[Background Sync] Skipping simulated background sync interval on Hostinger production DB to prevent connection exhaustion.',
-      );
       return;
     }
     // Start a simulated background sync task that runs every 60 seconds
@@ -3599,10 +3591,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
       // Check if it needs sync (e.g. lastSyncAt is older than 5 minutes for simulation, or null)
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
       if (!conn.lastSyncAt || conn.lastSyncAt < fiveMinAgo) {
-        console.log(
-          `[Background Sync] Running scheduled sync for connection: \${conn.name} (ID: \${conn.id})`,
-        );
-
         // Trigger sync
         const periodFrom = new Date(
           new Date().getFullYear(),

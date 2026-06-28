@@ -91,14 +91,14 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/90 px-4 backdrop-blur-sm sm:px-6',
+        'sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur-md sm:px-6',
         className,
       )}
     >
       <button
         onClick={onMenuClick}
-        className="rounded-lg p-2 text-slate-500 hover:bg-secondary lg:hidden cursor-pointer"
-        aria-label="Open sidebar"
+        className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden cursor-pointer"
+        aria-label={t('common.openSidebar')}
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -130,7 +130,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
             <Globe className="h-5 w-5" />
           </button>
           {langOpen && (
-            <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-36 rounded-xl border border-border bg-card py-1 shadow-xl z-50">
+            <div className="absolute end-0 mt-2 w-40 rounded-xl border border-border bg-card py-1 shadow-2xl z-50">
               <button
                 onClick={() => { setLocale('en'); setLangOpen(false); }}
                 className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${locale === 'en' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
@@ -158,7 +158,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
             <ThemeIcon className="h-5 w-5" />
           </button>
           {themeOpen && (
-            <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-36 rounded-xl border border-border bg-card py-1 shadow-xl z-50">
+            <div className="absolute end-0 mt-2 w-40 rounded-xl border border-border bg-card py-1 shadow-2xl z-50">
               <button
                 onClick={() => { setTheme('light'); setThemeOpen(false); }}
                 className={`w-full px-4 py-2 text-start text-sm transition-colors hover:bg-secondary cursor-pointer ${theme === 'light' ? 'font-bold text-emerald-600' : 'text-card-foreground'}`}
@@ -201,7 +201,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-80 rounded-xl border border-border bg-card py-2 shadow-xl z-50">
+            <div className="absolute end-0 mt-2 w-80 rounded-xl border border-border bg-card py-2 shadow-2xl z-50">
               <div className="flex items-center justify-between px-4 py-2 border-b border-border">
                 <span className="text-xs font-bold text-card-foreground">{t('common.notifications')}</span>
                 <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-semibold">{unreadNotifs.length} {t('common.unread')}</span>

@@ -36,7 +36,6 @@ export interface AuthUser {
 interface LoginCredentials {
   email: string;
   password: string;
-  tenantId: string;
 }
 
 interface BackendUser {
@@ -187,20 +186,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ------------------------------------------------------------------
   const login = useCallback(
     async (credentials: LoginCredentials): Promise<void> => {
-      const { email, password, tenantId } = credentials;
-      // x-tenant-id must be sent explicitly at login time — no stored token exists yet
+      const { email, password } = credentials;
+      // Tenant is resolved automatically from email - no x-tenant-id needed
       const response = await apiPost<BackendLoginResponse>(
         '/auth/login',
         { email, password },
-        {
-          headers: { 'x-tenant-id': tenantId },
-        },
       );
 
       // Token is stored in HttpOnly cookie by the server — also keep in
       // localStorage as a fallback for the Bearer Authorization header.
       setStoredToken(response.accessToken);
-      setItem(STORAGE_KEYS.TENANT_ID, String(tenantId));
+      setItem(STORAGE_KEYS.TENANT_ID, String(response.user.tenantId));
 
       const fullName = response.user.name ?? '';
       const [fName = '', lName = ''] = fullName.split(' ');
@@ -209,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: response.user.email,
         firstName: fName || response.user.name || 'User',
         lastName: lName,
-        tenantId: String(tenantId),
+        tenantId: String(response.user.tenantId),
         role: response.user.role?.name ?? 'User',
       };
 

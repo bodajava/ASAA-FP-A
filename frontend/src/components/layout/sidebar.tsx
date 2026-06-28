@@ -25,6 +25,8 @@ import {
   RefreshCw,
   BellRing,
   UserCog,
+  LifeBuoy,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/lib/auth-context';
@@ -111,6 +113,12 @@ const NAV: NavGroup[] = [
       { tKey: 'nav.settings', href: '/settings', icon: Settings },
       { tKey: 'nav.users', href: '/users', icon: UserCog },
       { tKey: 'nav.roles', href: '/roles', icon: Shield },
+    ],
+  },
+  {
+    tKey: 'nav.supportCenter',
+    items: [
+      { tKey: 'nav.contactUs', href: '/contact', icon: MessageCircle },
     ],
   },
 ];

@@ -44,8 +44,8 @@ export class AuthController {
   @ApiOperation({ summary: 'User login' })
   @ApiHeader({
     name: 'x-tenant-id',
-    description: 'Tenant ID is required for multi-tenant isolation',
-    required: true,
+    description: 'Optional tenant ID. If not provided, tenant is resolved from email.',
+    required: false,
   })
   @ApiResponse({
     status: 200,
@@ -53,7 +53,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Missing x-tenant-id header or invalid payload.',
+    description: 'Invalid payload.',
   })
   @ApiResponse({
     status: 401,
@@ -66,17 +66,16 @@ export class AuthController {
     @Headers('user-agent') userAgent?: string,
     @Res({ passthrough: true }) res?: ExpressRes,
   ) {
-    if (!tenantIdHeader) {
-      throw new BadRequestException({ message: 'x-tenant-id header is required for login', code: ErrorCodes.AUTH_TENANT_REQUIRED });
-    }
+    let tenantId: bigint | undefined;
 
-    let tenantId: bigint;
-    try {
-      tenantId = BigInt(tenantIdHeader);
-    } catch {
-      throw new BadRequestException(
-        { message: 'Invalid x-tenant-id header. Must be a numeric value.', code: ErrorCodes.AUTH_TENANT_INVALID },
-      );
+    if (tenantIdHeader) {
+      try {
+        tenantId = BigInt(tenantIdHeader);
+      } catch {
+        throw new BadRequestException(
+          { message: 'Invalid x-tenant-id header. Must be a numeric value.', code: ErrorCodes.AUTH_TENANT_INVALID },
+        );
+      }
     }
 
     const user = await this.authService.validateUser(

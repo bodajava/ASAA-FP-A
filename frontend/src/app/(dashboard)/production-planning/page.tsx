@@ -275,8 +275,8 @@ export default function ProductionPlanningPage() {
         if (activeSites.length > 0) {
           setSaveSiteId(activeSites[0].id);
         }
-      } catch (err) {
-        console.error('Failed to load sites', err);
+      } catch {
+        // Failed to load sites
       }
     }
     if (result) {

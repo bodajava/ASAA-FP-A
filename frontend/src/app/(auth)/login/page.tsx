@@ -12,9 +12,8 @@ import axios from 'axios';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
-  const [tenantId, setTenantId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,16 +22,10 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-
-    if (!tenantId.trim()) {
-      setError(t('common.required'));
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      await login({ email, password, tenantId: tenantId.trim() });
+      await login({ email, password });
       router.push('/dashboard');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -63,7 +56,7 @@ export default function LoginPage() {
     <div className="rounded-2xl border border-border bg-card p-8 shadow-md">
       {/* Logo area */}
       <div className="mb-8 flex flex-col items-center gap-2 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-xl font-bold text-white shadow-sm">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-xl font-bold text-primary-foreground shadow-sm">
           A
         </span>
         <h1 className="text-xl font-semibold text-card-foreground">
@@ -86,18 +79,6 @@ export default function LoginPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        <Input
-          id="login-tenant-id"
-          type="text"
-          label={t('common.tenantId')}
-          placeholder="e.g. 1"
-          autoComplete="off"
-          required
-          value={tenantId}
-          onChange={(e) => setTenantId(e.target.value)}
-          hint={t('common.tenantIdHint')}
-        />
-
         <Input
           id="login-email"
           type="email"

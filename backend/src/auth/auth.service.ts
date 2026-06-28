@@ -54,13 +54,15 @@ export class AuthService {
   async validateUser(
     email: string,
     pass: string,
-    tenantId: bigint,
+    tenantId?: bigint,
   ): Promise<AuthUser> {
+    const whereClause: Prisma.UserWhereInput = { email };
+    if (tenantId !== undefined) {
+      whereClause.tenantId = tenantId;
+    }
+
     const user = await this.prisma.user.findFirst({
-      where: {
-        email,
-        tenantId,
-      },
+      where: whereClause,
       include: {
         role: {
           select: {
@@ -73,7 +75,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException({ message: 'Invalid credentials or tenant ID', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
+      throw new UnauthorizedException({ message: 'Invalid email or password', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
     }
 
     if (user.status !== 'active') {
@@ -82,7 +84,7 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException({ message: 'Invalid credentials or tenant ID', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
+      throw new UnauthorizedException({ message: 'Invalid email or password', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
     }
 
     return {

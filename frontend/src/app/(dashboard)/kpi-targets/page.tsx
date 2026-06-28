@@ -35,8 +35,8 @@ function KpiTargetForm({ item, onClose, onSubmit, isLoading }: FormProps) {
       try {
         const res = await apiGet<{ data: Site[] }>('/sites?limit=100');
         setSites(res.data ?? []);
-      } catch (err) {
-        console.error('Failed to load sites', err);
+      } catch {
+        // Failed to load sites
       } finally {
         setLoadingSites(false);
       }

@@ -31,10 +31,6 @@ export class PrismaService
       urlObj.searchParams.set('connectionLimit', '5');
     }
     url = urlObj.toString();
-    console.log(
-      'Using database URL:',
-      url ? url.replace(/:[^@]+@/, ':***@') : 'undefined',
-    );
     const adapter = new PrismaMariaDb(url, { useTextProtocol: true });
     super({ adapter });
   }

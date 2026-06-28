@@ -391,18 +391,18 @@ export function ImportModal({
       />
 
       {/* Modal */}
-      <div className="relative z-10 flex w-full max-w-2xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl max-h-[90vh]">
+      <div className="relative z-10 flex w-full max-w-2xl flex-col rounded-2xl border border-border bg-card shadow-xl max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-emerald-600" />
-            <h2 className="text-base font-semibold text-slate-900">
+            <FileText className="h-4 w-4 text-primary" />
+            <h2 className="text-base font-semibold text-card-foreground">
               {t('component.importModal.title', { module: moduleLabel })}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-card-foreground transition-colors cursor-pointer"
             aria-label={t('component.importModal.close')}
           >
             <X className="h-4 w-4" />
@@ -447,7 +447,7 @@ export function ImportModal({
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-muted-foreground">
                     {t('component.importModal.statTime', {
                       s: (importStats.timeTaken / 1000).toFixed(1),
                     })}
@@ -459,11 +459,11 @@ export function ImportModal({
 
           {/* Step 1: Instructions + Download */}
           {!importStats && (
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 space-y-2">
-              <p className="text-sm font-medium text-slate-700">
+            <div className="rounded-xl border border-border bg-secondary/50 px-4 py-4 space-y-2">
+              <p className="text-sm font-medium text-card-foreground">
                 {t('component.importModal.howItWorks')}
               </p>
-              <ol className="list-decimal list-inside text-sm text-slate-500 space-y-1">
+              <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1">
                 <li>{t('component.importModal.instruction1')}</li>
                 <li>{t('component.importModal.instruction2')}</li>
                 <li>{t('component.importModal.instruction3')}</li>
@@ -487,7 +487,7 @@ export function ImportModal({
           {/* Step 2: Upload - Drag & Drop Zone */}
           {!importStats && (
             <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">
+              <p className="text-sm font-medium text-card-foreground mb-2">
                 {t('component.importModal.uploadFile')}
               </p>
               <div
@@ -521,17 +521,17 @@ export function ImportModal({
                       {fileName}
                     </p>
                     {fileSize != null && (
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {formatFileSize(fileSize)}
                       </p>
                     )}
                   </div>
                 ) : (
                   <div className="text-center">
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                       {t('component.importModal.dragDrop')}
                     </p>
-                    <p className="text-xs text-slate-300 mt-1">
+                    <p className="text-xs text-muted-foreground/60 mt-1">
                       .csv, .xlsx, .xls
                     </p>
                   </div>
@@ -563,12 +563,12 @@ export function ImportModal({
           {isProcessing && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">{progressStatus}</span>
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm text-card-foreground">{progressStatus}</span>
+                <span className="text-sm font-medium text-card-foreground">
                   {progress}%
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-all duration-300 ease-out"
                   style={{ width: `${progress}%` }}
@@ -582,7 +582,7 @@ export function ImportModal({
             <div>
               {/* Summary */}
               <div className="mb-3 flex items-center gap-4 flex-wrap">
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-muted-foreground">
                   {t('component.importModal.rowSummary', {
                     valid: validCount,
                     invalid: invalidCount,
@@ -600,7 +600,7 @@ export function ImportModal({
                   </span>
                 )}
                 <button
-                  className="ml-auto text-xs text-slate-400 underline hover:text-slate-600"
+                  className="ml-auto text-xs text-muted-foreground underline hover:text-card-foreground"
                   onClick={handleCancelImport}
                 >
                   {t('component.importModal.clearReUpload')}
@@ -632,20 +632,20 @@ export function ImportModal({
               )}
 
               {/* Table */}
-              <div className="overflow-x-auto rounded-xl border border-slate-100">
+              <div className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-slate-50">
-                      <th className="px-3 py-2 text-left font-medium text-slate-500 w-10">
+                    <tr className="bg-secondary/50">
+                      <th className="px-3 py-2 text-left font-medium text-muted-foreground w-10">
                         #
                       </th>
-                      <th className="px-3 py-2 text-left font-medium text-slate-500">
+                      <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                         {t('component.importModal.status')}
                       </th>
                       {Object.keys(previewRows[0]?.data ?? {}).map((col) => (
                         <th
                           key={col}
-                          className="px-3 py-2 text-left font-medium text-slate-500 whitespace-nowrap"
+                          className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap"
                         >
                           {col}
                         </th>
@@ -655,7 +655,7 @@ export function ImportModal({
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-border">
                     {previewRows.map((row) => (
                       <React.Fragment key={row.index}>
                         <tr
@@ -665,7 +665,7 @@ export function ImportModal({
                               : 'bg-red-50 border-l-2 border-l-red-400'
                           }
                         >
-                          <td className="px-3 py-2 text-slate-400">
+                          <td className="px-3 py-2 text-muted-foreground">
                             {row.index}
                           </td>
                           <td className="px-3 py-2">
@@ -678,7 +678,7 @@ export function ImportModal({
                           {Object.values(row.data).map((val, i) => (
                             <td
                               key={i}
-                              className="px-3 py-2 text-slate-700 whitespace-nowrap"
+                              className="px-3 py-2 text-card-foreground whitespace-nowrap"
                             >
                               {val != null ? String(val) : '—'}
                             </td>
@@ -687,7 +687,7 @@ export function ImportModal({
                             <td className="px-3 py-2">
                               <button
                                 onClick={() => toggleErrorRow(row.index)}
-                                className="text-slate-400 hover:text-slate-600"
+                                className="text-muted-foreground hover:text-card-foreground"
                               >
                                 {expandedErrors.has(row.index) ? (
                                   <ChevronUp className="h-3.5 w-3.5" />
@@ -725,7 +725,7 @@ export function ImportModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4 flex-shrink-0">
           {importStats ? (
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('common.close')}

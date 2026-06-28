@@ -252,12 +252,12 @@ export default function ExcelIntegrationPage() {
       {view === 'upload' && (
         <div className="space-y-5">
           {/* Template Downloads Section */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-              <h3 className="text-sm font-bold text-slate-800">{t('page.excelIntegration.templateDownloads')}</h3>
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-bold text-card-foreground">{t('page.excelIntegration.templateDownloads')}</h3>
             </div>
-            <p className="text-xs text-slate-500">{t('page.excelIntegration.templateWarning')}</p>
+            <p className="text-xs text-muted-foreground">{t('page.excelIntegration.templateWarning')}</p>
             <div className="flex flex-wrap gap-3">
               <Button
                 size="sm"
@@ -280,7 +280,7 @@ export default function ExcelIntegrationPage() {
                   <FileSpreadsheet className="h-4 w-4" />
                   {t('page.excelIntegration.downloadModuleTemplate')}
                 </Button>
-                <div className="absolute left-0 top-full z-10 mt-1 hidden w-64 rounded-lg border border-slate-200 bg-white shadow-lg group-hover:block">
+                <div className="absolute left-0 top-full z-10 mt-1 hidden w-64 rounded-lg border border-border bg-card shadow-lg group-hover:block">
                   <div className="max-h-80 overflow-y-auto py-1">
                     {moduleList.map((mod) => (
                       <button
@@ -294,10 +294,10 @@ export default function ExcelIntegrationPage() {
                           a.click();
                           document.body.removeChild(a);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-slate-50"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-secondary/50"
                       >
-                        <span className="font-medium text-slate-700">{mod.sheetName}</span>
-                        <span className="text-slate-400">({mod.columnCount} cols)</span>
+                        <span className="font-medium text-card-foreground">{mod.sheetName}</span>
+                        <span className="text-muted-foreground">({mod.columnCount} cols)</span>
                       </button>
                     ))}
                   </div>
@@ -310,8 +310,8 @@ export default function ExcelIntegrationPage() {
           <div
             className={`relative rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${
               isDragging
-                ? 'border-emerald-500 bg-emerald-50/50'
-                : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/20'
+                ? 'border-emerald-500 bg-primary/5'
+                : 'border-border bg-card hover:border-primary/40 hover:bg-primary/5'
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -325,19 +325,19 @@ export default function ExcelIntegrationPage() {
               className="hidden"
             />
             <div className="flex flex-col items-center gap-4">
-              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <FileSpreadsheet className="h-8 w-8" />
               </span>
               <div>
-                <p className="text-sm font-semibold text-slate-700">{t('page.excelIntegration.dragDrop')}</p>
+                <p className="text-sm font-semibold text-card-foreground">{t('page.excelIntegration.dragDrop')}</p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-1 text-sm font-bold text-emerald-600 hover:text-emerald-700 underline underline-offset-2"
+                  className="mt-1 text-sm font-bold text-primary hover:text-primary underline underline-offset-2"
                 >
                   {t('page.excelIntegration.browse')}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400">.xlsx, .xls, .csv</p>
+              <p className="text-[11px] text-muted-foreground">.xlsx, .xls, .csv</p>
             </div>
           </div>
         </div>
@@ -345,10 +345,10 @@ export default function ExcelIntegrationPage() {
 
       {/* ─── ANALYZING VIEW ───────────────────────────────────────────── */}
       {view === 'analyzing' && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-16">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-500 mb-4" />
-          <p className="text-sm font-semibold text-slate-600">{t('page.excelIntegration.analyzing')}</p>
-          {file && <p className="text-xs text-slate-400 mt-1">{file.name}</p>}
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-16">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          <p className="text-sm font-semibold text-muted-foreground">{t('page.excelIntegration.analyzing')}</p>
+          {file && <p className="text-xs text-muted-foreground mt-1">{file.name}</p>}
         </div>
       )}
 
@@ -356,12 +356,12 @@ export default function ExcelIntegrationPage() {
       {view === 'results' && analysis && (
         <div className="space-y-5">
           {/* File info bar */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
             <div className="flex items-center gap-3">
-              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-sm font-bold text-slate-800">{analysis.analysis.fileName}</p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-sm font-bold text-card-foreground">{analysis.analysis.fileName}</p>
+                <p className="text-[11px] text-muted-foreground">
                   {analysis.analysis.sheets.length} {t('page.excelIntegration.sheetsDetected')} · {analysis.analysis.totalRows.toLocaleString()} rows
                 </p>
               </div>
@@ -376,16 +376,16 @@ export default function ExcelIntegrationPage() {
 
           {/* Warnings */}
           {analysis.warnings.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <p className="text-xs font-bold text-amber-800">{t('page.excelIntegration.warnings')} ({analysis.warnings.length})</p>
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <p className="text-xs font-bold text-warning">{t('page.excelIntegration.warnings')} ({analysis.warnings.length})</p>
               </div>
               <ul className="space-y-1">
                 {analysis.warnings.map((w, i) => (
-                  <li key={i} className="text-[11px] text-amber-700">
+                  <li key={i} className="text-[11px] text-warning">
                     {w.message}
-                    {w.suggestion && <span className="text-amber-500 ml-1">— {w.suggestion}</span>}
+                    {w.suggestion && <span className="text-warning ml-1">— {w.suggestion}</span>}
                   </li>
                 ))}
               </ul>
@@ -393,32 +393,32 @@ export default function ExcelIntegrationPage() {
           )}
 
           {/* Sheets table */}
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-secondary/50 border-b border-border">
                 <tr>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-600">{t('page.excelIntegration.sheetName')}</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-600">{t('page.excelIntegration.module')}</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-slate-600">{t('page.excelIntegration.rows')}</th>
-                  <th className="px-4 py-2.5 text-center font-semibold text-slate-600">{t('page.excelIntegration.status')}</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.excelIntegration.sheetName')}</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.excelIntegration.module')}</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">{t('page.excelIntegration.rows')}</th>
+                  <th className="px-4 py-2.5 text-center font-semibold text-muted-foreground">{t('page.excelIntegration.status')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {analysis.analysis.sheets.map((sheet) => {
                   const sheetValidation = validation?.sheets.find(s => s.name === sheet.sheetName);
                   return (
-                    <tr key={sheet.sheetName} className="hover:bg-slate-50/50">
+                    <tr key={sheet.sheetName} className="hover:bg-secondary/50">
                       <td className="px-4 py-2.5">
-                        <p className="font-semibold text-slate-800">{sheet.sheetName}</p>
+                        <p className="font-semibold text-card-foreground">{sheet.sheetName}</p>
                         {sheet.warnings.length > 0 && (
-                          <p className="text-[10px] text-amber-500 mt-0.5">
+                          <p className="text-[10px] text-warning mt-0.5">
                             {sheet.warnings.length} {t('page.excelIntegration.warnings').toLowerCase()}
                           </p>
                         )}
                       </td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${
-                          sheet.erpModule === 'unknown' ? 'text-amber-600' : 'text-slate-600'
+                          sheet.erpModule === 'unknown' ? 'text-warning' : 'text-muted-foreground'
                         }`}>
                           {sheet.erpModule === 'unknown' ? (
                             <>
@@ -430,7 +430,7 @@ export default function ExcelIntegrationPage() {
                           )}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono text-slate-600">
+                      <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">
                         {sheet.rowCount.toLocaleString()}
                       </td>
                       <td className="px-4 py-2.5 text-center">
@@ -469,51 +469,51 @@ export default function ExcelIntegrationPage() {
           {/* Validation summary */}
           {validation && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-                <p className="text-2xl font-bold text-slate-800">{validation.totalRows.toLocaleString()}</p>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Rows</p>
+              <div className="rounded-xl border border-border bg-card p-3 text-center">
+                <p className="text-2xl font-bold text-card-foreground">{validation.totalRows.toLocaleString()}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase">Total Rows</p>
               </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
-                <p className="text-2xl font-bold text-emerald-700">{validation.validRows.toLocaleString()}</p>
-                <p className="text-[10px] font-semibold text-emerald-600 uppercase">{t('page.excelIntegration.valid')}</p>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
+                <p className="text-2xl font-bold text-primary">{validation.validRows.toLocaleString()}</p>
+                <p className="text-[10px] font-semibold text-primary uppercase">{t('page.excelIntegration.valid')}</p>
               </div>
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center">
-                <p className="text-2xl font-bold text-red-700">{validation.totalErrors.toLocaleString()}</p>
-                <p className="text-[10px] font-semibold text-red-600 uppercase">{t('page.excelIntegration.errors')}</p>
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
+                <p className="text-2xl font-bold text-destructive">{validation.totalErrors.toLocaleString()}</p>
+                <p className="text-[10px] font-semibold text-destructive uppercase">{t('page.excelIntegration.errors')}</p>
               </div>
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
-                <p className="text-2xl font-bold text-amber-700">{validation.totalDuplicates.toLocaleString()}</p>
-                <p className="text-[10px] font-semibold text-amber-600 uppercase">{t('page.excelIntegration.duplicate')}</p>
+              <div className="rounded-xl border border-warning/20 bg-warning/5 p-3 text-center">
+                <p className="text-2xl font-bold text-warning">{validation.totalDuplicates.toLocaleString()}</p>
+                <p className="text-[10px] font-semibold text-warning uppercase">{t('page.excelIntegration.duplicate')}</p>
               </div>
             </div>
           )}
 
           {/* Import options */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={dryRun}
                   onChange={(e) => setDryRun(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-emerald-500"
                 />
                 {t('page.excelIntegration.dryRun')}
               </label>
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={skipErrors}
                   onChange={(e) => setSkipErrors(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-emerald-500"
                 />
                 {t('page.excelIntegration.skipErrors')}
               </label>
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+            <div className="flex justify-end gap-2 border-t border-border pt-3">
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-primary hover:bg-primary/90"
                 onClick={handleImport}
               >
                 <Upload className="h-4 w-4" />
@@ -526,10 +526,10 @@ export default function ExcelIntegrationPage() {
 
       {/* ─── IMPORTING VIEW ───────────────────────────────────────────── */}
       {view === 'importing' && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-16">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-500 mb-4" />
-          <p className="text-sm font-semibold text-slate-600">Importing data...</p>
-          {file && <p className="text-xs text-slate-400 mt-1">{file.name}</p>}
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-16">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          <p className="text-sm font-semibold text-muted-foreground">Importing data...</p>
+          {file && <p className="text-xs text-muted-foreground mt-1">{file.name}</p>}
         </div>
       )}
 
@@ -539,65 +539,65 @@ export default function ExcelIntegrationPage() {
           {/* Status banner */}
           <div className={`rounded-xl border p-4 ${
             importResult.status === 'completed'
-              ? 'border-emerald-200 bg-emerald-50'
+              ? 'border-primary/20 bg-primary/5'
               : importResult.status === 'partial'
-              ? 'border-amber-200 bg-amber-50'
-              : 'border-red-200 bg-red-50'
+              ? 'border-warning/20 bg-warning/5'
+              : 'border-destructive/20 bg-destructive/5'
           }`}>
             <div className="flex items-center gap-3">
               {importResult.status === 'completed' ? (
-                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                <CheckCircle2 className="h-6 w-6 text-primary" />
               ) : importResult.status === 'partial' ? (
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+                <AlertTriangle className="h-6 w-6 text-warning" />
               ) : (
-                <X className="h-6 w-6 text-red-600" />
+                <X className="h-6 w-6 text-destructive" />
               )}
               <div>
-                <p className="text-sm font-bold text-slate-800">{t('page.excelIntegration.importComplete')}</p>
-                <p className="text-xs text-slate-500 capitalize">Status: {importResult.status}</p>
+                <p className="text-sm font-bold text-card-foreground">{t('page.excelIntegration.importComplete')}</p>
+                <p className="text-xs text-muted-foreground capitalize">Status: {importResult.status}</p>
               </div>
             </div>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-700">{importResult.insertedRows.toLocaleString()}</p>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase">{t('page.excelIntegration.rowsInserted')}</p>
+            <div className="rounded-xl border border-border bg-card p-3 text-center">
+              <p className="text-2xl font-bold text-primary">{importResult.insertedRows.toLocaleString()}</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase">{t('page.excelIntegration.rowsInserted')}</p>
             </div>
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center">
-              <p className="text-2xl font-bold text-red-700">{importResult.failedRows.toLocaleString()}</p>
-              <p className="text-[10px] font-semibold text-red-600 uppercase">{t('page.excelIntegration.rowsFailed')}</p>
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
+              <p className="text-2xl font-bold text-destructive">{importResult.failedRows.toLocaleString()}</p>
+              <p className="text-[10px] font-semibold text-destructive uppercase">{t('page.excelIntegration.rowsFailed')}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-              <p className="text-2xl font-bold text-slate-700">{(importResult.durationMs / 1000).toFixed(1)}s</p>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase">{t('page.excelIntegration.duration')}</p>
+            <div className="rounded-xl border border-border bg-card p-3 text-center">
+              <p className="text-2xl font-bold text-card-foreground">{(importResult.durationMs / 1000).toFixed(1)}s</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase">{t('page.excelIntegration.duration')}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-              <p className="text-2xl font-bold text-slate-700">{importResult.rowsPerSecond.toLocaleString()}</p>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase">rows/sec</p>
+            <div className="rounded-xl border border-border bg-card p-3 text-center">
+              <p className="text-2xl font-bold text-card-foreground">{importResult.rowsPerSecond.toLocaleString()}</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase">rows/sec</p>
             </div>
           </div>
 
           {/* Per-sheet results */}
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-secondary/50 border-b border-border">
                 <tr>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-600">{t('page.excelIntegration.sheetName')}</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-600">{t('page.excelIntegration.module')}</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-slate-600">Inserted</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-slate-600">Failed</th>
-                  <th className="px-4 py-2.5 text-center font-semibold text-slate-600">{t('page.excelIntegration.status')}</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.excelIntegration.sheetName')}</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">{t('page.excelIntegration.module')}</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">Inserted</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">Failed</th>
+                  <th className="px-4 py-2.5 text-center font-semibold text-muted-foreground">{t('page.excelIntegration.status')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {importResult.sheets.map((sheet) => (
-                  <tr key={sheet.sheetName} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-2.5 font-semibold text-slate-800">{sheet.sheetName}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{sheet.erpModule}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-emerald-700">{sheet.insertedRows.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-red-700">{sheet.failedRows.toLocaleString()}</td>
+                  <tr key={sheet.sheetName} className="hover:bg-secondary/50">
+                    <td className="px-4 py-2.5 font-semibold text-card-foreground">{sheet.sheetName}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{sheet.erpModule}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-primary">{sheet.insertedRows.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-destructive">{sheet.failedRows.toLocaleString()}</td>
                     <td className="px-4 py-2.5 text-center">
                       <Badge variant={statusColor(sheet.status)} className="capitalize text-[10px]">{sheet.status}</Badge>
                     </td>
@@ -618,7 +618,7 @@ export default function ExcelIntegrationPage() {
 
       {/* ─── ERROR STATE ──────────────────────────────────────────────── */}
       {errorMessage && view !== 'analyzing' && view !== 'importing' && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-2">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <p>{errorMessage}</p>
         </div>

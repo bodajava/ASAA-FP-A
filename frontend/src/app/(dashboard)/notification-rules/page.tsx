@@ -42,8 +42,8 @@ function NotificationRuleForm({ item, onClose, onSubmit, isLoading }: FormProps)
         ]);
         setSites(sitesRes.data ?? []);
         setAccounts(accountsRes.data ?? []);
-      } catch (err) {
-        console.error('Failed to load dropdowns', err);
+      } catch {
+        // Failed to load dropdowns
       } finally {
         setLoadingDropdowns(false);
       }

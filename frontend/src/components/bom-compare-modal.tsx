@@ -91,8 +91,8 @@ export function BomCompareModal({ recipeId, onClose }: BomCompareModalProps) {
       try {
         const recipe = await apiGet<BomRecipe>(`/bom-recipes/${selectedRecipeBId}`);
         setRecipeB(recipe);
-      } catch (err: unknown) {
-        console.error('Failed to load comparison recipe', err);
+      } catch {
+        // Failed to load comparison recipe
       }
     }
     void loadRecipeB();

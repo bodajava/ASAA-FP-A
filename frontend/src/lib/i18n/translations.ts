@@ -1842,7 +1842,41 @@ export type TranslationKey =
   | 'page.aiSettings.disabled'
   | 'page.aiSettings.noKeyConfigured'
   | 'page.aiSettings.saveSuccess'
-  | 'page.aiSettings.saveFailed';
+  | 'page.aiSettings.saveFailed'
+  /* ── Import Error Response ──────────────────────────────────────────── */
+  | 'import.error.title'
+  | 'import.error.missingData'
+  | 'import.error.requiredSteps'
+  | 'import.error.actions.downloadTemplate'
+  | 'import.error.actions.downloadMasterData'
+  | 'import.error.actions.viewImportOrder'
+  | 'import.error.actions.clearReUpload'
+  | 'import.error.steps.importAccounts'
+  | 'import.error.steps.importSites'
+  | 'import.error.steps.importCostCenters'
+  | 'import.error.steps.importUnits'
+  | 'import.error.steps.importSuppliers'
+  | 'import.error.steps.importCustomers'
+  | 'import.error.steps.importMaterials'
+  | 'import.error.steps.importProducts'
+  | 'import.error.steps.uploadAgain'
+  | 'import.error.missingAccount'
+  | 'import.error.missingSite'
+  | 'import.error.missingCostCenter'
+  | 'import.error.missingProduct'
+  | 'import.error.missingMaterial'
+  | 'import.error.missingCustomer'
+  | 'import.error.fixAccount'
+  | 'import.error.fixSite'
+  | 'import.error.fixCostCenter'
+  | 'import.error.fixProduct'
+  | 'import.error.fixMaterial'
+  | 'import.error.fixCustomer'
+  | 'import.error.ambiguousMatch'
+  | 'import.error.rowDetails'
+  | 'import.error.noErrors'
+  | 'import.error.invalidRows'
+  | 'import.error.validRows';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -3759,6 +3793,41 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.aiSettings.noKeyConfigured': 'Add your Gemini API key in Settings → AI Integration to enable AI suggestions.',
     'page.aiSettings.saveSuccess': 'AI settings saved successfully',
     'page.aiSettings.saveFailed': 'Failed to save AI settings',
+
+    /* Import Error Response */
+    'import.error.title': 'Cannot import {module}',
+    'import.error.missingData': 'Some required master data is missing. Import the required data first, then upload this file again.',
+    'import.error.requiredSteps': 'Required Steps:',
+    'import.error.actions.downloadTemplate': 'Download Template',
+    'import.error.actions.downloadMasterData': 'Download Master Data Template',
+    'import.error.actions.viewImportOrder': 'View Import Order',
+    'import.error.actions.clearReUpload': 'Clear & Re-upload',
+    'import.error.steps.importAccounts': 'Import Accounts',
+    'import.error.steps.importSites': 'Import Sites',
+    'import.error.steps.importCostCenters': 'Import Cost Centers',
+    'import.error.steps.importUnits': 'Import Units',
+    'import.error.steps.importSuppliers': 'Import Suppliers',
+    'import.error.steps.importCustomers': 'Import Customers',
+    'import.error.steps.importMaterials': 'Import Materials',
+    'import.error.steps.importProducts': 'Import Products',
+    'import.error.steps.uploadAgain': 'Upload {module} again',
+    'import.error.missingAccount': 'Account "{value}" not found (Row {row}, Column: {column})',
+    'import.error.missingSite': 'Site "{value}" not found (Row {row}, Column: {column})',
+    'import.error.missingCostCenter': 'Cost Center "{value}" not found (Row {row}, Column: {column})',
+    'import.error.missingProduct': 'Product "{value}" not found (Row {row}, Column: {column})',
+    'import.error.missingMaterial': 'Material "{value}" not found (Row {row}, Column: {column})',
+    'import.error.missingCustomer': 'Customer "{value}" not found (Row {row}, Column: {column})',
+    'import.error.fixAccount': 'Add this account in Accounts, or choose an existing account from the reference sheet.',
+    'import.error.fixSite': 'Add this site in Sites, or choose an existing site from the reference sheet.',
+    'import.error.fixCostCenter': 'Add this cost center in Cost Centers, or choose an existing cost center from the reference sheet.',
+    'import.error.fixProduct': 'Add this product in Products, or choose an existing product from the reference sheet.',
+    'import.error.fixMaterial': 'Add this material in Materials, or choose an existing material from the reference sheet.',
+    'import.error.fixCustomer': 'Add this customer in Customers, or choose an existing customer from the reference sheet.',
+    'import.error.ambiguousMatch': '"{value}" matches multiple records: {matches}. Please use the exact code.',
+    'import.error.rowDetails': 'Row Details',
+    'import.error.noErrors': 'No errors found',
+    'import.error.invalidRows': '{n} row(s) have errors',
+    'import.error.validRows': '{n} row(s) are valid',
   },
 
   ar: {
@@ -5675,5 +5744,40 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.aiSettings.noKeyConfigured': 'أضف مفتاح Gemini API في الإعدادات ← تكامل الذكاء الاصطناعي لتفعيل اقتراحات السيناريو.',
     'page.aiSettings.saveSuccess': 'تم حفظ إعدادات الذكاء الاصطناعي بنجاح',
     'page.aiSettings.saveFailed': 'فشل في حفظ إعدادات الذكاء الاصطناعي',
+
+    /* Import Error Response */
+    'import.error.title': 'لا يمكن استيراد {module}',
+    'import.error.missingData': 'بعض البيانات الأساسية غير موجودة. قم باستيراد البيانات المطلوبة أولاً ثم ارفع الملف مرة أخرى.',
+    'import.error.requiredSteps': 'الخطوات المطلوبة:',
+    'import.error.actions.downloadTemplate': 'تنزيل القالب',
+    'import.error.actions.downloadMasterData': 'تنزيل قالب البيانات الأساسية',
+    'import.error.actions.viewImportOrder': 'عرض ترتيب الاستيراد',
+    'import.error.actions.clearReUpload': 'مسح وإعادة الرفع',
+    'import.error.steps.importAccounts': 'استيراد الحسابات',
+    'import.error.steps.importSites': 'استيراد الفروع',
+    'import.error.steps.importCostCenters': 'استيراد مراكز التكلفة',
+    'import.error.steps.importUnits': 'استيراد الوحدات',
+    'import.error.steps.importSuppliers': 'استيراد الموردين',
+    'import.error.steps.importCustomers': 'استيراد العملاء',
+    'import.error.steps.importMaterials': 'استيراد المواد',
+    'import.error.steps.importProducts': 'استيراد المنتجات',
+    'import.error.steps.uploadAgain': 'رفع {module} مرة أخرى',
+    'import.error.missingAccount': 'الحساب "{value}" غير موجود (صف {row}, عمود: {column})',
+    'import.error.missingSite': 'الفرع "{value}" غير موجود (صف {row}, عمود: {column})',
+    'import.error.missingCostCenter': 'مركز التكلفة "{value}" غير موجود (صف {row}, عمود: {column})',
+    'import.error.missingProduct': 'المنتج "{value}" غير موجود (صف {row}, عمود: {column})',
+    'import.error.missingMaterial': 'المادة "{value}" غير موجودة (صف {row}, عمود: {column})',
+    'import.error.missingCustomer': 'العميل "{value}" غير موجود (صف {row}, عمود: {column})',
+    'import.error.fixAccount': 'أضف هذا الحساب في الحسابات، أو اختر حساباً موجوداً من ورقة المرجع.',
+    'import.error.fixSite': 'أضف هذا الفرع في الفروع، أو اختر فرعاً موجوداً من ورقة المرجع.',
+    'import.error.fixCostCenter': 'أضف مركز التكلفة هذا في مراكز التكلفة، أو اختر مركزاً موجوداً من ورقة المرجع.',
+    'import.error.fixProduct': 'أضف هذا المنتج في المنتجات، أو اختر منتجاً موجوداً من ورقة المرجع.',
+    'import.error.fixMaterial': 'أضف هذه المادة في المواد، أو اختر مادة موجودة من ورقة المرجع.',
+    'import.error.fixCustomer': 'أضف هذا العميل في العملاء، أو اختر عميلاً موجوداً من ورقة المرجع.',
+    'import.error.ambiguousMatch': 'القيمة "{value}" تطابق عدة سجلات: {matches}. يرجى استخدام الكود بالضبط.',
+    'import.error.rowDetails': 'تفاصيل الصف',
+    'import.error.noErrors': 'لا توجد أخطاء',
+    'import.error.invalidRows': '{n} صفوف تحتوي على أخطاء',
+    'import.error.validRows': '{n} صفوف صالحة',
   },
 };

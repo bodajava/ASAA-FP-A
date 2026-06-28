@@ -10,6 +10,9 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  ArrowRight,
+  AlertTriangle,
+  ListOrdered,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -26,6 +29,24 @@ export interface RowPreviewResult {
   data: Record<string, unknown>;
   isValid: boolean;
   errors: string[];
+}
+
+export interface MissingDataItem {
+  type: string;
+  value: string;
+  row: number;
+  column: string;
+  howToFix: string;
+}
+
+export interface ImportErrorResponse {
+  success: false;
+  errorType: string;
+  title: string;
+  message: string;
+  steps: string[];
+  missingData: MissingDataItem[];
+  actions: string[];
 }
 
 export interface ImportModalProps {
@@ -151,6 +172,9 @@ export function ImportModal({
     new Set(),
   );
 
+  // Structured error response from backend
+  const [structuredError, setStructuredError] = useState<ImportErrorResponse | null>(null);
+
   // -------------------------------------------------------------------------
   // Download sample template
   // -------------------------------------------------------------------------
@@ -237,14 +261,24 @@ export function ImportModal({
     }, 200);
 
     try {
-      const res = await api.post<RowPreviewResult[]>(
+      const res = await api.post(
         `/imports/preview`,
         { module, fileContent, fileName },
       );
       clearInterval(progressInterval);
       setProgress(100);
       setProgressStatus(t('component.importModal.progressComplete'));
-      setPreviewRows(res.data);
+
+      const data = res.data;
+
+      // Check if backend returned a structured error response
+      if (data && typeof data === 'object' && 'errorType' in data && 'missingData' in data) {
+        setStructuredError(data as ImportErrorResponse);
+        setPreviewRows(null);
+      } else if (Array.isArray(data)) {
+        setPreviewRows(data as RowPreviewResult[]);
+        setStructuredError(null);
+      }
     } catch (err: unknown) {
       clearInterval(progressInterval);
       setProgress(0);
@@ -353,6 +387,7 @@ export function ImportModal({
     setFileSize(null);
     setFileContent(null);
     setImportStats(null);
+    setStructuredError(null);
     setProgress(0);
     setProgressStatus('');
     setExpandedErrors(new Set());
@@ -577,8 +612,117 @@ export function ImportModal({
             </div>
           )}
 
+          {/* Structured Error Response */}
+          {structuredError && !importStats && (
+            <div className="space-y-4">
+              {/* Error Summary Card */}
+              <div className="rounded-xl border border-red-200 bg-red-50 p-5 dark:border-red-900/30 dark:bg-red-950/20">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-red-800 dark:text-red-400">
+                      {structuredError.title}
+                    </h3>
+                    <p className="text-xs text-red-700 dark:text-red-300">
+                      {structuredError.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Missing Master Data Section */}
+              {structuredError.missingData.length > 0 && (
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                    {t('import.error.missingData')}
+                  </h4>
+                  <div className="space-y-2">
+                    {structuredError.missingData.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 rounded-lg bg-secondary/50 px-3 py-2 text-xs"
+                      >
+                        <ArrowRight className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-medium text-card-foreground">
+                            {item.type}:
+                          </span>{' '}
+                          <span className="text-muted-foreground">
+                            &ldquo;{item.value}&rdquo;
+                          </span>
+                          <span className="text-muted-foreground ml-1">
+                            (Row {item.row}, {item.column})
+                          </span>
+                          <p className="text-muted-foreground/80 mt-0.5 text-[11px]">
+                            {item.howToFix}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Required Steps Section */}
+              {structuredError.steps.length > 0 && (
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <ListOrdered className="h-3.5 w-3.5 text-primary" />
+                    {t('import.error.requiredSteps')}
+                  </h4>
+                  <ol className="space-y-1.5">
+                    {structuredError.steps.map((step, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center gap-2 text-xs text-card-foreground"
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                          {idx + 1}
+                        </span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Row-Level Error Details */}
+              {structuredError.errorType === 'VALIDATION_ERRORS' && (
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3">
+                    {t('import.error.rowDetails')}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    {t('import.error.invalidRows', { n: String(structuredError.missingData.length) })}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadTemplate}
+                  isLoading={isDownloading}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {t('import.error.actions.downloadTemplate')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelImport}
+                >
+                  {t('import.error.actions.clearReUpload')}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Step 3: Preview table */}
-          {previewRows && !importStats && (
+          {previewRows && !importStats && !structuredError && (
             <div>
               {/* Summary */}
               <div className="mb-3 flex items-center gap-4 flex-wrap">

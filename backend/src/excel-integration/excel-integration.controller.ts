@@ -211,8 +211,8 @@ export class ExcelIntegrationController {
   /* ─── GET /templates/client-workbook — Download full workbook template ── */
 
   @Get('templates/client-workbook')
-  downloadClientWorkbook(@Res() res: Response) {
-    const buffer = this.templateGenerator.generateFullWorkbook();
+  async downloadClientWorkbook(@Res() res: Response) {
+    const buffer = await this.templateGenerator.generateFullWorkbook();
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="Harvest_Workbook_Template.xlsx"');
     return res.status(HttpStatus.OK).send(buffer);
@@ -221,9 +221,9 @@ export class ExcelIntegrationController {
   /* ─── GET /templates/:module — Download module-specific template ──── */
 
   @Get('templates/:module')
-  downloadModuleTemplate(@Param('module') module: string, @Res() res: Response) {
+  async downloadModuleTemplate(@Param('module') module: string, @Res() res: Response) {
     try {
-      const buffer = this.templateGenerator.generateModuleTemplate(module);
+      const buffer = await this.templateGenerator.generateModuleTemplate(module);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="${module}_template.xlsx"`);
       return res.status(HttpStatus.OK).send(buffer);

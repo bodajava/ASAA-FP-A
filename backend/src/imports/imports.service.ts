@@ -4,9 +4,28 @@ import { PrismaService } from '../prisma.service';
 import * as XLSX from 'xlsx';
 import { parse as csvParse } from 'csv-parse/sync';
 import { SimpleCache } from '../common/utils/cache.util';
+import { FRIENDLY_HEADER_MAP } from '../excel-integration/template-generator.service';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RowData = any;
+
+export interface MissingDataItem {
+  type: string;
+  value: string;
+  row: number;
+  column: string;
+  howToFix: string;
+}
+
+export interface ImportErrorResponse {
+  success: false;
+  errorType: string;
+  title: string;
+  message: string;
+  steps: string[];
+  missingData: MissingDataItem[];
+  actions: string[];
+}
 
 export interface RowPreviewResult {
   index: number;
@@ -19,7 +38,7 @@ export interface RowPreviewResult {
 export class ImportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private normalizeKeys(row: RowData): RowData {
+  private normalizeKeys(row: RowData, module?: string): RowData {
     const normalized: RowData = {};
     for (const key of Object.keys(row)) {
       const cleanKey = key
@@ -29,7 +48,258 @@ export class ImportsService {
         .toLowerCase();
       normalized[cleanKey] = row[key];
     }
+
+    // Apply friendly header → internal field mapping for transaction modules
+    if (module) {
+      const mod = module.toLowerCase().replace(/[-_]/g, '');
+      const mapping = FRIENDLY_HEADER_MAP[mod];
+      if (mapping) {
+        for (const [friendly, internal] of Object.entries(mapping)) {
+          if (normalized[friendly] !== undefined && normalized[internal] === undefined) {
+            normalized[internal] = normalized[friendly];
+            delete normalized[friendly];
+          }
+        }
+      }
+    }
+
     return normalized;
+  }
+
+  /* ─── Name → Code Resolution ────────────────────────────────────────── */
+
+  private async resolveNameToCode(
+    value: string,
+    model: 'account' | 'site' | 'costCenter' | 'product' | 'material' | 'customer',
+    companyId: bigint,
+  ): Promise<{ resolved: string; isAmbiguous?: boolean; matches?: string[] }> {
+    const trimmed = String(value).trim();
+    if (!trimmed) return { resolved: '' };
+
+    switch (model) {
+      case 'account': {
+        // 1. Exact code match
+        const byCode = await this.prisma.account.findFirst({
+          where: { code: trimmed, companyId, isActive: true },
+          select: { code: true },
+        });
+        if (byCode) return { resolved: byCode.code };
+
+        // 2. Exact name match
+        const byName = await this.prisma.account.findFirst({
+          where: { name: trimmed, companyId, isActive: true },
+          select: { code: true },
+        });
+        if (byName) return { resolved: byName.code };
+
+        // 3. Case-insensitive match
+        const all = await this.prisma.account.findMany({
+          where: { companyId, isActive: true },
+          select: { code: true, name: true },
+        });
+        const lower = trimmed.toLowerCase();
+        const matches = all.filter(
+          a => a.code.toLowerCase() === lower || a.name.toLowerCase() === lower,
+        );
+        if (matches.length === 1) return { resolved: matches[0].code };
+        if (matches.length > 1) {
+          return {
+            resolved: trimmed,
+            isAmbiguous: true,
+            matches: matches.map(m => `${m.code} (${m.name})`),
+          };
+        }
+        return { resolved: trimmed };
+      }
+      case 'site': {
+        const byName = await this.prisma.site.findFirst({
+          where: { name: trimmed, companyId },
+          select: { name: true },
+        });
+        if (byName) return { resolved: byName.name };
+
+        const all = await this.prisma.site.findMany({
+          where: { companyId },
+          select: { name: true },
+        });
+        const lower = trimmed.toLowerCase();
+        const matches = all.filter(s => s.name.toLowerCase() === lower);
+        if (matches.length === 1) return { resolved: matches[0].name };
+        if (matches.length > 1) {
+          return {
+            resolved: trimmed,
+            isAmbiguous: true,
+            matches: matches.map(m => m.name),
+          };
+        }
+        return { resolved: trimmed };
+      }
+      case 'costCenter': {
+        const byCode = await this.prisma.costCenter.findFirst({
+          where: { code: trimmed, companyId },
+          select: { code: true },
+        });
+        if (byCode) return { resolved: byCode.code ?? trimmed };
+
+        const byName = await this.prisma.costCenter.findFirst({
+          where: { name: trimmed, companyId },
+          select: { code: true, name: true },
+        });
+        if (byName) return { resolved: byName.code ?? byName.name };
+
+        const all = await this.prisma.costCenter.findMany({
+          where: { companyId },
+          select: { code: true, name: true },
+        });
+        const lower = trimmed.toLowerCase();
+        const matches = all.filter(
+          cc => (cc.code?.toLowerCase() === lower) || cc.name.toLowerCase() === lower,
+        );
+        if (matches.length === 1) return { resolved: matches[0].code ?? matches[0].name };
+        if (matches.length > 1) {
+          return {
+            resolved: trimmed,
+            isAmbiguous: true,
+            matches: matches.map(m => `${m.code ?? m.name} (${m.name})`),
+          };
+        }
+        return { resolved: trimmed };
+      }
+      case 'product': {
+        const bySku = await this.prisma.product.findFirst({
+          where: { sku: trimmed, companyId, isActive: true },
+          select: { sku: true },
+        });
+        if (bySku) return { resolved: bySku.sku };
+
+        const byName = await this.prisma.product.findFirst({
+          where: { name: trimmed, companyId, isActive: true },
+          select: { sku: true },
+        });
+        if (byName) return { resolved: byName.sku };
+
+        const all = await this.prisma.product.findMany({
+          where: { companyId, isActive: true },
+          select: { sku: true, name: true },
+        });
+        const lower = trimmed.toLowerCase();
+        const matches = all.filter(
+          p => p.sku.toLowerCase() === lower || p.name.toLowerCase() === lower,
+        );
+        if (matches.length === 1) return { resolved: matches[0].sku };
+        if (matches.length > 1) {
+          return {
+            resolved: trimmed,
+            isAmbiguous: true,
+            matches: matches.map(m => `${m.sku} (${m.name})`),
+          };
+        }
+        return { resolved: trimmed };
+      }
+      case 'material': {
+        const byCode = await this.prisma.material.findFirst({
+          where: { code: trimmed, companyId, isActive: true },
+          select: { code: true },
+        });
+        if (byCode) return { resolved: byCode.code };
+
+        const byName = await this.prisma.material.findFirst({
+          where: { name: trimmed, companyId, isActive: true },
+          select: { code: true },
+        });
+        if (byName) return { resolved: byName.code };
+
+        const all = await this.prisma.material.findMany({
+          where: { companyId, isActive: true },
+          select: { code: true, name: true },
+        });
+        const lower = trimmed.toLowerCase();
+        const matches = all.filter(
+          m => m.code.toLowerCase() === lower || m.name.toLowerCase() === lower,
+        );
+        if (matches.length === 1) return { resolved: matches[0].code };
+        if (matches.length > 1) {
+          return {
+            resolved: trimmed,
+            isAmbiguous: true,
+            matches: matches.map(m => `${m.code} (${m.name})`),
+          };
+        }
+        return { resolved: trimmed };
+      }
+      case 'customer': {
+        const byCode = await this.prisma.customer.findFirst({
+          where: { code: trimmed, companyId, isActive: true },
+          select: { code: true },
+        });
+        if (byCode) return { resolved: byCode.code };
+
+        const byName = await this.prisma.customer.findFirst({
+          where: { name: trimmed, companyId, isActive: true },
+          select: { code: true },
+        });
+        if (byName) return { resolved: byName.code };
+
+        const all = await this.prisma.customer.findMany({
+          where: { companyId, isActive: true },
+          select: { code: true, name: true },
+        });
+        const lower = trimmed.toLowerCase();
+        const matches = all.filter(
+          c => c.code.toLowerCase() === lower || c.name.toLowerCase() === lower,
+        );
+        if (matches.length === 1) return { resolved: matches[0].code };
+        if (matches.length > 1) {
+          return {
+            resolved: trimmed,
+            isAmbiguous: true,
+            matches: matches.map(m => `${m.code} (${m.name})`),
+          };
+        }
+        return { resolved: trimmed };
+      }
+    }
+  }
+
+  private async resolveTransactionReferences(
+    row: RowData,
+    mod: string,
+    companyId: bigint,
+    errors: string[],
+    rowIndex: number,
+  ): Promise<RowData> {
+    const resolved = { ...row };
+
+    const resolveField = async (
+      internalField: string,
+      model: 'account' | 'site' | 'costCenter' | 'product' | 'material' | 'customer',
+      columnLabel: string,
+    ) => {
+      if (!resolved[internalField]) return;
+      const result = await this.resolveNameToCode(
+        String(resolved[internalField]),
+        model,
+        companyId,
+      );
+      if (result.isAmbiguous) {
+        errors.push(
+          `Row ${rowIndex}: ${columnLabel} "${resolved[internalField]}" matches multiple records: ${result.matches?.join(', ')}. Please use the exact code.`,
+        );
+      } else if (result.resolved) {
+        resolved[internalField] = result.resolved;
+      }
+    };
+
+    if (mod === 'budgetlines' || mod === 'forecastlines' || mod === 'actuallines') {
+      await resolveField('accountcode', 'account', 'Account');
+      await resolveField('sitecode', 'site', 'Site');
+      await resolveField('costcentercode', 'costCenter', 'Cost Center');
+      await resolveField('productsku', 'product', 'Product');
+      await resolveField('materialcode', 'material', 'Material');
+      await resolveField('customercode', 'customer', 'Customer');
+    }
+
+    return resolved;
   }
 
   getSampleCSV(module: string): string {
@@ -160,11 +430,20 @@ export class ImportsService {
 
     for (let i = 0; i < rawRows.length; i++) {
       const rawRow = rawRows[i];
-      const normalized = this.normalizeKeys(rawRow);
+      const normalized = this.normalizeKeys(rawRow, module);
       const errors: string[] = [];
 
+      // Resolve friendly names to codes for transaction modules
+      const resolved = await this.resolveTransactionReferences(
+        normalized,
+        module.toLowerCase().replace(/[-_]/g, ''),
+        companyId,
+        errors,
+        i + 1,
+      );
+
       // Validate references and columns according to module
-      await this.validateRow(module, normalized, companyId, tenantId, errors);
+      await this.validateRow(module, resolved, companyId, tenantId, errors);
 
       results.push({
         index: i + 1,
@@ -674,13 +953,24 @@ export class ImportsService {
   ): Promise<{ successCount: number; failCount: number }> {
     const validRows: RowData[] = [];
     let failCount = 0;
+    const mod = module.toLowerCase().replace(/[-_]/g, '');
 
     for (const rawRow of rows) {
-      const normalized = this.normalizeKeys(rawRow);
+      const normalized = this.normalizeKeys(rawRow, module);
       const errors: string[] = [];
-      await this.validateRow(module, normalized, companyId, tenantId, errors);
+
+      // Resolve friendly names to codes for transaction modules
+      const resolved = await this.resolveTransactionReferences(
+        normalized,
+        mod,
+        companyId,
+        errors,
+        0,
+      );
+
+      await this.validateRow(module, resolved, companyId, tenantId, errors);
       if (errors.length === 0) {
-        validRows.push(normalized);
+        validRows.push(resolved);
       } else {
         failCount++;
       }
@@ -689,8 +979,6 @@ export class ImportsService {
     if (validRows.length === 0) {
       return { successCount: 0, failCount };
     }
-
-    const mod = module.toLowerCase().replace(/[-_]/g, '');
 
     await this.prisma.$transaction(async (tx) => {
       for (const row of validRows) {

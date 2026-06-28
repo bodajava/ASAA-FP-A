@@ -124,9 +124,18 @@ export class ImportsController {
 
   @Get('sample/:module')
   @ApiOperation({ summary: 'Get sample XLSX template for a module' })
-  getSample(@Param('module') module: string, @Response() res: ExpressResponse) {
+  @ApiHeader({
+    name: 'x-company-id',
+    description: 'Company ID header (optional, enables reference data in templates)',
+    required: false,
+  })
+  async getSample(
+    @Param('module') module: string,
+    @CompanyId() companyId: bigint | undefined,
+    @Response() res: ExpressResponse,
+  ) {
     try {
-      const buffer = this.templateGenerator.generateModuleTemplate(module);
+      const buffer = await this.templateGenerator.generateModuleTemplate(module, companyId);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader(
         'Content-Disposition',

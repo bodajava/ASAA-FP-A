@@ -79,7 +79,7 @@ export function ExecutiveKpiGrid({ data }: { data: ExecutiveSummary }) {
 
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
         {t('page.dashboard.kpiSectionLabel')}
       </p>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -599,12 +599,12 @@ export default function DashboardPage() {
                   {customersQuery.isLoading ? (
                     <WidgetSkeleton />
                   ) : topCustomers.length === 0 ? (
-                    <p className="text-sm text-slate-400 dark:text-slate-500">{t('page.dashboard.noDataYet')}</p>
+                    <p className="text-sm text-muted-foreground">{t('page.dashboard.noDataYet')}</p>
                   ) : (
                     <ul className="space-y-2">
                       {topCustomers.slice(0, 5).map((c, i) => (
                         <li key={c.id} className="flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                          <span className="flex items-center gap-2 text-sm text-foreground">
                             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
                               {i + 1}
                             </span>
@@ -638,7 +638,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : !costingQuery.data ? (
-            <div className="text-center py-6 text-slate-400">
+            <div className="text-center py-6 text-muted-foreground">
               <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-xs">{t('page.dashboard.costingUnavailable')}</p>
             </div>
@@ -734,12 +734,12 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 
                 {/* Cost Trend Chart */}
-                <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+                <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 shadow-sm">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
                     {t('page.dashboard.costingTrendTitle')}
                   </h4>
                   {costingQuery.data.costTrend.length === 0 ? (
-                    <div className="h-64 flex items-center justify-center text-slate-400 text-xs">
+                    <div className="h-64 flex items-center justify-center text-muted-foreground text-xs">
                       {t('page.dashboard.costingNoTrendData')}
                     </div>
                   ) : (
@@ -761,21 +761,21 @@ export default function DashboardPage() {
                 {/* Top 10 Profitable Products */}
                 <Card>
                   <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                       <span>{t('page.dashboard.costingTop10Profitable')}</span>
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 lowercase font-medium">gross profit</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 pt-0">
                     {costingQuery.data.top10ProfitableProducts.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-4">{t('page.dashboard.costingNoSalesData')}</p>
+                      <p className="text-xs text-muted-foreground text-center py-4">{t('page.dashboard.costingNoSalesData')}</p>
                     ) : (
                       <ul className="space-y-1.5 text-xs">
                         {costingQuery.data.top10ProfitableProducts.map((p: any, i: number) => (
                           <li
                             key={p.id}
                             onClick={() => router.push(`/reports?report=costing-profitability&product_id=${p.id}`)}
-                            className="flex items-center justify-between p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors"
+                            className="flex items-center justify-between p-1.5 rounded hover:bg-secondary cursor-pointer transition-colors"
                           >
                             <span className="flex items-center gap-2 truncate max-w-[150px]">
                               <span className="font-bold text-emerald-700">{i + 1}</span>
@@ -799,21 +799,21 @@ export default function DashboardPage() {
                 {/* Top 10 Loss Products */}
                 <Card className="lg:col-span-1">
                   <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                       <span>{t('page.dashboard.costingTop10Loss')}</span>
                       <span className="text-[10px] text-red-500 lowercase font-medium">gross profit</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 pt-0">
                     {costingQuery.data.top10LossProducts.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-4">{t('page.dashboard.costingNoSalesData')}</p>
+                      <p className="text-xs text-muted-foreground text-center py-4">{t('page.dashboard.costingNoSalesData')}</p>
                     ) : (
                       <ul className="space-y-1.5 text-xs">
                         {costingQuery.data.top10LossProducts.map((p: any, i: number) => (
                           <li
                             key={p.id}
                             onClick={() => router.push(`/reports?report=costing-profitability&product_id=${p.id}`)}
-                            className="flex items-center justify-between p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors"
+                            className="flex items-center justify-between p-1.5 rounded hover:bg-secondary cursor-pointer transition-colors"
                           >
                             <span className="flex items-center gap-2 truncate max-w-[150px]">
                               <span className="font-bold text-red-600">{i + 1}</span>
@@ -833,7 +833,7 @@ export default function DashboardPage() {
                     <Info className="h-4 w-4" />
                     {t('page.dashboard.costingVarianceTitle')}
                   </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
                     {t('page.dashboard.costingVarianceDesc')}
                   </p>
                 </div>
@@ -924,7 +924,7 @@ export default function DashboardPage() {
                       <th className="pb-2 text-right font-medium">{t('page.dashboard.forecastLabel')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
+                  <tbody className="divide-y divide-border">
                     {revenue.map((row) => (
                       <tr key={row.period_month}>
                         <td className="py-2 text-foreground">

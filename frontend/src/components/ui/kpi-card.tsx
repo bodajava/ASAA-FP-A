@@ -46,8 +46,8 @@ function KpiCard({
     <div
       className={cn(
         'relative rounded-xl border border-border p-5 shadow-sm cursor-pointer',
-        'bg-gradient-to-br from-white to-slate-50 dark:from-card dark:to-secondary',
-        'transition-all duration-200 hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700',
+        'bg-card text-card-foreground',
+        'transition-all duration-200 hover:shadow-md hover:border-primary/40',
         className,
       )}
     >

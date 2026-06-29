@@ -14,6 +14,7 @@ import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { ExcelIntegrationService } from './excel-integration.service';
 import { TemplateGeneratorService } from './template-generator.service';
+import { ClientWorkbookImportService } from './client-workbook-import.service';
 import {
   WorkbookAnalysis, ErpModuleMapping, SheetValidationResult,
   ImportExecutionResult, ImportPlan,
@@ -45,9 +46,15 @@ function multerConfig() {
     limits: { fileSize: MAX_FILE_SIZE_BYTES },
     fileFilter: (_req: Express.Request, file: MulterFile, cb: (error: Error | null, acceptFile: boolean) => void) => {
       const ext = file.originalname.toLowerCase();
-      if (!ALLOWED_EXTENSIONS.test(ext)) {
+      if (ext.endsWith('.numbers')) {
         cb(new BadRequestException(
           'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
+        ), false);
+        return;
+      }
+      if (!ALLOWED_EXTENSIONS.test(ext)) {
+        cb(new BadRequestException(
+          'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
         ), false);
         return;
       }
@@ -61,6 +68,7 @@ export class ExcelIntegrationController {
   constructor(
     private readonly service: ExcelIntegrationService,
     private readonly templateGenerator: TemplateGeneratorService,
+    private readonly clientWorkbookImport: ClientWorkbookImportService,
   ) {}
 
   /* ─── POST /analyze — Analyze workbook structure ────────────────────── */
@@ -218,6 +226,46 @@ export class ExcelIntegrationController {
       importPlan: result.importPlan,
       importResult: result.importResult,
     };
+  }
+
+  /* ─── POST /client-workbook/preview — Preview client workbook import ── */
+
+  @Post('client-workbook/preview')
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
+  async previewClientWorkbook(
+    @UploadedFile() file: MulterFile,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    return this.clientWorkbookImport.preview(file.buffer, file.originalname);
+  }
+
+  /* ─── POST /client-workbook/import — Import client workbook data ───── */
+
+  @Post('client-workbook/import')
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
+  @HttpCode(HttpStatus.OK)
+  async importClientWorkbook(
+    @UploadedFile() file: MulterFile,
+    @Headers('x-company-id') companyIdHeader: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const companyId = parseInt(companyIdHeader, 10);
+    if (isNaN(companyId)) {
+      throw new BadRequestException('x-company-id header is required');
+    }
+
+    return this.clientWorkbookImport.importWorkbook(
+      file.buffer,
+      file.originalname,
+      BigInt(companyId),
+      BigInt(0),
+    );
   }
 
   /* ─── GET /modules — List available ERP modules ─────────────────────── */

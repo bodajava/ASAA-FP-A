@@ -146,21 +146,21 @@ export class ExcelAnalyzerService {
     });
 
     // Build validation rules
-    const validationRules = this.buildValidationRules(columns, detectedModule);
+    const validationRules = this.buildValidationRules(columns, detectedModule || 'unknown');
 
     // Build duplicate rules
-    const duplicateRules = this.buildDuplicateRules(columns, detectedModule);
+    const duplicateRules = this.buildDuplicateRules(columns, detectedModule || 'unknown');
 
     // Detect foreign keys
     const foreignKeys = this.detectForeignKeys(columns, allSheetNames);
 
     // Determine required/optional columns
     const requiredColumns = columns
-      .filter(c => this.isLikelyRequired(c, detectedModule))
+      .filter(c => this.isLikelyRequired(c, detectedModule || 'unknown'))
       .map(c => c.originalName);
 
     const optionalColumns = columns
-      .filter(c => !this.isLikelyRequired(c, detectedModule))
+      .filter(c => !this.isLikelyRequired(c, detectedModule || 'unknown'))
       .map(c => c.originalName);
 
     // Generate warnings for this sheet
@@ -411,8 +411,8 @@ export class ExcelAnalyzerService {
         return m.module;
       }
     }
-    // Fallback: use cleaned sheet name as module key
-    return cleaned;
+    // Return empty string to indicate no recognized module
+    return '';
   }
 
   /* ─── Validation Rules ─────────────────────────────────────────────── */
@@ -548,7 +548,7 @@ export class ExcelAnalyzerService {
   private detectGlobalWarnings(sheets: SheetAnalysis[], warnings: AnalysisWarning[]): void {
     // Check for sheets with no recognized module
     for (const sheet of sheets) {
-      if (sheet.detectedModule === sheet.sheetName.toLowerCase().replace(/[_\s-]/g, '')) {
+      if (!sheet.detectedModule || sheet.detectedModule === '') {
         warnings.push({
           type: 'naming_convention',
           message: `Sheet "${sheet.sheetName}" was not auto-recognized as an ERP module`,

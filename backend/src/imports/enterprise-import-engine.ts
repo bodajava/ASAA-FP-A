@@ -19,6 +19,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import * as XLSX from 'xlsx';
 import { Readable } from 'stream';
+import { detectFileTypeFromBuffer } from '../common/utils/file-type-detection.util';
 
 const BATCH_SIZE = 500;
 const CHUNK_SIZE = 1000;
@@ -181,10 +182,11 @@ export class EnterpriseImportEngine {
     fileName: string,
     chunkSize = CHUNK_SIZE,
   ): AsyncGenerator<Array<Record<string, unknown>>> {
-    const ext = fileName.toLowerCase().split('.').pop();
+    // Detect actual file type from magic bytes
+    const detectedType = detectFileTypeFromBuffer(buffer);
     let rows: Array<Record<string, unknown>> = [];
 
-    if (ext === 'csv') {
+    if (detectedType === 'csv') {
       const text = buffer.toString('utf-8');
       const lines = text.split('\n');
       if (lines.length === 0) return;

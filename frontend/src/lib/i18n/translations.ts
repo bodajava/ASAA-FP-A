@@ -1092,6 +1092,23 @@ export type TranslationKey =
   | 'component.importModal.rowSummary'
   | 'component.importModal.downloadErrors'
   | 'component.importModal.downloadSkipped'
+  | 'component.importModal.workbookType'
+  | 'component.importModal.salesAnalysis'
+  | 'component.importModal.planningCosting'
+  | 'component.importModal.sheetsFound'
+  | 'component.importModal.autoCreatePlan'
+  | 'component.importModal.autoCreateUnits'
+  | 'component.importModal.autoCreateSites'
+  | 'component.importModal.autoCreateCategories'
+  | 'component.importModal.autoCreateProducts'
+  | 'component.importModal.autoCreateMaterials'
+  | 'component.importModal.autoCreateCostCenters'
+  | 'component.importModal.autoCreateAccounts'
+  | 'component.importModal.sheetResult'
+  | 'component.importModal.sheetImported'
+  | 'component.importModal.sheetSkipped'
+  | 'component.importModal.importingSheet'
+  | 'component.importModal.importSheetProgress'
   | 'component.importModal.cancelImport'
   | 'component.importModal.importComplete'
   | 'component.importModal.statSuccess'
@@ -3022,6 +3039,23 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'component.importModal.rowSummary': '{valid} valid, {invalid} invalid, {total} total',
     'component.importModal.downloadErrors': 'Download Error File',
     'component.importModal.downloadSkipped': 'Download Skipped Rows',
+    'component.importModal.workbookType': 'Workbook Type',
+    'component.importModal.salesAnalysis': 'Sales Analysis',
+    'component.importModal.planningCosting': 'Planning & Costing',
+    'component.importModal.sheetsFound': '{n} sheet(s) found',
+    'component.importModal.autoCreatePlan': 'Auto-create missing data',
+    'component.importModal.autoCreateUnits': '{n} unit(s)',
+    'component.importModal.autoCreateSites': '{n} site(s)',
+    'component.importModal.autoCreateCategories': '{n} category(ies)',
+    'component.importModal.autoCreateProducts': '{n} product(s)',
+    'component.importModal.autoCreateMaterials': '{n} material(s)',
+    'component.importModal.autoCreateCostCenters': '{n} cost center(s)',
+    'component.importModal.autoCreateAccounts': '{n} account(s)',
+    'component.importModal.sheetResult': '{name}: {imported} rows imported',
+    'component.importModal.sheetImported': 'Imported',
+    'component.importModal.sheetSkipped': 'Skipped',
+    'component.importModal.importingSheet': 'Importing {name}...',
+    'component.importModal.importSheetProgress': 'Sheet {current} of {total}',
     'component.importModal.cancelImport': 'Cancel Import',
     'component.importModal.importComplete': 'Import Complete',
     'component.importModal.statSuccess': '{n} rows imported successfully',
@@ -4998,6 +5032,23 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'component.importModal.rowSummary': '{valid} صالح، {invalid} غير صالح، {total} إجمالي',
     'component.importModal.downloadErrors': 'تنزيل ملف الأخطاء',
     'component.importModal.downloadSkipped': 'تنزيل الصفوف المتجاوزة',
+    'component.importModal.workbookType': 'نوع دفتر العمل',
+    'component.importModal.salesAnalysis': 'تحليل المبيعات',
+    'component.importModal.planningCosting': 'التخطيط و التكلفة',
+    'component.importModal.sheetsFound': 'تم العثور على {n} ورقة(ورق)',
+    'component.importModal.autoCreatePlan': 'إنشاء البيانات المفقودة تلقائياً',
+    'component.importModal.autoCreateUnits': '{n} وحدة(وحدات)',
+    'component.importModal.autoCreateSites': '{n} موقع(مواقع)',
+    'component.importModal.autoCreateCategories': '{n} فئة(فئات)',
+    'component.importModal.autoCreateProducts': '{n} منتج(منتجات)',
+    'component.importModal.autoCreateMaterials': '{n} مادة(مواد)',
+    'component.importModal.autoCreateCostCenters': '{n} مركز تكلفة(مراكز)',
+    'component.importModal.autoCreateAccounts': '{n} حساب(حسابات)',
+    'component.importModal.sheetResult': '{name}: تم استيراد {imported} صف',
+    'component.importModal.sheetImported': 'تم الاستيراد',
+    'component.importModal.sheetSkipped': 'تم التخطي',
+    'component.importModal.importingSheet': 'جارٍ استيراد {name}...',
+    'component.importModal.importSheetProgress': 'الورقة {current} من {total}',
     'component.importModal.cancelImport': 'إلغاء الاستيراد',
     'component.importModal.importComplete': 'اكتمل الاستيراد',
     'component.importModal.statSuccess': 'تم استيراد {n} صف بنجاح',

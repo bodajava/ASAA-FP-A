@@ -63,6 +63,51 @@ export interface ImportErrorResponse {
   actions: string[];
 }
 
+export interface ClientWorkbookSheetPreview {
+  sheetName: string;
+  type: string;
+  rowCount: number;
+  columns: string[];
+}
+
+export interface ClientWorkbookPreview {
+  workbookType: 'sales_analysis' | 'planning_costing' | 'unknown';
+  fileName: string;
+  sheets: ClientWorkbookSheetPreview[];
+  autoCreatePlan: {
+    units: string[];
+    sites: string[];
+    categories: string[];
+    products: string[];
+    materials: string[];
+    costCenters: string[];
+  };
+  warnings: string[];
+  readyToImport: boolean;
+}
+
+export interface ClientWorkbookSheetResult {
+  sheetName: string;
+  status: string;
+  rowsImported: number;
+  message: string;
+}
+
+export interface ClientWorkbookImportResult {
+  success: boolean;
+  workbookType: string;
+  fileName: string;
+  sheetsProcessed: number;
+  sheetsImported: number;
+  sheetsSkipped: number;
+  autoCreated: Array<{ type: string; code: string; name: string; created: boolean }>;
+  totals: Record<string, number>;
+  sheetResults: ClientWorkbookSheetResult[];
+  warnings: string[];
+  errors: string[];
+  timeTaken: number;
+}
+
 export interface ImportModalProps {
   /** The module key, e.g. "sites", "accounts", "budget-lines" */
   module: string;
@@ -191,6 +236,11 @@ export function ImportModal({
   // Structured error response from backend
   const [structuredError, setStructuredError] = useState<ImportErrorResponse | null>(null);
 
+  // Client workbook state
+  const [clientWorkbookPreview, setClientWorkbookPreview] = useState<ClientWorkbookPreview | null>(null);
+  const [isClientImporting, setIsClientImporting] = useState(false);
+  const [clientWorkbookResult, setClientWorkbookResult] = useState<ClientWorkbookImportResult | null>(null);
+
   // -------------------------------------------------------------------------
   // Download sample template
   // -------------------------------------------------------------------------
@@ -241,6 +291,25 @@ export function ImportModal({
     }
   }
 
+  /** Detect actual file type from magic bytes in the ArrayBuffer */
+  function detectFileTypeFromBuffer(buffer: ArrayBuffer): 'xlsx' | 'xls' | 'csv' {
+    if (buffer.byteLength < 4) return 'csv';
+    const bytes = new Uint8Array(buffer, 0, 4);
+    // XLSX (ZIP): 50 4B 03 04 (PK..)
+    if (bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) return 'xlsx';
+    // XLS (OLE2): D0 CF 11 E0
+    if (bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0) return 'xls';
+    return 'csv';
+  }
+
+  function getDetectedTypeLabel(actualType: 'xlsx' | 'xls' | 'csv'): string {
+    switch (actualType) {
+      case 'xlsx': return 'Excel Workbook (.xlsx)';
+      case 'xls': return 'Excel 97-2003 (.xls)';
+      case 'csv': return 'CSV';
+    }
+  }
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -284,10 +353,28 @@ export function ImportModal({
 
     const reader = new FileReader();
     reader.onload = (evt) => {
+      const arrayBuffer = evt.target?.result as ArrayBuffer;
       const base64 = (evt.target?.result as string).split(',')[1];
+
+      // Detect actual file type from magic bytes
+      const actualType = detectFileTypeFromBuffer(arrayBuffer);
+      const extType = ext === '.xlsx' ? 'xlsx' : ext === '.xls' ? 'xls' : 'csv';
+
+      if (actualType !== extType) {
+        toastError(
+          `The uploaded file format does not match its extension. ` +
+          `The file has a ${ext} extension but is actually a ${getDetectedTypeLabel(actualType)}. ` +
+          `Please rename the file with the correct extension and upload again.`,
+        );
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+
+      // Update detected type with actual content-based type
+      setDetectedType(getDetectedTypeLabel(actualType));
       setFileContent(base64);
     };
-    reader.readAsDataURL(file);
+    reader.readAsArrayBuffer(file);
   }
 
   const handleDrop = useCallback(
@@ -328,6 +415,37 @@ export function ImportModal({
     }, 200);
 
     try {
+      // For .xlsx files, try client-workbook preview first
+      if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+        try {
+          // Build FormData for file upload
+          const file = fileRef.current?.files?.[0];
+          if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const wbRes = await api.post<ClientWorkbookPreview>(
+              `/excel-integration/client-workbook/preview`,
+              formData,
+              { timeout: 120_000, headers: { 'Content-Type': 'multipart/form-data' } },
+            );
+
+            if (wbRes.data && wbRes.data.workbookType !== 'unknown' && wbRes.data.readyToImport) {
+              clearInterval(progressInterval);
+              setProgress(100);
+              setProgressStatus(t('component.importModal.progressComplete'));
+              setClientWorkbookPreview(wbRes.data);
+              setPreviewRows(null);
+              setStructuredError(null);
+              setIsPreviewing(false);
+              return;
+            }
+          }
+        } catch {
+          // Fall through to regular preview
+        }
+      }
+
       const res = await api.post(
         `/imports/preview`,
         { module, fileContent, fileName },
@@ -497,10 +615,82 @@ export function ImportModal({
     setFileContent(null);
     setImportStats(null);
     setStructuredError(null);
+    setClientWorkbookPreview(null);
+    setClientWorkbookResult(null);
     setProgress(0);
     setProgressStatus('');
     setExpandedErrors(new Set());
     if (fileRef.current) fileRef.current.value = '';
+  }
+
+  // -------------------------------------------------------------------------
+  // Client Workbook Import
+  // -------------------------------------------------------------------------
+  async function handleClientWorkbookImport() {
+    const file = fileRef.current?.files?.[0];
+    if (!file || !token || !activeCompanyId) return;
+
+    setIsClientImporting(true);
+    setProgress(0);
+    setProgressStatus(t('component.importModal.progressUploading'));
+
+    const startTime = Date.now();
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 3;
+      });
+    }, 200);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await api.post<ClientWorkbookImportResult>(
+        `/excel-integration/client-workbook/import`,
+        formData,
+        { timeout: 300_000, headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      setProgressStatus(t('component.importModal.progressComplete'));
+
+      const result = { ...res.data, timeTaken: Date.now() - startTime };
+      setClientWorkbookResult(result);
+      setClientWorkbookPreview(null);
+
+      if (result.success) {
+        toastSuccess(
+          `Imported ${result.sheetsImported} sheet(s) successfully. Created ${result.autoCreated.length} new records.`,
+        );
+        onSuccess();
+      } else {
+        toastError(`Import failed: ${(result.errors || []).join(', ')}`);
+      }
+    } catch (err: unknown) {
+      clearInterval(progressInterval);
+      setProgress(0);
+      setProgressStatus('');
+
+      let msg = t('component.importModal.importFailed');
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const serverMessage = (err.response?.data as { message?: string })?.message;
+        if (status === 413) {
+          msg = t('import.error.fileTooLarge');
+        } else if (serverMessage) {
+          msg = serverMessage;
+        }
+      }
+      toastError(msg);
+    } finally {
+      setIsClientImporting(false);
+    }
   }
 
   function toggleErrorRow(index: number) {
@@ -711,7 +901,7 @@ export function ImportModal({
           )}
 
           {/* Progress Bar */}
-          {isProcessing && (
+          {isProcessing && !clientWorkbookResult && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-card-foreground">{progressStatus}</span>
@@ -872,6 +1062,87 @@ export function ImportModal({
             </div>
           )}
 
+          {/* Client Workbook Import Result */}
+          {clientWorkbookResult && !importStats && (
+            <div className="space-y-4">
+              {/* Result Summary */}
+              <div className={`rounded-xl border p-5 ${clientWorkbookResult.success ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+                <div className="flex items-start gap-3">
+                  {clientWorkbookResult.success ? (
+                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+                  )}
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-card-foreground">
+                      {clientWorkbookResult.success ? 'Import Complete' : 'Import Failed'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {clientWorkbookResult.sheetsProcessed} sheet(s) processed, {clientWorkbookResult.sheetsImported} imported, {clientWorkbookResult.sheetsSkipped} skipped
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto-Created Records */}
+              {clientWorkbookResult.autoCreated.length > 0 && (
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3">
+                    {t('component.importModal.autoCreatePlan')}
+                  </h4>
+                  <div className="space-y-1.5">
+                    {clientWorkbookResult.autoCreated.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <span className="text-muted-foreground">{item.type}:</span>
+                        <span className="font-medium text-card-foreground">{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sheet Results */}
+              <div className="rounded-xl border border-border bg-card p-4">
+                <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3">
+                  Sheet Results
+                </h4>
+                <div className="space-y-1.5">
+                  {clientWorkbookResult.sheetResults.map((sr, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs rounded-lg bg-secondary/50 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        {sr.status === 'imported' ? (
+                          <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
+                        )}
+                        <span className="font-medium text-card-foreground">{sr.sheetName}</span>
+                      </div>
+                      <span className="text-muted-foreground">{sr.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Warnings */}
+              {clientWorkbookResult.warnings.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">
+                    Warnings
+                  </h4>
+                  <ul className="space-y-1">
+                    {clientWorkbookResult.warnings.map((w, idx) => (
+                      <li key={idx} className="text-xs text-amber-700 flex items-start gap-1">
+                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                        {w}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Step 3: Preview table */}
           {previewRows && !importStats && !structuredError && (
             <div>
@@ -1021,7 +1292,7 @@ export function ImportModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4 flex-shrink-0">
-          {importStats ? (
+          {importStats || clientWorkbookResult ? (
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('common.close')}
             </Button>
@@ -1031,10 +1302,10 @@ export function ImportModal({
                 variant="outline"
                 size="sm"
                 onClick={
-                  previewRows ? handleCancelImport : onClose
+                  previewRows || clientWorkbookPreview ? handleCancelImport : onClose
                 }
               >
-                {previewRows
+                {previewRows || clientWorkbookPreview
                   ? t('component.importModal.cancelImport')
                   : t('common.cancel')}
               </Button>

@@ -5,6 +5,11 @@ import * as XLSX from 'xlsx';
 import { parse as csvParse } from 'csv-parse/sync';
 import { SimpleCache } from '../common/utils/cache.util';
 import { FRIENDLY_HEADER_MAP } from '../excel-integration/template-generator.service';
+import {
+  detectFileType,
+  detectFileTypeFromBuffer,
+  FileTypeMismatchError,
+} from '../common/utils/file-type-detection.util';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RowData = any;
@@ -463,8 +468,8 @@ export class ImportsService {
       );
     }
 
-    const isCsv = lowerName.endsWith('.csv');
     let rawRows: RowData[] = [];
+    let detectedFileType: 'csv' | 'xlsx' | 'xls' = 'csv';
 
     try {
       const buffer = Buffer.from(fileContent, 'base64');
@@ -475,22 +480,43 @@ export class ImportsService {
         );
       }
 
-      if (isCsv) {
-        rawRows = csvParse(buffer.toString('utf-8'), {
-          columns: true,
-          skip_empty_lines: true,
-          trim: true,
-        });
+      // Detect actual file type from magic bytes
+      const typeResult = detectFileType(buffer, fileName);
+      detectedFileType = typeResult.detectedType;
+
+      // Block mismatched file types
+      if (typeResult.mismatch) {
+        throw new FileTypeMismatchError(
+          lowerName.split('.').pop() || 'unknown',
+          typeResult.detectedType,
+        );
+      }
+
+      if (detectedFileType === 'csv') {
+        // Parse as CSV
+        rawRows = this.parseCsvSafe(buffer);
       } else {
-        const workbook = XLSX.read(buffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        rawRows = XLSX.utils.sheet_to_json(sheet);
+        // Parse as Excel (xlsx or xls)
+        rawRows = this.parseExcelSafe(buffer, detectedFileType);
       }
     } catch (err: unknown) {
       if (err instanceof BadRequestException) throw err;
+      if (err instanceof FileTypeMismatchError) {
+        throw new BadRequestException(err.message);
+      }
+      // Wrap all parser errors with friendly messages
       const message = err instanceof Error ? err.message : String(err);
-      throw new BadRequestException(`Failed to parse file: ${message}`);
+      if (message.includes('Invalid Opening Quote') || message.includes('PK')) {
+        throw new BadRequestException(
+          'The uploaded file format does not match its extension. ' +
+          'The file appears to be an Excel workbook saved with a .csv extension. ' +
+          'Please rename it with the correct .xlsx extension.',
+        );
+      }
+      throw new BadRequestException(
+        'The uploaded file could not be parsed. ' +
+        'Please ensure the file is not corrupted and is in CSV or Excel format.',
+      );
     }
 
     // Detect header-only (empty data)
@@ -543,6 +569,73 @@ export class ImportsService {
     };
 
     return { summary, rows: results };
+  }
+
+  /**
+   * Parse CSV with friendly error wrapping.
+   */
+  private parseCsvSafe(buffer: Buffer): RowData[] {
+    try {
+      return csvParse(buffer.toString('utf-8'), {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('Invalid Opening Quote')) {
+        throw new BadRequestException(
+          'The uploaded file format does not match its extension. ' +
+          'This file appears to be an Excel workbook (.xlsx) saved with a .csv extension. ' +
+          'Please rename it with the correct .xlsx extension and upload again.',
+        );
+      }
+      throw new BadRequestException(
+        'The CSV file could not be parsed. Please ensure it uses proper CSV formatting with comma-separated values.',
+      );
+    }
+  }
+
+  /**
+   * Parse Excel (XLSX/XLS) with friendly error wrapping.
+   */
+  private parseExcelSafe(buffer: Buffer, fileType: 'xlsx' | 'xls'): RowData[] {
+    try {
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) {
+        throw new BadRequestException(
+          'The Excel workbook contains no sheets. Please ensure the file is not empty.',
+        );
+      }
+      const sheet = workbook.Sheets[sheetName];
+      return XLSX.utils.sheet_to_json(sheet);
+    } catch (err: unknown) {
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException(
+        `The ${fileType === 'xlsx' ? 'Excel' : 'Excel 97-2003'} file could not be parsed. ` +
+        'Please ensure the file is not corrupted.',
+      );
+    }
+  }
+
+  /**
+   * Parse all sheets from an Excel workbook for preview purposes.
+   * Returns rows from the first sheet (primary import sheet).
+   */
+  parseExcelAllSheets(buffer: Buffer): { sheetName: string; rows: RowData[] }[] {
+    try {
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      return workbook.SheetNames.map(name => {
+        const sheet = workbook.Sheets[name];
+        return {
+          sheetName: name,
+          rows: XLSX.utils.sheet_to_json(sheet),
+        };
+      });
+    } catch {
+      return [];
+    }
   }
 
   private async validateRow(

@@ -375,8 +375,15 @@ export function ImportModal({
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const arrayBuffer = evt.target?.result as ArrayBuffer;
-      const base64 = (evt.target?.result as string).split(',')[1];
+      const result = evt.target?.result;
+      if (!result) return;
+      const arrayBuffer = result as ArrayBuffer;
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          '',
+        ),
+      );
 
       // Detect actual file type from magic bytes
       const actualType = detectFileTypeFromBuffer(arrayBuffer);

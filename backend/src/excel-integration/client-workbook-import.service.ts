@@ -147,6 +147,477 @@ export class ClientWorkbookImportService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private cache = {
+    companies: new Map<string, bigint>(),
+    sites: new Map<string, bigint>(),
+    units: new Map<string, bigint>(),
+    accounts: new Map<string, bigint>(),
+    costCenters: new Map<string, bigint>(),
+    productCategories: new Map<string, bigint>(),
+    customers: new Map<string, bigint>(),
+    suppliers: new Map<string, bigint>(),
+    materials: new Map<string, bigint>(),
+    products: new Map<string, bigint>(),
+    budgetCycles: new Map<string, bigint>(),
+    forecastCycles: new Map<string, bigint>(),
+  };
+
+  private async initializeCache(companyId: bigint) {
+    this.cache = {
+      companies: new Map<string, bigint>(),
+      sites: new Map<string, bigint>(),
+      units: new Map<string, bigint>(),
+      accounts: new Map<string, bigint>(),
+      costCenters: new Map<string, bigint>(),
+      productCategories: new Map<string, bigint>(),
+      customers: new Map<string, bigint>(),
+      suppliers: new Map<string, bigint>(),
+      materials: new Map<string, bigint>(),
+      products: new Map<string, bigint>(),
+      budgetCycles: new Map<string, bigint>(),
+      forecastCycles: new Map<string, bigint>(),
+    };
+
+    const [
+      companies,
+      sites,
+      units,
+      accounts,
+      costCenters,
+      productCategories,
+      customers,
+      suppliers,
+      materials,
+      products,
+      budgetCycles,
+      forecastCycles,
+    ] = await Promise.all([
+      this.prisma.company.findMany({ select: { id: true, name: true } }),
+      this.prisma.site.findMany({ where: { companyId }, select: { id: true, name: true } }),
+      this.prisma.unit.findMany({ where: { companyId }, select: { id: true, symbol: true, name: true } }),
+      this.prisma.account.findMany({ where: { companyId }, select: { id: true, code: true, name: true } }),
+      this.prisma.costCenter.findMany({ where: { companyId }, select: { id: true, code: true, name: true } }),
+      this.prisma.productCategory.findMany({ where: { companyId }, select: { id: true, name: true } }),
+      this.prisma.customer.findMany({ where: { companyId }, select: { id: true, code: true, name: true } }),
+      this.prisma.supplier.findMany({ where: { companyId }, select: { id: true, name: true } }),
+      this.prisma.material.findMany({ where: { companyId }, select: { id: true, code: true, name: true } }),
+      this.prisma.product.findMany({ where: { companyId }, select: { id: true, sku: true, name: true } }),
+      this.prisma.budgetCycle.findMany({ where: { companyId }, select: { id: true, name: true } }),
+      this.prisma.forecastCycle.findMany({ where: { companyId }, select: { id: true, name: true } }),
+    ]);
+
+    for (const c of companies) {
+      this.cache.companies.set(c.name.toLowerCase().trim(), c.id);
+    }
+    for (const s of sites) {
+      this.cache.sites.set(s.name.toLowerCase().trim(), s.id);
+    }
+    for (const u of units) {
+      this.cache.units.set(u.symbol.toLowerCase().trim(), u.id);
+      this.cache.units.set(u.name.toLowerCase().trim(), u.id);
+    }
+    for (const a of accounts) {
+      this.cache.accounts.set(a.code.toLowerCase().trim(), a.id);
+      this.cache.accounts.set(a.name.toLowerCase().trim(), a.id);
+    }
+    for (const cc of costCenters) {
+      if (cc.code) this.cache.costCenters.set(cc.code.toLowerCase().trim(), cc.id);
+      this.cache.costCenters.set(cc.name.toLowerCase().trim(), cc.id);
+    }
+    for (const pc of productCategories) {
+      this.cache.productCategories.set(pc.name.toLowerCase().trim(), pc.id);
+    }
+    for (const cust of customers) {
+      if (cust.code) this.cache.customers.set(cust.code.toLowerCase().trim(), cust.id);
+      this.cache.customers.set(cust.name.toLowerCase().trim(), cust.id);
+    }
+    for (const supp of suppliers) {
+      this.cache.suppliers.set(supp.name.toLowerCase().trim(), supp.id);
+    }
+    for (const m of materials) {
+      this.cache.materials.set(m.code.toLowerCase().trim(), m.id);
+      this.cache.materials.set(m.name.toLowerCase().trim(), m.id);
+    }
+    for (const p of products) {
+      this.cache.products.set(p.sku.toLowerCase().trim(), p.id);
+      this.cache.products.set(p.name.toLowerCase().trim(), p.id);
+    }
+    for (const bc of budgetCycles) {
+      this.cache.budgetCycles.set(bc.name.toLowerCase().trim(), bc.id);
+    }
+    for (const fc of forecastCycles) {
+      this.cache.forecastCycles.set(fc.name.toLowerCase().trim(), fc.id);
+    }
+  }
+
+  mapAndValidateRow(
+    row: Record<string, unknown>,
+    module: string,
+    companyId?: bigint,
+    rowNumber?: number,
+  ): { clean: Record<string, any>; errors: string[]; warnings: string[] } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const modelMap: Record<string, string> = {
+      companies: 'company',
+      sites: 'site',
+      units: 'unit',
+      accounts: 'account',
+      costcenters: 'costCenter',
+      productcategories: 'productCategory',
+      customers: 'customer',
+      suppliers: 'supplier',
+      materials: 'material',
+      products: 'product',
+      bomrecipes: 'bomRecipe',
+      bomlines: 'bomLine',
+      budgetlines: 'budgetLine',
+      forecastlines: 'forecastLine',
+      actuallines: 'actualLine',
+      productionplans: 'productionPlan',
+      kpitargets: 'kpiTarget',
+      exchangerates: 'exchangeRate',
+      promotions: 'promotion',
+      rawmaterialprices: 'rawMaterialPrice',
+    };
+
+    const modelName = modelMap[module];
+    if (!modelName) {
+      return { clean: {}, errors: [`Unknown module: ${module}`], warnings: [] };
+    }
+
+    // 1. Map columns using aliases
+    let mapped = mapRowWithAliases(row, module);
+
+    if (companyId) {
+      mapped.companyId = companyId;
+    }
+
+    // 2. Generate defaults
+    mapped = generateDefaults(mapped, module, rowNumber);
+
+    // 3. Coerce values
+    const coerced: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(mapped)) {
+      coerced[key] = coerceValue(val, key, modelName);
+    }
+
+    // 4. Whitelist fields
+    const clean = whitelistFields(coerced, modelName);
+
+    // 5. Schema Validation (check required fields)
+    const { getSheetByModule } = require('./client-workbook-schema');
+    const sheetDef = getSheetByModule(module);
+    if (sheetDef) {
+      for (const col of sheetDef.columns) {
+        const val = clean[col.field] ?? coerced[col.field];
+        if (col.required && (val === null || val === undefined || val === '')) {
+          errors.push(`Missing required field: ${col.display}`);
+        }
+        if (col.allowedValues && val !== null && val !== undefined) {
+          const strVal = String(val).trim();
+          if (!col.allowedValues.includes(strVal)) {
+            warnings.push(
+              `Value "${strVal}" is not in the allowed list: ${col.allowedValues.join(', ')}`,
+            );
+          }
+        }
+      }
+    }
+
+    return { clean, errors, warnings };
+  }
+
+  private async resolveSite(nameOrCode: string, companyId: bigint): Promise<bigint> {
+    const key = nameOrCode.toLowerCase().trim();
+    if (this.cache.sites.has(key)) return this.cache.sites.get(key)!;
+    const site = await this.prisma.site.create({
+      data: {
+        companyId,
+        name: nameOrCode,
+        type: 'factory',
+        status: 'active',
+      }
+    });
+    this.cache.sites.set(key, site.id);
+    return site.id;
+  }
+
+  private async resolveUnit(symbolOrName: string, companyId: bigint): Promise<bigint> {
+    const key = symbolOrName.toLowerCase().trim();
+    if (this.cache.units.has(key)) return this.cache.units.get(key)!;
+    const unit = await this.prisma.unit.create({
+      data: {
+        companyId,
+        name: symbolOrName,
+        symbol: symbolOrName,
+      }
+    });
+    this.cache.units.set(key, unit.id);
+    return unit.id;
+  }
+
+  private async resolveAccount(codeOrName: string, companyId: bigint): Promise<bigint> {
+    const key = codeOrName.toLowerCase().trim();
+    if (this.cache.accounts.has(key)) return this.cache.accounts.get(key)!;
+    const isCode = /^\d+$/.test(codeOrName);
+    const code = isCode ? codeOrName : `ACC-${Math.floor(Math.random() * 10000)}`;
+    const name = isCode ? `Account ${codeOrName}` : codeOrName;
+    const type = inferAccountType(code) as AccountType;
+    const acc = await this.prisma.account.create({
+      data: {
+        companyId,
+        code,
+        name,
+        type,
+        isActive: true,
+      }
+    });
+    this.cache.accounts.set(key, acc.id);
+    if (code !== key) this.cache.accounts.set(code.toLowerCase(), acc.id);
+    return acc.id;
+  }
+
+  private async resolveCostCenter(codeOrName: string, companyId: bigint, siteId?: bigint | null): Promise<bigint> {
+    const key = codeOrName.toLowerCase().trim();
+    if (this.cache.costCenters.has(key)) return this.cache.costCenters.get(key)!;
+    const isCode = /^[A-Z0-9-]+$/i.test(codeOrName) && codeOrName.length < 10;
+    const code = isCode ? codeOrName : `CC-${Math.floor(Math.random() * 10000)}`;
+    const name = isCode ? `Cost Center ${codeOrName}` : codeOrName;
+    const cc = await this.prisma.costCenter.create({
+      data: {
+        companyId,
+        code,
+        name,
+        type: 'production',
+        siteId: siteId || null,
+      }
+    });
+    this.cache.costCenters.set(key, cc.id);
+    if (code !== key) this.cache.costCenters.set(code.toLowerCase(), cc.id);
+    return cc.id;
+  }
+
+  private async resolveProductCategory(name: string, companyId: bigint): Promise<bigint> {
+    const key = name.toLowerCase().trim();
+    if (this.cache.productCategories.has(key)) return this.cache.productCategories.get(key)!;
+    const pc = await this.prisma.productCategory.create({
+      data: {
+        companyId,
+        name,
+      }
+    });
+    this.cache.productCategories.set(key, pc.id);
+    return pc.id;
+  }
+
+  private async resolveCustomer(codeOrName: string, companyId: bigint): Promise<bigint> {
+    const key = codeOrName.toLowerCase().trim();
+    if (this.cache.customers.has(key)) return this.cache.customers.get(key)!;
+    const isCode = /^[A-Z0-9-]+$/i.test(codeOrName) && codeOrName.length < 15;
+    const code = isCode ? codeOrName : `CUST-${Math.floor(Math.random() * 10000)}`;
+    const name = isCode ? `Customer ${codeOrName}` : codeOrName;
+    const cust = await this.prisma.customer.create({
+      data: {
+        companyId,
+        code,
+        name,
+        isActive: true,
+      }
+    });
+    this.cache.customers.set(key, cust.id);
+    if (code !== key) this.cache.customers.set(code.toLowerCase(), cust.id);
+    return cust.id;
+  }
+
+  private async resolveSupplier(name: string, companyId: bigint): Promise<bigint> {
+    const key = name.toLowerCase().trim();
+    if (this.cache.suppliers.has(key)) return this.cache.suppliers.get(key)!;
+    const supp = await this.prisma.supplier.create({
+      data: {
+        companyId,
+        name,
+      }
+    });
+    this.cache.suppliers.set(key, supp.id);
+    return supp.id;
+  }
+
+  private async resolveProduct(skuOrName: string, companyId: bigint, defaults?: { categoryId?: bigint | null; unitId?: bigint | null }): Promise<bigint> {
+    const key = skuOrName.toLowerCase().trim();
+    if (this.cache.products.has(key)) return this.cache.products.get(key)!;
+    const isSku = /^[A-Z0-9-]+$/i.test(skuOrName) && skuOrName.length < 20;
+    const sku = isSku ? skuOrName : `P-${Math.floor(Math.random() * 10000)}`;
+    const name = isSku ? `Product ${skuOrName}` : skuOrName;
+    const prod = await this.prisma.product.create({
+      data: {
+        companyId,
+        sku,
+        name,
+        productType: 'finished_good',
+        categoryId: defaults?.categoryId || null,
+        unitId: defaults?.unitId || null,
+        isActive: true,
+      }
+    });
+    this.cache.products.set(key, prod.id);
+    if (sku !== key) this.cache.products.set(sku.toLowerCase(), prod.id);
+    return prod.id;
+  }
+
+  private async resolveMaterial(codeOrName: string, companyId: bigint, defaults?: { unitId?: bigint | null; supplierId?: bigint | null }): Promise<bigint> {
+    const key = codeOrName.toLowerCase().trim();
+    if (this.cache.materials.has(key)) return this.cache.materials.get(key)!;
+    const isCode = /^[A-Z0-9-]+$/i.test(codeOrName) && codeOrName.length < 20;
+    const code = isCode ? codeOrName : `RM-${Math.floor(Math.random() * 10000)}`;
+    const name = isCode ? `Material ${codeOrName}` : codeOrName;
+    const mat = await this.prisma.material.create({
+      data: {
+        companyId,
+        code,
+        name,
+        materialType: 'raw_material',
+        unitId: defaults?.unitId || null,
+        supplierId: defaults?.supplierId || null,
+        isActive: true,
+      }
+    });
+    this.cache.materials.set(key, mat.id);
+    if (code !== key) this.cache.materials.set(code.toLowerCase(), mat.id);
+    return mat.id;
+  }
+
+  private async resolveBudgetCycle(name: string, companyId: bigint, userId: bigint, fiscalYear?: number): Promise<bigint> {
+    const key = name.toLowerCase().trim();
+    if (this.cache.budgetCycles.has(key)) return this.cache.budgetCycles.get(key)!;
+    const fy = fiscalYear || new Date().getFullYear();
+    const bc = await this.prisma.budgetCycle.create({
+      data: {
+        companyId,
+        name,
+        fiscalYear: fy,
+        status: 'draft',
+        createdBy: userId,
+      }
+    });
+    this.cache.budgetCycles.set(key, bc.id);
+    return bc.id;
+  }
+
+  private async resolveForecastCycle(name: string, companyId: bigint, userId: bigint, fiscalYear?: number): Promise<bigint> {
+    const key = name.toLowerCase().trim();
+    if (this.cache.forecastCycles.has(key)) return this.cache.forecastCycles.get(key)!;
+    const fy = fiscalYear || new Date().getFullYear();
+    const fc = await this.prisma.forecastCycle.create({
+      data: {
+        companyId,
+        name,
+        fiscalYear: fy,
+        basePeriod: new Date(fy, 0, 1),
+        status: 'draft',
+        createdBy: userId,
+      }
+    });
+    this.cache.forecastCycles.set(key, fc.id);
+    return fc.id;
+  }
+
+  async resolveRowReferences(
+    clean: Record<string, any>,
+    module: string,
+    companyId: bigint,
+    userId: bigint,
+  ): Promise<Record<string, any>> {
+    const resolved = { ...clean };
+
+    if ('createdBy' in resolved || module === 'exchangerates' || module === 'kpitargets' || module === 'promotions') {
+      resolved.createdBy = userId;
+    }
+
+    if ('accountCode' in resolved || ('accountId' in resolved && typeof resolved.accountId === 'string')) {
+      const code = String(resolved.accountCode || resolved.accountId);
+      resolved.accountId = await this.resolveAccount(code, companyId);
+      delete resolved.accountCode;
+    }
+
+    if ('siteCode' in resolved || 'siteName' in resolved || ('siteId' in resolved && typeof resolved.siteId === 'string')) {
+      const name = String(resolved.siteCode || resolved.siteName || resolved.siteId);
+      resolved.siteId = await this.resolveSite(name, companyId);
+      delete resolved.siteCode;
+      delete resolved.siteName;
+    }
+
+    if ('costCenterCode' in resolved || ('costCenterId' in resolved && typeof resolved.costCenterId === 'string')) {
+      const code = String(resolved.costCenterCode || resolved.costCenterId);
+      resolved.costCenterId = await this.resolveCostCenter(code, companyId, resolved.siteId);
+      delete resolved.costCenterCode;
+    }
+
+    if ('unitSymbol' in resolved || 'uom' in resolved || ('unitId' in resolved && typeof resolved.unitId === 'string')) {
+      const sym = String(resolved.unitSymbol || resolved.uom || resolved.unitId);
+      if (sym && sym !== 'null' && sym !== 'undefined') {
+        resolved.unitId = await this.resolveUnit(sym, companyId);
+      } else {
+        resolved.unitId = null;
+      }
+      delete resolved.unitSymbol;
+      delete resolved.uom;
+    }
+
+    if ('categoryName' in resolved || ('categoryId' in resolved && typeof resolved.categoryId === 'string')) {
+      const cat = String(resolved.categoryName || resolved.categoryId);
+      if (cat && cat !== 'null' && cat !== 'undefined') {
+        resolved.categoryId = await this.resolveProductCategory(cat, companyId);
+      } else {
+        resolved.categoryId = null;
+      }
+      delete resolved.categoryName;
+    }
+
+    if ('supplierName' in resolved || ('supplierId' in resolved && typeof resolved.supplierId === 'string')) {
+      const supp = String(resolved.supplierName || resolved.supplierId);
+      if (supp && supp !== 'null' && supp !== 'undefined') {
+        resolved.supplierId = await this.resolveSupplier(supp, companyId);
+      } else {
+        resolved.supplierId = null;
+      }
+      delete resolved.supplierName;
+    }
+
+    if ('productSku' in resolved || 'productCode' in resolved || ('productId' in resolved && typeof resolved.productId === 'string')) {
+      const sku = String(resolved.productSku || resolved.productCode || resolved.productId);
+      resolved.productId = await this.resolveProduct(sku, companyId);
+      delete resolved.productSku;
+      delete resolved.productCode;
+    }
+
+    if ('materialCode' in resolved || ('materialId' in resolved && typeof resolved.materialId === 'string')) {
+      const code = String(resolved.materialCode || resolved.materialId);
+      resolved.materialId = await this.resolveMaterial(code, companyId);
+      delete resolved.materialCode;
+    }
+
+    if ('customerCode' in resolved || ('customerId' in resolved && typeof resolved.customerId === 'string')) {
+      const code = String(resolved.customerCode || resolved.customerId);
+      resolved.customerId = await this.resolveCustomer(code, companyId);
+      delete resolved.customerCode;
+    }
+
+    if ('budgetCycleName' in resolved) {
+      const name = String(resolved.budgetCycleName);
+      resolved.budgetCycleId = await this.resolveBudgetCycle(name, companyId, userId, resolved.fiscalYear);
+      delete resolved.budgetCycleName;
+    }
+
+    if ('forecastCycleName' in resolved) {
+      const name = String(resolved.forecastCycleName);
+      resolved.forecastCycleId = await this.resolveForecastCycle(name, companyId, userId, resolved.fiscalYear);
+      delete resolved.forecastCycleName;
+    }
+
+    return resolved;
+  }
+
   /* ═══════════════════════════════════════════════════════════════════════
    * PUBLIC: Preview
    * ═══════════════════════════════════════════════════════════════════════ */
@@ -267,6 +738,8 @@ export class ClientWorkbookImportService {
       errors: [],
       sheetResults: [],
     };
+
+    await this.initializeCache(companyId);
 
     const { classifySheetRole } = require('./client-workbook-schema');
     for (const name of fullWorkbook.SheetNames) {
@@ -425,7 +898,6 @@ export class ClientWorkbookImportService {
   private previewSheetsV2(workbook: XLSX.WorkBook) {
     const {
       classifySheetRole,
-      REFERENCE_SHEET_NAMES,
     } = require('./client-workbook-schema');
     return workbook.SheetNames.map((name) => {
       const ws = workbook.Sheets[name];
@@ -474,6 +946,32 @@ export class ClientWorkbookImportService {
       else if (mappedModule.startsWith('informational_')) status = 'reference';
       else status = 'ready';
 
+      let validRowsCount = 0;
+      if (importable && mappedModule) {
+        rawData.forEach((row, idx) => {
+          const rowNum = idx + 2;
+          const { errors: rowErrors, warnings: rowWarnings } = this.mapAndValidateRow(row, mappedModule, undefined, rowNum);
+          if (rowErrors.length > 0) {
+            rowErrors.forEach(err => {
+              errors.push({
+                row: rowNum,
+                column: '',
+                reason: 'validation_error',
+                message: err,
+                value: null
+              });
+            });
+          } else {
+            validRowsCount++;
+          }
+          if (rowWarnings.length > 0) {
+            rowWarnings.forEach(w => warnings.push(`Row ${rowNum}: ${w}`));
+          }
+        });
+      } else {
+        validRowsCount = status === 'ready' ? rawData.length : 0;
+      }
+
       return {
         name,
         sheetRole: role,
@@ -482,7 +980,7 @@ export class ClientWorkbookImportService {
         headers,
         mappedModule,
         importable,
-        validRows: status === 'ready' ? rawData.length : 0,
+        validRows: validRowsCount,
         errors,
         warnings,
         status,
@@ -1308,6 +1806,7 @@ export class ClientWorkbookImportService {
       await this.importForcasteQty(
         workbook,
         companyId,
+        userId,
         context.productMap || new Map(),
         result,
       );
@@ -1364,6 +1863,14 @@ export class ClientWorkbookImportService {
       suppliers: 'supplier',
       materials: 'material',
       products: 'product',
+      budgetlines: 'budgetLine',
+      forecastlines: 'forecastLine',
+      actuallines: 'actualLine',
+      productionplans: 'productionPlan',
+      kpitargets: 'kpiTarget',
+      exchangerates: 'exchangeRate',
+      promotions: 'promotion',
+      rawmaterialprices: 'rawMaterialPrice',
     };
 
     const modelName = modelMap[module];
@@ -1400,105 +1907,133 @@ export class ClientWorkbookImportService {
       const row = rawRows[i];
       const rowNum = i + 2; // Excel row numbering (1-indexed + header)
 
-      // Map columns using aliases
-      let mapped = mapRowWithAliases(row, module);
-
-      // Add companyId
-      mapped.companyId = companyId;
-
-      // Generate defaults for missing required fields
-      mapped = generateDefaults(mapped, module);
-
-      // Coerce values
-      const coerced: Record<string, unknown> = {};
-      for (const [key, val] of Object.entries(mapped)) {
-        coerced[key] = coerceValue(val, key, modelName);
-      }
-
-      // Whitelist fields
-      const clean = whitelistFields(coerced, modelName);
-
-      // Handle Company module specially: update existing, don't create new
-      if (module === 'companies') {
-        if (Object.keys(clean).length === 0) continue;
-        try {
-          await this.prisma.company.update({
-            where: { id: companyId },
-            data: clean,
-          });
-          imported++;
-          result.totals[module] = (result.totals[module] || 0) + 1;
-          continue;
-        } catch (err: any) {
-          const { friendly } = normalizeImportError(err, {
-            module,
-            row: rowNum,
-            sheet: sheetName,
-          });
-          errors.push(`Row ${rowNum}: ${friendly}`);
-          failed++;
-          continue;
-        }
+      // 1. Map and validate
+      const { clean, errors: rowErrors } = this.mapAndValidateRow(row, module, companyId, rowNum);
+      if (rowErrors.length > 0) {
+        errors.push(`Row ${rowNum}: ${rowErrors.join(', ')}`);
+        failed++;
+        continue;
       }
 
       // Skip rows with no meaningful data
       const relevantKeys = Object.keys(clean).filter((k) => k !== 'companyId');
       if (relevantKeys.length === 0) continue;
 
-      // Ensure required fields exist for master data
-      if (module === 'accounts' && !clean.type) {
-        clean.type = clean.code
-          ? inferAccountType(String(clean.code))
-          : 'expense';
-      }
-      if (module === 'accounts' && !clean.code) {
-        errors.push(`Row ${rowNum}: Account code is required`);
+      // 2. Resolve references
+      let resolved: Record<string, any>;
+      try {
+        resolved = await this.resolveRowReferences(clean, module, companyId, userId);
+      } catch (err: any) {
+        errors.push(`Row ${rowNum}: Ref resolution failed - ${err.message}`);
         failed++;
         continue;
       }
-      if (module === 'customers' && !clean.code) {
-        clean.code = String(
-          (typeof findOriginalRowValue(
-            row,
-            'Customer Code',
-            'customer_code',
-            'customerCode',
-            'Code',
-            'CODE',
-            'code',
-            'Customer No',
-            'customer_no',
-            'Customer Number',
-            'customer_number',
-            'Client Code',
-            'client_code',
-            'Account Number',
-            'account_number',
-          ) as string) || `CUST-${rowNum}`,
-        );
-      }
-      if (module === 'suppliers' && !clean.name) {
-        clean.name = String(
-          (typeof findOriginalRowValue(
-            row,
-            'Supplier Name',
-            'supplier_name',
-            'supplierName',
-            'Name',
-            'NAME',
-            'name',
-            'Vendor Name',
-            'vendor_name',
-            'vendorName',
-            'Supplier',
-            'VENDOR',
-            'Company',
-          ) as string) || `Supplier ${rowNum}`,
-        );
-      }
 
+      // 3. Whitelist again to keep only prisma model fields
+      const prismaClean = whitelistFields(resolved, modelName);
+
+      // Special upsert handling for each master data model to avoid duplicates
       try {
-        await prismaModel.create({ data: clean });
+        let existingId: bigint | null = null;
+        if (module === 'companies') {
+          await this.prisma.company.update({ where: { id: companyId }, data: prismaClean as Prisma.CompanyUpdateInput });
+        } else if (module === 'sites') {
+          const name = String(prismaClean.name);
+          existingId = this.cache.sites.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.site.update({ where: { id: existingId }, data: prismaClean as Prisma.SiteUpdateInput });
+          } else {
+            const created = await this.prisma.site.create({ data: prismaClean as Prisma.SiteCreateInput });
+            this.cache.sites.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'units') {
+          const name = String(prismaClean.name);
+          const symbol = String(prismaClean.symbol || name);
+          existingId = this.cache.units.get(symbol.toLowerCase().trim()) || this.cache.units.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.unit.update({ where: { id: existingId }, data: prismaClean as Prisma.UnitUpdateInput });
+          } else {
+            const created = await this.prisma.unit.create({ data: prismaClean as Prisma.UnitCreateInput });
+            this.cache.units.set(name.toLowerCase().trim(), created.id);
+            this.cache.units.set(symbol.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'accounts') {
+          const code = String(prismaClean.code);
+          const name = String(prismaClean.name || `Account ${code}`);
+          existingId = this.cache.accounts.get(code.toLowerCase().trim()) || this.cache.accounts.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.account.update({ where: { id: existingId }, data: prismaClean as Prisma.AccountUpdateInput });
+          } else {
+            const created = await this.prisma.account.create({ data: prismaClean as Prisma.AccountCreateInput });
+            this.cache.accounts.set(code.toLowerCase().trim(), created.id);
+            this.cache.accounts.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'costcenters') {
+          const code = String(prismaClean.code);
+          const name = String(prismaClean.name || `Cost Center ${code}`);
+          existingId = this.cache.costCenters.get(code.toLowerCase().trim()) || this.cache.costCenters.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.costCenter.update({ where: { id: existingId }, data: prismaClean as Prisma.CostCenterUpdateInput });
+          } else {
+            const created = await this.prisma.costCenter.create({ data: prismaClean as Prisma.CostCenterCreateInput });
+            this.cache.costCenters.set(code.toLowerCase().trim(), created.id);
+            this.cache.costCenters.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'productcategories') {
+          const name = String(prismaClean.name);
+          existingId = this.cache.productCategories.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.productCategory.update({ where: { id: existingId }, data: prismaClean as Prisma.ProductCategoryUpdateInput });
+          } else {
+            const created = await this.prisma.productCategory.create({ data: prismaClean as Prisma.ProductCategoryCreateInput });
+            this.cache.productCategories.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'customers') {
+          const code = String(prismaClean.code);
+          const name = String(prismaClean.name || `Customer ${code}`);
+          existingId = this.cache.customers.get(code.toLowerCase().trim()) || this.cache.customers.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.customer.update({ where: { id: existingId }, data: prismaClean as Prisma.CustomerUpdateInput });
+          } else {
+            const created = await this.prisma.customer.create({ data: prismaClean as Prisma.CustomerCreateInput });
+            this.cache.customers.set(code.toLowerCase().trim(), created.id);
+            this.cache.customers.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'suppliers') {
+          const name = String(prismaClean.name);
+          existingId = this.cache.suppliers.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.supplier.update({ where: { id: existingId }, data: prismaClean as Prisma.SupplierUpdateInput });
+          } else {
+            const created = await this.prisma.supplier.create({ data: prismaClean as Prisma.SupplierCreateInput });
+            this.cache.suppliers.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'materials') {
+          const code = String(prismaClean.code);
+          const name = String(prismaClean.name || `Material ${code}`);
+          existingId = this.cache.materials.get(code.toLowerCase().trim()) || this.cache.materials.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.material.update({ where: { id: existingId }, data: prismaClean as Prisma.MaterialUpdateInput });
+          } else {
+            const created = await this.prisma.material.create({ data: prismaClean as Prisma.MaterialCreateInput });
+            this.cache.materials.set(code.toLowerCase().trim(), created.id);
+            this.cache.materials.set(name.toLowerCase().trim(), created.id);
+          }
+        } else if (module === 'products') {
+          const sku = String(prismaClean.sku);
+          const name = String(prismaClean.name || `Product ${sku}`);
+          existingId = this.cache.products.get(sku.toLowerCase().trim()) || this.cache.products.get(name.toLowerCase().trim()) || null;
+          if (existingId) {
+            await this.prisma.product.update({ where: { id: existingId }, data: prismaClean as Prisma.ProductUpdateInput });
+          } else {
+            const created = await this.prisma.product.create({ data: prismaClean as Prisma.ProductCreateInput });
+            this.cache.products.set(sku.toLowerCase().trim(), created.id);
+            this.cache.products.set(name.toLowerCase().trim(), created.id);
+          }
+        } else {
+          // General create fallback
+          await prismaModel.create({ data: prismaClean });
+        }
         imported++;
         result.totals[module] = (result.totals[module] || 0) + 1;
       } catch (err: any) {
@@ -1509,7 +2044,6 @@ export class ClientWorkbookImportService {
         });
         errors.push(`Row ${rowNum}: ${friendly}`);
         failed++;
-        // Log but don't crash
         this.logger.debug(`Row ${rowNum} failed: ${err.message}`);
       }
     }
@@ -2289,6 +2823,7 @@ export class ClientWorkbookImportService {
   private async importForcasteQty(
     workbook: XLSX.WorkBook,
     companyId: bigint,
+    userId: bigint,
     productMap: Map<number, bigint>,
     result: WorkbookImportResult,
   ): Promise<void> {
@@ -2354,7 +2889,7 @@ export class ClientWorkbookImportService {
           fiscalYear,
           basePeriod: new Date(fiscalYear, 0, 1),
           status: 'draft',
-          createdBy: BigInt(0),
+          createdBy: userId,
         },
       }));
 
@@ -2494,7 +3029,20 @@ export class ClientWorkbookImportService {
           continue;
         }
 
-        const productId = productMap.get(prdNo);
+        let productId = productMap.get(prdNo);
+        if (!productId) {
+          productId = this.cache.products.get(String(prdNo).toLowerCase().trim()) || undefined;
+        }
+        if (!productId) {
+          const existingProduct = await this.prisma.product.findFirst({
+            where: { sku: String(prdNo), companyId }
+          });
+          if (existingProduct) {
+            productId = existingProduct.id;
+            productMap.set(prdNo, existingProduct.id);
+            this.cache.products.set(String(prdNo).toLowerCase().trim(), existingProduct.id);
+          }
+        }
         if (!productId) {
           failedRows++;
           errors.push(`Row ${rowNum}: Product ${prdNo} not found in database`);

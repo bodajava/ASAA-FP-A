@@ -455,6 +455,116 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
     isActive: ['isactive', 'is_active', 'active', 'status'],
   },
+  bomrecipes: {
+    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'code', 'product', 'prdno', 'prd no', 'prd_no'],
+    version: ['version', 'bomversion', 'bom_version', 'ver'],
+    outputQty: ['outputqty', 'output_qty', 'output qty', 'outputquantity'],
+    wastagePct: ['wastagepct', 'wastage_pct', 'wastage %', 'wastage', 'wastage_percentage'],
+    laborCost: ['laborcost', 'labor_cost', 'labor cost', 'labor'],
+    overheadCost: ['overheadcost', 'overhead_cost', 'overhead cost', 'overhead'],
+    isActive: ['isactive', 'is_active', 'active', 'status'],
+    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'ingno', 'ing no', 'ing_no'],
+    qtyPerOutput: ['qtyperoutput', 'qty_per_output', 'qty per output', 'quantity', 'qty', 'planqty', 'plan qty'],
+  },
+  bomlines: {
+    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'ingno', 'ing no', 'ing_no'],
+    qtyPerOutput: ['qtyperoutput', 'qty_per_output', 'qty per output', 'quantity', 'qty', 'planqty', 'plan qty'],
+    unitCost: ['unitcost', 'unit_cost', 'unit cost', 'cost', 'price'],
+    wastagePct: ['wastagepct', 'wastage_pct', 'wastage %', 'wastage'],
+    yieldPct: ['yieldpct', 'yield_pct', 'yield %', 'yield'],
+    costCategory: ['costcategory', 'cost_category', 'category'],
+    quantity: ['quantity', 'qty'],
+  },
+  budgetlines: {
+    budgetCycleName: ['budgetcyclename', 'budget_cycle_name', 'budget cycle name', 'budgetcycle', 'budget cycle', 'cycle'],
+    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
+    accountCode: ['accountcode', 'account_code', 'account code', 'account', 'glcode', 'gl_code', 'code'],
+    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+    costCenterCode: ['costcentercode', 'cost_center_code', 'cost center code', 'costcenter', 'cc', 'cccode'],
+    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
+    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
+    customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
+    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
+    quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
+    unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
+    amount: ['amount', 'value', 'budgetamt', 'budget_amt'],
+    notes: ['notes', 'note', 'description', 'remarks'],
+  },
+  forecastlines: {
+    forecastCycleName: ['forecastcyclename', 'forecast_cycle_name', 'forecast cycle name', 'forecastcycle', 'forecast cycle', 'cycle'],
+    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
+    accountCode: ['accountcode', 'account_code', 'account code', 'account', 'glcode', 'gl_code', 'code'],
+    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+    costCenterCode: ['costcentercode', 'cost_center_code', 'cost center code', 'costcenter', 'cc', 'cccode'],
+    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
+    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
+    customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
+    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
+    quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
+    unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
+    amount: ['amount', 'value', 'forecastamt', 'forecast_amt'],
+    driverType: ['drivertype', 'driver_type', 'driver type', 'driver'],
+    notes: ['notes', 'note', 'description', 'remarks'],
+  },
+  actuallines: {
+    accountCode: ['accountcode', 'account_code', 'account code', 'account', 'glcode', 'gl_code', 'code'],
+    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+    costCenterCode: ['costcentercode', 'cost_center_code', 'cost center code', 'costcenter', 'cc', 'cccode'],
+    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
+    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
+    customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
+    transactionDate: ['transactiondate', 'transaction_date', 'transaction date', 'date'],
+    quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
+    unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
+    amount: ['amount', 'value', 'actualamt', 'actual_amt'],
+    referenceNo: ['referenceno', 'reference_no', 'reference number', 'reference no', 'refno', 'ref no'],
+  },
+  rawmaterialprices: {
+    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'itemcode', 'item code'],
+    price: ['price', 'rate', 'cost', 'latestprice'],
+    priceDate: ['pricedate', 'price_date', 'price date', 'effectivedate', 'effective_date', 'effective date', 'date'],
+    source: ['source', 'source_system', 'remarks'],
+  },
+  productionplans: {
+    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'code', 'product'],
+    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
+    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
+    plannedQty: ['plannedqty', 'planned_qty', 'planned qty', 'planqty', 'plan qty'],
+    actualQty: ['actualqty', 'actual_qty', 'actual qty', 'actualquantity'],
+    status: ['status', 'planstatus', 'plan_status'],
+  },
+  exchangerates: {
+    fromCurrency: ['fromcurrency', 'from_currency', 'from currency', 'from', 'sourcecurrency'],
+    toCurrency: ['tocurrency', 'to_currency', 'to currency', 'to', 'targetcurrency'],
+    rate: ['rate', 'exchangerate', 'exchange_rate', 'value'],
+    rateDate: ['ratedate', 'rate_date', 'rate date', 'date', 'effectivedate'],
+    source: ['source', 'ratesource', 'remarks'],
+  },
+  kpitargets: {
+    kpiName: ['kpiname', 'kpi_name', 'kpi name', 'kpi'],
+    kpiCategory: ['kpicategory', 'kpi_category', 'kpi category', 'category'],
+    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
+    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
+    targetValue: ['targetvalue', 'target_value', 'target value', 'target'],
+    unit: ['unit', 'kpiunit', 'kpi_unit', 'uom'],
+    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+  },
+  promotions: {
+    name: ['name', 'promotionname', 'promotion_name', 'promotion name', 'title'],
+    description: ['description', 'desc', 'promo_desc'],
+    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'product'],
+    customerCode: ['customercode', 'customer_code', 'customer code', 'customer'],
+    discountPct: ['discountpct', 'discount_pct', 'discount %', 'discountpercentage'],
+    discountAmt: ['discountamt', 'discount_amt', 'discountamount', 'discount_amount'],
+    startDate: ['startdate', 'start_date', 'start date', 'from'],
+    endDate: ['enddate', 'end_date', 'end date', 'to'],
+    budgetAmt: ['budgetamt', 'budget_amt', 'budgetamount', 'budget'],
+    actualCost: ['actualcost', 'actual_cost', 'actualcostamt'],
+    incrementalRevenue: ['incrementalrevenue', 'incremental_revenue', 'incremental revenue'],
+    roi: ['roi', 'returnoninvestment'],
+    isActive: ['isactive', 'is_active', 'active', 'status'],
+  },
 };
 
 /* ─── Whitelist Fields per Prisma Model ────────────────────────────── */
@@ -847,6 +957,48 @@ export function coerceValue(
     return strVal;
   }
 
+  if (field === 'customerType' || field === 'customer_type') {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['retail', 'wholesale', 'distributor', 'internal', 'other'];
+    return valid.includes(v) ? v : 'retail';
+  }
+
+  if (field === 'productType' || field === 'product_type') {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['raw_material', 'finished_good', 'semi_finished', 'service', 'other'];
+    return valid.includes(v) ? v : 'finished_good';
+  }
+
+  if (field === 'materialType' || field === 'material_type') {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['raw_material', 'packaging', 'operating_supply', 'spare_part', 'other'];
+    return valid.includes(v) ? v : 'raw_material';
+  }
+
+  if (field === 'costCenterType' || (field === 'type' && model === 'costCenter')) {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['production', 'service', 'support', 'admin', 'sales', 'other'];
+    return valid.includes(v) ? v : 'production';
+  }
+
+  if (field === 'siteType' || (field === 'type' && model === 'site')) {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['factory', 'warehouse', 'office', 'store', 'branch', 'other'];
+    return valid.includes(v) ? v : 'factory';
+  }
+
+  if (field === 'driverType' || field === 'driver_type') {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['sales_volume', 'production_volume', 'headcount', 'square_meters', 'machine_hours', 'direct_labor_hours', 'manual', 'other'];
+    return valid.includes(v) ? v : 'manual';
+  }
+
+  if (field === 'rateSource' || field === 'source') {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['manual', 'api', 'import'];
+    return valid.includes(v) ? v : 'import';
+  }
+
   if (field === 'importType') {
     return normalizeImportType(strVal);
   }
@@ -908,46 +1060,47 @@ export function normalizeSourceSystem(raw: string): string {
 export function generateDefaults(
   data: Record<string, unknown>,
   module: string,
+  rowNumber?: number,
 ): Record<string, unknown> {
   const result = { ...data };
+  const numSuffix = rowNumber !== undefined ? ` Row ${rowNumber}` : '';
 
   switch (module) {
     case 'companies':
-      if (!result.name) result.name = result.legalName || 'Company';
+      if (!result.name) result.name = result.legalName || 'Imported Company';
       break;
     case 'sites':
       if (!result.name)
-        result.name = result.siteName || result.address || 'Site';
+        result.name = result.siteName || result.address || `Site${numSuffix || ' Row'}`;
       break;
     case 'units':
-      if (!result.name) result.name = result.symbol || 'Unit';
+      if (!result.name) result.name = result.symbol || `Unit${numSuffix || ' Row'}`;
       if (!result.symbol && result.name)
         result.symbol = String(result.name).substring(0, 3).toUpperCase();
       break;
     case 'accounts':
-      if (!result.name && result.code) result.name = `Account ${result.code}`;
+      if (!result.name) result.name = result.code ? `Account ${result.code}` : `Account${numSuffix || ' Row'}`;
       if (!result.type && result.code)
         result.type = inferAccountType(String(result.code));
       if (!result.type) result.type = 'expense';
       break;
     case 'costcenters':
-      if (!result.name && result.code)
-        result.name = `Cost Center ${result.code}`;
+      if (!result.name) result.name = result.code ? `Cost Center ${result.code}` : `Cost Center${numSuffix || ' Row'}`;
       break;
     case 'productcategories':
-      if (!result.name) result.name = 'Category';
+      if (!result.name) result.name = `Category${numSuffix || ' Row'}`;
       break;
     case 'customers':
-      if (!result.name && result.code) result.name = `Customer ${result.code}`;
+      if (!result.name) result.name = result.code ? `Customer ${result.code}` : `Customer${numSuffix || ' Row'}`;
       break;
     case 'suppliers':
-      if (!result.name) result.name = 'Supplier';
+      if (!result.name) result.name = `Supplier${numSuffix || ' Row'}`;
       break;
     case 'materials':
-      if (!result.name && result.code) result.name = `Material ${result.code}`;
+      if (!result.name) result.name = result.code ? `Material ${result.code}` : `Material${numSuffix || ' Row'}`;
       break;
     case 'products':
-      if (!result.name && result.sku) result.name = `Product ${result.sku}`;
+      if (!result.name) result.name = result.sku ? `Product ${result.sku}` : `Product${numSuffix || ' Row'}`;
       break;
     case 'promotions': {
       if (!result.name) {

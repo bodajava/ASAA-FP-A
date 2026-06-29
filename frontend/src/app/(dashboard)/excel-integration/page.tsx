@@ -90,6 +90,12 @@ interface ImportResult {
     insertedRows: number;
     failedRows: number;
   }>;
+  reports?: Array<{
+    type: 'summary' | 'error' | 'row_level';
+    sheetName: string;
+    title: string;
+    data: any[];
+  }>;
 }
 
 type ViewMode = 'upload' | 'analyzing' | 'results' | 'importing' | 'complete';
@@ -606,6 +612,41 @@ export default function ExcelIntegrationPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Row-Level Details */}
+          {importResult.reports?.find(r => r.type === 'row_level') && (
+            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden mt-6">
+              <div className="px-4 py-3 border-b border-border bg-secondary/30">
+                <h3 className="font-semibold text-sm">Row-Level Details</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-secondary/50 border-b border-border sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Sheet</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Row</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Module</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Status</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {importResult.reports.find(r => r.type === 'row_level')?.data.map((row: any, i: number) => (
+                      <tr key={i} className="hover:bg-secondary/50">
+                        <td className="px-4 py-2.5 font-semibold text-card-foreground">{row.sheetName}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground font-mono">{row.rowNumber}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground">{row.module}</td>
+                        <td className="px-4 py-2.5">
+                          <Badge variant={statusColor(row.status)} className="capitalize text-[10px]">{row.status}</Badge>
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground whitespace-pre-wrap">{row.reason || (row.status === 'success' ? 'Imported successfully' : '-')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={resetUpload}>

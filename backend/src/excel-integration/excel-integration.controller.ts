@@ -7,8 +7,9 @@
 
 import {
   Controller, Post, Get, Body, Param, UploadedFile, UseInterceptors,
-  HttpCode, HttpStatus, BadRequestException, Headers, Res,
+  HttpCode, HttpStatus, BadRequestException, Headers, Res, Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
@@ -184,6 +185,7 @@ export class ExcelIntegrationController {
     @UploadedFile() file: MulterFile,
     @Headers('x-company-id') companyIdHeader: string,
     @Body() body: { dryRun?: string; skipErrors?: string; columnOverrides?: string },
+    @Req() req: any,
   ): Promise<{
     analysis: WorkbookAnalysis;
     mappings: ErpModuleMapping[];
@@ -212,11 +214,13 @@ export class ExcelIntegrationController {
       }
     }
 
+    const userId = req?.user?.id ? BigInt(req.user.id) : null;
+
     const result = await this.service.fullImport(
       file.buffer,
       file.originalname,
       companyId,
-      { dryRun, skipErrors, userColumnOverrides },
+      { dryRun, skipErrors, userColumnOverrides, userId },
     );
 
     return {
@@ -250,6 +254,7 @@ export class ExcelIntegrationController {
   async importClientWorkbook(
     @UploadedFile() file: MulterFile,
     @Headers('x-company-id') companyIdHeader: string,
+    @Req() req: Request & { user?: any },
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -260,11 +265,14 @@ export class ExcelIntegrationController {
       throw new BadRequestException('x-company-id header is required');
     }
 
+    // Resolve user ID from request, fallback to admin (ID 4) if not found in auth context
+    const userId = req.user?.id ? BigInt(req.user.id) : BigInt(4);
+
     return this.clientWorkbookImport.importWorkbook(
       file.buffer,
       file.originalname,
       BigInt(companyId),
-      BigInt(0),
+      userId,
     );
   }
 

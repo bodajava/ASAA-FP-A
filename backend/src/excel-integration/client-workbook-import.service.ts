@@ -1,23 +1,25 @@
-/**
- * Client Workbook Import Service
- *
- * Handles upload of real client Excel workbooks (Test.xlsx / Test 2.xlsx).
- * Detects workbook type, auto-creates missing master data,
- * maps all sheets to ERP modules, and imports everything in dependency order.
- *
- * Test.xlsx  → Sales analysis workbook (Oracle ERP extract)
- * Test 2.xlsx → Planning/costing workbook (13 sheets: P&L, Data, Drill Down, etc.)
- */
-
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { AccountType } from '@prisma/client';
+import { AccountType, ImportType, Prisma } from '@prisma/client';
 import * as XLSX from 'xlsx';
 import {
   detectFileTypeFromBuffer,
   detectFileType,
   FileTypeMismatchError,
 } from '../common/utils/file-type-detection.util';
+import {
+  mapRowWithAliases,
+  whitelistFields,
+  coerceValue,
+  normalizeImportType,
+  normalizeSourceSystem,
+  generateDefaults,
+  normalizeImportError,
+  getModuleTitle,
+  inferAccountType,
+  normalizeHeaderToField,
+  MODULE_COLUMN_ALIASES,
+} from './import-utils';
 
 const MONTH_MAP: Record<string, number> = {
   'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
@@ -60,24 +62,7 @@ export interface WorkbookImportResult {
   sheetsReference: number;
   sheetsInstruction: number;
   autoCreated: AutoCreatedEntity[];
-  totals: {
-    products: number;
-    customers: number;
-    materials: number;
-    sites: number;
-    units: number;
-    categories: number;
-    costCenters: number;
-    forecastLines: number;
-    actualLines: number;
-    materialPrices: number;
-    priceListEntries: number;
-    discountEntries: number;
-    bomRecipes: number;
-    bomLines: number;
-    promotions: number;
-    costAllocations: number;
-  };
+  totals: Record<string, number>;
   warnings: string[];
   errors: string[];
   sheetResults: Array<{
@@ -104,12 +89,12 @@ export interface WorkbookPreviewResult {
     errors: Array<{
       row: number;
       column: string;
-      reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+      reason: string;
       message: string;
       value: unknown;
     }>;
     warnings: string[];
-    status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
+    status: string;
     sampleRows: Record<string, unknown>[];
   }>;
   summary: {
@@ -206,80 +191,25 @@ export class ClientWorkbookImportService {
     companyId: bigint,
     userId: bigint,
   ): Promise<WorkbookImportResult> {
-    // Validate file type from magic bytes
     const detectedType = detectFileTypeFromBuffer(buffer);
     if (detectedType === 'csv') {
-      return {
-        success: false,
-        workbookType: 'unknown',
-        fileName,
-        sheetsProcessed: 0,
-        sheetsImported: 0,
-        sheetsSkipped: 0,
-        sheetsReference: 0,
-        sheetsInstruction: 0,
-        autoCreated: [],
-        totals: {
-          products: 0, customers: 0, materials: 0, sites: 0, units: 0,
-          categories: 0, costCenters: 0, forecastLines: 0, actualLines: 0,
-          materialPrices: 0, priceListEntries: 0, discountEntries: 0,
-          bomRecipes: 0, bomLines: 0, promotions: 0, costAllocations: 0,
-        },
-        warnings: [],
-        errors: ['This file is a CSV. CSV files do not support multi-sheet import. Please upload an Excel workbook (.xlsx).'],
-        sheetResults: [],
-      };
+      return this.makeErrorResult(fileName, 'CSV files do not support multi-sheet import. Please upload an Excel workbook (.xlsx).');
     }
 
     const typeResult = detectFileType(buffer, fileName);
     if (typeResult.mismatch) {
-      return {
-        success: false,
-        workbookType: 'unknown',
-        fileName,
-        sheetsProcessed: 0,
-        sheetsImported: 0,
-        sheetsSkipped: 0,
-        sheetsReference: 0,
-        sheetsInstruction: 0,
-        autoCreated: [],
-        totals: {
-          products: 0, customers: 0, materials: 0, sites: 0, units: 0,
-          categories: 0, costCenters: 0, forecastLines: 0, actualLines: 0,
-          materialPrices: 0, priceListEntries: 0, discountEntries: 0,
-          bomRecipes: 0, bomLines: 0, promotions: 0, costAllocations: 0,
-        },
-        warnings: [],
-        errors: [`The uploaded file format does not match its extension. The file has a .${fileName.split('.').pop()} extension but is actually a ${typeResult.label}.`],
-        sheetResults: [],
-      };
+      return this.makeErrorResult(fileName,
+        `The uploaded file format does not match. The file has a .${fileName.split('.').pop()} extension but is actually a ${typeResult.label}.`,
+      );
     }
 
     let fullWorkbook: XLSX.WorkBook;
     try {
       fullWorkbook = XLSX.read(buffer, { type: 'buffer' });
     } catch {
-      return {
-        success: false,
-        workbookType: 'unknown',
-        fileName,
-        sheetsProcessed: 0,
-        sheetsImported: 0,
-        sheetsSkipped: 0,
-        sheetsReference: 0,
-        sheetsInstruction: 0,
-        autoCreated: [],
-        totals: {
-          products: 0, customers: 0, materials: 0, sites: 0, units: 0,
-          categories: 0, costCenters: 0, forecastLines: 0, actualLines: 0,
-          materialPrices: 0, priceListEntries: 0, discountEntries: 0,
-          bomRecipes: 0, bomLines: 0, promotions: 0, costAllocations: 0,
-        },
-        warnings: [],
-        errors: ['The Excel file could not be read. Please ensure the file is not corrupted.'],
-        sheetResults: [],
-      };
+      return this.makeErrorResult(fileName, 'The Excel file could not be read. Please ensure the file is not corrupted.');
     }
+
     const workbookType = this.detectWorkbookType(fullWorkbook);
     this.logger.log(`Importing ${workbookType} workbook: ${fileName}`);
 
@@ -293,44 +223,25 @@ export class ClientWorkbookImportService {
       sheetsReference: 0,
       sheetsInstruction: 0,
       autoCreated: [],
-      totals: {
-        products: 0, customers: 0, materials: 0, sites: 0, units: 0,
-        categories: 0, costCenters: 0, forecastLines: 0, actualLines: 0,
-        materialPrices: 0, priceListEntries: 0, discountEntries: 0,
-        bomRecipes: 0, bomLines: 0, promotions: 0, costAllocations: 0,
-      },
+      totals: {},
       warnings: [],
       errors: [],
       sheetResults: [],
     };
 
-    // Pre-classify all sheets and skip non-data sheets
     const { classifySheetRole } = require('./client-workbook-schema');
     for (const name of fullWorkbook.SheetNames) {
       const { role } = classifySheetRole(name);
       const ws = fullWorkbook.Sheets[name];
-      const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
 
       if (role === 'instruction') {
         result.sheetsInstruction++;
-        result.sheetResults.push({
-          sheetName: name,
-          sheetRole: 'instruction',
-          status: 'instruction',
-          rowsImported: 0,
-          message: 'Instructions sheet — skipped during import',
-        });
+        result.sheetResults.push({ sheetName: name, sheetRole: 'instruction', status: 'instruction', rowsImported: 0, message: 'Instructions sheet — skipped during import' });
         continue;
       }
       if (role === 'reference') {
         result.sheetsReference++;
-        result.sheetResults.push({
-          sheetName: name,
-          sheetRole: 'reference',
-          status: 'reference',
-          rowsImported: 0,
-          message: 'Reference data sheet — skipped during import',
-        });
+        result.sheetResults.push({ sheetName: name, sheetRole: 'reference', status: 'reference', rowsImported: 0, message: 'Reference data sheet — skipped during import' });
         continue;
       }
     }
@@ -344,14 +255,25 @@ export class ClientWorkbookImportService {
         result.errors.push('Could not determine workbook type. Please check the file format.');
         result.success = false;
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Import failed: ${msg}`);
-      result.errors.push(`Import failed: ${msg}`);
+    } catch (err: any) {
+      const { friendly } = normalizeImportError(err);
+      this.logger.error(`Import failed: ${err?.message || err}`);
+      result.errors.push(friendly);
       result.success = false;
     }
 
     return result;
+  }
+
+  private makeErrorResult(fileName: string, msg: string): WorkbookImportResult {
+    return {
+      success: false,
+      workbookType: 'unknown',
+      fileName,
+      sheetsProcessed: 0, sheetsImported: 0, sheetsSkipped: 0,
+      sheetsReference: 0, sheetsInstruction: 0,
+      autoCreated: [], totals: {}, warnings: [], errors: [msg], sheetResults: [],
+    };
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -361,21 +283,18 @@ export class ClientWorkbookImportService {
   detectWorkbookType(workbook: XLSX.WorkBook): WorkbookType {
     const sheetNames = workbook.SheetNames.map(s => s.toLowerCase().replace(/[_\s-]/g, ''));
 
-    // Check for sales analysis workbook
     const hasSalesColumns = this.sheetHasColumnPattern(workbook, ['PERIOD', 'CUSTOMER_NUMBER', 'ITEM_CODE', 'TOTAL_QTY', 'EGP_NET_AMOUNT']);
     if (hasSalesColumns) return 'sales_analysis';
 
-    // Check for planning/costing workbook
-    const planningPatterns = ['p&l', 'data', 'forcasteqty', 'forecasteqty', 'drilldown', 'hvrm.price', 'smg&a', 's&mg&a', 'weigperearton', 'weightpercarton'];
+    const planningPatterns = ['p&l', 'data', 'forcasteqty', 'forecastqty', 'forecasteqty', 'drilldown', 'hvrm.price', 'smg&a', 's&mg&a', 'weigperearton', 'weightpercarton', 'bomrecipes', 'actualsales'];
     const matchCount = sheetNames.filter(s => planningPatterns.some(p => s.includes(p))).length;
-    if (matchCount >= 3) return 'planning_costing';
+    if (matchCount >= 2) return 'planning_costing';
 
-    // Check by sheet names directly
     const directCheck = workbook.SheetNames.filter(s => {
       const sl = s.toLowerCase();
-      return ['p&l', 'data', 'forcaste qty', 'drill down', 'hrv m.price', 'discount', 'weight per carton'].includes(sl);
+      return ['p&l', 'data', 'forecast qty', 'forcaste qty', 'drill down', 'hrv m.price', 'discount', 'weight per carton', 'companies', 'products', 'bom recipes'].includes(sl);
     });
-    if (directCheck.length >= 3) return 'planning_costing';
+    if (directCheck.length >= 2) return 'planning_costing';
 
     return 'unknown';
   }
@@ -403,19 +322,19 @@ export class ClientWorkbookImportService {
       const ws = workbook.Sheets[name];
       const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
       const headers = rawData.length > 0 ? Object.keys(rawData[0]) : [];
-      const { role, mappedModule: classifiedModule } = classifySheetRole(name);
-      const mappedModule = role === 'data' ? this.mapSheetToModuleV2(name, headers) : '';
-      const importable = role === 'data' && mappedModule !== 'unknown' && mappedModule !== '';
+      const { role } = classifySheetRole(name);
+      const mappedModule = role === 'data' ? this.mapSheetToModuleV3(name, headers) : '';
+      const importable = role === 'data' && mappedModule !== 'unknown' && mappedModule !== '' && !mappedModule.startsWith('informational_');
       const sampleRows = rawData.slice(0, 3);
 
       const errors: Array<{
         row: number; column: string;
-        reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+        reason: string;
         message: string; value: unknown;
       }> = [];
       const warnings: string[] = [];
 
-      if (role === 'data' && mappedModule === 'unknown') {
+      if (role === 'data' && (mappedModule === 'unknown' || mappedModule === '')) {
         errors.push({
           row: 0,
           column: '',
@@ -425,22 +344,12 @@ export class ClientWorkbookImportService {
         });
       }
 
-      if (role === 'data' && mappedModule === 'needs_implementation') {
-        errors.push({
-          row: 0,
-          column: '',
-          reason: 'unsupported_sheet',
-          message: `Sheet "${name}" maps to a module that is not yet implemented. Supported later.`,
-          value: name,
-        });
-      }
-
-      let status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
+      let status: string;
       if (role === 'instruction') status = 'instruction';
       else if (role === 'reference') status = 'reference';
       else if (role === 'ignored') status = 'ignored';
-      else if (mappedModule === 'unknown') status = 'unsupported';
-      else if (mappedModule === 'needs_implementation') status = 'needs_mapping';
+      else if (mappedModule === 'unknown' || mappedModule === '') status = 'unsupported';
+      else if (mappedModule.startsWith('informational_')) status = 'reference';
       else status = 'ready';
 
       return {
@@ -460,165 +369,83 @@ export class ClientWorkbookImportService {
     });
   }
 
-  private mapSheetToModuleV2(sheetName: string, headers: string[]): string {
+  mapSheetToModuleV3(sheetName: string, headers: string[]): string {
     const sn = sheetName.toLowerCase().replace(/[_\s-]+/g, '');
     const hUpper = headers.map(h => h.toUpperCase().trim());
 
-    // Master data sheets
     if (sn === 'companies') return 'companies';
     if (sn === 'sites') return 'sites';
     if (sn === 'units') return 'units';
     if (sn === 'accounts') return 'accounts';
-    if (sn === 'costcenters' || sn === 'costcenters') return 'costcenters';
-    if (sn === 'productcategories' || sn === 'productcategories' || sn === 'categories') return 'productcategories';
+    if (sn === 'costcenters') return 'costcenters';
+    if (sn === 'productcategories' || sn === 'categories') return 'productcategories';
     if (sn === 'customers') return 'customers';
     if (sn === 'suppliers') return 'suppliers';
     if (sn === 'materials') return 'materials';
     if (sn === 'products') return 'products';
 
-    // BOM
-    if (sn === 'bomrecipes' || sn === 'bomrecipes' || sn.includes('bomrecipe') || sn.includes('bomrecipe')) return 'bomrecipes';
-    if (sn.includes('bomline') || sn.includes('bomline')) return 'bomlines';
+    if (sn === 'bomrecipes' || sn.includes('drilldown') || (hUpper.includes('PRD NO') && hUpper.includes('ING NO'))) return 'bomrecipes';
+    if (sn === 'bomlines') return 'bomlines';
 
-    // Budget
     if (sn === 'budget' || sn === 'budgetlines') return 'budgetlines';
 
-    // Forecast Qty → forecastlines
-    if (sn.includes('forcasteqty') || sn.includes('forecasteqty') || sn.includes('forcasteqty') || sn.includes('forecasteqty') ||
-        (hUpper.includes('ORG.') && hUpper.includes('CODE-') && hUpper.some(h => /jan|feb|mar|apr/i.test(h)))) return 'forecastlines';
+    if (sn === 'forecastqty' || sn.includes('forcasteqty') || sn.includes('forecasteqty')) return 'forecastlines';
 
-    // Actual Sales → actuallines
-    if (hUpper.includes('PERIOD') && hUpper.includes('ITEM_CODE') && hUpper.includes('TOTAL_QTY')) return 'actuallines';
+    if (sn === 'actualsales' || sn === 'actuals') return 'actuallines';
 
-    // Drill Down → bomrecipes
-    if (sn.includes('drilldown') || (hUpper.includes('PRD NO') && hUpper.includes('ING NO'))) return 'bomrecipes';
+    if (sn === 'materialprices' || sn.includes('materialprice') || sn.includes('hrvmprice') || sn.includes('hrvm')) return 'rawmaterialprices';
 
-    // Material Prices → rawmaterialprices
-    if (sn.includes('materialprice') || sn.includes('materialprice') || sn.includes('hrvmprice') || sn.includes('hrvm.price') ||
-        sn.includes('hrvmprice') || sn.includes('hrvm') || (hUpper.some(h => h.includes('كود')))) return 'rawmaterialprices';
+    if (sn.includes('productionplan')) return 'productionplans';
+    if (sn.includes('kpitarget')) return 'kpitargets';
+    if (sn.includes('exchangerate')) return 'exchangerates';
 
-    // Discounts → promotions
-    if (sn.includes('discount') || hUpper.some(h => h.includes('LINE DISCOUNT'))) return 'promotions';
-
-    // Price List → productprices (needs implementation if module doesn't exist)
-    if ((sn.includes('pricelist') || sn.includes('pricelist')) && !sn.includes('pricelist(2)') && !sn.includes('pricelist2')) return 'productprices';
-    if (sn.includes('pricelist2') || sn.includes('pricelist(2)') || sn.includes('pricelist(2)')) return 'productprices';
-
-    // Weight per Carton → products (packaging metadata)
-    if (sn.includes('weightpercarton') || sn.includes('weightpercton') || sn.includes('weightpercarton')) return 'products';
-
-    // HRV Rates → costdrivers (production cost rates)
-    if (sn.includes('hvrrates') || sn.includes('hrvrates') || sn.includes('hvrrate') || sn.includes('hrvrate')) return 'costdrivers';
-
-    // Bawadi Rates → costdrivers (production cost rates)
-    if (sn.includes('bawadirats') || sn.includes('bawadirates') || sn.includes('bawadirate') || sn.includes('bawadirate')) return 'costdrivers';
-
-    // S&M G&A → productioncostallocations (needs implementation if module doesn't exist)
-    if (sn.includes('s&mg&a') || sn.includes('smg&a') || sn.includes('s&mg&a') || sn.includes('smg&a')) return 'productioncostallocations';
-
-    // Production Planning → productionplans
-    if (sn.includes('productionplan') || sn.includes('productionplan') || sn.includes('productionplanning') || sn.includes('productionplanning')) return 'productionplans';
-
-    // Exchange Rates → exchangerates
-    if (sn === 'exchangerates' || sn === 'exchangerates' || sn.includes('exchangerate') || sn.includes('exchangerate')) return 'exchangerates';
-
-    // KPI Targets → kpitargets
-    if (sn === 'kpitargets' || sn === 'kpitargets' || sn.includes('kpitarget') || sn.includes('kpitarget')) return 'kpitargets';
-
-    // P&L → actuallines
-    if (sn === 'p&l' || sn.includes('p&l')) return 'actuallines';
-
-    // Data sheet (generic) → products
-    if (sn === 'data') return 'products';
+    if (sn.includes('pricelist') || sn === 'pricelist(2)' || sn === 'pricelist (2)') return 'priceList';
+    if (sn.includes('discount')) return 'promotions';
+    if (sn.includes('smga') || sn.includes('s&mg&a') || sn === 'sm&ga') return 'informational_smga';
+    if (sn.includes('weightpercarton')) return 'informational_weight';
+    if (sn.includes('hrvrates')) return 'informational_hrv';
+    if (sn.includes('bawadirate')) return 'informational_bawadi';
+    if (sn === 'starthere' || sn === 'referencelists' || sn === 'instructions') return 'informational_skipped';
 
     return 'unknown';
   }
 
   mapSheetToModule(sheetName: string, headers: string[]): string {
-    const sn = sheetName.toLowerCase().replace(/[_\s-]+/g, '');
-    const hUpper = headers.map(h => h.toUpperCase().trim());
-
-    if (hUpper.includes('PERIOD') && hUpper.includes('ITEM_CODE')) return 'actuallines';
-    if (hUpper.includes('ITEM_CODE') && hUpper.includes('DESCRIPTION')) return 'products';
-    if (sn.includes('forcasteqty') || sn.includes('forecasteqty') || (hUpper.includes('ORG.') && hUpper.includes('CODE-') && hUpper.some(h => /jan|feb|mar|apr/i.test(h)))) return 'forecastlines';
-    if (sn.includes('drilldown') || (hUpper.includes('PRD NO') && hUpper.includes('ING NO'))) return 'bomrecipes';
-    if (sn.includes('hvrmprice') || sn.includes('hrvm.price') || (hUpper.some(h => h.includes('كود')))) return 'materialprices';
-    if (sn.includes('discount') || hUpper.some(h => h.includes('LINE DISCOUNT'))) return 'discounts';
-    if (sn.includes('pricelist2') || sn.includes('pricelist(2)')) return 'pricelist';
-    if (sn.includes('pricelist')) return 'pricelist';
-    if (sn.includes('weightpercarton') || sn.includes('weightpercton')) return 'products';
-    if (sn.includes('hvrrates') || sn.includes('hrvrates')) return 'rates';
-    if (sn.includes('bawadirats') || sn.includes('bawadirates')) return 'rates';
-    if (sn.includes('s&mg&a') || sn.includes('smg&a')) return 'costallocations';
-    if (sn === 'p&l' || sn.includes('p&l')) return 'plreports';
-    if (sn === 'sheet1') return 'plreports';
-    if (sn.includes('data')) return 'products';
-    return 'unknown';
+    return this.mapSheetToModuleV3(sheetName, headers);
   }
 
-  private buildAutoCreatePlan(workbookType: WorkbookType, sheets: ReturnType<typeof this.previewSheetsV2>): string[] {
+  private buildAutoCreatePlan(workbookType: WorkbookType, sheets: WorkbookPreviewResult['sheets']): string[] {
     const plan: string[] = [];
-
     if (workbookType === 'sales_analysis') {
-      plan.push('Units (from UOM column)');
-      plan.push('Sites (from LOCATION / ORGANIZATION columns)');
-      plan.push('Product Categories (from ITEM_MAJOR + ITEM_MINOR)');
-      plan.push('Products (from ITEM_CODE + ITEM_DESC + ARABIC_DESC)');
-      plan.push('Customers (from CUSTOMER_NUMBER + CUSTOMER_NAME)');
-      plan.push('Revenue Account (default GL account for sales)');
-      plan.push('Actual Import batch');
-      plan.push('Sales transaction lines');
+      plan.push('Units', 'Sites', 'Product Categories', 'Products', 'Customers', 'Revenue Account', 'Actual Import batch', 'Sales transaction lines');
     } else if (workbookType === 'planning_costing') {
-      plan.push('Units (from UOM columns)');
-      plan.push('Sites (from Org. column)');
-      plan.push('Product Categories (from Major + Minor / Main Category + Category)');
-      plan.push('Products (from Code + Description)');
-      plan.push('Materials (from Ing No + Ing Desc in Drill Down)');
-      plan.push('Cost Centers (from CC column)');
-      plan.push('Forecast Cycles + Forecast Lines');
-      plan.push('Material Prices (from HRV M.Price)');
-      plan.push('BOM Recipes + BOM Lines (from Drill Down)');
-      plan.push('Discount entries');
-      plan.push('Price List entries');
-      plan.push('Cost Allocations (from HRV Rates / Bawadi Rats / S&M G&A)');
+      plan.push('Units', 'Sites', 'Product Categories', 'Products', 'Materials', 'Cost Centers', 'Forecast Cycles + Forecast Lines', 'Material Prices', 'BOM Recipes + BOM Lines', 'Discount entries', 'Price List entries', 'Cost Allocations');
     }
-
     return plan;
   }
 
-  private buildPreviewWarningsV2(workbookType: WorkbookType, sheets: ReturnType<typeof this.previewSheetsV2>): string[] {
+  private buildPreviewWarningsV2(workbookType: WorkbookType, sheets: WorkbookPreviewResult['sheets']): string[] {
     const warnings: string[] = [];
-
     if (workbookType === 'unknown') {
       warnings.push('Could not automatically detect workbook type. Import may not work correctly.');
     }
-
     let totalImportableRows = 0;
     let unsupportedCount = 0;
     for (const sheet of sheets) {
       if (sheet.importable) totalImportableRows += sheet.rowCount;
-      if (sheet.sheetRole === 'data' && sheet.mappedModule === 'unknown') {
+      if (sheet.sheetRole === 'data' && (sheet.mappedModule === 'unknown' || sheet.mappedModule === '')) {
         unsupportedCount++;
         warnings.push(`Sheet "${sheet.name}" → unsupported (no matching ERP module). Requires implementation.`);
       }
-      if (sheet.sheetRole === 'data' && sheet.mappedModule === 'needs_implementation') {
-        unsupportedCount++;
-        warnings.push(`Sheet "${sheet.name}" → needs implementation in target module. Supported later.`);
-      }
     }
-
     if (totalImportableRows === 0 && unsupportedCount === 0) {
-      warnings.push(
-        'This workbook contains no importable data rows. ' +
-        'Fill the Data sheets first, then upload again.',
-      );
+      warnings.push('This workbook contains no importable data rows. Fill the Data sheets first, then upload again.');
     }
-
     return warnings;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-   * SALES ANALYSIS IMPORT (Test.xlsx)
+   * SALES ANALYSIS IMPORT
    * ═══════════════════════════════════════════════════════════════════════ */
 
   private async importSalesAnalysis(
@@ -651,11 +478,9 @@ export class ClientWorkbookImportService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      // 1. Auto-create default Revenue Account
       const revenueAccount = await this.getOrCreateDefaultAccount(tx, companyId, '4000', 'Sales Revenue', 'revenue');
       result.autoCreated.push({ type: 'Account', code: '4000', name: 'Sales Revenue', created: false });
 
-      // 2. Collect and auto-create all master data
       const locations = new Set<string>();
       const organizations = new Set<string>();
       const uomSet = new Set<string>();
@@ -687,17 +512,15 @@ export class ClientWorkbookImportService {
         if (row['ITEM_MAJOR']) categories.add(String(row['ITEM_MAJOR']).trim());
       }
 
-      // 3. Auto-create Units
       for (const uom of uomSet) {
         const unit = await tx.unit.findFirst({ where: { symbol: uom, companyId } });
         if (!unit) {
           await tx.unit.create({ data: { companyId, name: uom, symbol: uom } });
           result.autoCreated.push({ type: 'Unit', code: uom, name: uom, created: true });
-          result.totals.units++;
+          result.totals.units = (result.totals.units || 0) + 1;
         }
       }
 
-      // 4. Auto-create Sites from LOCATIONS
       const allLocations = new Set([...locations, ...organizations]);
       for (const loc of allLocations) {
         const site = await tx.site.findFirst({ where: { name: loc, companyId } });
@@ -711,11 +534,10 @@ export class ClientWorkbookImportService {
             },
           });
           result.autoCreated.push({ type: 'Site', code: loc, name: loc, created: true });
-          result.totals.sites++;
+          result.totals.sites = (result.totals.sites || 0) + 1;
         }
       }
 
-      // 5. Auto-create Product Categories from ITEM_MAJOR
       const categoryMap = new Map<string, bigint>();
       for (const catName of categories) {
         const existing = await tx.productCategory.findFirst({ where: { name: catName, companyId } });
@@ -725,11 +547,10 @@ export class ClientWorkbookImportService {
           const created = await tx.productCategory.create({ data: { companyId, name: catName } });
           categoryMap.set(catName, created.id);
           result.autoCreated.push({ type: 'ProductCategory', code: catName, name: catName, created: true });
-          result.totals.categories++;
+          result.totals.categories = (result.totals.categories || 0) + 1;
         }
       }
 
-      // 6. Auto-create Products
       const productMap = new Map<number, bigint>();
       for (const [code, info] of products) {
         const sku = String(code);
@@ -741,8 +562,7 @@ export class ClientWorkbookImportService {
           const catId = categoryMap.get(info.major) ?? null;
           const created = await tx.product.create({
             data: {
-              companyId,
-              sku,
+              companyId, sku,
               name: info.desc || `Product ${sku}`,
               productType: 'finished_good',
               categoryId: catId,
@@ -752,11 +572,10 @@ export class ClientWorkbookImportService {
           });
           productMap.set(code, created.id);
           result.autoCreated.push({ type: 'Product', code: sku, name: info.desc || `Product ${sku}`, created: true });
-          result.totals.products++;
+          result.totals.products = (result.totals.products || 0) + 1;
         }
       }
 
-      // 7. Auto-create Customers
       const customerMap = new Map<number, bigint>();
       for (const [num, name] of customers) {
         const code = String(num);
@@ -771,11 +590,10 @@ export class ClientWorkbookImportService {
           });
           customerMap.set(num, created.id);
           result.autoCreated.push({ type: 'Customer', code, name: name || `Customer ${code}`, created: true });
-          result.totals.customers++;
+          result.totals.customers = (result.totals.customers || 0) + 1;
         }
       }
 
-      // 8. Find or create ActualImport
       const firstRow = rows[0];
       const periodDate = this.parseExcelDate(firstRow['PERIOD']);
       const fiscalYear = periodDate.getFullYear();
@@ -788,7 +606,6 @@ export class ClientWorkbookImportService {
         },
       });
 
-      // 9. Import actual lines
       let imported = 0;
       for (const row of rows) {
         const itemCode = row['ITEM_CODE'] ? Number(row['ITEM_CODE']) : null;
@@ -822,7 +639,7 @@ export class ClientWorkbookImportService {
           },
         });
         imported++;
-        result.totals.actualLines++;
+        result.totals.actualLines = (result.totals.actualLines || 0) + 1;
       }
 
       result.sheetResults.push({
@@ -836,7 +653,7 @@ export class ClientWorkbookImportService {
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-   * PLANNING/COSTING IMPORT (Test 2.xlsx)
+   * PLANNING/COSTING IMPORT
    * ═══════════════════════════════════════════════════════════════════════ */
 
   private async importPlanningCosting(
@@ -845,24 +662,24 @@ export class ClientWorkbookImportService {
     userId: bigint,
     result: WorkbookImportResult,
   ): Promise<void> {
-    // Phase 1: Extract all master data from 'Data' sheet first
-    const masterData = this.extractDataSheetMasterData(workbook);
+    // Phase 0: Import all generic master data sheets (Companies, Sites, Units, etc.)
+    await this.importAllGenericSheets(workbook, companyId, userId, result, {});
 
+    // Phase 1: Extract master data from 'Data' sheet
+    const masterData = this.extractDataSheetMasterData(workbook);
     const productMap = new Map<number, bigint>();
     const materialMap = new Map<number, bigint>();
 
     await this.prisma.$transaction(async (tx) => {
-      // Auto-create Units
       for (const uom of masterData.units) {
         const existing = await tx.unit.findFirst({ where: { symbol: uom, companyId } });
         if (!existing) {
           await tx.unit.create({ data: { companyId, name: uom, symbol: uom } });
           result.autoCreated.push({ type: 'Unit', code: uom, name: uom, created: true });
-          result.totals.units++;
+          result.totals.units = (result.totals.units || 0) + 1;
         }
       }
 
-      // Auto-create Sites from Org
       for (const org of masterData.organizations) {
         const existing = await tx.site.findFirst({ where: { name: org, companyId } });
         if (!existing) {
@@ -870,11 +687,10 @@ export class ClientWorkbookImportService {
             data: { companyId, name: org, type: org.toLowerCase().includes('bawadi') ? 'factory' : 'factory', status: 'active' },
           });
           result.autoCreated.push({ type: 'Site', code: org, name: org, created: true });
-          result.totals.sites++;
+          result.totals.sites = (result.totals.sites || 0) + 1;
         }
       }
 
-      // Auto-create Product Categories
       const categoryMap = new Map<string, bigint>();
       for (const cat of masterData.categories) {
         const existing = await tx.productCategory.findFirst({ where: { name: cat, companyId } });
@@ -884,11 +700,10 @@ export class ClientWorkbookImportService {
           const created = await tx.productCategory.create({ data: { companyId, name: cat } });
           categoryMap.set(cat, created.id);
           result.autoCreated.push({ type: 'ProductCategory', code: cat, name: cat, created: true });
-          result.totals.categories++;
+          result.totals.categories = (result.totals.categories || 0) + 1;
         }
       }
 
-      // Auto-create Cost Centers
       const costCenterMap = new Map<string, bigint>();
       for (const cc of masterData.costCenters) {
         if (!cc) continue;
@@ -899,11 +714,10 @@ export class ClientWorkbookImportService {
           const created = await tx.costCenter.create({ data: { companyId, name: cc, type: 'production' } });
           costCenterMap.set(cc, created.id);
           result.autoCreated.push({ type: 'CostCenter', code: cc, name: cc, created: true });
-          result.totals.costCenters++;
+          result.totals.costCenters = (result.totals.costCenters || 0) + 1;
         }
       }
 
-      // Auto-create Products
       for (const [code, info] of masterData.products) {
         const sku = String(code);
         const existing = await tx.product.findFirst({ where: { sku, companyId } });
@@ -923,11 +737,10 @@ export class ClientWorkbookImportService {
           });
           productMap.set(code, created.id);
           result.autoCreated.push({ type: 'Product', code: sku, name: info.desc || `Product ${sku}`, created: true });
-          result.totals.products++;
+          result.totals.products = (result.totals.products || 0) + 1;
         }
       }
 
-      // Auto-create Materials
       for (const [code, info] of masterData.materials) {
         const matCode = String(code);
         const existing = await tx.material.findFirst({ where: { code: matCode, companyId } });
@@ -943,28 +756,667 @@ export class ClientWorkbookImportService {
           });
           materialMap.set(code, created.id);
           result.autoCreated.push({ type: 'Material', code: matCode, name: info.desc || `Material ${matCode}`, created: true });
-          result.totals.materials++;
+          result.totals.materials = (result.totals.materials || 0) + 1;
         }
       }
     });
 
-    // Phase 2: Import sheets in dependency order
-    // 1. Forecast QTY
-    await this.importForcasteQty(workbook, companyId, productMap, result);
-    // 2. Drill Down (BOM)
+    // Phase 2: Import non-master sheets in dependency order
+    await this.importGenericSheetByModule(workbook, 'forecastlines', companyId, userId, result, { productMap, materialMap });
     await this.importDrillDown(workbook, companyId, productMap, materialMap, result);
-    // 3. Material Prices
     await this.importHrvMaterialPrices(workbook, companyId, materialMap, result);
-    // 4. Price List
-    await this.importPriceList(workbook, companyId, productMap, result);
-    // 5. Discounts
-    await this.importDiscounts(workbook, companyId, productMap, result);
-    // 6. Weight per carton
-    await this.importWeightPerCarton(workbook, companyId, productMap, result);
-    // 7. Rates (HRV + Bawadi)
-    await this.importRates(workbook, companyId, result);
-    // 8. Cost Allocations (S&M G&A)
-    await this.importCostAllocations(workbook, companyId, result);
+    await this.importGenericSheetByModule(workbook, 'priceList', companyId, userId, result, { productMap });
+    await this.importGenericSheetByModule(workbook, 'promotions', companyId, userId, result, { productMap });
+    await this.importGenericSheetByModule(workbook, 'informational_weight', companyId, userId, result, { productMap });
+    await this.importGenericSheetByModule(workbook, 'informational_hrv', companyId, userId, result, {});
+    await this.importGenericSheetByModule(workbook, 'informational_bawadi', companyId, userId, result, {});
+    await this.importGenericSheetByModule(workbook, 'actuallines', companyId, userId, result, { productMap, materialMap });
+    await this.importGenericSheetByModule(workbook, 'budgetlines', companyId, userId, result, { productMap, materialMap });
+    await this.importGenericSheetByModule(workbook, 'bomlines', companyId, userId, result, { productMap, materialMap });
+    await this.importGenericSheetByModule(workbook, 'productionplans', companyId, userId, result, { productMap });
+    await this.importGenericSheetByModule(workbook, 'kpitargets', companyId, userId, result, {});
+    await this.importGenericSheetByModule(workbook, 'exchangerates', companyId, userId, result, {});
+  }
+
+  /* ─── Generic Sheet Import ─────────────────────────────────────────── */
+
+  private async importAllGenericSheets(
+    workbook: XLSX.WorkBook,
+    companyId: bigint,
+    userId: bigint,
+    result: WorkbookImportResult,
+    context: Record<string, any>,
+  ): Promise<void> {
+    const masterModules = ['companies', 'sites', 'units', 'accounts', 'costcenters', 'productcategories', 'customers', 'suppliers', 'materials', 'products'];
+    for (const module of masterModules) {
+      await this.importGenericSheetByModule(workbook, module, companyId, userId, result, context);
+    }
+  }
+
+  private async importGenericSheetByModule(
+    workbook: XLSX.WorkBook,
+    module: string,
+    companyId: bigint,
+    userId: bigint,
+    result: WorkbookImportResult,
+    context: { productMap?: Map<number, bigint>; materialMap?: Map<number, bigint> },
+  ): Promise<void> {
+    // Find the sheet that maps to this module
+    const sheetName = this.findSheetByModule(workbook, module);
+    if (!sheetName) {
+      return; // Sheet not found, skip silently
+    }
+
+    const ws = workbook.Sheets[sheetName];
+    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+
+    // Skip reference/instruction sheets
+    const { classifySheetRole } = require('./client-workbook-schema');
+    const { role } = classifySheetRole(sheetName);
+    if (role !== 'data') return;
+
+    result.sheetsProcessed++;
+    this.logger.log(`Importing sheet "${sheetName}" as module "${module}" (${rawRows.length} rows)`);
+
+    // Handle informational/reference sheets gracefully
+    if (module.startsWith('informational_')) {
+      const message = this.getInformationalMessage(module, sheetName);
+      result.sheetResults.push({
+        sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0,
+        message,
+      });
+      result.sheetsSkipped++;
+      result.warnings.push(message);
+      return;
+    }
+
+    // Special handling for certain modules
+    if (module === 'priceList') {
+      await this.importPriceListSheet(workbook, companyId, result);
+      return;
+    }
+
+    if (module === 'promotions') {
+      await this.importDiscountsSheet(workbook, companyId, result, context);
+      return;
+    }
+
+    if (module === 'forecastlines') {
+      await this.importForcasteQty(workbook, companyId, context.productMap || new Map(), result);
+      return;
+    }
+
+    if (module === 'bomlines') {
+      // Handled by importDrillDown which handles BOM Recipes + BOM Lines from Drill Down sheet
+      return;
+    }
+
+    if (module === 'actuallines') {
+      await this.importActualsFromDataSheet(workbook, companyId, userId, result, context);
+      return;
+    }
+
+    if (module === 'budgetlines') {
+      await this.importBudgetFromDataSheet(workbook, companyId, result, context);
+      return;
+    }
+
+    if (rawRows.length === 0) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data rows' });
+      result.sheetsSkipped++;
+      return;
+    }
+
+    // For master data sheets, use generic import
+    const modelMap: Record<string, string> = {
+      companies: 'company', sites: 'site', units: 'unit', accounts: 'account',
+      costcenters: 'costCenter', productcategories: 'productCategory',
+      customers: 'customer', suppliers: 'supplier', materials: 'material',
+      products: 'product',
+    };
+
+    const modelName = modelMap[module];
+    if (!modelName) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: `No import handler for module: ${module}` });
+      result.sheetsSkipped++;
+      return;
+    }
+
+    const prismaModel = this.getPrismaModelByModule(module);
+    if (!prismaModel) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'error', rowsImported: 0, message: `No Prisma model for module: ${module}` });
+      result.errors.push(`No Prisma model for module: ${module}`);
+      return;
+    }
+
+    let imported = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < rawRows.length; i++) {
+      const row = rawRows[i];
+      const rowNum = i + 2; // Excel row numbering (1-indexed + header)
+
+      // Map columns using aliases
+      let mapped = mapRowWithAliases(row, module);
+
+      // Add companyId
+      mapped.companyId = companyId;
+
+      // Generate defaults for missing required fields
+      mapped = generateDefaults(mapped, module);
+
+      // Coerce values
+      const coerced: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(mapped)) {
+        coerced[key] = coerceValue(val, key, modelName);
+      }
+
+      // Whitelist fields
+      const clean = whitelistFields(coerced, modelName);
+
+      // Skip rows with no meaningful data
+      const relevantKeys = Object.keys(clean).filter(k => k !== 'companyId');
+      if (relevantKeys.length === 0) continue;
+
+      // Ensure required fields exist for master data
+      if (module === 'accounts' && !clean.type) {
+        clean.type = clean.code ? inferAccountType(String(clean.code)) : 'expense';
+      }
+      if (module === 'accounts' && !clean.code) {
+        errors.push(`Row ${rowNum}: Account code is required`);
+        failed++;
+        continue;
+      }
+      if (module === 'customers' && !clean.code) {
+        clean.code = String(row.customerCode || row.customerName || `CUST-${rowNum}`);
+      }
+      if (module === 'suppliers' && !clean.name) {
+        clean.name = row.supplierName || `Supplier ${rowNum}`;
+      }
+
+      try {
+        await prismaModel.create({ data: clean });
+        imported++;
+        result.totals[module] = (result.totals[module] || 0) + 1;
+      } catch (err: any) {
+        const { friendly } = normalizeImportError(err, { module, row: rowNum, sheet: sheetName });
+        errors.push(`Row ${rowNum}: ${friendly}`);
+        failed++;
+        // Log but don't crash
+        this.logger.debug(`Row ${rowNum} failed: ${err.message}`);
+      }
+    }
+
+    const status = imported > 0 ? 'imported' : 'skipped';
+    const message = imported > 0
+      ? `Imported ${imported} ${getModuleTitle(module).toLowerCase()} records${failed > 0 ? ` (${failed} rows skipped)` : ''}`
+      : `${failed > 0 ? `All ${failed} rows had errors` : 'No data rows'}`;
+
+    result.sheetResults.push({ sheetName, sheetRole: 'data', status, rowsImported: imported, message });
+    if (imported > 0) result.sheetsImported++;
+    else result.sheetsSkipped++;
+    if (errors.length > 0) {
+      result.errors.push(...errors);
+    }
+  }
+
+  private getInformationalMessage(module: string, sheetName: string): string {
+    const msgs: Record<string, string> = {
+      informational_skipped: `Sheet "${sheetName}" is used for reference only and was skipped`,
+      informational_weight: `Sheet "${sheetName}" (Weight per Carton) is informational and was skipped`,
+      informational_hrv: `Sheet "${sheetName}" (HRV Rates) is informational and was skipped`,
+      informational_bawadi: `Sheet "${sheetName}" (Bawadi Rates) is informational and was skipped`,
+      informational_smga: `Sheet "${sheetName}" (S&M G&A) is informational and was skipped`,
+    };
+    return msgs[module] || `Sheet "${sheetName}" was skipped (informational)`;
+  }
+
+  private getPrismaModelByModule(module: string): any {
+    const map: Record<string, any> = {
+      companies: this.prisma.company,
+      sites: this.prisma.site,
+      units: this.prisma.unit,
+      accounts: this.prisma.account,
+      costcenters: this.prisma.costCenter,
+      productcategories: this.prisma.productCategory,
+      customers: this.prisma.customer,
+      suppliers: this.prisma.supplier,
+      materials: this.prisma.material,
+      products: this.prisma.product,
+      bomlines: this.prisma.bomLine,
+      budgetlines: this.prisma.budgetLine,
+      forecastlines: this.prisma.forecastLine,
+      actuallines: this.prisma.actualLine,
+      productionplans: this.prisma.productionPlan,
+      kpitargets: this.prisma.kpiTarget,
+      exchangerates: this.prisma.exchangeRate,
+      promotions: this.prisma.promotion,
+      rawmaterialprices: this.prisma.rawMaterialPrice,
+    };
+    return map[module] || null;
+  }
+
+  private findSheetByModule(workbook: XLSX.WorkBook, module: string): string | null {
+    for (const name of workbook.SheetNames) {
+      const ws = workbook.Sheets[name];
+      if (!ws) continue;
+      const headers = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { range: 0, defval: null });
+      const headerKeys = headers.length > 0 ? Object.keys(headers[0]) : [];
+      if (this.mapSheetToModuleV3(name, headerKeys) === module) {
+        return name;
+      }
+    }
+    return null;
+  }
+
+  /* ─── Price List Import ──────────────────────────────────────────────── */
+
+  private async importPriceListSheet(
+    workbook: XLSX.WorkBook,
+    companyId: bigint,
+    result: WorkbookImportResult,
+  ): Promise<void> {
+    // Try sheet name "Price list (2)" or find by module mapping
+    let sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('price list') || s.toLowerCase().includes('pricelist'));
+    if (!sheetName) {
+      // Try default name
+      sheetName = 'Price list (2)';
+      if (!workbook.Sheets[sheetName]) return;
+    }
+
+    const ws = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
+    result.sheetsProcessed++;
+
+    // Try to find header row (scan for month columns)
+    let headerIdx = -1;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const rowStr = row.map(v => String(v || '').toLowerCase());
+      if (rowStr.some(v => v.includes('item code') || v.includes('code-') || v.includes('code'))) {
+        headerIdx = i;
+        break;
+      }
+    }
+    if (headerIdx < 0) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No header row found' });
+      result.sheetsSkipped++;
+      return;
+    }
+
+    const headerRow = rows[headerIdx];
+    const h = headerRow.map((v: unknown) => v ? String(v).trim().toLowerCase() : '');
+
+    const codeCol = h.findIndex((v: string) => v === 'item code' || v === 'code-' || v === 'code' || v === 'code-');
+    const monthCols: Array<{ col: number; month: number; year: number }> = [];
+    for (let i = 0; i < h.length; i++) {
+      const parsed = this.parseMonthYearString(h[i]);
+      if (parsed) monthCols.push({ col: i, month: parsed.month, year: parsed.year });
+    }
+
+    let imported = 0;
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 2) continue;
+
+      const codeVal = codeCol >= 0 ? row[codeCol] : row[0];
+      if (!codeVal) continue;
+
+      const sku = String(codeVal).trim();
+
+      for (const mc of monthCols) {
+        const price = typeof row[mc.col] === 'number' ? row[mc.col] as number : null;
+        if (!price || price <= 0) continue;
+
+        try {
+          await this.prisma.product.updateMany({
+            where: { sku, companyId },
+            data: { salePrice: price },
+          });
+          imported++;
+          result.totals.priceListEntries = (result.totals.priceListEntries || 0) + 1;
+        } catch { /* row skipped */ }
+      }
+    }
+
+    result.sheetResults.push({
+      sheetName, sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
+      rowsImported: imported, message: imported > 0 ? `Updated ${imported} product prices` : 'No price data found',
+    });
+    if (imported > 0) result.sheetsImported++;
+    else result.sheetsSkipped++;
+  }
+
+  /* ─── Discounts / Promotions Import ──────────────────────────────────── */
+
+  private async importDiscountsSheet(
+    workbook: XLSX.WorkBook,
+    companyId: bigint,
+    result: WorkbookImportResult,
+    context: { productMap?: Map<number, bigint> },
+  ): Promise<void> {
+    let sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('discount'));
+    if (!sheetName) {
+      sheetName = 'Discount';
+      if (!workbook.Sheets[sheetName]) return;
+    }
+
+    const ws = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
+    result.sheetsProcessed++;
+
+    let headerIdx = -1;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const rowStr = row.map(v => String(v || '').toLowerCase());
+      if (rowStr.some(v => v.includes('code-') || v.includes('code')) && rowStr.some(v => v.includes('discount'))) {
+        headerIdx = i;
+        break;
+      }
+    }
+    if (headerIdx < 0) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No header row found' });
+      result.sheetsSkipped++;
+      return;
+    }
+
+    const headerRow = rows[headerIdx];
+    const h = headerRow.map((v: unknown) => v ? String(v).trim().toLowerCase() : '');
+    const codeCol = h.findIndex((v: string) => v === 'code-' || v === 'code');
+    const descCol = h.findIndex((v: string) => v === 'item desc' || v === 'description');
+
+    let imported = 0;
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 2) continue;
+
+      const codeVal = codeCol >= 0 ? row[codeCol] : row[0];
+      if (!codeVal) continue;
+
+      const sku = String(codeVal).trim();
+      let productSku = sku;
+      let productName = descCol >= 0 ? String(row[descCol] || '').trim() : '';
+
+      // Aggregate discounts across month columns
+      for (let j = 2; j < Math.min(h.length, row.length); j++) {
+        const val = typeof row[j] === 'number' ? row[j] as number : 0;
+        if (val === 0) continue;
+        if (h[j].includes('discount')) {
+          // Create a promotion record
+          const promoName = `${productSku} discount - ${productName || 'Customer'}`;
+          try {
+            await this.prisma.promotion.create({
+              data: {
+                companyId,
+                name: promoName,
+                discountPct: Math.abs(val),
+                startDate: new Date(),
+                isActive: true,
+              },
+            });
+            imported++;
+            result.totals.promotions = (result.totals.promotions || 0) + 1;
+          } catch { /* skip */ }
+        }
+      }
+    }
+
+    result.sheetResults.push({
+      sheetName, sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
+      rowsImported: imported, message: imported > 0 ? `Created ${imported} promotion entries` : 'No discount data found',
+    });
+    if (imported > 0) result.sheetsImported++;
+    else result.sheetsSkipped++;
+  }
+
+  /* ─── Actual Lines from Data Sheet ──────────────────────────────────── */
+
+  private async importActualsFromDataSheet(
+    workbook: XLSX.WorkBook,
+    companyId: bigint,
+    userId: bigint,
+    result: WorkbookImportResult,
+    context: { productMap?: Map<number, bigint>; materialMap?: Map<number, bigint> },
+  ): Promise<void> {
+    // Look for the sheet that maps to actuallines
+    const sheetName = this.findSheetByModule(workbook, 'actuallines');
+    if (!sheetName) return;
+
+    const ws = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+    result.sheetsProcessed++;
+
+    if (rows.length === 0) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data rows' });
+      result.sheetsSkipped++;
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    this.logger.log(`Actuals sheet headers: ${headers.join(', ')}`);
+
+    // Map headers to fields using aliases
+    const fieldMap: Record<string, string> = {};
+    const moduleAliases = MODULE_COLUMN_ALIASES['accounts'] || {};
+    for (const h of headers) {
+      const field = normalizeHeaderToField(h, 'accounts') ||
+                    normalizeHeaderToField(h, 'customers') ||
+                    normalizeHeaderToField(h, 'materials') ||
+                    normalizeHeaderToField(h, 'products');
+      if (field) fieldMap[h] = field;
+    }
+
+    // Try to find or create default account for actuals
+    let account = await this.prisma.account.findFirst({
+      where: { companyId, code: '4000', isActive: true },
+    });
+    if (!account) {
+      account = await this.prisma.account.create({
+        data: { companyId, code: '4000', name: 'Sales Revenue', type: 'revenue', isActive: true },
+      });
+    }
+
+    // Try to find actual import or create one
+    const fiscalYear = new Date().getFullYear();
+    const importType: ImportType = 'sales';
+    let actualImport = await this.prisma.actualImport.findFirst({
+      where: { companyId, importType, status: 'posted' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!actualImport) {
+      actualImport = await this.prisma.actualImport.create({
+        data: {
+          companyId,
+          importType,
+          periodFrom: new Date(fiscalYear, 0, 1),
+          periodTo: new Date(fiscalYear, 11, 31),
+          status: 'posted',
+          importedBy: userId,
+        },
+      });
+    }
+
+    let imported = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2;
+      try {
+        // Map fields
+        const mapped: Record<string, unknown> = {};
+        for (const [header, val] of Object.entries(row)) {
+          if (val === null || val === undefined || val === '') continue;
+          const field = fieldMap[header];
+          if (field) {
+            if (field === 'code' || field === 'accountCode') {
+              mapped.accountCode = val;
+            } else if (field === 'customerCode') {
+              mapped.customerCode = val;
+            } else if (field === 'materialCode') {
+              mapped.materialCode = val;
+            } else if (field === 'productSku' || field === 'sku') {
+              mapped.productSku = val;
+            } else {
+              mapped[field] = val;
+            }
+          }
+        }
+
+        // Resolve accountId
+        let accountId = account!.id;
+        if (mapped.accountCode) {
+          const acc = await this.prisma.account.findFirst({
+            where: { OR: [{ code: String(mapped.accountCode), companyId }, { name: String(mapped.accountCode), companyId }] },
+          });
+          if (acc) accountId = acc.id;
+        }
+
+        // Resolve productId
+        let productId: bigint | null = null;
+        if (mapped.productSku) {
+          const prod = await this.prisma.product.findFirst({
+            where: { OR: [{ sku: String(mapped.productSku), companyId }, { name: String(mapped.productSku), companyId }] },
+          });
+          if (prod) productId = prod.id;
+        }
+
+        // Create actual line with connect pattern
+        await this.prisma.actualLine.create({
+          data: {
+            actualImportId: actualImport!.id,
+            accountId,
+            productId,
+            transactionDate: row['transactionDate'] ? this.parseExcelDate(row['transactionDate']) : new Date(),
+            amount: Number(row['amount'] || row['Amount'] || 0),
+            quantity: row['quantity'] || row['Quantity'] ? Number(row['quantity'] || row['Quantity']) : 0,
+            referenceNo: row['referenceNo'] || row['Reference No'] ? String(row['referenceNo'] || row['Reference No']) : null,
+          },
+        });
+        imported++;
+        result.totals.actualLines = (result.totals.actualLines || 0) + 1;
+      } catch (err: any) {
+        const { friendly } = normalizeImportError(err);
+        errors.push(`Row ${rowNum}: ${friendly}`);
+        failed++;
+      }
+    }
+
+    result.sheetResults.push({
+      sheetName, sheetRole: 'data',
+      status: imported > 0 ? 'imported' : 'skipped',
+      rowsImported: imported,
+      message: imported > 0 ? `Imported ${imported} actual lines${failed > 0 ? ` (${failed} rows skipped)` : ''}` : 'No actual lines imported',
+    });
+    if (imported > 0) result.sheetsImported++;
+    else result.sheetsSkipped++;
+    if (errors.length > 0) result.errors.push(...errors);
+  }
+
+  /* ─── Budget Lines from Data Sheet ──────────────────────────────────── */
+
+  private async importBudgetFromDataSheet(
+    workbook: XLSX.WorkBook,
+    companyId: bigint,
+    result: WorkbookImportResult,
+    context: { productMap?: Map<number, bigint>; materialMap?: Map<number, bigint> },
+  ): Promise<void> {
+    const sheetName = this.findSheetByModule(workbook, 'budgetlines');
+    if (!sheetName) return;
+
+    const ws = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+    result.sheetsProcessed++;
+
+    if (rows.length === 0) {
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data rows' });
+      result.sheetsSkipped++;
+      return;
+    }
+
+    // Try to find or create a budget cycle
+    let cycle = await this.prisma.budgetCycle.findFirst({
+      where: { companyId, fiscalYear: new Date().getFullYear() },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!cycle) {
+      const fy = new Date().getFullYear();
+      cycle = await this.prisma.budgetCycle.create({
+        data: {
+          companyId, name: `FY${fy} Budget`, fiscalYear: fy, status: 'draft',
+        },
+      });
+    }
+
+    // Use a default account
+    let account = await this.prisma.account.findFirst({
+      where: { companyId, code: '5000', isActive: true },
+    });
+    if (!account) {
+      account = await this.prisma.account.create({
+        data: { companyId, code: '5000', name: 'Budget Default', type: 'expense', isActive: true },
+      });
+    }
+
+    const headers = Object.keys(rows[0]);
+    const dateCols = headers.filter(h => {
+      const parsed = this.parseMonthYearString(h);
+      return parsed !== null;
+    });
+
+    let imported = 0;
+    let failed = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2;
+      try {
+        // Try each date column
+        for (const dateCol of dateCols) {
+          const amount = Number(row[dateCol] || 0);
+          if (amount === 0) continue;
+
+          const parsed = this.parseMonthYearString(dateCol);
+          if (!parsed) continue;
+
+          // Resolve account from row if available
+          let accountId = account!.id;
+          const accountVal = row['accountCode'] || row['accountcode'] || row['Account Code'] || row['account'] || row['Account'];
+          if (accountVal) {
+            const acc = await this.prisma.account.findFirst({
+              where: { OR: [{ code: String(accountVal), companyId }, { name: String(accountVal), companyId }] },
+            });
+            if (acc) accountId = acc.id;
+          }
+
+          await this.prisma.budgetLine.create({
+            data: {
+              budgetCycleId: cycle!.id,
+              accountId,
+              periodMonth: parsed.month,
+              amount,
+            },
+          });
+          imported++;
+          result.totals.budgetLines = (result.totals.budgetLines || 0) + 1;
+        }
+      } catch (err: any) {
+        failed++;
+      }
+    }
+
+    result.sheetResults.push({
+      sheetName, sheetRole: 'data',
+      status: imported > 0 ? 'imported' : 'skipped',
+      rowsImported: imported,
+      message: imported > 0 ? `Imported ${imported} budget lines${failed > 0 ? ` (${failed} rows skipped)` : ''}` : 'No budget data',
+    });
+    if (imported > 0) result.sheetsImported++;
+    else result.sheetsSkipped++;
   }
 
   /* ─── Extract Data Sheet Master Data ─────────────────────────────────── */
@@ -983,7 +1435,6 @@ export class ClientWorkbookImportService {
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(dataSheet, { defval: null });
     if (rows.length < 3) return { units, organizations, categories, costCenters, products, materials };
 
-    // Header row is row index 2 (0-based) based on the analysis
     const headerRow = rows[2];
     const headers: string[] = [];
     for (const key of Object.keys(headerRow)) {
@@ -991,7 +1442,6 @@ export class ClientWorkbookImportService {
       headers.push(val ? String(val).trim() : key);
     }
 
-    // Find column indices
     const colIdx = this.buildColumnIndex(headers);
 
     for (let i = 3; i < rows.length; i++) {
@@ -1005,7 +1455,6 @@ export class ClientWorkbookImportService {
       const uom = colIdx.uom >= 0 ? values[colIdx.uom] : null;
       const cc = colIdx.cc >= 0 ? values[colIdx.cc] : null;
       const mainCat = colIdx.mainCategory >= 0 ? values[colIdx.mainCategory] : null;
-      const category = colIdx.category >= 0 ? values[colIdx.category] : null;
       const minor = colIdx.subCategory >= 0 ? values[colIdx.subCategory] : null;
 
       if (code && typeof code === 'number' && code > 10000) {
@@ -1081,7 +1530,6 @@ export class ClientWorkbookImportService {
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
     result.sheetsProcessed++;
 
-    // Row 1 (index 1) has headers: Org., Type, Code-, Item Desc, Jan-26...Dec-26
     if (rows.length < 2) {
       result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data' });
       return;
@@ -1101,7 +1549,6 @@ export class ClientWorkbookImportService {
       return;
     }
 
-    // Find or create forecast cycle
     const fiscalYear = monthHeaders[0].year;
     const cycleName = `FY${String(fiscalYear).slice(2)} Planning`;
     const cycle = await this.prisma.forecastCycle.findFirst({
@@ -1110,7 +1557,6 @@ export class ClientWorkbookImportService {
       data: { companyId, name: cycleName, fiscalYear, basePeriod: new Date(fiscalYear, 0, 1), status: 'draft', createdBy: BigInt(0) },
     });
 
-    // Find or create a default account for forecasting
     const account = await this.getOrCreateDefaultAccount(this.prisma, companyId, '5000', 'Cost of Goods Sold', 'cogs');
 
     let imported = 0;
@@ -1139,7 +1585,7 @@ export class ClientWorkbookImportService {
           },
         });
         imported++;
-        result.totals.forecastLines++;
+        result.totals.forecastLines = (result.totals.forecastLines || 0) + 1;
       }
     }
 
@@ -1171,106 +1617,121 @@ export class ClientWorkbookImportService {
       return;
     }
 
-    // Row 2 has headers: Org., Prd No, Prd Desc, Prd Uom, Major, Minor, Ing No, Ing Desc, Plan Qty, Ing Uom, Last Price, ...
     const headerRow = rows[2];
     const h = headerRow.map((v: unknown) => v ? String(v).trim().toLowerCase() : '');
 
     const orgCol = h.findIndex((v: string) => v === 'org.');
     const prdNoCol = h.findIndex((v: string) => v === 'prd no');
     const prdDescCol = h.findIndex((v: string) => v === 'prd desc');
-    const prdUomCol = h.findIndex((v: string) => v === 'prd uom');
     const majorCol = h.findIndex((v: string) => v === 'major');
-    const minorCol = h.findIndex((v: string) => v === 'minor');
     const ingNoCol = h.findIndex((v: string) => v === 'ing no');
     const ingDescCol = h.findIndex((v: string) => v === 'ing desc');
     const planQtyCol = h.findIndex((v: string) => v === 'plan qty');
     const uomCol = h.findIndex((v: string) => v === 'ing uom');
 
-    // Group by product
-    const bomGroups = new Map<number, { org: string; major: string; minor: string; materials: Array<{ ingNo: number; ingDesc: string; planQty: number; uom: string }> }>();
+    // Instead of grouping, process each row individually
+    let bomRecipesCreated = 0;
+    let bomLinesImported = 0;
+    let failedRows = 0;
+    const errors: string[] = [];
 
     for (let i = 3; i < rows.length; i++) {
       const row = rows[i];
-      if (!row || row.length < 8) continue;
+      const rowNum = i + 1; // Excel row number
 
-      const prdNo = prdNoCol >= 0 ? Number(row[prdNoCol]) : 0;
-      if (!prdNo || isNaN(prdNo)) continue;
-
-      if (!bomGroups.has(prdNo)) {
-        bomGroups.set(prdNo, {
-          org: orgCol >= 0 ? String(row[orgCol] || '').trim() : '',
-          major: majorCol >= 0 ? String(row[majorCol] || '').trim() : '',
-          minor: minorCol >= 0 ? String(row[minorCol] || '').trim() : '',
-          materials: [],
-        });
+      if (!row || row.length < 8) {
+        failedRows++;
+        errors.push(`Row ${rowNum}: Insufficient columns`);
+        continue;
       }
 
-      const ingNo = ingNoCol >= 0 ? Number(row[ingNoCol]) : 0;
-      if (ingNo && !isNaN(ingNo)) {
-        const group = bomGroups.get(prdNo)!;
-        group.materials.push({
-          ingNo,
-          ingDesc: ingDescCol >= 0 ? String(row[ingDescCol] || '').trim() : '',
-          planQty: planQtyCol >= 0 ? Number(row[planQtyCol] || 0) : 0,
-          uom: uomCol >= 0 ? String(row[uomCol] || 'KGS').trim() : 'KGS',
-        });
-      }
-    }
+      try {
+        const prdNo = prdNoCol >= 0 ? Number(row[prdNoCol]) : 0;
+        if (!prdNo || isNaN(prdNo)) {
+          failedRows++;
+          errors.push(`Row ${rowNum}: Invalid product number`);
+          continue;
+        }
 
-    let imported = 0;
-    for (const [prdNo, group] of bomGroups) {
-      const productId = productMap.get(prdNo);
-      if (!productId) continue;
+        const ingNo = ingNoCol >= 0 ? Number(row[ingNoCol]) : 0;
+        if (!ingNo || isNaN(ingNo)) {
+          failedRows++;
+          errors.push(`Row ${rowNum}: Invalid ingredient number`);
+          continue;
+        }
 
-      const recipe = await this.prisma.bomRecipe.create({
-        data: {
-          companyId, productId, version: 'v1', outputQty: 1, wastagePct: 0, isActive: true,
-        },
-      });
-      result.totals.bomRecipes++;
+        const productId = productMap.get(prdNo);
+        if (!productId) {
+          failedRows++;
+          errors.push(`Row ${rowNum}: Product ${prdNo} not found in database`);
+          continue;
+        }
 
-      for (const mat of group.materials) {
-        // Auto-create material if not exists
-        let matId = materialMap.get(mat.ingNo);
+        // Get or create material
+        const matCode = String(ingNo);
+        let matId = materialMap.get(ingNo);
         if (!matId) {
-          const matCode = String(mat.ingNo);
           const existing = await this.prisma.material.findFirst({ where: { code: matCode, companyId } });
           if (existing) {
             matId = existing.id;
-            materialMap.set(mat.ingNo, existing.id);
+            materialMap.set(ingNo, existing.id);
           } else {
-            const unit = await this.prisma.unit.findFirst({ where: { symbol: mat.uom, companyId } });
+            const ingDesc = ingDescCol >= 0 ? String(row[ingDescCol] || '').trim() : '';
+            const uom = uomCol >= 0 ? String(row[uomCol] || 'KGS').trim() : 'KGS';
+            const unit = await this.prisma.unit.findFirst({ where: { symbol: uom, companyId } });
             const created = await this.prisma.material.create({
               data: {
-                companyId, code: matCode, name: mat.ingDesc || `Material ${matCode}`,
-                materialType: group.major === 'RM' ? 'raw_material' : 'packaging',
-                unitId: unit?.id ?? null, isActive: true,
+                companyId, code: matCode, name: ingDesc || `Material ${matCode}`,
+                materialType: 'raw_material', unitId: unit?.id ?? null, isActive: true,
               },
             });
             matId = created.id;
-            materialMap.set(mat.ingNo, created.id);
-            result.autoCreated.push({ type: 'Material', code: matCode, name: mat.ingDesc || `Material ${matCode}`, created: true });
-            result.totals.materials++;
+            materialMap.set(ingNo, created.id);
+            result.autoCreated.push({ type: 'Material', code: matCode, name: ingDesc || `Material ${matCode}`, created: true });
+            result.totals.materials = (result.totals.materials || 0) + 1;
           }
         }
 
+        // Find existing BOM recipe for this product or create one
+        let recipe = await this.prisma.bomRecipe.findFirst({
+          where: { companyId, productId },
+        });
+        if (!recipe) {
+          recipe = await this.prisma.bomRecipe.create({
+            data: {
+              companyId, productId, version: 'v1', outputQty: 1, wastagePct: 0, isActive: true,
+            },
+          });
+          bomRecipesCreated++;
+          result.totals.bomRecipes = (result.totals.bomRecipes || 0) + 1;
+        }
+
+        // Create BOM Line
+        const planQty = planQtyCol >= 0 ? Number(row[planQtyCol] || 0) : 0;
         await this.prisma.bomLine.create({
           data: {
             bomId: recipe.id, materialId: matId,
-            quantity: mat.planQty, qtyPerOutput: mat.planQty, wastagePct: 0,
+            quantity: planQty, qtyPerOutput: planQty, wastagePct: 0,
           },
         });
-        result.totals.bomLines++;
-        imported++;
+        bomLinesImported++;
+        result.totals.bomLines = (result.totals.bomLines || 0) + 1;
+      } catch (err: any) {
+        failedRows++;
+        errors.push(`Row ${rowNum}: ${err.message}`);
       }
     }
 
+    const totalImported = bomRecipesCreated + bomLinesImported;
     result.sheetResults.push({
-      sheetName: 'Drill Down', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-      rowsImported: imported, message: `Imported ${result.totals.bomRecipes} BOM recipes with ${imported} material lines`,
+      sheetName: 'Drill Down', sheetRole: 'data',
+      status: totalImported > 0 ? 'imported' : 'skipped',
+      rowsImported: totalImported,
+      message: `Imported ${bomRecipesCreated} BOM recipes with ${bomLinesImported} material lines${failedRows > 0 ? ` (${failedRows} rows skipped)` : ''}`,
     });
-    if (imported > 0) result.sheetsImported++;
+    if (totalImported > 0) result.sheetsImported++;
     else result.sheetsSkipped++;
+    if (errors.length > 0) result.errors.push(...errors);
   }
 
   /* ─── HRV Material Prices ────────────────────────────────────────────── */
@@ -1292,7 +1753,6 @@ export class ClientWorkbookImportService {
       return;
     }
 
-    // Row 1 has headers in Arabic: كود الصنف, اسم الصنف, الوحدة, متوسط 2025, Jan-26...Dec-26
     const headerRow = rows[1];
     const monthCols: Array<{ col: number; month: number; year: number }> = [];
 
@@ -1303,7 +1763,6 @@ export class ClientWorkbookImportService {
       if (parsed) monthCols.push({ col: i, month: parsed.month, year: parsed.year });
     }
 
-    // Data starts from row 2
     let imported = 0;
     for (let i = 2; i < rows.length; i++) {
       const row = rows[i];
@@ -1313,7 +1772,6 @@ export class ClientWorkbookImportService {
       const name = row[1] ? String(row[1]).trim() : '';
       if (!code || !name) continue;
 
-      // Find or create material
       const codeNum = Number(code);
       let matId = materialMap.get(codeNum);
       if (!matId) {
@@ -1328,11 +1786,10 @@ export class ClientWorkbookImportService {
           matId = created.id;
           materialMap.set(codeNum, created.id);
           result.autoCreated.push({ type: 'Material', code, name, created: true });
-          result.totals.materials++;
+          result.totals.materials = (result.totals.materials || 0) + 1;
         }
       }
 
-      // Import monthly prices
       for (const mc of monthCols) {
         const price = typeof row[mc.col] === 'number' ? row[mc.col] as number : null;
         if (!price || price <= 0) continue;
@@ -1344,7 +1801,7 @@ export class ClientWorkbookImportService {
           },
         });
         imported++;
-        result.totals.materialPrices++;
+        result.totals.materialPrices = (result.totals.materialPrices || 0) + 1;
       }
     }
 
@@ -1356,271 +1813,12 @@ export class ClientWorkbookImportService {
     else result.sheetsSkipped++;
   }
 
-  /* ─── Price List Import ──────────────────────────────────────────────── */
-
-  private async importPriceList(
-    workbook: XLSX.WorkBook,
-    companyId: bigint,
-    productMap: Map<number, bigint>,
-    result: WorkbookImportResult,
-  ): Promise<void> {
-    const ws = workbook.Sheets['Price list (2)'];
-    if (!ws) { result.warnings.push('Price list (2) sheet not found'); return; }
-
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
-    result.sheetsProcessed++;
-
-    // Row 3 has headers: Item Code, Description, Type, Main Price List, Jan-26...Dec-26
-    if (rows.length < 5) {
-      result.sheetResults.push({ sheetName: 'Price list (2)', sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
-      return;
-    }
-
-    const headerRow = rows[3];
-    const h = headerRow.map((v: unknown) => v ? String(v).trim().toLowerCase() : '');
-
-    const codeCol = h.findIndex((v: string) => v === 'item code' || v === 'code-');
-    const descCol = h.findIndex((v: string) => v === 'description');
-    const typeCol = h.findIndex((v: string) => v === 'type');
-
-    const monthCols: Array<{ col: number; month: number; year: number }> = [];
-    for (let i = 0; i < h.length; i++) {
-      const parsed = this.parseMonthYearString(h[i]);
-      if (parsed) monthCols.push({ col: i, month: parsed.month, year: parsed.year });
-    }
-
-    let imported = 0;
-    for (let i = 4; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length < 3) continue;
-
-      const code = codeCol >= 0 ? row[codeCol] : null;
-      const codeNum = typeof code === 'number' ? code : (code ? Number(String(code).replace(/[^\d]/g, '')) : 0);
-      if (!codeNum || isNaN(codeNum)) continue;
-
-      const productId = productMap.get(codeNum);
-      if (!productId) continue;
-
-      for (const mc of monthCols) {
-        const price = typeof row[mc.col] === 'number' ? row[mc.col] as number : null;
-        if (!price || price <= 0) continue;
-
-        // Update product's selling price for the latest month
-        await this.prisma.product.update({
-          where: { id: productId },
-          data: { salePrice: price },
-        }).catch(() => {});
-
-        imported++;
-        result.totals.priceListEntries++;
-      }
-    }
-
-    result.sheetResults.push({
-      sheetName: 'Price list (2)', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-      rowsImported: imported, message: `Processed ${imported} price list entries`,
-    });
-    if (imported > 0) result.sheetsImported++;
-    else result.sheetsSkipped++;
-  }
-
-  /* ─── Discounts Import ───────────────────────────────────────────────── */
-
-  private async importDiscounts(
-    workbook: XLSX.WorkBook,
-    companyId: bigint,
-    productMap: Map<number, bigint>,
-    result: WorkbookImportResult,
-  ): Promise<void> {
-    const ws = workbook.Sheets['Discount'];
-    if (!ws) { result.warnings.push('Discount sheet not found'); return; }
-
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
-    result.sheetsProcessed++;
-
-    // Row 4 has headers: Code-, Item Desc, Line Discount, Invoice Discount, Indirect Discount per month
-    if (rows.length < 5) {
-      result.sheetResults.push({ sheetName: 'Discount', sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
-      return;
-    }
-
-    const headerRow = rows[4];
-    const h = headerRow.map((v: unknown) => v ? String(v).trim().toLowerCase() : '');
-
-    const codeCol = h.findIndex((v: string) => v === 'code-' || v === 'code');
-    const descCol = h.findIndex((v: string) => v === 'item desc' || v === 'description');
-
-    let imported = 0;
-    for (let i = 5; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length < 3) continue;
-
-      const code = codeCol >= 0 ? row[codeCol] : null;
-      const codeNum = typeof code === 'number' ? code : (code ? Number(String(code).replace(/[^\d]/g, '')) : 0);
-      if (!codeNum || isNaN(codeNum)) continue;
-
-      const productId = productMap.get(codeNum);
-      if (!productId) continue;
-
-      // Aggregate total line discount across months
-      let totalLineDiscount = 0;
-      let totalInvoiceDiscount = 0;
-      for (let j = 2; j < h.length && j < row.length; j++) {
-        const val = typeof row[j] === 'number' ? row[j] as number : 0;
-        if (h[j].includes('line discount')) totalLineDiscount += val;
-        else if (h[j].includes('invoice discount')) totalInvoiceDiscount += val;
-      }
-
-      if (totalLineDiscount > 0 || totalInvoiceDiscount > 0) {
-        imported++;
-        result.totals.discountEntries++;
-      }
-    }
-
-    result.sheetResults.push({
-      sheetName: 'Discount', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-      rowsImported: imported, message: `Processed ${imported} discount entries`,
-    });
-    if (imported > 0) result.sheetsImported++;
-    else result.sheetsSkipped++;
-  }
-
-  /* ─── Weight per Carton ──────────────────────────────────────────────── */
-
-  private async importWeightPerCarton(
-    workbook: XLSX.WorkBook,
-    companyId: bigint,
-    productMap: Map<number, bigint>,
-    result: WorkbookImportResult,
-  ): Promise<void> {
-    const ws = workbook.Sheets['Weight per carton'];
-    if (!ws) return;
-
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
-    result.sheetsProcessed++;
-
-    let imported = 0;
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length < 4) continue;
-
-      const code = typeof row[0] === 'number' ? row[0] as number : 0;
-      const weightPerCtn = typeof row[3] === 'number' ? row[3] as number : null;
-      if (!code || !weightPerCtn) continue;
-
-      const productId = productMap.get(code);
-      if (productId) {
-        imported++;
-      }
-    }
-
-    result.sheetResults.push({
-      sheetName: 'Weight per carton', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-      rowsImported: imported, message: `Updated ${imported} product weights`,
-    });
-    if (imported > 0) result.sheetsImported++;
-    else result.sheetsSkipped++;
-  }
-
-  /* ─── HRV Rates + Bawadi Rates ──────────────────────────────────────── */
-
-  private async importRates(
-    workbook: XLSX.WorkBook,
-    companyId: bigint,
-    result: WorkbookImportResult,
-  ): Promise<void> {
-    // Import HRV Rates (Labor, FOH, VOH)
-    const hrvWs = workbook.Sheets['HRV Rates'];
-    if (hrvWs) {
-      result.sheetsProcessed++;
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(hrvWs, { header: 1, defval: null }) as unknown as unknown[][];
-      let imported = 0;
-
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length < 2) continue;
-
-        const rateType = row[1] ? String(row[1]).trim() : '';
-        const totalRate = typeof row[row.length - 1] === 'number' ? row[row.length - 1] as number : 0;
-
-        if (rateType && totalRate > 0) {
-          imported++;
-          result.totals.costAllocations++;
-        }
-      }
-
-      result.sheetResults.push({
-        sheetName: 'HRV Rates', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-        rowsImported: imported, message: `Processed ${imported} rate entries`,
-      });
-      if (imported > 0) result.sheetsImported++;
-      else result.sheetsSkipped++;
-    }
-
-    // Import Bawadi Rates
-    const bawadiWs = workbook.Sheets['Bawadi Rats'];
-    if (bawadiWs) {
-      result.sheetsProcessed++;
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(bawadiWs, { header: 1, defval: null }) as unknown as unknown[][];
-      let imported = 0;
-
-      for (let i = 2; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length < 5) continue;
-        const code = typeof row[0] === 'number' ? row[0] as number : 0;
-        if (code) imported++;
-      }
-
-      result.sheetResults.push({
-        sheetName: 'Bawadi Rats', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-        rowsImported: imported, message: `Processed ${imported} Bawadi rate entries`,
-      });
-      if (imported > 0) result.sheetsImported++;
-      else result.sheetsSkipped++;
-    }
-  }
-
-  /* ─── Cost Allocations (S&M G&A) ────────────────────────────────────── */
-
-  private async importCostAllocations(
-    workbook: XLSX.WorkBook,
-    companyId: bigint,
-    result: WorkbookImportResult,
-  ): Promise<void> {
-    const ws = workbook.Sheets['S&M G&A'];
-    if (!ws) return;
-
-    result.sheetsProcessed++;
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: null }) as unknown as unknown[][];
-
-    let imported = 0;
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length < 3) continue;
-
-      const amount = typeof row[1] === 'number' ? row[1] as number : 0;
-      const category = row[2] ? String(row[2]).trim() : '';
-
-      if (category && amount > 0) {
-        imported++;
-        result.totals.costAllocations++;
-      }
-    }
-
-    result.sheetResults.push({
-      sheetName: 'S&M G&A', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
-      rowsImported: imported, message: `Processed ${imported} G&A allocation entries`,
-    });
-    if (imported > 0) result.sheetsImported++;
-    else result.sheetsSkipped++;
-  }
-
   /* ═══════════════════════════════════════════════════════════════════════
    * UTILITY HELPERS
    * ═══════════════════════════════════════════════════════════════════════ */
 
   private async getOrCreateDefaultAccount(
-    tx: PrismaService | Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+    tx: any,
     companyId: bigint,
     code: string,
     name: string,
@@ -1638,7 +1836,6 @@ export class ClientWorkbookImportService {
   private parseExcelDate(value: unknown): Date {
     if (value instanceof Date) return value;
     if (typeof value === 'number') {
-      // Excel serial date
       const excelEpoch = new Date(1899, 11, 30);
       const msPerDay = 86400000;
       return new Date(excelEpoch.getTime() + value * msPerDay);
@@ -1646,7 +1843,6 @@ export class ClientWorkbookImportService {
     if (typeof value === 'string') {
       const d = new Date(value);
       if (!isNaN(d.getTime())) return d;
-      // Try "Jan-26" format
       const match = value.match(/(\w+)-(\d{2,4})/);
       if (match) {
         const month = MONTH_MAP[match[1].toLowerCase()] ?? 1;
@@ -1659,7 +1855,6 @@ export class ClientWorkbookImportService {
 
   private parseMonthYearString(str: string): { month: number; year: number } | null {
     const s = str.toLowerCase().trim();
-    // Match "Jan-26", "Jan-2026", etc.
     const match = s.match(/(\w+)-(\d{2,4})/);
     if (match) {
       const month = MONTH_MAP[match[1].toLowerCase()];

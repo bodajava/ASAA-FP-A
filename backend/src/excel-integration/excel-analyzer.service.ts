@@ -62,7 +62,7 @@ export class ExcelAnalyzerService {
     { pattern: /^inventory|stock|warehouse[_\s]?stock/i, module: 'inventory', description: 'Inventory snapshots' },
     { pattern: /^raw[_\s]?material[_\s]?price(s)?|material[_\s]?price(s)?|rm[_\s]?price(s)?|price[_\s]?list$/i, module: 'materialprices', description: 'Raw material prices' },
     { pattern: /^budget[_\s]?line(s)?|budget(s)?$/i, module: 'budgetlines', description: 'Budget data' },
-    { pattern: /^forecast[_\s]?line(s)?|forecast(s)?$/i, module: 'forecastlines', description: 'Forecast data' },
+    { pattern: /^forecast[_\s]?(line(s)?|qty|quantit(y|ies)|s)?$/i, module: 'forecastlines', description: 'Forecast data' },
     { pattern: /^actual(s)?|actual[_\s]?line(s)?|gl[_\s]?entry(s)?|journal[_\s]?entry(s)?|transaction(s)?$/i, module: 'actuallines', description: 'Actual transactions / GL entries' },
     { pattern: /^kpi[_\s]?target(s)?|kpi(s)?$/i, module: 'kpitargets', description: 'KPI targets' },
     { pattern: /^exchange[_\s]?rate(s)?|currency[_\s]?rate(s)?|fx[_\s]?rate(s)?$/i, module: 'exchangerates', description: 'Exchange rates' },
@@ -75,6 +75,7 @@ export class ExcelAnalyzerService {
     { pattern: /^packaging|carton|weight[_\s]?per[_\s]?carton/i, module: 'materials', description: 'Packaging master data' },
     { pattern: /^data$/i, module: 'actuallines', description: 'Generic data sheet (maps to actual transactions)' },
     { pattern: /^s&m|s[_\s]&[_\s]m|g&a|g[_\s]&[_\s]a|operating[_\s]?expense/i, module: 'actuallines', description: 'S&M / G&A expenses (maps to actuals)' },
+    { pattern: /^hrv[_\s]?rate(s)?|bawadi[_\s]?rate(s)?|info(rmational)?/i, module: 'informational', description: 'Informational sheets (ignored)' },
   ];
 
   /* ─── Main Analysis Entry Point ────────────────────────────────────── */

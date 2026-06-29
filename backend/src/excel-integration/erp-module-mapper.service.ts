@@ -112,7 +112,7 @@ export class ErpModuleMapperService {
     },
     {
       key: 'productionplans',
-      patterns: [/^production[_\s]?plan(s)?$/i, /^manufacturing[_\s]?plan(s)?$/i, /^pp$/i],
+      patterns: [/^production[_\s]?plan/i, /^manufacturing[_\s]?plan/i, /^pp$/i],
       description: 'Production planning',
       targetTable: 'ProductionPlan',
       requiresParent: 'products',
@@ -136,24 +136,24 @@ export class ErpModuleMapperService {
     },
     {
       key: 'budgetlines',
-      patterns: [/^budget[_\s]?line(s)?|budget(s)?|annual[_\s]?budget/i],
+      patterns: [/^budget[_\s]?line/i, /^budget/i, /^annual[_\s]?budget/i],
       description: 'Budget data',
       targetTable: 'BudgetLine',
-      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', sitecode: 'siteCode', costcentercode: 'costCenterCode' },
+      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', sitecode: 'siteCode', costcentercode: 'costCenterCode', budgetcyclename: 'budgetCycleName', productsku: 'productSku', materialcode: 'materialCode', customercode: 'customerCode', quantity: 'quantity', unitprice: 'unitPrice', notes: 'notes' },
     },
     {
       key: 'forecastlines',
-      patterns: [/^forecast[_\s]?line(s)?|forecast(s)?|monthly[_\s]?forecast/i],
+      patterns: [/^forecast[_\s]?line/i, /^forecast/i, /^monthly[_\s]?forecast/i],
       description: 'Forecast data',
       targetTable: 'ForecastLine',
-      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', scenario: 'scenario', sitecode: 'siteCode' },
+      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', scenario: 'scenario', sitecode: 'siteCode', forecastcyclename: 'forecastCycleName', costcentercode: 'costCenterCode', productsku: 'productSku', materialcode: 'materialCode', customercode: 'customerCode', quantity: 'quantity', unitprice: 'unitPrice', drivertype: 'driverType', notes: 'notes' },
     },
     {
       key: 'actuallines',
       patterns: [/^actual(s)?|actual[_\s]?line(s)?|gl[_\s]?entry(s)?|journal[_\s]?entry(s)?|transaction(s)?|p&l|profit[_\s]?&[_\s]?loss|income[_\s]?statement|financial[_\s]?statement|data|s&m|g&a|operating[_\s]?expense/i],
       description: 'Actual transactions / GL entries',
       targetTable: 'ActualLine',
-      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', sitecode: 'siteCode', costcentercode: 'costCenterCode' },
+      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', sitecode: 'siteCode', costcentercode: 'costCenterCode', sourcesystem: 'sourceSystem', importtype: 'importType', periodfrom: 'periodFrom', periodto: 'periodTo', productsku: 'productSku', materialcode: 'materialCode', customercode: 'customerCode', transactiondate: 'transactionDate', quantity: 'quantity', unitprice: 'unitPrice', referenceno: 'referenceNo' },
     },
     {
       key: 'kpitargets',
@@ -178,7 +178,7 @@ export class ErpModuleMapperService {
     },
     {
       key: 'headcountplans',
-      patterns: [/^headcount[_\s]?plan(s)?|hr[_\s]?plan(s)?|staffing[_\s]?plan(s)?|headcount$/i],
+      patterns: [/^headcount[_\s]?plan/i, /^hr[_\s]?plan/i, /^staffing[_\s]?plan/i, /^headcount/i],
       description: 'Headcount planning',
       targetTable: 'HeadcountPlan',
       columnDefaults: { sitecode: 'siteCode', department: 'department', position: 'position', headcount: 'headCount', costcentercode: 'costCenterCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear' },
@@ -189,6 +189,13 @@ export class ErpModuleMapperService {
       description: 'Notification rules',
       targetTable: 'NotificationRule',
       columnDefaults: { name: 'name', type: 'type', condition: 'condition', channel: 'channel' },
+    },
+    {
+      key: 'informational',
+      patterns: [/^start[_\s]?here/i, /^reference[_\s]?lists?/i, /^instructions?/i, /^notes?/i, /^weight[_\s]?per[_\s]?carton/i, /^hrv[_\s]?rates/i, /^price[_\s]?list/i],
+      description: 'Informational Sheets',
+      targetTable: '',
+      columnDefaults: {},
     },
   ];
 

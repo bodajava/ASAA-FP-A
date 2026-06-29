@@ -1191,6 +1191,21 @@ export function ImportModal({
                 </table>
               </div>
 
+              {/* Errors */}
+              {clientWorkbookResult.errors.length > 0 && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                  <h4 className="text-xs font-semibold text-red-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                    Errors ({clientWorkbookResult.errors.length})
+                  </h4>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {clientWorkbookResult.errors.map((e, idx) => (
+                      <p key={idx} className="text-xs text-red-700">{e}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Warnings */}
               {clientWorkbookResult.warnings.length > 0 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">

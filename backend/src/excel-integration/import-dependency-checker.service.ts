@@ -44,21 +44,27 @@ const DEPENDENCY_RULES: ModuleDependencyRules = {
 };
 
 const IMPORT_ORDER = [
-  'accounts',
+  'companies',
   'units',
-  'productCategories',
   'sites',
-  'costCenters',
-  'products',
-  'materials',
+  'accounts',
+  'costcenters',
+  'productcategories',
   'customers',
   'suppliers',
-  'bom',
-  'budget',
-  'forecast',
-  'actuals',
-  'production',
-  'inventory',
+  'materials',
+  'products',
+  'bomrecipes',
+  'bomlines',
+  'exchangerates',
+  'materialprices',
+  'pricelist',
+  'promotions',
+  'actuallines',
+  'productionplans',
+  'budgetlines',
+  'forecastlines',
+  'kpitargets',
 ];
 
 @Injectable()

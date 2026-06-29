@@ -141,7 +141,7 @@ export class ExcelIntegrationService {
     mappings: ErpModuleMapping[],
     validations: SheetValidationResult[],
     companyId: number,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userColumnOverrides?: Record<string, Record<string, string>> },
+    options?: { dryRun?: boolean; skipErrors?: boolean; userColumnOverrides?: Record<string, Record<string, string>>; userId?: bigint | null },
   ): Promise<ImportExecutionResult> {
     this.logger.log(`Phase 5: Executing import for company ${companyId}`);
 
@@ -175,7 +175,7 @@ export class ExcelIntegrationService {
       })
       .filter((s): s is NonNullable<typeof s> => s !== null);
 
-    return this.importer.importWorkbook(sheetsToImport, companyId, options);
+    return this.importer.importWorkbook(sheetsToImport, BigInt(companyId), options);
   }
 
   /* ─── Full Pipeline (convenience method) ───────────────────────────── */
@@ -184,7 +184,7 @@ export class ExcelIntegrationService {
     buffer: Buffer,
     fileName: string,
     companyId: number,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userColumnOverrides?: Record<string, Record<string, string>> },
+    options?: { dryRun?: boolean; skipErrors?: boolean; userColumnOverrides?: Record<string, Record<string, string>>; userId?: bigint | null },
   ): Promise<{
     analysis: WorkbookAnalysis;
     mappings: ErpModuleMapping[];

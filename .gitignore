@@ -19,3 +19,27 @@ backend/Enterprise_Test_Dataset/
 backend/prisma/backups/
 prisma/backups/
 opencode.json
+
+# Test artifacts
+Test*.xlsx
+*_Upload_Test_Workbook.xlsx
+
+# debug/scratch files
+debug/
+tmp/
+test-*
+test-*/
+tmpscratch/
+
+# backend test/debug scripts
+backend/count.*
+backend/db-check.*
+backend/list-*.ts
+backend/parse-*.js
+backend/preview.json
+backend/test-*.ts
+backend/test-*.js
+backend/testexcel*.ts
+
+# backend import preview/result dumps
+backend/import*.json

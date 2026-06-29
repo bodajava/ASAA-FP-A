@@ -13,6 +13,7 @@ import {
   SheetAnalysis, ColumnMapping, ImportExecutionResult, SheetImportResult,
   ImportError, ImportReport, SheetValidationResult, RowLevelReport,
 } from './types/excel-integration.types';
+import { normalizeImportError } from './import-utils';
 
 export interface ImportChunk {
   sheetName: string;
@@ -249,18 +250,14 @@ export class StreamingImportService {
   ): Record<string, unknown> {
     const mapped: Record<string, unknown> = {};
 
+    // Inject companyId base field
+    mapped.companyId = companyId;
+
     for (const [excelCol, erpField] of columnMap) {
       const value = row[excelCol];
       if (value !== null && value !== undefined && value !== '') {
         mapped[erpField] = this.coerceType(value, erpField);
       }
-    }
-
-    // Always inject companyId
-    mapped.companyId = companyId;
-
-    if (mapped.fiscalYear) {
-      console.error(`[DEBUG] mapRow produced: ${JSON.stringify(mapped)}`);
     }
 
     return mapped;
@@ -295,14 +292,18 @@ export class StreamingImportService {
   /** Normalise importType strings to valid Prisma ImportType enum values */
   private normaliseImportType(raw: string): string {
     const v = String(raw).toLowerCase().trim();
-    const validTypes = ['actual', 'budget', 'forecast', 'master_data'];
+    // These MUST match the Prisma ImportType enum exactly
+    const validTypes = ['sales', 'expenses', 'production', 'inventory', 'gl', 'cashflow', 'payroll'];
     if (validTypes.includes(v)) return v;
-    // Map common synonyms
-    if (/sale|revenue|actual|real/i.test(v)) return 'actual';
-    if (/budget|plan|target/i.test(v)) return 'budget';
-    if (/forecast|proj/i.test(v)) return 'forecast';
-    if (/master|ref|data/i.test(v)) return 'master_data';
-    return 'actual'; // safe fallback
+    // Map common synonyms → valid enum values
+    if (/sale|revenue|actual|real/i.test(v)) return 'sales';
+    if (/expense|cost|purchase/i.test(v)) return 'expenses';
+    if (/prod(uction)?|manufactur/i.test(v)) return 'production';
+    if (/inventor|stock/i.test(v)) return 'inventory';
+    if (/gl|general.?ledger/i.test(v)) return 'gl';
+    if (/cash|flow/i.test(v)) return 'cashflow';
+    if (/payroll|salary|wage/i.test(v)) return 'payroll';
+    return 'sales'; // safest default
   }
 
   /** Normalise sourceSystem strings to valid Prisma ImportSourceSystem enum values */
@@ -812,7 +813,8 @@ export class StreamingImportService {
           rowReports.push({ rowNumber: rowNums[i], status: 'success', createdId: created.id });
           count++;
         } catch (err: any) {
-          rowReports.push({ rowNumber: rowNums[i], status: 'failed', reason: err.message || String(err) });
+          const { friendly } = normalizeImportError(err);
+          rowReports.push({ rowNumber: rowNums[i], status: 'failed', reason: friendly });
         }
       }
       return { count, rowReports };

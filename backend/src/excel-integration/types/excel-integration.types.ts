@@ -229,6 +229,7 @@ export interface SheetImportResult {
   durationMs: number;
   rowsPerSecond: number;
   errors: ImportError[];
+  rowReports: RowLevelReport[];
 }
 
 export interface ImportError {
@@ -241,10 +242,19 @@ export interface ImportError {
 /* ─── Reports ───────────────────────────────────────────────────────────── */
 
 export interface ImportReport {
-  type: 'validation' | 'error' | 'duplicate' | 'summary';
+  type: 'validation' | 'error' | 'duplicate' | 'summary' | 'row_level';
   sheetName: string;
   title: string;
   data: unknown[];
+}
+
+export interface RowLevelReport {
+  sheetName: string;
+  rowNumber: number;
+  module: string;
+  status: 'success' | 'failed' | 'skipped';
+  reason?: string;
+  createdId?: bigint | null;
 }
 
 /* ─── Analysis Warning ──────────────────────────────────────────────────── */

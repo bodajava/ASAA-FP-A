@@ -31,6 +31,20 @@ export interface RowPreviewResult {
   errors: string[];
 }
 
+export interface PreviewSummary {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  skippedRows: number;
+  warnings: string[];
+  errors: string[];
+}
+
+export interface PreviewResponse {
+  summary: PreviewSummary;
+  rows: RowPreviewResult[];
+}
+
 export interface MissingDataItem {
   type: string;
   value: string;
@@ -145,6 +159,8 @@ export function ImportModal({
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<number | null>(null);
+  const [fileExtension, setFileExtension] = useState<string>('');
+  const [detectedType, setDetectedType] = useState<string>('');
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -207,13 +223,64 @@ export function ImportModal({
   // -------------------------------------------------------------------------
   // File selection
   // -------------------------------------------------------------------------
+  const ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+  const BLOCKED_EXTENSIONS = ['.numbers'];
+
+  function getFileExtension(name: string): string {
+    const dot = name.lastIndexOf('.');
+    return dot >= 0 ? name.substring(dot).toLowerCase() : '';
+  }
+
+  function getDetectedType(name: string): string {
+    const ext = getFileExtension(name);
+    switch (ext) {
+      case '.csv': return 'CSV';
+      case '.xlsx': return 'Excel (.xlsx)';
+      case '.xls': return 'Excel (.xls)';
+      default: return ext.toUpperCase() || 'Unknown';
+    }
+  }
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const ext = getFileExtension(file.name);
+
+    // Reject .numbers files explicitly
+    if (BLOCKED_EXTENSIONS.includes(ext)) {
+      toastError(
+        'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
+      );
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
+    // Reject unsupported extensions
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      toastError(
+        `This file type (${ext || 'unknown'}) is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.`,
+      );
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
+    // Reject files over 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      toastError(
+        `The uploaded file exceeds the allowed size (50 MB). Your file is ${formatFileSize(file.size)}. Please reduce the file size and try again.`,
+      );
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
     setFileName(file.name);
     setFileSize(file.size);
+    setFileExtension(ext);
+    setDetectedType(getDetectedType(file.name));
     setPreviewRows(null);
     setImportStats(null);
+    setStructuredError(null);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -264,6 +331,7 @@ export function ImportModal({
       const res = await api.post(
         `/imports/preview`,
         { module, fileContent, fileName },
+        { timeout: 120_000 },
       );
       clearInterval(progressInterval);
       setProgress(100);
@@ -275,7 +343,26 @@ export function ImportModal({
       if (data && typeof data === 'object' && 'errorType' in data && 'missingData' in data) {
         setStructuredError(data as ImportErrorResponse);
         setPreviewRows(null);
+      } else if (data && typeof data === 'object' && 'summary' in data && 'rows' in data) {
+        // New format: { summary, rows }
+        const previewResponse = data as PreviewResponse;
+        if (previewResponse.rows.length === 0) {
+          setStructuredError({
+            success: false,
+            errorType: 'EMPTY_FILE',
+            title: t('import.error.title', { module: moduleLabel }),
+            message: 'The uploaded template contains no data. Please add at least one row before importing.',
+            steps: [],
+            missingData: [],
+            actions: [],
+          });
+          setPreviewRows(null);
+        } else {
+          setPreviewRows(previewResponse.rows as RowPreviewResult[]);
+          setStructuredError(null);
+        }
       } else if (Array.isArray(data)) {
+        // Legacy format: array of rows
         setPreviewRows(data as RowPreviewResult[]);
         setStructuredError(null);
       }
@@ -283,11 +370,22 @@ export function ImportModal({
       clearInterval(progressInterval);
       setProgress(0);
       setProgressStatus('');
-      const msg =
-        axios.isAxiosError(err)
-          ? ((err.response?.data as { message?: string })?.message ??
-            t('component.importModal.previewFailed'))
-          : t('component.importModal.previewFailed');
+
+      let msg = t('component.importModal.previewFailed');
+
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const serverMessage = (err.response?.data as { message?: string })?.message;
+
+        if (status === 413) {
+          msg = t('import.error.fileTooLarge');
+        } else if (status === 400 && serverMessage) {
+          msg = serverMessage;
+        } else if (serverMessage) {
+          msg = serverMessage;
+        }
+      }
+
       toastError(msg);
     } finally {
       setIsPreviewing(false);
@@ -355,11 +453,20 @@ export function ImportModal({
       clearInterval(progressInterval);
       setProgress(0);
       setProgressStatus('');
-      const msg =
-        axios.isAxiosError(err)
-          ? ((err.response?.data as { message?: string })?.message ??
-            t('component.importModal.importFailed'))
-          : t('component.importModal.importFailed');
+
+      let msg = t('component.importModal.importFailed');
+
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const serverMessage = (err.response?.data as { message?: string })?.message;
+
+        if (status === 413) {
+          msg = t('import.error.fileTooLarge');
+        } else if (serverMessage) {
+          msg = serverMessage;
+        }
+      }
+
       toastError(msg);
     } finally {
       setIsCommitting(false);
@@ -385,6 +492,8 @@ export function ImportModal({
     setPreviewRows(null);
     setFileName(null);
     setFileSize(null);
+    setFileExtension('');
+    setDetectedType('');
     setFileContent(null);
     setImportStats(null);
     setStructuredError(null);
@@ -555,11 +664,18 @@ export function ImportModal({
                     <p className="text-sm font-medium text-emerald-600">
                       {fileName}
                     </p>
-                    {fileSize != null && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatFileSize(fileSize)}
-                      </p>
-                    )}
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                      {detectedType && (
+                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          {detectedType}
+                        </span>
+                      )}
+                      {fileSize != null && (
+                        <span className="text-xs text-muted-foreground">
+                          {formatFileSize(fileSize)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center">

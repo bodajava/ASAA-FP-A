@@ -10,6 +10,7 @@ import {
   HttpCode, HttpStatus, BadRequestException, Headers, Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { ExcelIntegrationService } from './excel-integration.service';
 import { TemplateGeneratorService } from './template-generator.service';
@@ -18,6 +19,17 @@ import {
   ImportExecutionResult, ImportPlan,
 } from './types/excel-integration.types';
 
+const ALLOWED_EXTENSIONS = /\.(xlsx|xls|csv)$/i;
+const ALLOWED_MIMETYPES = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+  'application/csv',
+  'text/x-csv',
+  'application/x-csv',
+];
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+
 interface MulterFile {
   fieldname: string;
   originalname: string;
@@ -25,6 +37,23 @@ interface MulterFile {
   mimetype: string;
   buffer: Buffer;
   size: number;
+}
+
+function multerConfig() {
+  return {
+    storage: memoryStorage(),
+    limits: { fileSize: MAX_FILE_SIZE_BYTES },
+    fileFilter: (_req: Express.Request, file: MulterFile, cb: (error: Error | null, acceptFile: boolean) => void) => {
+      const ext = file.originalname.toLowerCase();
+      if (!ALLOWED_EXTENSIONS.test(ext)) {
+        cb(new BadRequestException(
+          'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
+        ), false);
+        return;
+      }
+      cb(null, true);
+    },
+  };
 }
 
 @Controller('api/v1/excel-integration')
@@ -37,7 +66,7 @@ export class ExcelIntegrationController {
   /* ─── POST /analyze — Analyze workbook structure ────────────────────── */
 
   @Post('analyze')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
   async analyze(
     @UploadedFile() file: MulterFile,
   ): Promise<WorkbookAnalysis> {
@@ -45,14 +74,11 @@ export class ExcelIntegrationController {
       throw new BadRequestException('No file uploaded');
     }
 
-    const allowedTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv',
-    ];
-
-    if (!allowedTypes.includes(file.mimetype) && !file.originalname.match(/\.(xlsx|xls|csv)$/i)) {
-      throw new BadRequestException('File must be an Excel (.xlsx, .xls) or CSV file');
+    const ext = file.originalname.toLowerCase();
+    if (!ext.match(/\.(xlsx|xls|csv)$/)) {
+      throw new BadRequestException(
+        'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
+      );
     }
 
     return this.service.analyzeWorkbook(file.buffer, file.originalname);
@@ -61,7 +87,7 @@ export class ExcelIntegrationController {
   /* ─── POST /map — Analyze + map to ERP modules ─────────────────────── */
 
   @Post('map')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
   async mapToModules(
     @UploadedFile() file: MulterFile,
   ): Promise<{
@@ -83,7 +109,7 @@ export class ExcelIntegrationController {
   /* ─── POST /validate — Analyze + validate data ─────────────────────── */
 
   @Post('validate')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
   async validate(
     @UploadedFile() file: MulterFile,
   ): Promise<{
@@ -120,7 +146,7 @@ export class ExcelIntegrationController {
   /* ─── POST /plan — Build import plan ────────────────────────────────── */
 
   @Post('plan')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
   async plan(
     @UploadedFile() file: MulterFile,
   ): Promise<{
@@ -144,7 +170,7 @@ export class ExcelIntegrationController {
   /* ─── POST /import — Full pipeline: analyze + map + validate + import ── */
 
   @Post('import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', multerConfig()))
   @HttpCode(HttpStatus.OK)
   async import(
     @UploadedFile() file: MulterFile,
@@ -214,6 +240,7 @@ export class ExcelIntegrationController {
   async downloadClientWorkbook(@Res() res: Response) {
     const buffer = await this.templateGenerator.generateFullWorkbook();
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Length', String(buffer.length));
     res.setHeader('Content-Disposition', 'attachment; filename="Harvest_Workbook_Template.xlsx"');
     return res.status(HttpStatus.OK).send(buffer);
   }
@@ -225,6 +252,7 @@ export class ExcelIntegrationController {
     try {
       const buffer = await this.templateGenerator.generateModuleTemplate(module);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Length', String(buffer.length));
       res.setHeader('Content-Disposition', `attachment; filename="${module}_template.xlsx"`);
       return res.status(HttpStatus.OK).send(buffer);
     } catch {

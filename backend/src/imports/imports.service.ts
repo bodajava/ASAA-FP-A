@@ -34,6 +34,23 @@ export interface RowPreviewResult {
   errors: string[];
 }
 
+export interface PreviewSummary {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  skippedRows: number;
+  warnings: string[];
+  errors: string[];
+}
+
+export interface PreviewResponse {
+  summary: PreviewSummary;
+  rows: RowPreviewResult[];
+}
+
+const SUPPORTED_EXTENSIONS = /\.(csv|xlsx|xls)$/i;
+const UNSUPPORTED_EXTENSIONS = /\.(numbers)$/i;
+
 @Injectable()
 export class ImportsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -432,12 +449,32 @@ export class ImportsService {
     fileName: string,
     companyId: bigint,
     tenantId: bigint,
-  ): Promise<RowPreviewResult[]> {
+  ): Promise<PreviewResponse> {
+    // Validate file extension
+    const lowerName = fileName.toLowerCase();
+    if (UNSUPPORTED_EXTENSIONS.test(lowerName)) {
+      throw new BadRequestException(
+        'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
+      );
+    }
+    if (!SUPPORTED_EXTENSIONS.test(lowerName)) {
+      throw new BadRequestException(
+        'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
+      );
+    }
+
+    const isCsv = lowerName.endsWith('.csv');
     let rawRows: RowData[] = [];
-    const isCsv = fileName.toLowerCase().endsWith('.csv');
 
     try {
       const buffer = Buffer.from(fileContent, 'base64');
+
+      if (buffer.length === 0) {
+        throw new BadRequestException(
+          'The uploaded file is empty. Please add data before importing.',
+        );
+      }
+
       if (isCsv) {
         rawRows = csvParse(buffer.toString('utf-8'), {
           columns: true,
@@ -451,11 +488,21 @@ export class ImportsService {
         rawRows = XLSX.utils.sheet_to_json(sheet);
       }
     } catch (err: unknown) {
+      if (err instanceof BadRequestException) throw err;
       const message = err instanceof Error ? err.message : String(err);
       throw new BadRequestException(`Failed to parse file: ${message}`);
     }
 
+    // Detect header-only (empty data)
+    if (rawRows.length === 0) {
+      throw new BadRequestException(
+        'The uploaded template contains no data. Please add at least one row before importing.',
+      );
+    }
+
     const results: RowPreviewResult[] = [];
+    const allWarnings: string[] = [];
+    const allErrors: string[] = [];
 
     for (let i = 0; i < rawRows.length; i++) {
       const rawRow = rawRows[i];
@@ -474,6 +521,10 @@ export class ImportsService {
       // Validate references and columns according to module
       await this.validateRow(module, resolved, companyId, tenantId, errors);
 
+      if (errors.length > 0) {
+        allErrors.push(...errors.map(e => `Row ${i + 1}: ${e}`));
+      }
+
       results.push({
         index: i + 1,
         data: rawRow,
@@ -482,7 +533,16 @@ export class ImportsService {
       });
     }
 
-    return results;
+    const summary: PreviewSummary = {
+      totalRows: rawRows.length,
+      validRows: results.filter(r => r.isValid).length,
+      invalidRows: results.filter(r => !r.isValid).length,
+      skippedRows: 0,
+      warnings: allWarnings,
+      errors: allErrors,
+    };
+
+    return { summary, rows: results };
   }
 
   private async validateRow(

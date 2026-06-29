@@ -137,6 +137,7 @@ export class ImportsController {
     try {
       const buffer = await this.templateGenerator.generateModuleTemplate(module, companyId);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Length', String(buffer.length));
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="${module}_template.xlsx"`,
@@ -145,12 +146,14 @@ export class ImportsController {
     } catch {
       // Fallback to CSV if module not found in client schema
       const csv = this.importsService.getSampleCSV(module);
-      res.setHeader('Content-Type', 'text/csv');
+      const csvBuffer = Buffer.from(csv, 'utf-8');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Length', String(csvBuffer.length));
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="${module}_template.csv"`,
       );
-      return res.status(HttpStatus.OK).send(csv);
+      return res.status(HttpStatus.OK).send(csvBuffer);
     }
   }
 
@@ -200,9 +203,11 @@ export class ImportsController {
       dto.type === 'skipped'
         ? `${dto.module}_skipped_rows.csv`
         : `${dto.module}_error_rows.csv`;
-    res.setHeader('Content-Type', 'text/csv');
+    const csvBuffer = Buffer.from(csv, 'utf-8');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Length', String(csvBuffer.length));
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    return res.status(HttpStatus.OK).send(csv);
+    return res.status(HttpStatus.OK).send(csvBuffer);
   }
 
   @Post('commit')

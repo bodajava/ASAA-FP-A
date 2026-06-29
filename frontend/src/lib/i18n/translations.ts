@@ -1882,7 +1882,13 @@ export type TranslationKey =
   | 'import.error.downloadEmptyTemplate'
   | 'import.error.downloadMasterData'
   | 'import.error.goToExcelIntegration'
-  | 'import.error.importBudgetLines';
+  | 'import.error.importBudgetLines'
+  | 'import.error.fileTooLarge'
+  | 'import.error.unsupportedFileType'
+  | 'import.error.numbersNotSupported'
+  | 'import.error.emptyFile'
+  | 'import.error.emptyTemplate'
+  | 'import.error.summary';
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -3840,6 +3846,12 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.error.downloadMasterData': 'Download Master Data Templates',
     'import.error.goToExcelIntegration': 'Go to Excel Integration',
     'import.error.importBudgetLines': 'Required import order for Budget Lines:',
+    'import.error.fileTooLarge': 'The uploaded file exceeds the allowed size (50 MB).',
+    'import.error.unsupportedFileType': 'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
+    'import.error.numbersNotSupported': 'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
+    'import.error.emptyFile': 'The uploaded file is empty. Please add data before importing.',
+    'import.error.emptyTemplate': 'The uploaded template contains no data. Please add at least one row before importing.',
+    'import.error.summary': 'Import Summary',
   },
 
   ar: {
@@ -5797,5 +5809,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.error.downloadMasterData': 'تنزيل قوالب البيانات الأساسية',
     'import.error.goToExcelIntegration': 'الانتقال إلى تكامل Excel',
     'import.error.importBudgetLines': 'ترتيب الاستيراد المطلوب لبنود الميزانية:',
+    'import.error.fileTooLarge': 'الملف المرفوع يتجاوز الحجم المسموح به (50 ميجا).',
+    'import.error.unsupportedFileType': 'نوع الملف غير مدعوم. يرجى رفع ملف CSV (.csv) أو Excel (.xlsx, .xls).',
+    'import.error.numbersNotSupported': 'ملفات Apple Numbers (.numbers) غير مدعومة. يرجى تصدير جدول البيانات كـ CSV أو Excel (.xlsx) قبل الرفع.',
+    'import.error.emptyFile': 'الملف المرفوع فارغ. يرجى إضافة بيانات قبل الاستيراد.',
+    'import.error.emptyTemplate': 'القالب المرفوع لا يحتوي على بيانات. يرجى إضافة صف واحد على الأقل قبل الاستيراد.',
+    'import.error.summary': 'ملخص الاستيراد',
   },
 };

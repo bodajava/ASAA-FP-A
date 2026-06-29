@@ -2,9 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, HttpException, HttpStatus } from '@nestjs/common';
 import { ClearCacheInterceptor } from './common/interceptors/clear-cache.interceptor';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 
 // Globally configure BigInt serialization for JSON responses
 Object.defineProperty(BigInt.prototype, 'toJSON', {
@@ -49,6 +51,14 @@ async function bootstrap() {
 
   // Cookie parser for reading HttpOnly cookies
   app.use(cookieParser());
+
+  // Configure body parser limits for file uploads (base64 in JSON body)
+  // 50MB limit — base64 encoding adds ~33% overhead, so this supports ~37MB raw files
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+
+  // Global exception filter for friendly error messages
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Set global API prefix
   app.setGlobalPrefix('api');

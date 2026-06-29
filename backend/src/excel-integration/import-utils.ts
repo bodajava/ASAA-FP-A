@@ -513,7 +513,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
     materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
     customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
-    transactionDate: ['transactiondate', 'transaction_date', 'transaction date', 'date'],
+    transactionDate: ['transactiondate', 'transaction_date', 'transaction date', 'date', 'actualdate', 'actual date', 'invoicedate', 'invoice date', 'postingdate', 'posting date', 'trxdate', 'trx_date'],
     quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
     unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
     amount: ['amount', 'value', 'actualamt', 'actual_amt'],
@@ -937,13 +937,19 @@ export function coerceValue(
   }
 
   if (
-    /^(quantity|qty|amount|price|cost|rate|total|plannedQty|actualQty|outputQty|targetValue|creditLimit|discountPct|discountAmt|budgetAmt|actualCost|incrementalRevenue|roi|salePrice|standardCost|purchasePrice|unitPrice|fiscalYear|fiscalYearStartMonth|periodMonth|paymentTerms|leadTimeDays|weightKg|plannedQty|actualQty|estimatedCost|actualCost|safetyStockQty|reorderPoint)$/i.test(
+    /^(quantity|qty|amount|price|cost|rate|total|plannedQty|actualQty|outputQty|targetValue|creditLimit|discountPct|discountAmt|budgetAmt|actualCost|incrementalRevenue|roi|salePrice|standardCost|purchasePrice|unitPrice|fiscalYear|fiscalYearStartMonth|periodMonth|leadTimeDays|weightKg|plannedQty|actualQty|estimatedCost|actualCost|safetyStockQty|reorderPoint)$/i.test(
       field,
     )
   ) {
     const cleaned = strVal.replace(/[$€£EGP,\s]/g, '');
     const num = Number(cleaned);
     return isNaN(num) ? null : num;
+  }
+
+  if (field === 'paymentTerms' || field === 'payment_terms') {
+    const cleaned = strVal.replace(/[$€£EGP,\s]/g, '').replace(/days/gi, '').trim();
+    const num = Number(cleaned);
+    return isNaN(num) ? 30 : num;
   }
 
   if (/date|period|createdAt|updatedAt/i.test(field)) {
@@ -959,6 +965,8 @@ export function coerceValue(
 
   if (field === 'customerType' || field === 'customer_type') {
     const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    if (v === 'retailer' || v === 'retail' || v === 'b2c') return 'retail';
+    if (v === 'distributor' || v === 'distributer' || v === 'wholesale' || v === 'wholesaler' || v === 'b2b') return 'distributor';
     const valid = ['retail', 'wholesale', 'distributor', 'internal', 'other'];
     return valid.includes(v) ? v : 'retail';
   }
@@ -1189,6 +1197,7 @@ export function normalizeImportError(
 
   if (
     msg.includes('PrismaClientKnownRequestError') ||
+    msg.includes('PrismaClientValidationError') ||
     msg.includes('Invalid `prisma')
   ) {
     if (msg.includes('is missing')) {
@@ -1197,6 +1206,20 @@ export function normalizeImportError(
       return {
         friendly: `The row is missing required field: ${field}`,
         category: 'missing_required',
+      };
+    }
+    // Catch enum errors from Prisma
+    if (msg.includes('Invalid enum value') || msg.includes('Expected ')) {
+      return {
+        friendly: 'The value is not allowed for this field',
+        category: 'invalid_enum',
+      };
+    }
+    // Catch invalid argument type (e.g. string where Int expected)
+    if (msg.includes('Expected Int') || msg.includes('Expected Float') || msg.includes('Expected Boolean')) {
+      return {
+        friendly: 'A numeric value was entered as text. Please check the cell format.',
+        category: 'validation_error',
       };
     }
     return {

@@ -880,11 +880,13 @@ export class ClientWorkbookImportService {
     for (const name of workbook.SheetNames) {
       const ws = workbook.Sheets[name];
       if (!ws) continue;
-      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-        range: 1,
-      });
-      if (data.length === 0) continue;
-      const headers = Object.keys(data[0]).map((h) => h.toUpperCase().trim());
+      // Read only the first row (headers) — avoid deserialising thousands of rows
+      const firstRow = (XLSX.utils.sheet_to_json<unknown[]>(ws, {
+        header: 1,
+        range: 0,
+        defval: null,
+      }) as unknown[][])[0] ?? [];
+      const headers = firstRow.map((h) => String(h ?? '').toUpperCase().trim());
       const matched = patterns.filter((p) => headers.includes(p));
       if (matched.length >= 3) return true;
     }
@@ -1432,8 +1434,12 @@ export class ClientWorkbookImportService {
     userId: bigint,
     result: WorkbookImportResult,
   ): Promise<void> {
+    // Build sheet→module index once (reads only first row of each sheet)
+    const sheetIndex = this.buildSheetModuleIndex(workbook);
+    this.logger.log(`Sheet index built: ${JSON.stringify(Object.fromEntries([...sheetIndex.entries()].map(([k,v])=>[v,k])))}`);
+
     // Phase 0: Import all generic master data sheets (Companies, Sites, Units, etc.)
-    await this.importAllGenericSheets(workbook, companyId, userId, result, {});
+    await this.importAllGenericSheets(workbook, companyId, userId, result, {}, sheetIndex);
 
     // Phase 1: Extract master data from 'Data' sheet
     const masterData = this.extractDataSheetMasterData(workbook);
@@ -1607,6 +1613,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap, materialMap },
+      sheetIndex,
     );
     await this.importDrillDown(
       workbook,
@@ -1628,6 +1635,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1636,6 +1644,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1644,6 +1653,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1652,6 +1662,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       {},
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1660,6 +1671,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       {},
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1668,6 +1680,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap, materialMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1676,6 +1689,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap, materialMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1684,6 +1698,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap, materialMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1692,6 +1707,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       { productMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1700,6 +1716,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       {},
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1708,6 +1725,7 @@ export class ClientWorkbookImportService {
       userId,
       result,
       {},
+      sheetIndex,
     );
   }
 
@@ -1719,6 +1737,7 @@ export class ClientWorkbookImportService {
     userId: bigint,
     result: WorkbookImportResult,
     context: Record<string, any>,
+    sheetIndex?: Map<string, string>,
   ): Promise<void> {
     const masterModules = [
       'companies',
@@ -1740,6 +1759,7 @@ export class ClientWorkbookImportService {
         userId,
         result,
         context,
+        sheetIndex,
       );
     }
   }
@@ -1754,9 +1774,10 @@ export class ClientWorkbookImportService {
       productMap?: Map<number, bigint>;
       materialMap?: Map<number, bigint>;
     },
+    sheetIndex?: Map<string, string>,
   ): Promise<void> {
-    // Find the sheet that maps to this module
-    const sheetName = this.findSheetByModule(workbook, module);
+    // Find the sheet that maps to this module (use cached index if available)
+    const sheetName = sheetIndex?.get(module) ?? this.findSheetByModule(workbook, module);
     if (!sheetName) {
       return; // Sheet not found, skip silently
     }
@@ -1792,6 +1813,15 @@ export class ClientWorkbookImportService {
     }
 
     // Special handling for certain modules
+    if (module === 'rawmaterialprices') {
+      // Delegate to the dedicated HRV Material Prices handler or skip if no HRV sheet
+      if (workbook.Sheets['HRV M.Price']) {
+        const emptyMap = new Map<number, bigint>();
+        await this.importHrvMaterialPrices(workbook, companyId, emptyMap, result);
+      }
+      return;
+    }
+
     if (module === 'priceList') {
       await this.importPriceListSheet(workbook, companyId, result);
       return;
@@ -1936,6 +1966,9 @@ export class ClientWorkbookImportService {
       try {
         let existingId: bigint | null = null;
         if (module === 'companies') {
+          // Never set tenantId from Excel — always keep existing tenant
+          delete (prismaClean as any).tenantId;
+          delete (prismaClean as any).tenant_id;
           await this.prisma.company.update({ where: { id: companyId }, data: prismaClean as Prisma.CompanyUpdateInput });
         } else if (module === 'sites') {
           const name = String(prismaClean.name);
@@ -2102,6 +2135,33 @@ export class ClientWorkbookImportService {
       rawmaterialprices: this.prisma.rawMaterialPrice,
     };
     return map[module] || null;
+  }
+
+  /**
+   * Build a module→sheetName index in a SINGLE pass over the workbook.
+   * Reads only the first row of each sheet (not the full data) so it is O(S)
+   * rather than O(S×M) when called repeatedly from importGenericSheetByModule.
+   */
+  private buildSheetModuleIndex(workbook: XLSX.WorkBook): Map<string, string> {
+    const index = new Map<string, string>(); // module → sheetName
+    for (const name of workbook.SheetNames) {
+      const ws = workbook.Sheets[name];
+      if (!ws) continue;
+      // Read only first row to extract header keys (header:1 → string[][])
+      const firstRows = (XLSX.utils.sheet_to_json<unknown[]>(ws, {
+        range: 0,
+        header: 1,
+        defval: null,
+      }) as unknown[][]);
+      const headerKeys: string[] = firstRows.length > 0
+        ? firstRows[0].map((v) => (v ? String(v).trim() : ''))
+        : [];
+      const mod = this.mapSheetToModuleV3(name, headerKeys);
+      if (mod && mod !== 'unknown') {
+        index.set(mod, name);
+      }
+    }
+    return index;
   }
 
   private findSheetByModule(
@@ -2307,13 +2367,18 @@ export class ClientWorkbookImportService {
       const productSku = sku;
       const productName = descCol >= 0 ? String(row[descCol] || '').trim() : '';
 
+      // Find customer code column if present
+      const custCol = h.findIndex((v: string) => v.includes('custom') || v.includes('client') || v.includes('cust'));
+      const customerCode = custCol >= 0 ? String(row[custCol] || '').trim() : '';
+
       // Aggregate discounts across month columns
       for (let j = 2; j < Math.min(h.length, row.length); j++) {
         const val = typeof row[j] === 'number' ? (row[j] as number) : 0;
         if (val === 0) continue;
         if (h[j].includes('discount')) {
           // Create a promotion record
-          const promoName = `${productSku} discount - ${productName || 'Customer'}`;
+          const discountCust = customerCode || productName || 'Customer';
+          const promoName = `${productSku} discount - ${discountCust}`;
           try {
             await this.prisma.promotion.create({
               data: {
@@ -2386,8 +2451,13 @@ export class ClientWorkbookImportService {
 
     // Map headers to fields using aliases
     const fieldMap: Record<string, string> = {};
-    const moduleAliases = MODULE_COLUMN_ALIASES['accounts'] || {};
     for (const h of headers) {
+      const hl = h.toLowerCase().trim();
+      // Map date-like headers to transactionDate
+      if (/^(date|transaction\s*date|actual\s*date|invoice\s*date|posting\s*date|trx_date|trxdate)$/i.test(hl.replace(/[\s_-]+/g, '').trim())) {
+        fieldMap[h] = 'transactionDate';
+        continue;
+      }
       const field =
         normalizeHeaderToField(h, 'accounts') ||
         normalizeHeaderToField(h, 'customers') ||
@@ -2488,23 +2558,36 @@ export class ClientWorkbookImportService {
           if (prod) productId = prod.id;
         }
 
+        // Find transactionDate from mapped fields
+        let trxDateVal = row['transactionDate'] || row['Transaction Date'] || row['Actual Date'] || row['Invoice Date'] || row['Posting Date'];
+        if (!trxDateVal) {
+          for (const [header, field] of Object.entries(fieldMap)) {
+            if (field === 'transactionDate') {
+              trxDateVal = row[header];
+              break;
+            }
+          }
+        }
+
         // Create actual line with connect pattern
         await this.prisma.actualLine.create({
           data: {
             actualImportId: actualImport.id,
             accountId,
             productId,
-            transactionDate: row['transactionDate']
-              ? this.parseExcelDate(row['transactionDate'])
+            transactionDate: trxDateVal
+              ? this.parseExcelDate(trxDateVal)
               : new Date(),
-            amount: Number(row['amount'] || row['Amount'] || 0),
+            amount: mapped['amount']
+              ? Number(mapped['amount'])
+              : Number(row['amount'] || row['Amount'] || 0),
             quantity:
-              row['quantity'] || row['Quantity']
-                ? Number(row['quantity'] || row['Quantity'])
+              mapped['quantity'] || row['quantity'] || row['Quantity']
+                ? Number(mapped['quantity'] || row['quantity'] || row['Quantity'])
                 : 0,
             referenceNo:
-              row['referenceNo'] || row['Reference No']
-                ? String(row['referenceNo'] || row['Reference No'])
+              mapped['referenceNo'] || mapped['referenceNo'] || row['referenceNo'] || row['Reference No']
+                ? String(mapped['referenceNo'] || row['referenceNo'] || row['Reference No'])
                 : null,
           },
         });

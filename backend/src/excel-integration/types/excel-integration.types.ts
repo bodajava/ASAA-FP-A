@@ -49,7 +49,15 @@ export interface ColumnAnalysis {
   /** Normalized key (lowercase, no spaces/underscores) for internal matching */
   normalizedKey: string;
   /** Auto-detected data type */
-  detectedType: 'string' | 'number' | 'date' | 'boolean' | 'currency' | 'percentage' | 'mixed' | 'empty';
+  detectedType:
+    | 'string'
+    | 'number'
+    | 'date'
+    | 'boolean'
+    | 'currency'
+    | 'percentage'
+    | 'mixed'
+    | 'empty';
   /** Whether this column contains any data */
   hasData: boolean;
   /** Percentage of non-null values (0-100) */
@@ -96,7 +104,15 @@ export interface ValidationRule {
   /** Column this rule applies to */
   column: string;
   /** Rule type */
-  type: 'required' | 'unique' | 'type' | 'range' | 'enum' | 'fk' | 'format' | 'custom';
+  type:
+    | 'required'
+    | 'unique'
+    | 'type'
+    | 'range'
+    | 'enum'
+    | 'fk'
+    | 'format'
+    | 'custom';
   /** Human-readable description */
   description: string;
   /** For 'type' rules: expected type */
@@ -260,7 +276,13 @@ export interface RowLevelReport {
 /* ─── Analysis Warning ──────────────────────────────────────────────────── */
 
 export interface AnalysisWarning {
-  type: 'new_column' | 'empty_column' | 'type_mismatch' | 'low_fill_rate' | 'orphan_data' | 'naming_convention';
+  type:
+    | 'new_column'
+    | 'empty_column'
+    | 'type_mismatch'
+    | 'low_fill_rate'
+    | 'orphan_data'
+    | 'naming_convention';
   column?: string;
   message: string;
   suggestion: string;
@@ -300,13 +322,26 @@ export interface SheetPreviewEntry {
   validRows: number;
   errors: SheetPreviewError[];
   warnings: string[];
-  status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
+  status:
+    | 'ready'
+    | 'needs_mapping'
+    | 'unsupported'
+    | 'reference'
+    | 'instruction'
+    | 'ignored';
 }
 
 export interface SheetPreviewError {
   row: number;
   column: string;
-  reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+  reason:
+    | 'missing_required'
+    | 'invalid_enum'
+    | 'missing_dependency'
+    | 'unsupported_sheet'
+    | 'database_insert_error'
+    | 'duplicate'
+    | 'validation_error';
   message: string;
   value: unknown;
 }

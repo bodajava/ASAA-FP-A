@@ -30,14 +30,11 @@ describe('Import/Export Pipeline (e2e)', () => {
   /* ─── Helpers ──────────────────────────────────────────────────────── */
 
   function createCsvBuffer(headers: string[], rows: string[][]): Buffer {
-    const lines = [headers.join(','), ...rows.map(r => r.join(','))];
+    const lines = [headers.join(','), ...rows.map((r) => r.join(','))];
     return Buffer.from(lines.join('\n'), 'utf-8');
   }
 
-  function createXlsxBuffer(
-    headers: string[],
-    rows: string[][],
-  ): Buffer {
+  function createXlsxBuffer(headers: string[], rows: string[][]): Buffer {
     const wb = XLSX.utils.book_new();
     const data = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -253,7 +250,9 @@ describe('Import/Export Pipeline (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toContain('spreadsheetml');
-      expect(res.headers['content-disposition']).toContain('sites_template.xlsx');
+      expect(res.headers['content-disposition']).toContain(
+        'sites_template.xlsx',
+      );
       expect(res.headers['content-length']).toBeDefined();
     });
 
@@ -264,7 +263,9 @@ describe('Import/Export Pipeline (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toContain('spreadsheetml');
-      expect(res.headers['content-disposition']).toContain('accounts_template.xlsx');
+      expect(res.headers['content-disposition']).toContain(
+        'accounts_template.xlsx',
+      );
     });
 
     it('should return 400 for unknown module', async () => {

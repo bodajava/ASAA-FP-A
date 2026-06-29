@@ -9,7 +9,10 @@ function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
     // Fallback for local dev mode
-    return Buffer.from('harvest-local-dev-key-32-chars!!!!!', 'utf-8').slice(0, 32);
+    return Buffer.from('harvest-local-dev-key-32-chars!!!!!', 'utf-8').slice(
+      0,
+      32,
+    );
   }
   return Buffer.from(key, 'hex').length === 32
     ? Buffer.from(key, 'hex')
@@ -49,7 +52,9 @@ export class AiSettingsService {
 
   async getSettings(companyId: bigint) {
     try {
-      const row = await this.prisma.$queryRawUnsafe<{ api_key_encrypted: string; model: string; is_enabled: boolean }[]>(
+      const row = await this.prisma.$queryRawUnsafe<
+        { api_key_encrypted: string; model: string; is_enabled: boolean }[]
+      >(
         `SELECT api_key_encrypted, model, is_enabled FROM ai_settings WHERE company_id = ? LIMIT 1`,
         companyId,
       );
@@ -112,7 +117,9 @@ export class AiSettingsService {
         dto.isEnabled !== false,
       );
 
-      this.logger.log(`AI settings updated for company ${companyId.toString()}`);
+      this.logger.log(
+        `AI settings updated for company ${companyId.toString()}`,
+      );
 
       return {
         success: true,
@@ -120,7 +127,9 @@ export class AiSettingsService {
         apiKeyMasked: maskApiKey(dto.apiKey),
       };
     } catch (error) {
-      this.logger.error(`Failed to save AI settings: ${error instanceof Error ? error.message : 'unknown'}`);
+      this.logger.error(
+        `Failed to save AI settings: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
       return {
         success: false,
         message: 'Failed to save AI settings',
@@ -130,12 +139,17 @@ export class AiSettingsService {
 
   async getApiKeyForCompany(companyId: bigint): Promise<string | null> {
     // First check env fallback
-    if (process.env.ALLOW_ENV_GEMINI_FALLBACK === 'true' && process.env.GEMINI_API_KEY) {
+    if (
+      process.env.ALLOW_ENV_GEMINI_FALLBACK === 'true' &&
+      process.env.GEMINI_API_KEY
+    ) {
       return process.env.GEMINI_API_KEY;
     }
 
     try {
-      const row = await this.prisma.$queryRawUnsafe<{ api_key_encrypted: string; is_enabled: boolean }[]>(
+      const row = await this.prisma.$queryRawUnsafe<
+        { api_key_encrypted: string; is_enabled: boolean }[]
+      >(
         `SELECT api_key_encrypted, is_enabled FROM ai_settings WHERE company_id = ? AND is_enabled = true LIMIT 1`,
         companyId,
       );

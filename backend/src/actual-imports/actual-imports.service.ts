@@ -161,14 +161,16 @@ export class ActualImportsService {
         where: { companyId },
         select: { id: true, code: true },
       }),
-    ]).then(([accounts, sites, costCenters, products, materials, customers]) => ({
-      accounts: new Map(accounts.map((a) => [a.code, a.id])),
-      sites: new Map(sites.map((s) => [s.name, s.id])),
-      costCenters: new Map(costCenters.map((c) => [c.code ?? '', c.id])),
-      products: new Map(products.map((p) => [p.sku, p.id])),
-      materials: new Map(materials.map((m) => [m.code, m.id])),
-      customers: new Map(customers.map((c) => [c.code, c.id])),
-    }));
+    ]).then(
+      ([accounts, sites, costCenters, products, materials, customers]) => ({
+        accounts: new Map(accounts.map((a) => [a.code, a.id])),
+        sites: new Map(sites.map((s) => [s.name, s.id])),
+        costCenters: new Map(costCenters.map((c) => [c.code ?? '', c.id])),
+        products: new Map(products.map((p) => [p.sku, p.id])),
+        materials: new Map(materials.map((m) => [m.code, m.id])),
+        customers: new Map(customers.map((c) => [c.code, c.id])),
+      }),
+    );
   }
 
   private resolveFromMap(
@@ -291,7 +293,10 @@ export class ActualImportsService {
       );
     }
 
-    const config = JSON.parse(mapping.mappingConfig) as Record<string, string | undefined>;
+    const config = JSON.parse(mapping.mappingConfig) as Record<
+      string,
+      string | undefined
+    >;
     const results: MappedRowResult[] = [];
 
     // Pre-load all entities for this company into maps (6 queries instead of N*6)
@@ -305,7 +310,10 @@ export class ActualImportsService {
       const accountCodeVal = accountCodeKey ? row[accountCodeKey] : undefined;
       let accountId: bigint | null = null;
       if (accountCodeVal !== undefined && accountCodeVal !== null) {
-        accountId = this.resolveFromMap(maps.accounts, accountCodeVal.toString());
+        accountId = this.resolveFromMap(
+          maps.accounts,
+          accountCodeVal.toString(),
+        );
         if (!accountId) {
           errors.push(
             `Account code "${accountCodeVal}" not found under this company`,
@@ -341,7 +349,10 @@ export class ActualImportsService {
         costCenterCodeVal !== null &&
         costCenterCodeVal !== ''
       ) {
-        costCenterId = this.resolveFromMap(maps.costCenters, costCenterCodeVal.toString());
+        costCenterId = this.resolveFromMap(
+          maps.costCenters,
+          costCenterCodeVal.toString(),
+        );
         if (!costCenterId) {
           errors.push(
             `Cost center code "${costCenterCodeVal}" not found under this company`,
@@ -357,7 +368,10 @@ export class ActualImportsService {
         productSkuVal !== null &&
         productSkuVal !== ''
       ) {
-        productId = this.resolveFromMap(maps.products, productSkuVal.toString());
+        productId = this.resolveFromMap(
+          maps.products,
+          productSkuVal.toString(),
+        );
         if (!productId) {
           errors.push(
             `Product SKU "${productSkuVal}" not found under this company`,
@@ -375,7 +389,10 @@ export class ActualImportsService {
         materialCodeVal !== null &&
         materialCodeVal !== ''
       ) {
-        materialId = this.resolveFromMap(maps.materials, materialCodeVal.toString());
+        materialId = this.resolveFromMap(
+          maps.materials,
+          materialCodeVal.toString(),
+        );
         if (!materialId) {
           errors.push(
             `Material code "${materialCodeVal}" not found under this company`,
@@ -393,7 +410,10 @@ export class ActualImportsService {
         customerCodeVal !== null &&
         customerCodeVal !== ''
       ) {
-        customerId = this.resolveFromMap(maps.customers, customerCodeVal.toString());
+        customerId = this.resolveFromMap(
+          maps.customers,
+          customerCodeVal.toString(),
+        );
         if (!customerId) {
           errors.push(
             `Customer code "${customerCodeVal}" not found under this company`,

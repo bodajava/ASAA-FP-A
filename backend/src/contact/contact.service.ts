@@ -22,8 +22,13 @@ export class ContactService {
       try {
         return await this.sendViaSmtp(dto);
       } catch (error) {
-        this.logger.error(`SMTP send failed: ${error instanceof Error ? error.message : 'unknown'}`);
-        return this.saveLocally(dto, `SMTP failed: ${error instanceof Error ? error.message : 'unknown'}`);
+        this.logger.error(
+          `SMTP send failed: ${error instanceof Error ? error.message : 'unknown'}`,
+        );
+        return this.saveLocally(
+          dto,
+          `SMTP failed: ${error instanceof Error ? error.message : 'unknown'}`,
+        );
       }
     }
 
@@ -37,14 +42,17 @@ export class ContactService {
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT ?? '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
-      auth: process.env.SMTP_USER ? {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      } : undefined,
+      auth: process.env.SMTP_USER
+        ? {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          }
+        : undefined,
     });
 
     const supportEmailTo = process.env.SUPPORT_EMAIL_TO || 'bbido761@gmail.com';
-    const smtpFrom = process.env.SMTP_FROM || 'Harvest Support <no-reply@harvest.local>';
+    const smtpFrom =
+      process.env.SMTP_FROM || 'Harvest Support <no-reply@harvest.local>';
 
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -73,11 +81,20 @@ export class ContactService {
       html: htmlBody,
     });
 
-    this.logger.log(`Support email sent to ${supportEmailTo} from ${dto.email}`);
-    return { success: true, method: 'smtp', message: 'Email sent successfully' };
+    this.logger.log(
+      `Support email sent to ${supportEmailTo} from ${dto.email}`,
+    );
+    return {
+      success: true,
+      method: 'smtp',
+      message: 'Email sent successfully',
+    };
   }
 
-  private async saveLocally(dto: ContactDto, reason: string): Promise<MailResult> {
+  private async saveLocally(
+    dto: ContactDto,
+    reason: string,
+  ): Promise<MailResult> {
     this.logger.log(`Saving support message locally (${reason})`);
 
     try {
@@ -110,10 +127,13 @@ export class ContactService {
       return {
         success: true,
         method: 'local',
-        message: 'Support message saved locally. Configure SMTP to send emails automatically.',
+        message:
+          'Support message saved locally. Configure SMTP to send emails automatically.',
       };
     } catch (error) {
-      this.logger.error(`Failed to save support message locally: ${error instanceof Error ? error.message : 'unknown'}`);
+      this.logger.error(
+        `Failed to save support message locally: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
       return {
         success: false,
         method: 'local',

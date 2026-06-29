@@ -10,8 +10,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { ImportSourceSystem, ImportType, Prisma } from '@prisma/client';
 import {
-  SheetAnalysis, ColumnMapping, ImportExecutionResult, SheetImportResult,
-  ImportError, ImportReport, SheetValidationResult, RowLevelReport,
+  SheetAnalysis,
+  ColumnMapping,
+  ImportExecutionResult,
+  SheetImportResult,
+  ImportError,
+  ImportReport,
+  SheetValidationResult,
+  RowLevelReport,
 } from './types/excel-integration.types';
 import { normalizeImportError } from './import-utils';
 
@@ -32,9 +38,18 @@ export class StreamingImportService {
   /* ─── Main Import Entry ────────────────────────────────────────────── */
 
   async importWorkbook(
-    sheets: { analysis: SheetAnalysis; rows: Record<string, unknown>[]; mappings: ColumnMapping[]; validation: SheetValidationResult }[],
+    sheets: {
+      analysis: SheetAnalysis;
+      rows: Record<string, unknown>[];
+      mappings: ColumnMapping[];
+      validation: SheetValidationResult;
+    }[],
     companyId: bigint,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userId?: bigint | null },
+    options?: {
+      dryRun?: boolean;
+      skipErrors?: boolean;
+      userId?: bigint | null;
+    },
   ): Promise<ImportExecutionResult> {
     const startTime = Date.now();
     const results: SheetImportResult[] = [];
@@ -42,11 +57,16 @@ export class StreamingImportService {
     let totalFailed = 0;
     let totalSkipped = 0;
 
-    this.logger.log(`Starting import for ${sheets.length} sheets, company=${companyId}`);
+    this.logger.log(
+      `Starting import for ${sheets.length} sheets, company=${companyId}`,
+    );
 
     for (const sheet of sheets) {
       // Skip sheets with no valid rows
-      if (sheet.validation.validRows === 0 && sheet.validation.errors.length > 0) {
+      if (
+        sheet.validation.validRows === 0 &&
+        sheet.validation.errors.length > 0
+      ) {
         results.push({
           sheetName: sheet.analysis.sheetName,
           erpModule: sheet.analysis.erpModule,
@@ -84,9 +104,16 @@ export class StreamingImportService {
     // Generate reports
     const reports = this.generateReports(results);
 
-    const status = totalFailed === 0 ? 'completed' : totalInserted > 0 ? 'partial' : 'failed';
+    const status =
+      totalFailed === 0
+        ? 'completed'
+        : totalInserted > 0
+          ? 'partial'
+          : 'failed';
 
-    this.logger.log(`Import complete: ${status}, ${totalInserted} inserted, ${totalFailed} failed, ${totalSkipped} skipped in ${durationMs}ms`);
+    this.logger.log(
+      `Import complete: ${status}, ${totalInserted} inserted, ${totalFailed} failed, ${totalSkipped} skipped in ${durationMs}ms`,
+    );
 
     return {
       sheets: results,
@@ -104,14 +131,25 @@ export class StreamingImportService {
   /* ─── Import a Single Sheet ────────────────────────────────────────── */
 
   private async importSheet(
-    sheet: { analysis: SheetAnalysis; rows: Record<string, unknown>[]; mappings: ColumnMapping[]; validation: SheetValidationResult },
+    sheet: {
+      analysis: SheetAnalysis;
+      rows: Record<string, unknown>[];
+      mappings: ColumnMapping[];
+      validation: SheetValidationResult;
+    },
     companyId: bigint,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userId?: bigint | null },
+    options?: {
+      dryRun?: boolean;
+      skipErrors?: boolean;
+      userId?: bigint | null;
+    },
   ): Promise<SheetImportResult> {
     const startTime = Date.now();
     const { analysis, rows, mappings, validation } = sheet;
 
-    this.logger.log(`Importing sheet "${analysis.sheetName}" → module "${analysis.erpModule}" (${rows.length} rows)`);
+    this.logger.log(
+      `Importing sheet "${analysis.sheetName}" → module "${analysis.erpModule}" (${rows.length} rows)`,
+    );
 
     const rowReports: RowLevelReport[] = [];
 
@@ -132,12 +170,15 @@ export class StreamingImportService {
           rowNumber: i + 2,
           module: analysis.erpModule,
           status: 'skipped',
-          reason: 'Dry run'
-        }))
+          reason: 'Dry run',
+        })),
       };
     }
 
-    if (analysis.erpModule === 'informational' || analysis.erpModule === 'generic') {
+    if (
+      analysis.erpModule === 'informational' ||
+      analysis.erpModule === 'generic'
+    ) {
       return {
         sheetName: analysis.sheetName,
         erpModule: analysis.erpModule,
@@ -154,68 +195,129 @@ export class StreamingImportService {
           rowNumber: i + 2,
           module: analysis.erpModule,
           status: 'skipped',
-          reason: 'Informational or generic sheet skipped'
-        }))
+          reason: 'Informational or generic sheet skipped',
+        })),
       };
     }
 
     if (validation.errorRowNumbers.length > 0) {
-      validation.errorRowNumbers.forEach(rowNum => {
-        rowReports.push({ sheetName: analysis.sheetName, rowNumber: rowNum, module: analysis.erpModule, status: 'skipped', reason: 'Validation error' });
+      validation.errorRowNumbers.forEach((rowNum) => {
+        rowReports.push({
+          sheetName: analysis.sheetName,
+          rowNumber: rowNum,
+          module: analysis.erpModule,
+          status: 'skipped',
+          reason: 'Validation error',
+        });
       });
     }
 
     const rowsWithMeta = rows.map((row, i) => ({ row, rowNum: i + 2 }));
 
     const importableRows = options?.skipErrors
-      ? rowsWithMeta.filter(x => !validation.errorRowNumbers.includes(x.rowNum))
-      : validation.errorRowNumbers.length === 0 ? rowsWithMeta : [];
+      ? rowsWithMeta.filter(
+          (x) => !validation.errorRowNumbers.includes(x.rowNum),
+        )
+      : validation.errorRowNumbers.length === 0
+        ? rowsWithMeta
+        : [];
 
     if (validation.errorRowNumbers.length > 0 && !options?.skipErrors) {
-      rowsWithMeta.filter(x => !validation.errorRowNumbers.includes(x.rowNum)).forEach(x => {
-        rowReports.push({ sheetName: analysis.sheetName, rowNumber: x.rowNum, module: analysis.erpModule, status: 'skipped', reason: 'Skipped due to validation errors elsewhere in sheet' });
-      });
+      rowsWithMeta
+        .filter((x) => !validation.errorRowNumbers.includes(x.rowNum))
+        .forEach((x) => {
+          rowReports.push({
+            sheetName: analysis.sheetName,
+            rowNumber: x.rowNum,
+            module: analysis.erpModule,
+            status: 'skipped',
+            reason: 'Skipped due to validation errors elsewhere in sheet',
+          });
+        });
     }
 
     const columnMap = this.buildColumnMap(mappings);
-    this.logger.debug(`[DEBUG] columnMap: ${JSON.stringify(Array.from(columnMap.entries()))}`);
+    this.logger.debug(
+      `[DEBUG] columnMap: ${JSON.stringify(Array.from(columnMap.entries()))}`,
+    );
     let insertedCount = 0;
     const errors: ImportError[] = [];
     const chunks = this.chunkArray(importableRows, this.CHUNK_SIZE);
 
     for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
       const chunkMeta = chunks[chunkIdx];
-      const mappedChunk = chunkMeta.map(x => this.mapRow(x.row, columnMap, companyId));
+      const mappedChunk = chunkMeta.map((x) =>
+        this.mapRow(x.row, columnMap, companyId),
+      );
 
       try {
-        const resolvedChunk = await this.resolveReferences(analysis.erpModule, mappedChunk, companyId, options);
-        const cleanedChunk = resolvedChunk.map(row => this.stripUnknownFields(analysis.erpModule, row));
-        const result = await this.insertChunk(analysis.erpModule, cleanedChunk, chunkMeta.map(x => x.rowNum));
+        const resolvedChunk = await this.resolveReferences(
+          analysis.erpModule,
+          mappedChunk,
+          companyId,
+          options,
+        );
+        const cleanedChunk = resolvedChunk.map((row) =>
+          this.stripUnknownFields(analysis.erpModule, row),
+        );
+        const result = await this.insertChunk(
+          analysis.erpModule,
+          cleanedChunk,
+          chunkMeta.map((x) => x.rowNum),
+        );
         insertedCount += result.count;
-        
-        result.rowReports.forEach(r => {
-          rowReports.push({ sheetName: analysis.sheetName, module: analysis.erpModule, ...r });
+
+        result.rowReports.forEach((r) => {
+          rowReports.push({
+            sheetName: analysis.sheetName,
+            module: analysis.erpModule,
+            ...r,
+          });
           if (r.status === 'failed') {
-            errors.push({ row: r.rowNumber, column: '_insert', message: r.reason || 'Insert failed', value: null });
+            errors.push({
+              row: r.rowNumber,
+              column: '_insert',
+              message: r.reason || 'Insert failed',
+              value: null,
+            });
           }
         });
 
-        this.logger.debug(`Chunk ${chunkIdx + 1}/${chunks.length}: inserted ${result.count} rows`);
+        this.logger.debug(
+          `Chunk ${chunkIdx + 1}/${chunks.length}: inserted ${result.count} rows`,
+        );
       } catch (err: any) {
         this.logger.error(`Chunk ${chunkIdx + 1} failed: ${err}`);
-        chunkMeta.forEach(x => {
-          errors.push({ row: x.rowNum, column: '_chunk', message: `Batch insert failed: ${err.message || err}`, value: null });
-          rowReports.push({ sheetName: analysis.sheetName, rowNumber: x.rowNum, module: analysis.erpModule, status: 'failed', reason: `Batch insert failed: ${err.message || err}` });
+        chunkMeta.forEach((x) => {
+          errors.push({
+            row: x.rowNum,
+            column: '_chunk',
+            message: `Batch insert failed: ${err.message || err}`,
+            value: null,
+          });
+          rowReports.push({
+            sheetName: analysis.sheetName,
+            rowNumber: x.rowNum,
+            module: analysis.erpModule,
+            status: 'failed',
+            reason: `Batch insert failed: ${err.message || err}`,
+          });
         });
       }
     }
 
     const durationMs = Date.now() - startTime;
     const rowsPerSecond = rows.length / (durationMs / 1000);
-    const failedRows = rows.length - insertedCount - (rows.length - importableRows.length);
+    const failedRows =
+      rows.length - insertedCount - (rows.length - importableRows.length);
     const skippedRows = rows.length - importableRows.length;
 
-    const status = insertedCount === rows.length ? 'completed' : insertedCount > 0 ? 'partial' : 'failed';
+    const status =
+      insertedCount === rows.length
+        ? 'completed'
+        : insertedCount > 0
+          ? 'partial'
+          : 'failed';
 
     return {
       sheetName: analysis.sheetName,
@@ -269,7 +371,11 @@ export class StreamingImportService {
     const str = String(value).trim();
 
     // Numeric fields
-    if (/^(price|cost|amount|rate|quantity|qty|total|sum|value|target|actual|weight|limit|discount|yield|wastage|budget|forecast|planned|fiscalyear|fiscalmonth|periodmonth|period|unitprice)$/i.test(field)) {
+    if (
+      /^(price|cost|amount|rate|quantity|qty|total|sum|value|target|actual|weight|limit|discount|yield|wastage|budget|forecast|planned|fiscalyear|fiscalmonth|periodmonth|period|unitprice)$/i.test(
+        field,
+      )
+    ) {
       const cleaned = str.replace(/[$€£EGP,\s]/g, '');
       const num = Number(cleaned);
       return isNaN(num) ? str : num;
@@ -293,7 +399,15 @@ export class StreamingImportService {
   private normaliseImportType(raw: string): string {
     const v = String(raw).toLowerCase().trim();
     // These MUST match the Prisma ImportType enum exactly
-    const validTypes = ['sales', 'expenses', 'production', 'inventory', 'gl', 'cashflow', 'payroll'];
+    const validTypes = [
+      'sales',
+      'expenses',
+      'production',
+      'inventory',
+      'gl',
+      'cashflow',
+      'payroll',
+    ];
     if (validTypes.includes(v)) return v;
     // Map common synonyms → valid enum values
     if (/sale|revenue|actual|real/i.test(v)) return 'sales';
@@ -309,7 +423,18 @@ export class StreamingImportService {
   /** Normalise sourceSystem strings to valid Prisma ImportSourceSystem enum values */
   private normaliseSourceSystem(raw: string): string {
     const v = String(raw).toLowerCase().trim();
-    const validSystems = ['excel', 'oracle', 'sap', 'erp', 'pms', 'odoo', 'pos', 'woocommerce', 'manual', 'api'];
+    const validSystems = [
+      'excel',
+      'oracle',
+      'sap',
+      'erp',
+      'pms',
+      'odoo',
+      'pos',
+      'woocommerce',
+      'manual',
+      'api',
+    ];
     if (validSystems.includes(v)) return v;
     return 'excel'; // safe fallback
   }
@@ -320,7 +445,11 @@ export class StreamingImportService {
     module: string,
     rows: Record<string, unknown>[],
     companyId: bigint,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userId?: bigint | null }
+    options?: {
+      dryRun?: boolean;
+      skipErrors?: boolean;
+      userId?: bigint | null;
+    },
   ): Promise<Record<string, unknown>[]> {
     if (rows.length === 0) return rows;
 
@@ -329,7 +458,9 @@ export class StreamingImportService {
     if (options?.userId) {
       defaultUserId = options.userId;
     } else {
-      const admin = await this.prisma.user.findFirst({ where: { email: 'admin@idiibi.com' } });
+      const admin = await this.prisma.user.findFirst({
+        where: { email: 'admin@idiibi.com' },
+      });
       if (admin) defaultUserId = admin.id;
     }
 
@@ -350,13 +481,14 @@ export class StreamingImportService {
       bomRecipeRef: new Set<string>(),
     };
 
-    rows.forEach(row => {
+    rows.forEach((row) => {
       if (row.productSku) uniqueIds.productSku.add(String(row.productSku));
-      
+
       const siteVal = row.siteCode || row.sitename || row.siteName;
       if (siteVal) uniqueIds.siteCode.add(String(siteVal));
 
-      const ccVal = row.costCenterCode || row.costcentername || row.costCenterName;
+      const ccVal =
+        row.costCenterCode || row.costcentername || row.costCenterName;
       if (ccVal) uniqueIds.costCenterCode.add(String(ccVal));
 
       const accVal = row.accountCode || row.accountname || row.accountName;
@@ -373,17 +505,25 @@ export class StreamingImportService {
 
       const unitVal = row.unit || row.unitname || row.unitName;
       if (unitVal) uniqueIds.unit.add(String(unitVal));
-      
-      if (row.productCategoryId) uniqueIds.categoryId.add(String(row.productCategoryId));
-      if (row.forecastCycleName) uniqueIds.forecastCycleName.add(String(row.forecastCycleName));
-      if (row.budgetCycleName) uniqueIds.budgetCycleName.add(String(row.budgetCycleName));
+
+      if (row.productCategoryId)
+        uniqueIds.categoryId.add(String(row.productCategoryId));
+      if (row.forecastCycleName)
+        uniqueIds.forecastCycleName.add(String(row.forecastCycleName));
+      if (row.budgetCycleName)
+        uniqueIds.budgetCycleName.add(String(row.budgetCycleName));
       // Normalise enums BEFORE building the ref key so lookup and substitution keys always match
       if (row.sourceSystem) {
         const normSource = this.normaliseSourceSystem(String(row.sourceSystem));
-        const normImportType = this.normaliseImportType(String(row.importType || 'actual'));
-        uniqueIds.sourceSystem.add(`${normSource}|${normImportType}|${row.periodFrom || ''}|${row.periodTo || ''}`);
+        const normImportType = this.normaliseImportType(
+          String(row.importType || 'actual'),
+        );
+        uniqueIds.sourceSystem.add(
+          `${normSource}|${normImportType}|${row.periodFrom || ''}|${row.periodTo || ''}`,
+        );
       }
-      if (module === 'bomlines' && row.productSku && row.version) uniqueIds.bomRecipeRef.add(`${row.productSku}|${row.version}`);
+      if (module === 'bomlines' && row.productSku && row.version)
+        uniqueIds.bomRecipeRef.add(`${row.productSku}|${row.version}`);
     });
 
     const lookups = {
@@ -405,18 +545,32 @@ export class StreamingImportService {
     // Bulk resolve and auto-create
     if (uniqueIds.productSku.size > 0) {
       const vals = Array.from(uniqueIds.productSku);
-      const items = await this.prisma.product.findMany({ where: { companyId, OR: [{ sku: { in: vals } }, { name: { in: vals } }] } });
-      items.forEach(i => {
+      const items = await this.prisma.product.findMany({
+        where: {
+          companyId,
+          OR: [{ sku: { in: vals } }, { name: { in: vals } }],
+        },
+      });
+      items.forEach((i) => {
         if (i.sku) lookups.product.set(i.sku, i.id);
         if (i.name) lookups.product.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.product.has(v));
+      const missing = vals.filter((v) => !lookups.product.has(v));
       if (missing.length > 0) {
         await this.prisma.product.createMany({
-          data: missing.map(val => ({ companyId, sku: val, name: `Product ${val}` }))
+          data: missing.map((val) => ({
+            companyId,
+            sku: val,
+            name: `Product ${val}`,
+          })),
         });
-        const created = await this.prisma.product.findMany({ where: { companyId, OR: [{ sku: { in: missing } }, { name: { in: missing } }] } });
-        created.forEach(i => {
+        const created = await this.prisma.product.findMany({
+          where: {
+            companyId,
+            OR: [{ sku: { in: missing } }, { name: { in: missing } }],
+          },
+        });
+        created.forEach((i) => {
           if (i.sku) lookups.product.set(i.sku, i.id);
           if (i.name) lookups.product.set(i.name, i.id);
         });
@@ -425,17 +579,25 @@ export class StreamingImportService {
 
     if (uniqueIds.siteCode.size > 0) {
       const vals = Array.from(uniqueIds.siteCode);
-      const items = await this.prisma.site.findMany({ where: { companyId, name: { in: vals } } });
-      items.forEach(i => {
+      const items = await this.prisma.site.findMany({
+        where: { companyId, name: { in: vals } },
+      });
+      items.forEach((i) => {
         if (i.name) lookups.site.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.site.has(v));
+      const missing = vals.filter((v) => !lookups.site.has(v));
       if (missing.length > 0) {
         await this.prisma.site.createMany({
-          data: missing.map(val => ({ companyId, name: val, type: 'branch' as any }))
+          data: missing.map((val) => ({
+            companyId,
+            name: val,
+            type: 'branch' as any,
+          })),
         });
-        const created = await this.prisma.site.findMany({ where: { companyId, name: { in: missing } } });
-        created.forEach(i => {
+        const created = await this.prisma.site.findMany({
+          where: { companyId, name: { in: missing } },
+        });
+        created.forEach((i) => {
           if (i.name) lookups.site.set(i.name, i.id);
         });
       }
@@ -443,18 +605,33 @@ export class StreamingImportService {
 
     if (uniqueIds.costCenterCode.size > 0) {
       const vals = Array.from(uniqueIds.costCenterCode);
-      const items = await this.prisma.costCenter.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
-      items.forEach(i => {
+      const items = await this.prisma.costCenter.findMany({
+        where: {
+          companyId,
+          OR: [{ code: { in: vals } }, { name: { in: vals } }],
+        },
+      });
+      items.forEach((i) => {
         if (i.code) lookups.costCenter.set(i.code, i.id);
         if (i.name) lookups.costCenter.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.costCenter.has(v));
+      const missing = vals.filter((v) => !lookups.costCenter.has(v));
       if (missing.length > 0) {
         await this.prisma.costCenter.createMany({
-          data: missing.map(val => ({ companyId, code: val, name: `Cost Center ${val}`, type: 'other' as any }))
+          data: missing.map((val) => ({
+            companyId,
+            code: val,
+            name: `Cost Center ${val}`,
+            type: 'other' as any,
+          })),
         });
-        const created = await this.prisma.costCenter.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
-        created.forEach(i => {
+        const created = await this.prisma.costCenter.findMany({
+          where: {
+            companyId,
+            OR: [{ code: { in: missing } }, { name: { in: missing } }],
+          },
+        });
+        created.forEach((i) => {
           if (i.code) lookups.costCenter.set(i.code, i.id);
           if (i.name) lookups.costCenter.set(i.name, i.id);
         });
@@ -463,23 +640,38 @@ export class StreamingImportService {
 
     if (uniqueIds.accountCode.size > 0) {
       const vals = Array.from(uniqueIds.accountCode);
-      const items = await this.prisma.account.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
-      items.forEach(i => {
+      const items = await this.prisma.account.findMany({
+        where: {
+          companyId,
+          OR: [{ code: { in: vals } }, { name: { in: vals } }],
+        },
+      });
+      items.forEach((i) => {
         if (i.code) lookups.account.set(i.code, i.id);
         if (i.name) lookups.account.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.account.has(v));
+      const missing = vals.filter((v) => !lookups.account.has(v));
       if (missing.length > 0) {
-        const toCreate = missing.map(val => {
+        const toCreate = missing.map((val) => {
           // Attempt to find name and type from row
-          const row = rows.find(r => String(r.accountCode) === val || String(r.accountName) === val || String(r.accountname) === val);
+          const row = rows.find(
+            (r) =>
+              String(r.accountCode) === val ||
+              String(r.accountName) === val ||
+              String(r.accountname) === val,
+          );
           const type = row?.type ? String(row.type).toLowerCase() : 'expense';
           const name = row?.name ? String(row.name) : `Account ${val}`;
           return { companyId, code: val, name, type: type as any };
         });
         await this.prisma.account.createMany({ data: toCreate });
-        const created = await this.prisma.account.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
-        created.forEach(i => {
+        const created = await this.prisma.account.findMany({
+          where: {
+            companyId,
+            OR: [{ code: { in: missing } }, { name: { in: missing } }],
+          },
+        });
+        created.forEach((i) => {
           if (i.code) lookups.account.set(i.code, i.id);
           if (i.name) lookups.account.set(i.name, i.id);
         });
@@ -488,18 +680,32 @@ export class StreamingImportService {
 
     if (uniqueIds.customerCode.size > 0) {
       const vals = Array.from(uniqueIds.customerCode);
-      const items = await this.prisma.customer.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
-      items.forEach(i => {
+      const items = await this.prisma.customer.findMany({
+        where: {
+          companyId,
+          OR: [{ code: { in: vals } }, { name: { in: vals } }],
+        },
+      });
+      items.forEach((i) => {
         if (i.code) lookups.customer.set(i.code, i.id);
         if (i.name) lookups.customer.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.customer.has(v));
+      const missing = vals.filter((v) => !lookups.customer.has(v));
       if (missing.length > 0) {
         await this.prisma.customer.createMany({
-          data: missing.map(val => ({ companyId, code: val, name: `Customer ${val}` }))
+          data: missing.map((val) => ({
+            companyId,
+            code: val,
+            name: `Customer ${val}`,
+          })),
         });
-        const created = await this.prisma.customer.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
-        created.forEach(i => {
+        const created = await this.prisma.customer.findMany({
+          where: {
+            companyId,
+            OR: [{ code: { in: missing } }, { name: { in: missing } }],
+          },
+        });
+        created.forEach((i) => {
           if (i.code) lookups.customer.set(i.code, i.id);
           if (i.name) lookups.customer.set(i.name, i.id);
         });
@@ -508,18 +714,22 @@ export class StreamingImportService {
 
     if (uniqueIds.supplierCode.size > 0) {
       const vals = Array.from(uniqueIds.supplierCode);
-      const items = await this.prisma.supplier.findMany({ where: { companyId, name: { in: vals } } });
-      items.forEach(i => {
+      const items = await this.prisma.supplier.findMany({
+        where: { companyId, name: { in: vals } },
+      });
+      items.forEach((i) => {
         if (i.name) lookups.supplier.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.supplier.has(v));
+      const missing = vals.filter((v) => !lookups.supplier.has(v));
       if (missing.length > 0) {
         if (!options?.dryRun) {
           await this.prisma.supplier.createMany({
-            data: missing.map(val => ({ companyId, name: val }))
+            data: missing.map((val) => ({ companyId, name: val })),
           });
-          const created = await this.prisma.supplier.findMany({ where: { companyId, name: { in: missing } } });
-          created.forEach(i => {
+          const created = await this.prisma.supplier.findMany({
+            where: { companyId, name: { in: missing } },
+          });
+          created.forEach((i) => {
             if (i.name) lookups.supplier.set(i.name, i.id);
           });
         }
@@ -528,18 +738,32 @@ export class StreamingImportService {
 
     if (uniqueIds.materialCode.size > 0) {
       const vals = Array.from(uniqueIds.materialCode);
-      const items = await this.prisma.material.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
-      items.forEach(i => {
+      const items = await this.prisma.material.findMany({
+        where: {
+          companyId,
+          OR: [{ code: { in: vals } }, { name: { in: vals } }],
+        },
+      });
+      items.forEach((i) => {
         if (i.code) lookups.material.set(i.code, i.id);
         if (i.name) lookups.material.set(i.name, i.id);
       });
-      const missing = vals.filter(v => !lookups.material.has(v));
+      const missing = vals.filter((v) => !lookups.material.has(v));
       if (missing.length > 0) {
         await this.prisma.material.createMany({
-          data: missing.map(val => ({ companyId, code: val, name: `Material ${val}` }))
+          data: missing.map((val) => ({
+            companyId,
+            code: val,
+            name: `Material ${val}`,
+          })),
         });
-        const created = await this.prisma.material.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
-        created.forEach(i => {
+        const created = await this.prisma.material.findMany({
+          where: {
+            companyId,
+            OR: [{ code: { in: missing } }, { name: { in: missing } }],
+          },
+        });
+        created.forEach((i) => {
           if (i.code) lookups.material.set(i.code, i.id);
           if (i.name) lookups.material.set(i.name, i.id);
         });
@@ -548,57 +772,88 @@ export class StreamingImportService {
 
     if (uniqueIds.unit.size > 0) {
       const names = Array.from(uniqueIds.unit);
-      const items = await this.prisma.unit.findMany({ where: { companyId, name: { in: names } } });
-      items.forEach(i => lookups.unit.set(i.name, i.id));
-      const missing = names.filter(n => !lookups.unit.has(n));
+      const items = await this.prisma.unit.findMany({
+        where: { companyId, name: { in: names } },
+      });
+      items.forEach((i) => lookups.unit.set(i.name, i.id));
+      const missing = names.filter((n) => !lookups.unit.has(n));
       if (missing.length > 0) {
         await this.prisma.unit.createMany({
-          data: missing.map(name => ({ companyId, name, symbol: name.substring(0, 3) }))
+          data: missing.map((name) => ({
+            companyId,
+            name,
+            symbol: name.substring(0, 3),
+          })),
         });
-        const created = await this.prisma.unit.findMany({ where: { companyId, name: { in: missing } } });
-        created.forEach(i => lookups.unit.set(i.name, i.id));
+        const created = await this.prisma.unit.findMany({
+          where: { companyId, name: { in: missing } },
+        });
+        created.forEach((i) => lookups.unit.set(i.name, i.id));
       }
     }
-    
+
     if (uniqueIds.categoryId.size > 0) {
       const names = Array.from(uniqueIds.categoryId);
-      const items = await this.prisma.productCategory.findMany({ where: { companyId, name: { in: names } } });
-      items.forEach(i => lookups.category.set(i.name, i.id));
-      const missing = names.filter(n => !lookups.category.has(n));
+      const items = await this.prisma.productCategory.findMany({
+        where: { companyId, name: { in: names } },
+      });
+      items.forEach((i) => lookups.category.set(i.name, i.id));
+      const missing = names.filter((n) => !lookups.category.has(n));
       if (missing.length > 0) {
         await this.prisma.productCategory.createMany({
-          data: missing.map(name => ({ companyId, name }))
+          data: missing.map((name) => ({ companyId, name })),
         });
-        const created = await this.prisma.productCategory.findMany({ where: { companyId, name: { in: missing } } });
-        created.forEach(i => lookups.category.set(i.name, i.id));
+        const created = await this.prisma.productCategory.findMany({
+          where: { companyId, name: { in: missing } },
+        });
+        created.forEach((i) => lookups.category.set(i.name, i.id));
       }
     }
 
     if (uniqueIds.forecastCycleName.size > 0) {
       const names = Array.from(uniqueIds.forecastCycleName);
-      const items = await this.prisma.forecastCycle.findMany({ where: { companyId, name: { in: names } } });
-      items.forEach(i => lookups.forecastCycle.set(i.name, i.id));
-      const missing = names.filter(n => !lookups.forecastCycle.has(n));
+      const items = await this.prisma.forecastCycle.findMany({
+        where: { companyId, name: { in: names } },
+      });
+      items.forEach((i) => lookups.forecastCycle.set(i.name, i.id));
+      const missing = names.filter((n) => !lookups.forecastCycle.has(n));
       if (missing.length > 0 && !options?.dryRun) {
         await this.prisma.forecastCycle.createMany({
-          data: missing.map(name => ({ companyId, name, status: 'draft', fiscalYear: new Date().getFullYear(), basePeriod: new Date() }))
+          data: missing.map((name) => ({
+            companyId,
+            name,
+            status: 'draft',
+            fiscalYear: new Date().getFullYear(),
+            basePeriod: new Date(),
+          })),
         });
-        const created = await this.prisma.forecastCycle.findMany({ where: { companyId, name: { in: missing } } });
-        created.forEach(i => lookups.forecastCycle.set(i.name, i.id));
+        const created = await this.prisma.forecastCycle.findMany({
+          where: { companyId, name: { in: missing } },
+        });
+        created.forEach((i) => lookups.forecastCycle.set(i.name, i.id));
       }
     }
 
     if (uniqueIds.budgetCycleName.size > 0) {
       const names = Array.from(uniqueIds.budgetCycleName);
-      const items = await this.prisma.budgetCycle.findMany({ where: { companyId, name: { in: names } } });
-      items.forEach(i => lookups.budgetCycle.set(i.name, i.id));
-      const missing = names.filter(n => !lookups.budgetCycle.has(n));
+      const items = await this.prisma.budgetCycle.findMany({
+        where: { companyId, name: { in: names } },
+      });
+      items.forEach((i) => lookups.budgetCycle.set(i.name, i.id));
+      const missing = names.filter((n) => !lookups.budgetCycle.has(n));
       if (missing.length > 0 && !options?.dryRun) {
         await this.prisma.budgetCycle.createMany({
-          data: missing.map(name => ({ companyId, name, status: 'draft' as any, fiscalYear: new Date().getFullYear() }))
+          data: missing.map((name) => ({
+            companyId,
+            name,
+            status: 'draft' as any,
+            fiscalYear: new Date().getFullYear(),
+          })),
         });
-        const created = await this.prisma.budgetCycle.findMany({ where: { companyId, name: { in: missing } } });
-        created.forEach(i => lookups.budgetCycle.set(i.name, i.id));
+        const created = await this.prisma.budgetCycle.findMany({
+          where: { companyId, name: { in: missing } },
+        });
+        created.forEach((i) => lookups.budgetCycle.set(i.name, i.id));
       }
     }
 
@@ -608,10 +863,12 @@ export class StreamingImportService {
         const [sku, version] = ref.split('|');
         const productId = lookups.product.get(sku);
         if (productId) {
-          let recipe = await this.prisma.bomRecipe.findFirst({ where: { companyId, productId, version } });
+          let recipe = await this.prisma.bomRecipe.findFirst({
+            where: { companyId, productId, version },
+          });
           if (!recipe && !options?.dryRun) {
             recipe = await this.prisma.bomRecipe.create({
-              data: { companyId, productId, version, outputQty: 1 }
+              data: { companyId, productId, version, outputQty: 1 },
             });
           }
           if (recipe) {
@@ -625,44 +882,53 @@ export class StreamingImportService {
       // Refs are already normalised (built with normaliseSourceSystem/normaliseImportType above)
       const refs = Array.from(uniqueIds.sourceSystem);
       for (const ref of refs) {
-        const [validSource, validImportType, periodFromStr, periodToStr] = ref.split('|');
+        const [validSource, validImportType, periodFromStr, periodToStr] =
+          ref.split('|');
 
         const periodFrom = periodFromStr ? new Date(periodFromStr) : new Date();
         const periodTo = periodToStr ? new Date(periodToStr) : new Date();
-        
+
         let actualImport = await this.prisma.actualImport.findFirst({
-          where: { companyId, sourceSystem: validSource as ImportSourceSystem, importType: validImportType as ImportType }
+          where: {
+            companyId,
+            sourceSystem: validSource as ImportSourceSystem,
+            importType: validImportType as ImportType,
+          },
         });
-        
+
         if (!actualImport && !options?.dryRun) {
           actualImport = await this.prisma.actualImport.create({
-            data: { 
-              companyId, 
-              sourceSystem: validSource as ImportSourceSystem, 
-              importType: validImportType as ImportType, 
-              periodFrom, 
-              periodTo 
-            }
+            data: {
+              companyId,
+              sourceSystem: validSource as ImportSourceSystem,
+              importType: validImportType as ImportType,
+              periodFrom,
+              periodTo,
+            },
           });
         }
         if (actualImport) {
           lookups.actualImport.set(ref, actualImport.id);
-          this.logger.log(`[actualImport] resolved ref="${ref}" → id=${actualImport.id}`);
+          this.logger.log(
+            `[actualImport] resolved ref="${ref}" → id=${actualImport.id}`,
+          );
         } else {
-          this.logger.warn(`[actualImport] FAILED to resolve/create ref="${ref}"`);
+          this.logger.warn(
+            `[actualImport] FAILED to resolve/create ref="${ref}"`,
+          );
         }
       }
     }
 
     // Substitute strings with IDs
-    return rows.map(row => {
+    return rows.map((row) => {
       const newRow = { ...row };
 
       if (newRow.productSku) {
         newRow.productId = lookups.product.get(String(newRow.productSku));
         delete newRow.productSku;
       }
-      
+
       const siteVal = newRow.siteCode || newRow.sitename || newRow.siteName;
       if (siteVal) {
         newRow.siteId = lookups.site.get(String(siteVal));
@@ -670,47 +936,52 @@ export class StreamingImportService {
         delete newRow.sitename;
         delete newRow.siteName;
       }
-      
-      const ccVal = newRow.costCenterCode || newRow.costcentername || newRow.costCenterName;
+
+      const ccVal =
+        newRow.costCenterCode || newRow.costcentername || newRow.costCenterName;
       if (ccVal) {
         newRow.costCenterId = lookups.costCenter.get(String(ccVal));
         delete newRow.costCenterCode;
         delete newRow.costcentername;
         delete newRow.costCenterName;
       }
-      
-      const accVal = newRow.accountCode || newRow.accountname || newRow.accountName;
+
+      const accVal =
+        newRow.accountCode || newRow.accountname || newRow.accountName;
       if (accVal) {
         newRow.accountId = lookups.account.get(String(accVal));
         delete newRow.accountCode;
         delete newRow.accountname;
         delete newRow.accountName;
       }
-      
-      const custVal = newRow.customerCode || newRow.customername || newRow.customerName;
+
+      const custVal =
+        newRow.customerCode || newRow.customername || newRow.customerName;
       if (custVal) {
         newRow.customerId = lookups.customer.get(String(custVal));
         delete newRow.customerCode;
         delete newRow.customername;
         delete newRow.customerName;
       }
-      
-      const suppVal = newRow.supplierCode || newRow.suppliername || newRow.supplierName;
+
+      const suppVal =
+        newRow.supplierCode || newRow.suppliername || newRow.supplierName;
       if (suppVal) {
         newRow.supplierId = lookups.supplier.get(String(suppVal));
         delete newRow.supplierCode;
         delete newRow.suppliername;
         delete newRow.supplierName;
       }
-      
-      const matVal = newRow.materialCode || newRow.materialname || newRow.materialName;
+
+      const matVal =
+        newRow.materialCode || newRow.materialname || newRow.materialName;
       if (matVal) {
         newRow.materialId = lookups.material.get(String(matVal));
         delete newRow.materialCode;
         delete newRow.materialname;
         delete newRow.materialName;
       }
-      
+
       const unitVal = newRow.unit || newRow.unitname || newRow.unitName;
       if (unitVal) {
         newRow.unitId = lookups.unit.get(String(unitVal));
@@ -719,25 +990,37 @@ export class StreamingImportService {
         delete newRow.unitName;
       }
       if (newRow.productCategoryId) {
-        newRow.categoryId = lookups.category.get(String(newRow.productCategoryId));
+        newRow.categoryId = lookups.category.get(
+          String(newRow.productCategoryId),
+        );
         delete newRow.productCategoryId;
       }
       if (newRow.forecastCycleName) {
-        newRow.forecastCycleId = lookups.forecastCycle.get(String(newRow.forecastCycleName));
+        newRow.forecastCycleId = lookups.forecastCycle.get(
+          String(newRow.forecastCycleName),
+        );
         delete newRow.forecastCycleName;
       }
       if (newRow.budgetCycleName) {
-        newRow.budgetCycleId = lookups.budgetCycle.get(String(newRow.budgetCycleName));
+        newRow.budgetCycleId = lookups.budgetCycle.get(
+          String(newRow.budgetCycleName),
+        );
         delete newRow.budgetCycleName;
       }
       if (newRow.sourceSystem) {
         // MUST normalise enums to the same key that was built during collection
-        const normSource = this.normaliseSourceSystem(String(newRow.sourceSystem));
-        const normImportType = this.normaliseImportType(String(newRow.importType || 'actual'));
+        const normSource = this.normaliseSourceSystem(
+          String(newRow.sourceSystem),
+        );
+        const normImportType = this.normaliseImportType(
+          String(newRow.importType || 'actual'),
+        );
         const ref = `${normSource}|${normImportType}|${newRow.periodFrom || ''}|${newRow.periodTo || ''}`;
         const resolvedId = lookups.actualImport.get(ref);
         if (!resolvedId) {
-          this.logger.warn(`[resolveReferences] actualImportId not found for ref="${ref}". Available keys: ${Array.from(lookups.actualImport.keys()).join(', ')}`);
+          this.logger.warn(
+            `[resolveReferences] actualImportId not found for ref="${ref}". Available keys: ${Array.from(lookups.actualImport.keys()).join(', ')}`,
+          );
         }
         newRow.actualImportId = resolvedId;
         delete newRow.sourceSystem;
@@ -762,10 +1045,15 @@ export class StreamingImportService {
         // Some models map createdBy to 'created_by' but Prisma handles camelCase mapping if defined
         // We will just provide createdById if that's the relation field name.
         // Wait, what is the exact field name for User relation in ForecastCycle?
-        // Let's just set `createdById` and `createdBy` to defaultUserId safely. 
+        // Let's just set `createdById` and `createdBy` to defaultUserId safely.
         // We will remove non-schema fields later if needed, but Prisma silently ignores or throws if strict.
-        if (module === 'forecastcycles' || module === 'budgetcycles' || module === 'exchangerates' || module === 'actualimports') {
-           newRow.createdBy = defaultUserId;
+        if (
+          module === 'forecastcycles' ||
+          module === 'budgetcycles' ||
+          module === 'exchangerates' ||
+          module === 'actualimports'
+        ) {
+          newRow.createdBy = defaultUserId;
         }
       }
 
@@ -778,8 +1066,16 @@ export class StreamingImportService {
   private async insertChunk(
     module: string,
     rows: Record<string, unknown>[],
-    rowNums: number[]
-  ): Promise<{ count: number; rowReports: { rowNumber: number; status: 'success' | 'failed'; reason?: string; createdId?: bigint | null }[] }> {
+    rowNums: number[],
+  ): Promise<{
+    count: number;
+    rowReports: {
+      rowNumber: number;
+      status: 'success' | 'failed';
+      reason?: string;
+      createdId?: bigint | null;
+    }[];
+  }> {
     if (rows.length === 0) return { count: 0, rowReports: [] };
 
     // Map module to Prisma model
@@ -789,32 +1085,59 @@ export class StreamingImportService {
     }
 
     // Debug logging for key transactional modules
-    if (['productionplans', 'bomlines', 'actuallines', 'budgetlines', 'forecastlines'].includes(module)) {
-      this.logger.debug(`[insertChunk] module=${module} rowCount=${rows.length} firstRow=${JSON.stringify(rows[0])}`);
+    if (
+      [
+        'productionplans',
+        'bomlines',
+        'actuallines',
+        'budgetlines',
+        'forecastlines',
+      ].includes(module)
+    ) {
+      this.logger.debug(
+        `[insertChunk] module=${module} rowCount=${rows.length} firstRow=${JSON.stringify(rows[0])}`,
+      );
     }
 
     try {
       // Try fast path first
-      const result = await (model as any).createMany({
+      const result = await model.createMany({
         data: rows,
         skipDuplicates: true,
       });
-      return { 
-        count: result.count, 
-        rowReports: rowNums.map(rn => ({ rowNumber: rn, status: 'success', createdId: null })) 
+      return {
+        count: result.count,
+        rowReports: rowNums.map((rn) => ({
+          rowNumber: rn,
+          status: 'success',
+          createdId: null,
+        })),
       };
     } catch (e: any) {
       // Fallback to sequential to get row-level errors
       let count = 0;
-      const rowReports: { rowNumber: number; status: 'success' | 'failed'; reason?: string; createdId?: bigint | null }[] = [];
+      const rowReports: {
+        rowNumber: number;
+        status: 'success' | 'failed';
+        reason?: string;
+        createdId?: bigint | null;
+      }[] = [];
       for (let i = 0; i < rows.length; i++) {
         try {
-          const created = await (model as any).create({ data: rows[i] });
-          rowReports.push({ rowNumber: rowNums[i], status: 'success', createdId: created.id });
+          const created = await model.create({ data: rows[i] });
+          rowReports.push({
+            rowNumber: rowNums[i],
+            status: 'success',
+            createdId: created.id,
+          });
           count++;
         } catch (err: any) {
           const { friendly } = normalizeImportError(err);
-          rowReports.push({ rowNumber: rowNums[i], status: 'failed', reason: friendly });
+          rowReports.push({
+            rowNumber: rowNums[i],
+            status: 'failed',
+            reason: friendly,
+          });
         }
       }
       return { count, rowReports };
@@ -878,14 +1201,19 @@ export class StreamingImportService {
     return modelMap[module] || null;
   }
 
-  private stripUnknownFields(module: string, row: Record<string, unknown>): Record<string, unknown> {
+  private stripUnknownFields(
+    module: string,
+    row: Record<string, unknown>,
+  ): Record<string, unknown> {
     const modelName = this.getPrismaModelName(module);
     if (!modelName) return row;
 
-    const modelDef = Prisma.dmmf.datamodel.models.find(m => m.name === modelName);
+    const modelDef = Prisma.dmmf.datamodel.models.find(
+      (m) => m.name === modelName,
+    );
     if (!modelDef) return row;
 
-    const validFields = new Set(modelDef.fields.map(f => f.name));
+    const validFields = new Set(modelDef.fields.map((f) => f.name));
     const cleanRow: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(row)) {
@@ -914,7 +1242,7 @@ export class StreamingImportService {
       type: 'summary',
       sheetName: 'ALL',
       title: 'Import Summary',
-      data: results.map(r => ({
+      data: results.map((r) => ({
         sheet: r.sheetName,
         module: r.erpModule,
         status: r.status,
@@ -938,13 +1266,13 @@ export class StreamingImportService {
     }
 
     // Row-level reporting aggregation
-    const allRowReports = results.flatMap(r => r.rowReports || []);
+    const allRowReports = results.flatMap((r) => r.rowReports || []);
     if (allRowReports.length > 0) {
       reports.push({
         type: 'row_level',
         sheetName: 'ALL',
         title: 'Row Level Report',
-        data: allRowReports
+        data: allRowReports,
       });
     }
 

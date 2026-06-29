@@ -38,7 +38,7 @@ function requireEnv(name: string): string {
   if (!value) {
     throw new Error(
       `Missing required environment variable: ${name}. ` +
-      `Set a strong random string (minimum 32 characters) before starting the server.`,
+        `Set a strong random string (minimum 32 characters) before starting the server.`,
     );
   }
   return value;
@@ -75,16 +75,25 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException({ message: 'Invalid email or password', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
+      throw new UnauthorizedException({
+        message: 'Invalid email or password',
+        code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
+      });
     }
 
     if (user.status !== 'active') {
-      throw new UnauthorizedException({ message: 'User account is inactive', code: ErrorCodes.AUTH_USER_INACTIVE });
+      throw new UnauthorizedException({
+        message: 'User account is inactive',
+        code: ErrorCodes.AUTH_USER_INACTIVE,
+      });
     }
 
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException({ message: 'Invalid email or password', code: ErrorCodes.AUTH_INVALID_CREDENTIALS });
+      throw new UnauthorizedException({
+        message: 'Invalid email or password',
+        code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
+      });
     }
 
     return {
@@ -219,7 +228,10 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     } catch {
-      throw new UnauthorizedException({ message: 'Invalid or expired refresh token', code: ErrorCodes.AUTH_TOKEN_EXPIRED });
+      throw new UnauthorizedException({
+        message: 'Invalid or expired refresh token',
+        code: ErrorCodes.AUTH_TOKEN_EXPIRED,
+      });
     }
   }
 

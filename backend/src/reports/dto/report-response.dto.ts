@@ -442,9 +442,27 @@ export class YearComparisonResponseDto {
   @ApiProperty({ type: [Object] })
   monthlyComparison!: {
     period_month: number;
-    currentYear: { revenue: number; cogs: number; expenses: number; grossProfit: number; netProfit: number };
-    previousYear: { revenue: number; cogs: number; expenses: number; grossProfit: number; netProfit: number };
-    variance: { revenue: number; cogs: number; expenses: number; grossProfit: number; netProfit: number };
+    currentYear: {
+      revenue: number;
+      cogs: number;
+      expenses: number;
+      grossProfit: number;
+      netProfit: number;
+    };
+    previousYear: {
+      revenue: number;
+      cogs: number;
+      expenses: number;
+      grossProfit: number;
+      netProfit: number;
+    };
+    variance: {
+      revenue: number;
+      cogs: number;
+      expenses: number;
+      grossProfit: number;
+      netProfit: number;
+    };
   }[];
 
   @ApiProperty({ type: [Object] })

@@ -74,15 +74,60 @@ export class CompaniesService {
       // Create default chart of accounts
       if (createCompanyDto.createDefaultAccounts) {
         const defaultAccounts = [
-          { code: '1000', name: 'Cash', type: AccountType.asset, companyId: company.id },
-          { code: '1100', name: 'Accounts Receivable', type: AccountType.asset, companyId: company.id },
-          { code: '1200', name: 'Inventory', type: AccountType.asset, companyId: company.id },
-          { code: '2000', name: 'Accounts Payable', type: AccountType.liability, companyId: company.id },
-          { code: '3000', name: 'Owner Equity', type: AccountType.equity, companyId: company.id },
-          { code: '4000', name: 'Sales Revenue', type: AccountType.revenue, companyId: company.id },
-          { code: '5000', name: 'Cost of Goods Sold', type: AccountType.cogs, companyId: company.id },
-          { code: '5100', name: 'Rent Expense', type: AccountType.expense, companyId: company.id },
-          { code: '5200', name: 'Salary Expense', type: AccountType.expense, companyId: company.id },
+          {
+            code: '1000',
+            name: 'Cash',
+            type: AccountType.asset,
+            companyId: company.id,
+          },
+          {
+            code: '1100',
+            name: 'Accounts Receivable',
+            type: AccountType.asset,
+            companyId: company.id,
+          },
+          {
+            code: '1200',
+            name: 'Inventory',
+            type: AccountType.asset,
+            companyId: company.id,
+          },
+          {
+            code: '2000',
+            name: 'Accounts Payable',
+            type: AccountType.liability,
+            companyId: company.id,
+          },
+          {
+            code: '3000',
+            name: 'Owner Equity',
+            type: AccountType.equity,
+            companyId: company.id,
+          },
+          {
+            code: '4000',
+            name: 'Sales Revenue',
+            type: AccountType.revenue,
+            companyId: company.id,
+          },
+          {
+            code: '5000',
+            name: 'Cost of Goods Sold',
+            type: AccountType.cogs,
+            companyId: company.id,
+          },
+          {
+            code: '5100',
+            name: 'Rent Expense',
+            type: AccountType.expense,
+            companyId: company.id,
+          },
+          {
+            code: '5200',
+            name: 'Salary Expense',
+            type: AccountType.expense,
+            companyId: company.id,
+          },
         ];
         await tx.account.createMany({
           data: defaultAccounts,

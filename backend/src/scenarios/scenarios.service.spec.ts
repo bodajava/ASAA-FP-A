@@ -4,7 +4,10 @@ import { ScenariosService, mapScenarioToResponse } from './scenarios.service';
 import { PrismaService } from '../prisma.service';
 import { CreateScenarioDto } from './dto/create-scenario.dto';
 import { UpdateScenarioDto } from './dto/update-scenario.dto';
-import { PreviewSimulationDto, BaseCycleType } from './dto/preview-simulation.dto';
+import {
+  PreviewSimulationDto,
+  BaseCycleType,
+} from './dto/preview-simulation.dto';
 import { ScenarioAssumptionsDto } from './dto/scenario-assumptions.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ScenarioType } from '@prisma/client';
@@ -101,7 +104,12 @@ describe('ScenariosService', () => {
       mockPrisma.account.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }]);
       mockPrisma.scenario.create.mockResolvedValue(mockScenario);
 
-      const result = await service.create(createDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.create(
+        createDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(mockPrisma.company.findFirst).toHaveBeenCalledWith({
         where: { id: mockCompanyId, tenantId: mockTenantId },
@@ -127,7 +135,10 @@ describe('ScenariosService', () => {
 
     it('should throw BadRequestException for invalid assumptions subtype', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      const invalidDto = { ...createDto, assumptions: { subtype: 'invalid_type' } as any };
+      const invalidDto = {
+        ...createDto,
+        assumptions: { subtype: 'invalid_type' } as any,
+      };
 
       await expect(
         service.create(invalidDto, mockCompanyId, mockTenantId, mockUserId),
@@ -151,7 +162,11 @@ describe('ScenariosService', () => {
       mockPrisma.scenario.findMany.mockResolvedValue([mockScenario]);
 
       const pagination: PaginationDto = { page: 1, limit: 10 };
-      const result = await service.findAll(mockCompanyId, mockTenantId, pagination);
+      const result = await service.findAll(
+        mockCompanyId,
+        mockTenantId,
+        pagination,
+      );
 
       expect(result.total).toBe(1);
       expect(result.data).toHaveLength(1);
@@ -163,7 +178,11 @@ describe('ScenariosService', () => {
       mockPrisma.scenario.count.mockResolvedValue(1);
       mockPrisma.scenario.findMany.mockResolvedValue([mockScenario]);
 
-      const pagination: PaginationDto = { page: 1, limit: 10, search: 'CUSTOM' };
+      const pagination: PaginationDto = {
+        page: 1,
+        limit: 10,
+        search: 'CUSTOM',
+      };
       await service.findAll(mockCompanyId, mockTenantId, pagination);
 
       expect(mockPrisma.scenario.findMany).toHaveBeenCalledWith(
@@ -202,7 +221,11 @@ describe('ScenariosService', () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.scenario.findFirst.mockResolvedValue(mockScenario);
 
-      const result = await service.findOne(mockScenarioId, mockCompanyId, mockTenantId);
+      const result = await service.findOne(
+        mockScenarioId,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.id).toBe('1');
       expect(result.name).toBe('Test Scenario');
@@ -224,9 +247,18 @@ describe('ScenariosService', () => {
     it('should update a scenario', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.scenario.findFirst.mockResolvedValue(mockScenario);
-      mockPrisma.scenario.update.mockResolvedValue({ ...mockScenario, name: 'Updated Scenario' });
+      mockPrisma.scenario.update.mockResolvedValue({
+        ...mockScenario,
+        name: 'Updated Scenario',
+      });
 
-      const result = await service.update(mockScenarioId, updateDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.update(
+        mockScenarioId,
+        updateDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(mockPrisma.scenario.update).toHaveBeenCalledWith({
         where: { id: mockScenarioId },
@@ -241,7 +273,13 @@ describe('ScenariosService', () => {
       mockPrisma.scenario.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.update(mockScenarioId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockScenarioId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -262,7 +300,13 @@ describe('ScenariosService', () => {
         },
       };
 
-      const result = await service.update(mockScenarioId, updateWithAssumptions, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.update(
+        mockScenarioId,
+        updateWithAssumptions,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
       expect(result).toBeDefined();
     });
   });
@@ -273,9 +317,16 @@ describe('ScenariosService', () => {
       mockPrisma.scenario.findFirst.mockResolvedValue(mockScenario);
       mockPrisma.scenario.delete.mockResolvedValue(mockScenario);
 
-      const result = await service.remove(mockScenarioId, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.remove(
+        mockScenarioId,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
-      expect(mockPrisma.scenario.delete).toHaveBeenCalledWith({ where: { id: mockScenarioId } });
+      expect(mockPrisma.scenario.delete).toHaveBeenCalledWith({
+        where: { id: mockScenarioId },
+      });
       expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           entityType: 'Scenario',
@@ -298,10 +349,24 @@ describe('ScenariosService', () => {
   describe('simulateImpact', () => {
     it('should simulate branch_expansion with overrideAssumptions', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.account.findMany.mockResolvedValue([{ id: 1, type: 'revenue' }, { id: 2, type: 'expense' }]);
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: 1, type: 'revenue' },
+        { id: 2, type: 'expense' },
+      ]);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue({
         id: 1,
-        budgetLines: [{ accountId: 1, siteId: null, costCenterId: null, productId: null, materialId: null, customerId: null, periodMonth: 1, amount: 1000 }],
+        budgetLines: [
+          {
+            accountId: 1,
+            siteId: null,
+            costCenterId: null,
+            productId: null,
+            materialId: null,
+            customerId: null,
+            periodMonth: 1,
+            amount: 1000,
+          },
+        ],
       } as any);
 
       const previewDto: PreviewSimulationDto = {
@@ -317,7 +382,11 @@ describe('ScenariosService', () => {
         },
       };
 
-      const result = await service.simulateImpact(previewDto, mockCompanyId, mockTenantId);
+      const result = await service.simulateImpact(
+        previewDto,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.originalTotal).toBe(1000);
       expect(result.simulatedTotal).toBeGreaterThan(0);
@@ -327,11 +396,25 @@ describe('ScenariosService', () => {
 
     it('should simulate using scenarioId', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.account.findMany.mockResolvedValue([{ id: 1, type: 'revenue' }, { id: 2, type: 'expense' }]);
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: 1, type: 'revenue' },
+        { id: 2, type: 'expense' },
+      ]);
       mockPrisma.scenario.findFirst.mockResolvedValue(mockScenario);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue({
         id: 1,
-        budgetLines: [{ accountId: 1, siteId: null, costCenterId: null, productId: null, materialId: null, customerId: null, periodMonth: 1, amount: 5000 }],
+        budgetLines: [
+          {
+            accountId: 1,
+            siteId: null,
+            costCenterId: null,
+            productId: null,
+            materialId: null,
+            customerId: null,
+            periodMonth: 1,
+            amount: 5000,
+          },
+        ],
       } as any);
 
       const previewDto: PreviewSimulationDto = {
@@ -340,7 +423,11 @@ describe('ScenariosService', () => {
         scenarioId: '1',
       };
 
-      const result = await service.simulateImpact(previewDto, mockCompanyId, mockTenantId);
+      const result = await service.simulateImpact(
+        previewDto,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result).toBeDefined();
       expect(result.originalTotal).toBe(5000);
@@ -361,10 +448,23 @@ describe('ScenariosService', () => {
 
     it('should simulate demand_decrease correctly', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.account.findMany.mockResolvedValue([{ id: 1, type: 'revenue' }]);
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: 1, type: 'revenue' },
+      ]);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue({
         id: 1,
-        budgetLines: [{ accountId: 1, siteId: null, costCenterId: null, productId: null, materialId: null, customerId: null, periodMonth: 1, amount: 10000 }],
+        budgetLines: [
+          {
+            accountId: 1,
+            siteId: null,
+            costCenterId: null,
+            productId: null,
+            materialId: null,
+            customerId: null,
+            periodMonth: 1,
+            amount: 10000,
+          },
+        ],
       } as any);
 
       const previewDto: PreviewSimulationDto = {
@@ -376,7 +476,11 @@ describe('ScenariosService', () => {
         },
       };
 
-      const result = await service.simulateImpact(previewDto, mockCompanyId, mockTenantId);
+      const result = await service.simulateImpact(
+        previewDto,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.originalTotal).toBe(10000);
       expect(result.simulatedTotal).toBe(9000);
@@ -389,7 +493,16 @@ describe('ScenariosService', () => {
       mockPrisma.budgetCycle.findFirst.mockResolvedValue({
         id: 1,
         budgetLines: [
-          { accountId: 1, siteId: null, costCenterId: null, productId: null, materialId: 10, customerId: null, periodMonth: 1, amount: 1000 },
+          {
+            accountId: 1,
+            siteId: null,
+            costCenterId: null,
+            productId: null,
+            materialId: 10,
+            customerId: null,
+            periodMonth: 1,
+            amount: 1000,
+          },
         ],
       } as any);
       mockPrisma.bomRecipe.findMany.mockResolvedValue([]);
@@ -403,7 +516,11 @@ describe('ScenariosService', () => {
         },
       };
 
-      const result = await service.simulateImpact(previewDto, mockCompanyId, mockTenantId);
+      const result = await service.simulateImpact(
+        previewDto,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.originalTotal).toBe(1000);
       expect(result.simulatedTotal).toBe(1150);
@@ -412,7 +529,10 @@ describe('ScenariosService', () => {
 
     it('should throw NotFoundException if base budget cycle not found', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.account.findMany.mockResolvedValue([{ id: 1, type: 'revenue' }, { id: 2, type: 'expense' }]);
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: 1, type: 'revenue' },
+        { id: 2, type: 'expense' },
+      ]);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(null);
 
       const previewDto: PreviewSimulationDto = {
@@ -437,14 +557,35 @@ describe('ScenariosService', () => {
   describe('simulateImpact - currency_rate_change', () => {
     it('should simulate currency rate change correctly', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.account.findMany.mockResolvedValue([{ id: 1, type: 'expense' }]);
-      mockPrisma.exchangeRate.findFirst.mockResolvedValue({ id: 1, rate: 30, fromCurrency: 'USD', toCurrency: 'EGP', rateDate: new Date() });
-      mockPrisma.material.findMany.mockResolvedValue([{ id: 10, name: 'Raw Mat', supplierId: 5 }]);
-      mockPrisma.supplier.findMany.mockResolvedValue([{ id: 5, name: 'Test Supplier' }]);
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: 1, type: 'expense' },
+      ]);
+      mockPrisma.exchangeRate.findFirst.mockResolvedValue({
+        id: 1,
+        rate: 30,
+        fromCurrency: 'USD',
+        toCurrency: 'EGP',
+        rateDate: new Date(),
+      });
+      mockPrisma.material.findMany.mockResolvedValue([
+        { id: 10, name: 'Raw Mat', supplierId: 5 },
+      ]);
+      mockPrisma.supplier.findMany.mockResolvedValue([
+        { id: 5, name: 'Test Supplier' },
+      ]);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue({
         id: 1,
         budgetLines: [
-          { accountId: 1, siteId: null, costCenterId: null, productId: null, materialId: 10, customerId: null, periodMonth: 1, amount: 3000 },
+          {
+            accountId: 1,
+            siteId: null,
+            costCenterId: null,
+            productId: null,
+            materialId: 10,
+            customerId: null,
+            periodMonth: 1,
+            amount: 3000,
+          },
         ],
       } as any);
 
@@ -460,7 +601,11 @@ describe('ScenariosService', () => {
         },
       };
 
-      const result = await service.simulateImpact(previewDto, mockCompanyId, mockTenantId);
+      const result = await service.simulateImpact(
+        previewDto,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.originalTotal).toBe(3000);
       expect(result.simulatedTotal).toBe(4500);

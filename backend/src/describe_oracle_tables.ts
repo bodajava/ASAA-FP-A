@@ -25,8 +25,8 @@ async function main() {
       connectionType: 'oracle',
       NOT: {
         host: 'mock',
-      }
-    }
+      },
+    },
   });
 
   if (connections.length === 0) {
@@ -35,7 +35,9 @@ async function main() {
   }
 
   const connection = connections[0];
-  const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+  const password = connection.passwordEnc
+    ? decrypt(connection.passwordEnc)
+    : '';
   const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
 
   console.log('Connecting to Oracle...');
@@ -56,7 +58,7 @@ async function main() {
     'FP_UNITS',
     'FP_SUPPLIERS',
     'FP_BOM_RECIPES',
-    'FP_BOM_LINES'
+    'FP_BOM_LINES',
   ];
 
   for (const table of tables) {
@@ -64,7 +66,7 @@ async function main() {
       const cols = await connInstance.execute(
         `SELECT COLUMN_NAME, DATA_TYPE FROM USER_TAB_COLS WHERE TABLE_NAME = :tableName ORDER BY COLUMN_ID`,
         [table],
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
       console.log(`\n--- ${table} columns ---`);
       console.log(JSON.stringify(cols.rows, null, 2));

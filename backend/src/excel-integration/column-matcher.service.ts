@@ -16,27 +16,123 @@ export class ColumnMatcherService {
   /* ─── Known alias mappings (Excel column name → ERP field) ──────────── */
 
   private readonly ALIAS_MAP: Record<string, string[]> = {
-    code: ['code', 'accountcode', 'glcode', 'accountnumber', 'number', 'ref', 'reference', 'accountcode', 'itemcode'],
-    name: ['name', 'description', 'title', 'itemname', 'productname', 'materialname', 'customername', 'suppliername'],
+    code: [
+      'code',
+      'accountcode',
+      'glcode',
+      'accountnumber',
+      'number',
+      'ref',
+      'reference',
+      'accountcode',
+      'itemcode',
+    ],
+    name: [
+      'name',
+      'description',
+      'title',
+      'itemname',
+      'productname',
+      'materialname',
+      'customername',
+      'suppliername',
+    ],
     sku: ['sku', 'productsku', 'itemsku', 'itemcode', 'productcode', 'barcode'],
-    type: ['type', 'category', 'class', 'classification', 'producttype', 'materialtype', 'customertype', 'suppliertype'],
-    price: ['price', 'cost', 'amount', 'rate', 'unitprice', 'unitcost', 'purchaseprice', 'sellingprice', 'standardcost', 'costkg', 'costperkg'],
-    quantity: ['quantity', 'qty', 'amount', 'volume', 'stock', 'balance', 'opening', 'closing', 'pcs', 'count'],
-    date: ['date', 'transactiondate', 'effectivedate', 'startdate', 'enddate', 'duedate', 'createdat', 'snapshotdate'],
+    type: [
+      'type',
+      'category',
+      'class',
+      'classification',
+      'producttype',
+      'materialtype',
+      'customertype',
+      'suppliertype',
+    ],
+    price: [
+      'price',
+      'cost',
+      'amount',
+      'rate',
+      'unitprice',
+      'unitcost',
+      'purchaseprice',
+      'sellingprice',
+      'standardcost',
+      'costkg',
+      'costperkg',
+    ],
+    quantity: [
+      'quantity',
+      'qty',
+      'amount',
+      'volume',
+      'stock',
+      'balance',
+      'opening',
+      'closing',
+      'pcs',
+      'count',
+    ],
+    date: [
+      'date',
+      'transactiondate',
+      'effectivedate',
+      'startdate',
+      'enddate',
+      'duedate',
+      'createdat',
+      'snapshotdate',
+    ],
     currency: ['currency', 'curr', 'ccy', 'currencycode'],
     unit: ['unit', 'uom', 'unitofmeasure', 'measure', 'unitsymbol'],
     status: ['status', 'state', 'isactive', 'active', 'enabled'],
     email: ['email', 'e-mail', 'mail'],
     phone: ['phone', 'telephone', 'mobile', 'fax'],
-    address: ['address', 'location', 'street', 'city', 'country', 'region', 'zip', 'postal'],
+    address: [
+      'address',
+      'location',
+      'street',
+      'city',
+      'country',
+      'region',
+      'zip',
+      'postal',
+    ],
     notes: ['notes', 'remarks', 'comment', 'comments', 'desc', 'description'],
     periodmonth: ['month', 'period', 'periodmonth', 'fiscalmonth'],
     fiscalyear: ['year', 'fiscalyear', 'fy'],
-    amount: ['amount', 'total', 'sum', 'value', 'budgetamount', 'forecastamount', 'plannedamount', 'actualamount'],
-    weight: ['weight', 'weightkg', 'netweight', 'grossweight', 'weightpercarton', 'netweightcarton'],
+    amount: [
+      'amount',
+      'total',
+      'sum',
+      'value',
+      'budgetamount',
+      'forecastamount',
+      'plannedamount',
+      'actualamount',
+    ],
+    weight: [
+      'weight',
+      'weightkg',
+      'netweight',
+      'grossweight',
+      'weightpercarton',
+      'netweightcarton',
+    ],
     version: ['version', 'ver'],
-    sitecode: ['sitecode', 'branchcode', 'warehousecode', 'factorycode', 'siteid'],
-    costcentercode: ['costcentercode', 'cccode', 'departmentcode', 'costcenter'],
+    sitecode: [
+      'sitecode',
+      'branchcode',
+      'warehousecode',
+      'factorycode',
+      'siteid',
+    ],
+    costcentercode: [
+      'costcentercode',
+      'cccode',
+      'departmentcode',
+      'costcenter',
+    ],
     customercustomer: ['customercode', 'clientcode', 'customerid'],
     suppliercode: ['suppliercode', 'vendorcode', 'supplierid'],
     materialcode: ['materialcode', 'rmcode', 'rawmaterialcode', 'materialid'],
@@ -49,7 +145,11 @@ export class ColumnMatcherService {
     legalname: ['legalname', 'companyname', 'tradingas'],
     industrytype: ['industrytype', 'industry', 'sector'],
     taxnumber: ['taxnumber', 'vatnumber', 'tin', 'crnumber', 'vatno'],
-    fiscalyearstartmonth: ['fiscalyearstartmonth', 'fystartmonth', 'startmonth'],
+    fiscalyearstartmonth: [
+      'fiscalyearstartmonth',
+      'fystartmonth',
+      'startmonth',
+    ],
     drivertype: ['drivertype', 'driver', 'drivercategory'],
     kpiname: ['kpiname', 'kpi', 'metric'],
     kpicategory: ['kpicategory', 'category'],
@@ -61,7 +161,12 @@ export class ColumnMatcherService {
     batchnumber: ['batchnumber', 'batch', 'lotnumber', 'lot'],
     barcode: ['barcode', 'upc', 'ean', 'gtin', 'code128'],
     minstock: ['minstock', 'minimumstock', 'safetystock', 'reorderpoint'],
-    materialtype: ['materialtype', 'typeofmaterial', 'rmtype', 'rawmaterialtype'],
+    materialtype: [
+      'materialtype',
+      'typeofmaterial',
+      'rmtype',
+      'rawmaterialtype',
+    ],
     producttype: ['producttype', 'typeofproduct', 'fgtype', 'finishedgoodtype'],
     customertype: ['customertype', 'typeofcustomer', 'segment'],
     suppliertype: ['suppliertype', 'vendortype', 'typeofsupplier'],
@@ -78,7 +183,7 @@ export class ColumnMatcherService {
     columns: ColumnAnalysis[],
     userOverrides?: Record<string, string>,
   ): ColumnMapping[] {
-    return columns.map(col => {
+    return columns.map((col) => {
       // User override takes highest priority
       if (userOverrides?.[col.originalName]) {
         return {
@@ -137,17 +242,26 @@ export class ColumnMatcherService {
 
   private detectTransform(col: ColumnAnalysis): string | undefined {
     // Currency columns need parsing if they contain symbols
-    if (col.detectedType === 'currency' || col.sampleValues.some((v: string) => /[$€£EGP]/.test(v))) {
+    if (
+      col.detectedType === 'currency' ||
+      col.sampleValues.some((v: string) => /[$€£EGP]/.test(v))
+    ) {
       return 'parse_currency';
     }
 
     // Date columns might need reformatting
-    if (col.detectedType === 'date' && col.sampleValues.some((v: string) => /\//.test(v))) {
+    if (
+      col.detectedType === 'date' &&
+      col.sampleValues.some((v: string) => /\//.test(v))
+    ) {
       return 'normalize_date';
     }
 
     // Boolean columns stored as yes/no
-    if (col.detectedType === 'boolean' && col.sampleValues.some((v: string) => /^(yes|no)$/i.test(v))) {
+    if (
+      col.detectedType === 'boolean' &&
+      col.sampleValues.some((v: string) => /^(yes|no)$/i.test(v))
+    ) {
       return 'parse_boolean';
     }
 
@@ -163,11 +277,11 @@ export class ColumnMatcherService {
   }
 
   getHighConfidenceCount(mappings: ColumnMapping[]): number {
-    return mappings.filter(m => m.confidence >= 0.7).length;
+    return mappings.filter((m) => m.confidence >= 0.7).length;
   }
 
   getLowConfidenceColumns(mappings: ColumnMapping[]): ColumnMapping[] {
-    return mappings.filter(m => m.confidence < 0.5);
+    return mappings.filter((m) => m.confidence < 0.5);
   }
 
   getSuggestedMappings(

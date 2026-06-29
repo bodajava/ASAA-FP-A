@@ -286,7 +286,9 @@ export class IntegrationsController {
   }
 
   @Get('connections/:id/oracle-schema/tables')
-  @ApiOperation({ summary: 'List available tables/views from Oracle connection' })
+  @ApiOperation({
+    summary: 'List available tables/views from Oracle connection',
+  })
   @ApiResponse({ status: 200 })
   discoverTables(
     @Param('id') id: string,
@@ -301,7 +303,9 @@ export class IntegrationsController {
   }
 
   @Get('connections/:id/oracle-schema/tables/:tableName/columns')
-  @ApiOperation({ summary: 'List columns and types for a specific Oracle table/view' })
+  @ApiOperation({
+    summary: 'List columns and types for a specific Oracle table/view',
+  })
   @ApiResponse({ status: 200 })
   discoverColumns(
     @Param('id') id: string,
@@ -319,7 +323,9 @@ export class IntegrationsController {
 
   @Post('connections/:id/preview-rows')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Preview rows from Oracle source table using mapping' })
+  @ApiOperation({
+    summary: 'Preview rows from Oracle source table using mapping',
+  })
   @ApiResponse({ status: 200 })
   previewRows(
     @Param('id') id: string,

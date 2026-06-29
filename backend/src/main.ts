@@ -32,10 +32,15 @@ async function bootstrap() {
     : ['http://localhost:5173', 'http://localhost:3000'];
 
   const configuredOrigins = corsOriginRaw
-    ? corsOriginRaw.split(',').map((o) => o.trim()).filter(Boolean)
+    ? corsOriginRaw
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
     : [];
 
-  const allowedOrigins = [...new Set([...configuredOrigins, ...defaultOrigins])];
+  const allowedOrigins = [
+    ...new Set([...configuredOrigins, ...defaultOrigins]),
+  ];
 
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : false,
@@ -76,13 +81,14 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ClearCacheInterceptor());
 
   // Swagger — only in non-production unless ENABLE_SWAGGER=true
-  const enableSwagger =
-    process.env.ENABLE_SWAGGER === 'true' || !isProduction;
+  const enableSwagger = process.env.ENABLE_SWAGGER === 'true' || !isProduction;
 
   if (enableSwagger) {
     const config = new DocumentBuilder()
       .setTitle('Harvest Suite API')
-      .setDescription('The API documentation for the Harvest Financial Planning & Analysis system.')
+      .setDescription(
+        'The API documentation for the Harvest Financial Planning & Analysis system.',
+      )
       .setVersion('1.0')
       .addBearerAuth()
       .build();

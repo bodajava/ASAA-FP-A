@@ -73,14 +73,16 @@ describe('BudgetsService', () => {
     fiscalYear: 2026,
     periodType: 'annual',
     version: 1,
-    budgetLines: [{
-      accountId: '1',
-      periodMonth: 1,
-      amount: 1000,
-      quantity: 10,
-      unitPrice: 100,
-      notes: null,
-    }],
+    budgetLines: [
+      {
+        accountId: '1',
+        periodMonth: 1,
+        amount: 1000,
+        quantity: 10,
+        unitPrice: 100,
+        notes: null,
+      },
+    ],
   };
 
   beforeEach(async () => {
@@ -111,7 +113,12 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.create.mockResolvedValue(mockBudgetCycle);
       mockPrisma.budgetCycle.findUnique.mockResolvedValue(mockBudgetCycle);
 
-      const result = await service.create(createDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.create(
+        createDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(mockPrisma.company.findFirst).toHaveBeenCalledWith({
         where: { id: mockCompanyId, tenantId: mockTenantId },
@@ -163,7 +170,11 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.findMany.mockResolvedValue([mockBudgetCycle]);
 
       const pagination: PaginationDto = { page: 1, limit: 10 };
-      const result = await service.findAll(mockCompanyId, mockTenantId, pagination);
+      const result = await service.findAll(
+        mockCompanyId,
+        mockTenantId,
+        pagination,
+      );
 
       expect(result.total).toBe(1);
       expect(result.page).toBe(1);
@@ -186,7 +197,11 @@ describe('BudgetsService', () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
 
-      const result = await service.findOne(mockCycleId, mockCompanyId, mockTenantId);
+      const result = await service.findOne(
+        mockCycleId,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.id).toBe('1');
       expect(result.name).toBe('FY2026 Budget');
@@ -208,10 +223,22 @@ describe('BudgetsService', () => {
     it('should update a budget cycle', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
-      mockPrisma.budgetCycle.update.mockResolvedValue({ ...mockBudgetCycle, name: 'Updated Budget' });
-      mockPrisma.budgetCycle.findUnique.mockResolvedValue({ ...mockBudgetCycle, name: 'Updated Budget' });
+      mockPrisma.budgetCycle.update.mockResolvedValue({
+        ...mockBudgetCycle,
+        name: 'Updated Budget',
+      });
+      mockPrisma.budgetCycle.findUnique.mockResolvedValue({
+        ...mockBudgetCycle,
+        name: 'Updated Budget',
+      });
 
-      const result = await service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.update(
+        mockCycleId,
+        updateDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(result.name).toBe('Updated Budget');
       expect(mockPrisma.auditLog.create).toHaveBeenCalled();
@@ -222,25 +249,49 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockCycleId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if budget is approved', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.budgetCycle.findFirst.mockResolvedValue({ ...mockBudgetCycle, status: 'approved' });
+      mockPrisma.budgetCycle.findFirst.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'approved',
+      });
 
       await expect(
-        service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockCycleId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if budget is locked', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.budgetCycle.findFirst.mockResolvedValue({ ...mockBudgetCycle, status: 'locked' });
+      mockPrisma.budgetCycle.findFirst.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'locked',
+      });
 
       await expect(
-        service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockCycleId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -251,9 +302,16 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
       mockPrisma.budgetCycle.delete.mockResolvedValue(mockBudgetCycle);
 
-      const result = await service.remove(mockCycleId, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.remove(
+        mockCycleId,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
-      expect(mockPrisma.budgetCycle.delete).toHaveBeenCalledWith({ where: { id: mockCycleId } });
+      expect(mockPrisma.budgetCycle.delete).toHaveBeenCalledWith({
+        where: { id: mockCycleId },
+      });
       expect(mockPrisma.auditLog.create).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
@@ -269,7 +327,10 @@ describe('BudgetsService', () => {
 
     it('should throw BadRequestException if budget is approved', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.budgetCycle.findFirst.mockResolvedValue({ ...mockBudgetCycle, status: 'approved' });
+      mockPrisma.budgetCycle.findFirst.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'approved',
+      });
 
       await expect(
         service.remove(mockCycleId, mockCompanyId, mockTenantId, mockUserId),
@@ -278,7 +339,10 @@ describe('BudgetsService', () => {
 
     it('should throw BadRequestException if budget is locked', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.budgetCycle.findFirst.mockResolvedValue({ ...mockBudgetCycle, status: 'locked' });
+      mockPrisma.budgetCycle.findFirst.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'locked',
+      });
 
       await expect(
         service.remove(mockCycleId, mockCompanyId, mockTenantId, mockUserId),
@@ -290,10 +354,17 @@ describe('BudgetsService', () => {
     it('should transition from draft to submitted', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
-      mockPrisma.budgetCycle.update.mockResolvedValue({ ...mockBudgetCycle, status: 'submitted' });
+      mockPrisma.budgetCycle.update.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'submitted',
+      });
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'submitted' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'submitted' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(mockPrisma.budgetCycle.update).toHaveBeenCalledWith(
@@ -308,10 +379,18 @@ describe('BudgetsService', () => {
     it('should transition from draft to approved and trigger notification', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
-      mockPrisma.budgetCycle.update.mockResolvedValue({ ...mockBudgetCycle, status: 'approved', approvedBy: 1 });
+      mockPrisma.budgetCycle.update.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'approved',
+        approvedBy: 1,
+      });
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'approved' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'approved' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(mockPrisma.budgetCycle.update).toHaveBeenCalledWith(
@@ -326,11 +405,22 @@ describe('BudgetsService', () => {
 
     it('should transition from approved to locked', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.budgetCycle.findFirst.mockResolvedValue({ ...mockBudgetCycle, status: 'approved', approvedBy: 1 });
-      mockPrisma.budgetCycle.update.mockResolvedValue({ ...mockBudgetCycle, status: 'locked' });
+      mockPrisma.budgetCycle.findFirst.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'approved',
+        approvedBy: 1,
+      });
+      mockPrisma.budgetCycle.update.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'locked',
+      });
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'locked' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'locked' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(result.status).toBe('locked');
@@ -341,7 +431,11 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'draft' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'draft' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(mockPrisma.budgetCycle.update).not.toHaveBeenCalled();
@@ -350,10 +444,19 @@ describe('BudgetsService', () => {
 
     it('should throw if locked cycle is transitioned', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.budgetCycle.findFirst.mockResolvedValue({ ...mockBudgetCycle, status: 'locked' });
+      mockPrisma.budgetCycle.findFirst.mockResolvedValue({
+        ...mockBudgetCycle,
+        status: 'locked',
+      });
 
       await expect(
-        service.updateStatus(mockCycleId, { status: 'approved' }, mockCompanyId, mockTenantId, mockUserId),
+        service.updateStatus(
+          mockCycleId,
+          { status: 'approved' },
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -362,7 +465,13 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(mockBudgetCycle);
 
       await expect(
-        service.updateStatus(mockCycleId, { status: 'locked' }, mockCompanyId, mockTenantId, mockUserId),
+        service.updateStatus(
+          mockCycleId,
+          { status: 'locked' },
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -371,7 +480,13 @@ describe('BudgetsService', () => {
       mockPrisma.budgetCycle.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateStatus(mockCycleId, { status: 'submitted' }, mockCompanyId, mockTenantId, mockUserId),
+        service.updateStatus(
+          mockCycleId,
+          { status: 'submitted' },
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });

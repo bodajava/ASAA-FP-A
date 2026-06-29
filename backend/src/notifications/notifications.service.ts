@@ -66,7 +66,10 @@ function mapNotificationToResponse(
     entityType: notif.entityType,
     entityId: notif.entityId ? notif.entityId.toString() : null,
     triggerData: notif.triggerData
-      ? (JSON.parse(notif.triggerData) as Record<string, string | number | boolean | null>)
+      ? (JSON.parse(notif.triggerData) as Record<
+          string,
+          string | number | boolean | null
+        >)
       : null,
     status: notif.status,
     sentAt: notif.sentAt,
@@ -137,12 +140,8 @@ export class NotificationsService {
         thresholdValue: dto.thresholdValue ?? null,
         accountId,
         siteId,
-        notifyRoles: dto.notifyRoles
-          ? JSON.stringify(dto.notifyRoles)
-          : null,
-        notifyUsers: dto.notifyUsers
-          ? JSON.stringify(dto.notifyUsers)
-          : null,
+        notifyRoles: dto.notifyRoles ? JSON.stringify(dto.notifyRoles) : null,
+        notifyUsers: dto.notifyUsers ? JSON.stringify(dto.notifyUsers) : null,
         channel: dto.channel ?? 'system,email',
         isActive: dto.isActive ?? true,
         createdBy: userId,
@@ -435,10 +434,7 @@ export class NotificationsService {
     return mapNotificationToResponse(updated);
   }
 
-  async getUnreadCount(
-    companyId: bigint,
-    tenantId: bigint,
-  ): Promise<number> {
+  async getUnreadCount(companyId: bigint, tenantId: bigint): Promise<number> {
     await this.tenantService.ensureCompanyBelongsToTenant(companyId, tenantId);
     return this.prisma.notification.count({
       where: { companyId, status: { not: NotificationStatus.read } },
@@ -707,14 +703,16 @@ export class NotificationsService {
         if (isBreached) {
           // Prevent duplication: check if notification was already sent for this account, period and rule
           const monthStr = comp.periodMonth.toString();
-          const existingNotifications = await this.prisma.notification.findMany({
-            where: {
-              ruleId: rule.id,
-              entityType: 'Account',
-              entityId: comp.accountId,
+          const existingNotifications = await this.prisma.notification.findMany(
+            {
+              where: {
+                ruleId: rule.id,
+                entityType: 'Account',
+                entityId: comp.accountId,
+              },
             },
-          });
-          const existing = existingNotifications.find(n => {
+          );
+          const existing = existingNotifications.find((n) => {
             if (!n.triggerData) return false;
             try {
               const data = JSON.parse(n.triggerData);

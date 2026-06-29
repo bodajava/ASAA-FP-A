@@ -124,9 +124,15 @@ const LOCAL_FALLBACK_SCENARIOS: {
       title: 'Raw Material Price Surge Impact',
       type: 'raw_material_price_increase',
       confidence: 70,
-      summary: 'A hypothetical 15% increase in raw material prices based on recent market trends. This scenario models the impact on gross margin and suggests mitigation strategies.',
+      summary:
+        'A hypothetical 15% increase in raw material prices based on recent market trends. This scenario models the impact on gross margin and suggests mitigation strategies.',
       assumptions: [
-        { key: 'rawMaterialPriceChangePercent', value: 15, unit: 'percent', description: 'Expected raw material price increase' },
+        {
+          key: 'rawMaterialPriceChangePercent',
+          value: 15,
+          unit: 'percent',
+          description: 'Expected raw material price increase',
+        },
       ],
       expectedImpact: {
         revenueImpactPercent: 0,
@@ -151,9 +157,15 @@ const LOCAL_FALLBACK_SCENARIOS: {
       title: 'Currency Fluctuation Scenario',
       type: 'currency_change',
       confidence: 65,
-      summary: 'A 10% adverse currency movement scenario. This models the impact on import costs and suggests hedging strategies to protect margins.',
+      summary:
+        'A 10% adverse currency movement scenario. This models the impact on import costs and suggests hedging strategies to protect margins.',
       assumptions: [
-        { key: 'currencyChangePercent', value: -10, unit: 'percent', description: 'Adverse exchange rate movement' },
+        {
+          key: 'currencyChangePercent',
+          value: -10,
+          unit: 'percent',
+          description: 'Adverse exchange rate movement',
+        },
       ],
       expectedImpact: {
         revenueImpactPercent: -2.0,
@@ -178,9 +190,15 @@ const LOCAL_FALLBACK_SCENARIOS: {
       title: 'Demand Contraction Planning',
       type: 'demand_decrease',
       confidence: 60,
-      summary: 'A conservative scenario modeling a 10% reduction in customer demand. This helps assess fixed cost coverage and identifies areas for cost optimization.',
+      summary:
+        'A conservative scenario modeling a 10% reduction in customer demand. This helps assess fixed cost coverage and identifies areas for cost optimization.',
       assumptions: [
-        { key: 'demandChangePercent', value: -10, unit: 'percent', description: 'Expected demand decrease' },
+        {
+          key: 'demandChangePercent',
+          value: -10,
+          unit: 'percent',
+          description: 'Expected demand decrease',
+        },
       ],
       expectedImpact: {
         revenueImpactPercent: -10.0,
@@ -207,9 +225,15 @@ const LOCAL_FALLBACK_SCENARIOS: {
       title: 'تأثير ارتفاع أسعار المواد الخام',
       type: 'raw_material_price_increase',
       confidence: 70,
-      summary: 'سيناريو افتراضي لارتفاع أسعار المواد الخام بنسبة 15% بناءً على اتجاهات السوق الحالية. يsimulate هذا السيناريو التأثير على هامش الربح واقترح استراتيجيات التخفيف.',
+      summary:
+        'سيناريو افتراضي لارتفاع أسعار المواد الخام بنسبة 15% بناءً على اتجاهات السوق الحالية. يsimulate هذا السيناريو التأثير على هامش الربح واقترح استراتيجيات التخفيف.',
       assumptions: [
-        { key: 'rawMaterialPriceChangePercent', value: 15, unit: 'percent', description: 'ارتفاع متوقع في أسعار المواد الخام' },
+        {
+          key: 'rawMaterialPriceChangePercent',
+          value: 15,
+          unit: 'percent',
+          description: 'ارتفاع متوقع في أسعار المواد الخام',
+        },
       ],
       expectedImpact: {
         revenueImpactPercent: 0,
@@ -234,9 +258,15 @@ const LOCAL_FALLBACK_SCENARIOS: {
       title: 'سيناريو تقلبات العملة',
       type: 'currency_change',
       confidence: 65,
-      summary: 'سيناريو حركة عملة عكسية بنسبة 10%. يsimulate هذا التأثير على تكاليف الاستيراد واقترح استراتيجيات التحوط لحماية الهوامش.',
+      summary:
+        'سيناريو حركة عملة عكسية بنسبة 10%. يsimulate هذا التأثير على تكاليف الاستيراد واقترح استراتيجيات التحوط لحماية الهوامش.',
       assumptions: [
-        { key: 'currencyChangePercent', value: -10, unit: 'percent', description: 'حركة سعر صرف عكسية' },
+        {
+          key: 'currencyChangePercent',
+          value: -10,
+          unit: 'percent',
+          description: 'حركة سعر صرف عكسية',
+        },
       ],
       expectedImpact: {
         revenueImpactPercent: -2.0,
@@ -261,9 +291,15 @@ const LOCAL_FALLBACK_SCENARIOS: {
       title: 'تخطيط انكماش الطلب',
       type: 'demand_decrease',
       confidence: 60,
-      summary: 'سيناريو تحفظي يsimulate انخفاض الطلب من العملاء بنسبة 10%. يساعد في تقييم تغطية التكاليف الثابتة وتحديد مجالات تحسين التكاليف.',
+      summary:
+        'سيناريو تحفظي يsimulate انخفاض الطلب من العملاء بنسبة 10%. يساعد في تقييم تغطية التكاليف الثابتة وتحديد مجالات تحسين التكاليف.',
       assumptions: [
-        { key: 'demandChangePercent', value: -10, unit: 'percent', description: 'انخفاض متوقع في الطلب' },
+        {
+          key: 'demandChangePercent',
+          value: -10,
+          unit: 'percent',
+          description: 'انخفاض متوقع في الطلب',
+        },
       ],
       expectedImpact: {
         revenueImpactPercent: -10.0,
@@ -331,7 +367,12 @@ export class AiScenarioService {
       }
       if ('message' in errObj && typeof errObj.message === 'string') {
         const msg = errObj.message.toLowerCase();
-        if (msg.includes('503') || msg.includes('429') || msg.includes('overloaded') || msg.includes('rate limit')) {
+        if (
+          msg.includes('503') ||
+          msg.includes('429') ||
+          msg.includes('overloaded') ||
+          msg.includes('rate limit')
+        ) {
           return true;
         }
       }
@@ -353,8 +394,12 @@ export class AiScenarioService {
     const accounts: Account[] = await this.prisma.account.findMany({
       where: { companyId },
     });
-    const revenueAccounts = accounts.filter((a: Account) => a.type === 'revenue');
-    const expenseAccounts = accounts.filter((a: Account) => a.type === 'expense');
+    const revenueAccounts = accounts.filter(
+      (a: Account) => a.type === 'revenue',
+    );
+    const expenseAccounts = accounts.filter(
+      (a: Account) => a.type === 'expense',
+    );
     const revenueAccountIds = revenueAccounts.map((a: Account) => a.id);
     const expenseAccountIds = expenseAccounts.map((a: Account) => a.id);
 
@@ -435,7 +480,10 @@ export class AiScenarioService {
         : 0;
 
     // Top products by revenue (anonymized - only name and revenue)
-    const productRevenueMap = new Map<bigint, { name: string; total: number }>();
+    const productRevenueMap = new Map<
+      bigint,
+      { name: string; total: number }
+    >();
     for (const line of actualLines) {
       if (line.productId && revenueAccountIds.includes(line.accountId)) {
         const existing = productRevenueMap.get(line.productId);
@@ -462,7 +510,10 @@ export class AiScenarioService {
       }));
 
     // Top customers by revenue (anonymized as Customer 1, Customer 2, etc.)
-    const customerRevenueMap = new Map<bigint, { name: string; total: number }>();
+    const customerRevenueMap = new Map<
+      bigint,
+      { name: string; total: number }
+    >();
     for (const line of actualLines) {
       if (line.customerId && revenueAccountIds.includes(line.accountId)) {
         const existing = customerRevenueMap.get(line.customerId);
@@ -527,10 +578,7 @@ export class AiScenarioService {
       where: { companyId },
       orderBy: { rateDate: 'desc' },
     });
-    const ratePairs = new Map<
-      string,
-      { latest: number; previous: number }
-    >();
+    const ratePairs = new Map<string, { latest: number; previous: number }>();
     for (const rate of exchangeRates) {
       const pair = `${rate.fromCurrency}/${rate.toCurrency}`;
       const existing = ratePairs.get(pair);
@@ -560,9 +608,8 @@ export class AiScenarioService {
     });
     const inventoryRiskSummary = {
       totalItems: inventorySnapshots.length,
-      lowStockItems: inventorySnapshots.filter(
-        (s) => Number(s.qtyOnHand) < 100,
-      ).length,
+      lowStockItems: inventorySnapshots.filter((s) => Number(s.qtyOnHand) < 100)
+        .length,
       overstockItems: inventorySnapshots.filter(
         (s) => Number(s.qtyOnHand) > 10000,
       ).length,
@@ -614,15 +661,19 @@ export class AiScenarioService {
    * SECURITY: No raw records, no PII, no credentials are included in the prompt.
    * Injects a strict language instruction based on the requested language.
    */
-  private buildPrompt(summary: CompanyFinancialSummary, language: 'en' | 'ar'): string {
-    const languageInstruction = language === 'ar'
-      ? `LANGUAGE REQUIREMENT (CRITICAL - ARABIC):
+  private buildPrompt(
+    summary: CompanyFinancialSummary,
+    language: 'en' | 'ar',
+  ): string {
+    const languageInstruction =
+      language === 'ar'
+        ? `LANGUAGE REQUIREMENT (CRITICAL - ARABIC):
 - You MUST respond entirely in Arabic (العربية).
 - ALL scenario titles, summaries, assumption descriptions, recommended actions, and any text content MUST be in Arabic.
 - Do NOT use English words unless they are unavoidable financial terms (e.g., KPI, ROI, USD, EGP).
 - Keep numbers, percentages, and currency codes as-is.
 - Return valid JSON only.`
-      : `LANGUAGE REQUIREMENT (CRITICAL - ENGLISH):
+        : `LANGUAGE REQUIREMENT (CRITICAL - ENGLISH):
 - You MUST respond entirely in English.
 - ALL scenario titles, summaries, assumption descriptions, recommended actions, and any text content MUST be in English.
 - Keep numbers, percentages, and currency codes as-is.
@@ -724,7 +775,12 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
           }),
           new Promise<never>((_, reject) =>
             setTimeout(
-              () => reject(new Error(`Gemini timeout: ${modelName} did not respond within ${GEMINI_TIMEOUT_MS / 1000}s`)),
+              () =>
+                reject(
+                  new Error(
+                    `Gemini timeout: ${modelName} did not respond within ${GEMINI_TIMEOUT_MS / 1000}s`,
+                  ),
+                ),
               GEMINI_TIMEOUT_MS,
             ),
           ),
@@ -750,11 +806,19 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
         }
 
         // Validate basic structure
-        if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.scenarios)) {
-          throw new Error(`Invalid response structure from ${modelName}: missing scenarios array`);
+        if (
+          !parsed ||
+          typeof parsed !== 'object' ||
+          !Array.isArray(parsed.scenarios)
+        ) {
+          throw new Error(
+            `Invalid response structure from ${modelName}: missing scenarios array`,
+          );
         }
 
-        this.logger.log(`Model ${modelName} succeeded on attempt ${attempt + 1} for company ${companyId.toString()}`);
+        this.logger.log(
+          `Model ${modelName} succeeded on attempt ${attempt + 1} for company ${companyId.toString()}`,
+        );
         return parsed;
       } catch (error: unknown) {
         lastError = error;
@@ -788,9 +852,10 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
   ): Promise<AiScenarioResponseDto> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new InternalServerErrorException(
-        { message: 'AI suggestions unavailable. Please configure GEMINI_API_KEY.', code: ErrorCodes.AI_UNAVAILABLE },
-      );
+      throw new InternalServerErrorException({
+        message: 'AI suggestions unavailable. Please configure GEMINI_API_KEY.',
+        code: ErrorCodes.AI_UNAVAILABLE,
+      });
     }
 
     // Build safe aggregated summary (no raw data, no PII)
@@ -809,7 +874,12 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
       const model = genAI.getGenerativeModel({ model: modelName });
 
       try {
-        const parsed = await this.tryGenerateWithModel(model, prompt, modelName, companyId);
+        const parsed = await this.tryGenerateWithModel(
+          model,
+          prompt,
+          modelName,
+          companyId,
+        );
 
         // Normalize response before validation
         const normalized = this.normalizeAiResponse(parsed, language);
@@ -875,11 +945,14 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
    * These are static, reasonable scenarios that don't require AI generation.
    */
   private getLocalFallback(language: 'en' | 'ar'): AiScenarioResponseDto {
-    const scenarios = language === 'ar'
-      ? LOCAL_FALLBACK_SCENARIOS.ar
-      : LOCAL_FALLBACK_SCENARIOS.en;
+    const scenarios =
+      language === 'ar'
+        ? LOCAL_FALLBACK_SCENARIOS.ar
+        : LOCAL_FALLBACK_SCENARIOS.en;
 
-    this.logger.log(`Returning ${language} local fallback scenarios (${scenarios.length} scenarios)`);
+    this.logger.log(
+      `Returning ${language} local fallback scenarios (${scenarios.length} scenarios)`,
+    );
 
     return { scenarios };
   }
@@ -903,14 +976,23 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
       'mixed',
     ] as const;
 
-    const FALLBACK_ACTIONS = language === 'ar'
-      ? ['تحليل الوضع المالي', 'مراقبة المؤشرات الرئيسية', 'تحديث الخطط بشكل دوري']
-      : ['Analyze current financial position', 'Monitor key metrics', 'Update plans regularly'];
+    const FALLBACK_ACTIONS =
+      language === 'ar'
+        ? [
+            'تحليل الوضع المالي',
+            'مراقبة المؤشرات الرئيسية',
+            'تحديث الخطط بشكل دوري',
+          ]
+        : [
+            'Analyze current financial position',
+            'Monitor key metrics',
+            'Update plans regularly',
+          ];
 
     // Ensure raw is an object
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
       this.logger.warn('AI response is not an object, returning empty');
-      return { scenarios: [] } as AiScenarioResponseDto;
+      return { scenarios: [] };
     }
 
     const rawScenarios = raw.scenarios;
@@ -918,92 +1000,130 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
     // Ensure scenarios is an array
     if (!Array.isArray(rawScenarios)) {
       this.logger.warn('AI response missing scenarios array, returning empty');
-      return { scenarios: [] } as AiScenarioResponseDto;
+      return { scenarios: [] };
     }
 
     // Limit to max 3 scenarios
     const limitedScenarios = rawScenarios.slice(0, 3);
 
     const normalizedScenarios = limitedScenarios
-      .filter((item): item is Record<string, unknown> =>
-        item !== null && typeof item === 'object' && !Array.isArray(item)
+      .filter(
+        (item): item is Record<string, unknown> =>
+          item !== null && typeof item === 'object' && !Array.isArray(item),
       )
-      .map(
-        (s: Record<string, unknown>, index: number) => {
+      .map((s: Record<string, unknown>, index: number) => {
         // title: string fallback (language-aware)
-        const title = typeof s.title === 'string' && s.title.length > 0
-          ? s.title
-          : language === 'ar'
-            ? 'سيناريو مقترح بالذكاء الاصطناعي'
-            : 'AI Suggested Scenario';
+        const title =
+          typeof s.title === 'string' && s.title.length > 0
+            ? s.title
+            : language === 'ar'
+              ? 'سيناريو مقترح بالذكاء الاصطناعي'
+              : 'AI Suggested Scenario';
 
         // type: must be one of allowed types; fallback "mixed"
-        const type = typeof s.type === 'string' && ALLOWED_TYPES.includes(s.type as typeof ALLOWED_TYPES[number])
-          ? s.type
-          : 'mixed';
+        const type =
+          typeof s.type === 'string' &&
+          ALLOWED_TYPES.includes(s.type as (typeof ALLOWED_TYPES)[number])
+            ? s.type
+            : 'mixed';
 
         // confidence: convert to number; clamp 0-100; fallback 50
         const rawConfidence = s.confidence;
-        const confidence = typeof rawConfidence === 'number'
-          ? Math.max(0, Math.min(100, rawConfidence))
-          : typeof rawConfidence === 'string'
-            ? Math.max(0, Math.min(100, Number(rawConfidence) || 50))
-            : 50;
+        const confidence =
+          typeof rawConfidence === 'number'
+            ? Math.max(0, Math.min(100, rawConfidence))
+            : typeof rawConfidence === 'string'
+              ? Math.max(0, Math.min(100, Number(rawConfidence) || 50))
+              : 50;
 
         // summary: string fallback (language-aware)
-        const summary = typeof s.summary === 'string' && s.summary.length > 0
-          ? s.summary
-          : language === 'ar'
-            ? 'سيناريو مولد بالذكاء الاصطناعي بناءً على تحليل البيانات المالية.'
-            : 'AI-generated scenario based on financial data analysis.';
+        const summary =
+          typeof s.summary === 'string' && s.summary.length > 0
+            ? s.summary
+            : language === 'ar'
+              ? 'سيناريو مولد بالذكاء الاصطناعي بناءً على تحليل البيانات المالية.'
+              : 'AI-generated scenario based on financial data analysis.';
 
         // assumptions: array fallback []
-        const rawAssumptions = Array.isArray(s.assumptions) ? s.assumptions : [];
+        const rawAssumptions = Array.isArray(s.assumptions)
+          ? s.assumptions
+          : [];
         const assumptions = rawAssumptions.map((a: Record<string, unknown>) => {
           const assumption = a && typeof a === 'object' ? a : {};
           return {
-            key: typeof assumption.key === 'string' ? assumption.key : (language === 'ar' ? 'غير معروف' : 'unknown'),
-            value: typeof assumption.value === 'number'
-              ? assumption.value
-              : typeof assumption.value === 'string'
-                ? Number(assumption.value) || 0
-                : 0,
-            unit: typeof assumption.unit === 'string'
-              ? assumption.unit
-              : 'percent',
-            description: typeof assumption.description === 'string'
-              ? assumption.description
-              : '',
+            key:
+              typeof assumption.key === 'string'
+                ? assumption.key
+                : language === 'ar'
+                  ? 'غير معروف'
+                  : 'unknown',
+            value:
+              typeof assumption.value === 'number'
+                ? assumption.value
+                : typeof assumption.value === 'string'
+                  ? Number(assumption.value) || 0
+                  : 0,
+            unit:
+              typeof assumption.unit === 'string' ? assumption.unit : 'percent',
+            description:
+              typeof assumption.description === 'string'
+                ? assumption.description
+                : '',
           };
         });
 
         // expectedImpact: object with all numeric fields fallback 0
-        const rawImpact = s.expectedImpact && typeof s.expectedImpact === 'object'
-          ? s.expectedImpact as Record<string, unknown>
-          : {};
+        const rawImpact =
+          s.expectedImpact && typeof s.expectedImpact === 'object'
+            ? (s.expectedImpact as Record<string, unknown>)
+            : {};
         const expectedImpact = {
-          revenueImpactPercent: normalizeNumber(rawImpact.revenueImpactPercent, 0),
+          revenueImpactPercent: normalizeNumber(
+            rawImpact.revenueImpactPercent,
+            0,
+          ),
           costImpactPercent: normalizeNumber(rawImpact.costImpactPercent, 0),
-          grossMarginImpactPercent: normalizeNumber(rawImpact.grossMarginImpactPercent, 0),
-          netProfitImpactPercent: normalizeNumber(rawImpact.netProfitImpactPercent, 0),
-          cashFlowImpactPercent: normalizeNumber(rawImpact.cashFlowImpactPercent, 0),
+          grossMarginImpactPercent: normalizeNumber(
+            rawImpact.grossMarginImpactPercent,
+            0,
+          ),
+          netProfitImpactPercent: normalizeNumber(
+            rawImpact.netProfitImpactPercent,
+            0,
+          ),
+          cashFlowImpactPercent: normalizeNumber(
+            rawImpact.cashFlowImpactPercent,
+            0,
+          ),
         };
 
         // recommendedActions: array of strings fallback with language-appropriate defaults
-        const rawActions = Array.isArray(s.recommendedActions) ? s.recommendedActions : [];
-        const recommendedActions = rawActions.length > 0
-          ? rawActions.map((a: unknown) =>
-              typeof a === 'string' ? a : String(a ?? ''),
-            ).filter((a: string) => a.length > 0)
-          : FALLBACK_ACTIONS;
+        const rawActions = Array.isArray(s.recommendedActions)
+          ? s.recommendedActions
+          : [];
+        const recommendedActions =
+          rawActions.length > 0
+            ? rawActions
+                .map((a: unknown) =>
+                  typeof a === 'string' ? a : String(a ?? ''),
+                )
+                .filter((a: string) => a.length > 0)
+            : FALLBACK_ACTIONS;
 
         // simulationInputs: object with all numeric fields fallback 0
-        const rawSim = s.simulationInputs && typeof s.simulationInputs === 'object'
-          ? s.simulationInputs as Record<string, unknown>
-          : {};
+        const rawSim =
+          s.simulationInputs && typeof s.simulationInputs === 'object'
+            ? (s.simulationInputs as Record<string, unknown>)
+            : {};
         const simulationInputs = {
-          rawMaterialPriceChangePercent: normalizeNumber(rawSim.rawMaterialPriceChangePercent, 0),
-          currencyChangePercent: normalizeNumber(rawSim.currencyChangePercent, 0),
+          rawMaterialPriceChangePercent: normalizeNumber(
+            rawSim.rawMaterialPriceChangePercent,
+            0,
+          ),
+          currencyChangePercent: normalizeNumber(
+            rawSim.currencyChangePercent,
+            0,
+          ),
           demandChangePercent: normalizeNumber(rawSim.demandChangePercent, 0),
           branchExpansionCount: normalizeNumber(rawSim.branchExpansionCount, 0),
         };
@@ -1018,8 +1138,7 @@ Return a STRICT JSON response with this exact structure (no markdown, no code bl
           recommendedActions,
           simulationInputs,
         };
-      },
-    );
+      });
 
     return { scenarios: normalizedScenarios } as AiScenarioResponseDto;
   }

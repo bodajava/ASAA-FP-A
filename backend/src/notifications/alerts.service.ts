@@ -159,9 +159,7 @@ export class AlertsService {
     return mapAlertToResponse(updated);
   }
 
-  async markAllAsRead(
-    companyId: bigint,
-  ): Promise<{ count: number }> {
+  async markAllAsRead(companyId: bigint): Promise<{ count: number }> {
     const result = await this.prisma.alert.updateMany({
       where: { companyId, isRead: false },
       data: { isRead: true },
@@ -169,10 +167,7 @@ export class AlertsService {
     return { count: result.count };
   }
 
-  async archive(
-    id: bigint,
-    companyId: bigint,
-  ): Promise<AlertResponseDto> {
+  async archive(id: bigint, companyId: bigint): Promise<AlertResponseDto> {
     const alert = await this.prisma.alert.findFirst({
       where: { id, companyId },
     });
@@ -197,7 +192,10 @@ export class AlertsService {
     return mapAlertToResponse(alert);
   }
 
-  async bulkMarkAsRead(ids: string[], companyId: bigint): Promise<{ count: number }> {
+  async bulkMarkAsRead(
+    ids: string[],
+    companyId: bigint,
+  ): Promise<{ count: number }> {
     const bigIntIds = ids.map((id) => BigInt(id));
     const result = await this.prisma.alert.updateMany({
       where: { id: { in: bigIntIds }, companyId },
@@ -206,7 +204,10 @@ export class AlertsService {
     return { count: result.count };
   }
 
-  async bulkArchive(ids: string[], companyId: bigint): Promise<{ count: number }> {
+  async bulkArchive(
+    ids: string[],
+    companyId: bigint,
+  ): Promise<{ count: number }> {
     const bigIntIds = ids.map((id) => BigInt(id));
     const result = await this.prisma.alert.updateMany({
       where: { id: { in: bigIntIds }, companyId },
@@ -215,7 +216,10 @@ export class AlertsService {
     return { count: result.count };
   }
 
-  async bulkDelete(ids: string[], companyId: bigint): Promise<{ count: number }> {
+  async bulkDelete(
+    ids: string[],
+    companyId: bigint,
+  ): Promise<{ count: number }> {
     const bigIntIds = ids.map((id) => BigInt(id));
     const result = await this.prisma.alert.deleteMany({
       where: { id: { in: bigIntIds }, companyId },
@@ -403,7 +407,9 @@ export class AlertsService {
   }
 
   private async checkCostingAlerts(companyId: bigint) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) return;
     const tenantId = company.tenantId;
 
@@ -416,8 +422,17 @@ export class AlertsService {
 
     for (const product of products) {
       try {
-        const standard = await this.costingService.calculateStandardCost(product.id, companyId, tenantId);
-        const actual = await this.costingService.calculateActualCost(product.id, companyId, tenantId, period);
+        const standard = await this.costingService.calculateStandardCost(
+          product.id,
+          companyId,
+          tenantId,
+        );
+        const actual = await this.costingService.calculateActualCost(
+          product.id,
+          companyId,
+          tenantId,
+          period,
+        );
 
         // 1. Negative standard/actual margins
         if (standard.netProfit < 0 || actual.netProfit < 0) {
@@ -449,7 +464,12 @@ export class AlertsService {
         }
 
         // 2. Low margins (e.g. Gross Margin < 10% or Net Margin < 3%)
-        else if (standard.grossMarginPct < 10 || actual.grossMarginPct < 10 || standard.netMarginPct < 3 || actual.netMarginPct < 3) {
+        else if (
+          standard.grossMarginPct < 10 ||
+          actual.grossMarginPct < 10 ||
+          standard.netMarginPct < 3 ||
+          actual.netMarginPct < 3
+        ) {
           const existing = await this.prisma.alert.findFirst({
             where: {
               companyId,
@@ -479,7 +499,10 @@ export class AlertsService {
 
         // 3. Raw material price spike (Actual vs Standard > 15%)
         if (standard.rawMaterialCost > 0) {
-          const spikePct = ((actual.rawMaterialCost - standard.rawMaterialCost) / standard.rawMaterialCost) * 100;
+          const spikePct =
+            ((actual.rawMaterialCost - standard.rawMaterialCost) /
+              standard.rawMaterialCost) *
+            100;
           if (spikePct > 15) {
             const existing = await this.prisma.alert.findFirst({
               where: {
@@ -511,7 +534,10 @@ export class AlertsService {
 
         // 4. Packaging cost spike (Actual vs Standard > 15%)
         if (standard.packagingCost > 0) {
-          const spikePct = ((actual.packagingCost - standard.packagingCost) / standard.packagingCost) * 100;
+          const spikePct =
+            ((actual.packagingCost - standard.packagingCost) /
+              standard.packagingCost) *
+            100;
           if (spikePct > 15) {
             const existing = await this.prisma.alert.findFirst({
               where: {
@@ -612,7 +638,9 @@ export class AlertsService {
   }
 
   private async checkForecastMarginAlerts(companyId: bigint) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) return;
     const tenantId = company.tenantId;
 
@@ -623,18 +651,24 @@ export class AlertsService {
 
     for (const forecast of approvedForecasts) {
       const lines = forecast.forecastLines;
-      const accountIds = [...new Set(lines.map(l => l.accountId))];
-      const productIds = [...new Set(lines.filter(l => l.productId).map(l => l.productId!))];
+      const accountIds = [...new Set(lines.map((l) => l.accountId))];
+      const productIds = [
+        ...new Set(lines.filter((l) => l.productId).map((l) => l.productId!)),
+      ];
 
       if (accountIds.length === 0 || productIds.length === 0) continue;
 
       const [accounts, products] = await Promise.all([
-        this.prisma.account.findMany({ where: { id: { in: accountIds }, companyId } }),
-        this.prisma.product.findMany({ where: { id: { in: productIds }, companyId } }),
+        this.prisma.account.findMany({
+          where: { id: { in: accountIds }, companyId },
+        }),
+        this.prisma.product.findMany({
+          where: { id: { in: productIds }, companyId },
+        }),
       ]);
 
-      const accountTypeMap = new Map(accounts.map(a => [a.id, a.type]));
-      const productMap = new Map(products.map(p => [p.id, p]));
+      const accountTypeMap = new Map(accounts.map((a) => [a.id, a.type]));
+      const productMap = new Map(products.map((p) => [p.id, p]));
 
       const productData = new Map<bigint, { revenue: number; cogs: number }>();
       for (const line of lines) {
@@ -654,7 +688,8 @@ export class AlertsService {
         const product = productMap.get(productId);
         if (!product || data.revenue === 0) continue;
 
-        const forecastedMargin = ((data.revenue - data.cogs) / data.revenue) * 100;
+        const forecastedMargin =
+          ((data.revenue - data.cogs) / data.revenue) * 100;
 
         if (forecastedMargin < 0) {
           const existing = await this.prisma.alert.findFirst({
@@ -682,7 +717,13 @@ export class AlertsService {
               actionUrl: '/forecasts',
               titleKey: 'alert.costing.forecastNegativeMargin.title',
               messageKey: 'alert.costing.forecastNegativeMargin.message',
-              params: { product: product.name, cycle: forecast.name, margin: forecastedMargin.toFixed(1), revenue: data.revenue.toFixed(2), cogs: data.cogs.toFixed(2) },
+              params: {
+                product: product.name,
+                cycle: forecast.name,
+                margin: forecastedMargin.toFixed(1),
+                revenue: data.revenue.toFixed(2),
+                cogs: data.cogs.toFixed(2),
+              },
             });
           }
         } else if (forecastedMargin < 10) {
@@ -711,7 +752,11 @@ export class AlertsService {
               actionUrl: '/forecasts',
               titleKey: 'alert.costing.forecastLowMargin.title',
               messageKey: 'alert.costing.forecastLowMargin.message',
-              params: { product: product.name, cycle: forecast.name, margin: forecastedMargin.toFixed(1) },
+              params: {
+                product: product.name,
+                cycle: forecast.name,
+                margin: forecastedMargin.toFixed(1),
+              },
             });
           }
         }

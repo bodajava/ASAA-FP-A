@@ -19,7 +19,12 @@ interface LiveRateResult {
 @Injectable()
 export class ExchangeRatesService {
   private readonly logger = new Logger(ExchangeRatesService.name);
-  private static readonly WIDGET_CURRENCIES = ['USD', 'EUR', 'SAR', 'GBP'] as const;
+  private static readonly WIDGET_CURRENCIES = [
+    'USD',
+    'EUR',
+    'SAR',
+    'GBP',
+  ] as const;
   private static readonly BASE_CURRENCY = 'EGP';
 
   constructor(
@@ -52,7 +57,9 @@ export class ExchangeRatesService {
           signal: AbortSignal.timeout(10000),
         });
         if (!response.ok) {
-          this.logger.warn(`FastForex ${from}→${toCurrency} returned ${response.status}`);
+          this.logger.warn(
+            `FastForex ${from}→${toCurrency} returned ${response.status}`,
+          );
           return null;
         }
         const data = (await response.json()) as {
@@ -61,7 +68,9 @@ export class ExchangeRatesService {
         if (data.results && data.results[toCurrency] !== undefined) {
           return { from, rate: data.results[toCurrency] };
         }
-        this.logger.warn(`FastForex ${from}→${toCurrency} missing rate in response`);
+        this.logger.warn(
+          `FastForex ${from}→${toCurrency} missing rate in response`,
+        );
         return null;
       }),
     );
@@ -629,9 +638,7 @@ export class ExchangeRatesService {
       const previousRate = yesterdayMap.get(currency) ?? currentRate;
       const change = this.roundTo(currentRate - previousRate, 6);
       const changePct =
-        previousRate !== 0
-          ? this.roundTo((change / previousRate) * 100, 4)
-          : 0;
+        previousRate !== 0 ? this.roundTo((change / previousRate) * 100, 4) : 0;
 
       let trend: 'up' | 'down' | 'neutral' = 'neutral';
       if (change > 0) trend = 'up';
@@ -652,8 +659,7 @@ export class ExchangeRatesService {
         change,
         changePct,
         trend,
-        lastUpdate:
-          latestUpdatedAt?.toISOString() ?? new Date().toISOString(),
+        lastUpdate: latestUpdatedAt?.toISOString() ?? new Date().toISOString(),
         source,
         provider: live.provider,
         stale,

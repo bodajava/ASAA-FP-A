@@ -126,7 +126,8 @@ export class ImportsController {
   @ApiOperation({ summary: 'Get sample XLSX template for a module' })
   @ApiHeader({
     name: 'x-company-id',
-    description: 'Company ID header (optional, enables reference data in templates)',
+    description:
+      'Company ID header (optional, enables reference data in templates)',
     required: false,
   })
   async getSample(
@@ -135,8 +136,14 @@ export class ImportsController {
     @Response() res: ExpressResponse,
   ) {
     try {
-      const buffer = await this.templateGenerator.generateModuleTemplate(module, companyId);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const buffer = await this.templateGenerator.generateModuleTemplate(
+        module,
+        companyId,
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
       res.setHeader('Content-Length', String(buffer.length));
       res.setHeader(
         'Content-Disposition',
@@ -188,7 +195,9 @@ export class ImportsController {
     description: 'Company ID header is required',
     required: true,
   })
-  @ApiOperation({ summary: 'Generate CSV of error or skipped rows from preview' })
+  @ApiOperation({
+    summary: 'Generate CSV of error or skipped rows from preview',
+  })
   async generateErrorCsv(
     @Body() dto: ErrorCsvDto,
     @CompanyId() companyId: bigint,
@@ -274,7 +283,10 @@ export class ImportsController {
       companyId,
       dto.rows,
       dto.startRow,
-      (_row: Record<string, string | number | boolean | null>, _rowNumber: number) => ({
+      (
+        _row: Record<string, string | number | boolean | null>,
+        _rowNumber: number,
+      ) => ({
         valid: true,
         errors: [],
         mapped: _row,
@@ -289,10 +301,7 @@ export class ImportsController {
     required: true,
   })
   @ApiOperation({ summary: 'Get import job status' })
-  async getJobStatus(
-    @Param('id') id: string,
-    @CompanyId() companyId: bigint,
-  ) {
+  async getJobStatus(@Param('id') id: string, @CompanyId() companyId: bigint) {
     return this.enterpriseImportService.getJobStatus(BigInt(id), companyId);
   }
 
@@ -304,10 +313,7 @@ export class ImportsController {
     required: true,
   })
   @ApiOperation({ summary: 'Cancel an import job' })
-  async cancelJob(
-    @Param('id') id: string,
-    @CompanyId() companyId: bigint,
-  ) {
+  async cancelJob(@Param('id') id: string, @CompanyId() companyId: bigint) {
     return this.enterpriseImportService.cancelJob(BigInt(id), companyId);
   }
 
@@ -323,10 +329,7 @@ export class ImportsController {
     @Param('id') id: string,
     @CompanyId() companyId: bigint,
   ) {
-    return this.enterpriseImportService.retryFailedRows(
-      BigInt(id),
-      companyId,
-    );
+    return this.enterpriseImportService.retryFailedRows(BigInt(id), companyId);
   }
 
   @Get('history')

@@ -169,13 +169,18 @@ export class ScenariosController {
     if (!/^\d+$/.test(id)) {
       throw new BadRequestException('Scenario ID must be a numeric string');
     }
-    return this.scenariosService.getCostingImpact(BigInt(id), companyId, req.user.tenantId);
+    return this.scenariosService.getCostingImpact(
+      BigInt(id),
+      companyId,
+      req.user.tenantId,
+    );
   }
 
   @Get('comparison')
   @ApiOperation({
     summary: 'Scenario comparison data',
-    description: 'Returns Previous Year, Current Year, and Scenario data side-by-side for comparison.',
+    description:
+      'Returns Previous Year, Current Year, and Scenario data side-by-side for comparison.',
   })
   async getComparison(
     @CompanyId() companyId: bigint,

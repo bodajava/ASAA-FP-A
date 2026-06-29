@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsNumber, IsEnum, IsArray } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
 
 export class CostBreakdownDto {
   @ApiProperty()
@@ -361,14 +368,39 @@ export interface CostingDashboardSummary {
   averageProductCost: number;
   highestCostProduct: { id: string; name: string; sku: string; cost: number };
   lowestCostProduct: { id: string; name: string; sku: string; cost: number };
-  highestMarginProduct: { id: string; name: string; sku: string; marginPct: number };
-  lowestMarginProduct: { id: string; name: string; sku: string; marginPct: number };
+  highestMarginProduct: {
+    id: string;
+    name: string;
+    sku: string;
+    marginPct: number;
+  };
+  lowestMarginProduct: {
+    id: string;
+    name: string;
+    sku: string;
+    marginPct: number;
+  };
   manufacturingCost: number;
   packagingCost: number;
   materialCost: number;
   wasteCost: number;
-  costTrend: { period: string; averageStandardCost: number; averageActualCost: number }[];
-  top10ProfitableProducts: { id: string; name: string; sku: string; profit: number; marginPct: number }[];
-  top10LossProducts: { id: string; name: string; sku: string; profit: number; marginPct: number }[];
+  costTrend: {
+    period: string;
+    averageStandardCost: number;
+    averageActualCost: number;
+  }[];
+  top10ProfitableProducts: {
+    id: string;
+    name: string;
+    sku: string;
+    profit: number;
+    marginPct: number;
+  }[];
+  top10LossProducts: {
+    id: string;
+    name: string;
+    sku: string;
+    profit: number;
+    marginPct: number;
+  }[];
 }
-

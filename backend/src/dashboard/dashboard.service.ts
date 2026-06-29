@@ -26,10 +26,30 @@ export interface DashboardCostingSummaryDto {
   totalWasteCost: number;
   grossMarginPct: number;
   netMarginPct: number;
-  topProfitableProducts: { id: string; name: string; sku: string; profit: number; marginPct: number }[];
-  lowestMarginProducts: { id: string; name: string; sku: string; marginPct: number }[];
-  highestCostDrivers: { name: string; impactPct: number; description: string }[];
-  productsWithNegativeMargin: { id: string; name: string; sku: string; marginPct: number }[];
+  topProfitableProducts: {
+    id: string;
+    name: string;
+    sku: string;
+    profit: number;
+    marginPct: number;
+  }[];
+  lowestMarginProducts: {
+    id: string;
+    name: string;
+    sku: string;
+    marginPct: number;
+  }[];
+  highestCostDrivers: {
+    name: string;
+    impactPct: number;
+    description: string;
+  }[];
+  productsWithNegativeMargin: {
+    id: string;
+    name: string;
+    sku: string;
+    marginPct: number;
+  }[];
 }
 
 interface RawKpiRow {
@@ -642,7 +662,11 @@ export class DashboardService {
     const prevYear = currentYear - 1;
 
     // 1-3. Financial data for current month, previous month, and previous year (parallel)
-    const [currentFinancialRows, prevMonthFinancialRows, prevYearFinancialRows] = await Promise.all([
+    const [
+      currentFinancialRows,
+      prevMonthFinancialRows,
+      prevYearFinancialRows,
+    ] = await Promise.all([
       this.prisma.$queryRaw<RawFinancialRow[]>`
         SELECT
           SUM(CASE WHEN a.type = 'revenue' THEN v.actual_amount ELSE 0 END) AS revenue,
@@ -742,10 +766,8 @@ export class DashboardService {
       curBudgetRevenue === 0
         ? 0
         : Math.round((curRevenue / curBudgetRevenue) * 100 * 100) / 100;
-    const pmBudgetUtil =
-      pmRevenue === 0 ? 0 : 0;
-    const pyBudgetUtil =
-      pyRevenue === 0 ? 0 : 0;
+    const pmBudgetUtil = pmRevenue === 0 ? 0 : 0;
+    const pyBudgetUtil = pyRevenue === 0 ? 0 : 0;
 
     // Forecast accuracy %
     const curForecastErr = Math.abs(curRevenue - curForecastRevenue);
@@ -808,7 +830,14 @@ export class DashboardService {
     const curWorkingCapital = curAssets - curLiabilities;
 
     // Previous month & previous year AR/AP/working capital (parallel)
-    const [pmArRows, pmApRows, pmAssetRows, pmLiabilityRows, pyArRows, pyApRows] = await Promise.all([
+    const [
+      pmArRows,
+      pmApRows,
+      pmAssetRows,
+      pmLiabilityRows,
+      pyArRows,
+      pyApRows,
+    ] = await Promise.all([
       this.prisma.$queryRaw<RawAccountBalanceRow[]>`
         SELECT COALESCE(SUM(v.actual_amount), 0) AS total
         FROM vw_budget_actual_forecast v
@@ -976,9 +1005,15 @@ export class DashboardService {
     const pmProductionCost = this.toNum(pmProdCostRows[0]?.production_cost);
     const pyProductionCost = this.toNum(pyProdCostRows[0]?.production_cost);
 
-    const curManufacturingCost = this.toNum(prodCostRows[0]?.manufacturing_cost);
-    const pmManufacturingCost = this.toNum(pmProdCostRows[0]?.manufacturing_cost);
-    const pyManufacturingCost = this.toNum(pyProdCostRows[0]?.manufacturing_cost);
+    const curManufacturingCost = this.toNum(
+      prodCostRows[0]?.manufacturing_cost,
+    );
+    const pmManufacturingCost = this.toNum(
+      pmProdCostRows[0]?.manufacturing_cost,
+    );
+    const pyManufacturingCost = this.toNum(
+      pyProdCostRows[0]?.manufacturing_cost,
+    );
 
     // 8. Entity counts via Prisma ORM
     const [
@@ -1091,13 +1126,21 @@ export class DashboardService {
       ),
       accountsReceivable: buildKpi(curAR, pmAR, pyAR),
       accountsPayable: buildKpi(curAP, pmAP, pyAP),
-      inventoryValue: buildKpi(curInventoryValue, pmInventoryValue, pyInventoryValue),
+      inventoryValue: buildKpi(
+        curInventoryValue,
+        pmInventoryValue,
+        pyInventoryValue,
+      ),
       inventoryCoverage: buildKpi(
         curInventoryCoverage,
         pmInventoryCoverage,
         pyInventoryCoverage,
       ),
-      productionCost: buildKpi(curProductionCost, pmProductionCost, pyProductionCost),
+      productionCost: buildKpi(
+        curProductionCost,
+        pmProductionCost,
+        pyProductionCost,
+      ),
       manufacturingCost: buildKpi(
         curManufacturingCost,
         pmManufacturingCost,
@@ -1148,7 +1191,7 @@ export class DashboardService {
 
     const now = new Date();
     const fiscalYear = queryDto.fiscal_year ?? now.getFullYear();
-    const periodMonth = queryDto.period_month ?? (now.getMonth() + 1);
+    const periodMonth = queryDto.period_month ?? now.getMonth() + 1;
     const period = `${fiscalYear}-${String(periodMonth).padStart(2, '0')}`;
 
     const rawSummary = await this.costingService.getCostingDashboardSummary(
@@ -1157,8 +1200,20 @@ export class DashboardService {
       period,
     );
 
-    const top10Profitable = (rawSummary.top10ProfitableProducts ?? []) as { id: string; name: string; sku: string; profit: number; marginPct: number }[];
-    const top10Loss = (rawSummary.top10LossProducts ?? []) as { id: string; name: string; sku: string; profit: number; marginPct: number }[];
+    const top10Profitable = (rawSummary.top10ProfitableProducts ?? []) as {
+      id: string;
+      name: string;
+      sku: string;
+      profit: number;
+      marginPct: number;
+    }[];
+    const top10Loss = (rawSummary.top10LossProducts ?? []) as {
+      id: string;
+      name: string;
+      sku: string;
+      profit: number;
+      marginPct: number;
+    }[];
 
     const lowestMarginProducts = top10Loss.slice(0, 5).map((p) => ({
       id: p.id,
@@ -1182,7 +1237,11 @@ export class DashboardService {
     const wasteCost = Number(rawSummary.wasteCost ?? 0);
     const totalCost = materialCost + packagingCost + manufacturingCost;
 
-    const highestCostDrivers: { name: string; impactPct: number; description: string }[] = [];
+    const highestCostDrivers: {
+      name: string;
+      impactPct: number;
+      description: string;
+    }[] = [];
     if (totalCost > 0) {
       highestCostDrivers.push({
         name: 'Raw Materials',
@@ -1191,7 +1250,8 @@ export class DashboardService {
       });
       highestCostDrivers.push({
         name: 'Manufacturing',
-        impactPct: Math.round((manufacturingCost / totalCost) * 100 * 100) / 100,
+        impactPct:
+          Math.round((manufacturingCost / totalCost) * 100 * 100) / 100,
         description: `Manufacturing cost averages ${manufacturingCost.toFixed(2)} per unit`,
       });
       highestCostDrivers.push({
@@ -1201,9 +1261,11 @@ export class DashboardService {
       });
     }
 
-    const weightedMarginPct = top10Profitable.length > 0
-      ? top10Profitable.reduce((sum, p) => sum + p.marginPct, 0) / top10Profitable.length
-      : 0;
+    const weightedMarginPct =
+      top10Profitable.length > 0
+        ? top10Profitable.reduce((sum, p) => sum + p.marginPct, 0) /
+          top10Profitable.length
+        : 0;
 
     return {
       averageProductCost: Number(rawSummary.averageProductCost ?? 0),

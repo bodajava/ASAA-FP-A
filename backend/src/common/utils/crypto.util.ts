@@ -8,7 +8,7 @@ function getEncryptionKey(): Buffer {
   if (!secret) {
     throw new Error(
       'ENCRYPTION_KEY environment variable is required. ' +
-      'Set a secure 32+ character string for AES-256 encryption.',
+        'Set a secure 32+ character string for AES-256 encryption.',
     );
   }
   return crypto.createHash('sha256').update(secret).digest();

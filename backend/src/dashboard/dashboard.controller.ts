@@ -54,7 +54,9 @@ export class DashboardController {
   }
 
   @Get('executive-summary')
-  @ApiOperation({ summary: 'Enterprise executive KPIs with MoM, YoY, growth %, and trend' })
+  @ApiOperation({
+    summary: 'Enterprise executive KPIs with MoM, YoY, growth %, and trend',
+  })
   @ApiResponse({ status: 200, type: ExecutiveSummaryDto })
   getExecutiveSummary(
     @CompanyId() companyId: bigint,
@@ -219,13 +221,19 @@ export class DashboardController {
   }
 
   @Get('costing')
-  @ApiOperation({ summary: 'Get costing and profitability summary for dashboard' })
+  @ApiOperation({
+    summary: 'Get costing and profitability summary for dashboard',
+  })
   async getCostingSummary(
     @CompanyId() companyId: bigint,
     @Query() queryDto: DashboardQueryDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.dashboardService.getCostingSummary(companyId, req.user.tenantId, queryDto);
+    return this.dashboardService.getCostingSummary(
+      companyId,
+      req.user.tenantId,
+      queryDto,
+    );
   }
 
   @Get('module-summary')

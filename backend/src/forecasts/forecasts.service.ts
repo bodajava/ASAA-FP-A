@@ -717,7 +717,12 @@ export class ForecastsService {
     const dateTo = new Date(fiscalYear, 11, 31);
 
     const actualsAggregated = await this.prisma.$queryRaw<
-      { account_id: bigint; month: number; total_qty: unknown; total_amount: unknown }[]
+      {
+        account_id: bigint;
+        month: number;
+        total_qty: unknown;
+        total_amount: unknown;
+      }[]
     >`
       SELECT
         al.account_id,
@@ -781,7 +786,10 @@ export class ForecastsService {
     let monthlyInflation = 0;
     if (cycle.scenario && cycle.scenario.assumptionsJson) {
       const assumptions = cycle.scenario.assumptionsJson
-        ? (JSON.parse(cycle.scenario.assumptionsJson) as Record<string, string | number | boolean>)
+        ? (JSON.parse(cycle.scenario.assumptionsJson) as Record<
+            string,
+            string | number | boolean
+          >)
         : {};
       revenueGrowth = Number(
         assumptions['sales_volume_growth'] ??
@@ -897,7 +905,9 @@ export class ForecastsService {
               scenarioAssumptions,
             );
 
-            const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+            const company = await this.prisma.company.findUnique({
+              where: { id: companyId },
+            });
             const companyCurrency = company?.currencyCode ?? 'EGP';
 
             if (acc.type === 'cogs') {
@@ -906,11 +916,22 @@ export class ForecastsService {
               unitPrice = costing.sellingPrice;
             }
 
-            if (scenarioAssumptions && scenarioAssumptions.subtype === 'currency_rate_change') {
-              const fromCurrency = (scenarioAssumptions.fromCurrency as string) || 'USD';
-              const toCurrency = (scenarioAssumptions.toCurrency as string) || companyCurrency;
-              const liveRate = await this.exchangeRatesService.getRate(companyId, fromCurrency, toCurrency);
-              const oldRate = scenarioAssumptions.oldRate ? Number(scenarioAssumptions.oldRate) : 1;
+            if (
+              scenarioAssumptions &&
+              scenarioAssumptions.subtype === 'currency_rate_change'
+            ) {
+              const fromCurrency =
+                (scenarioAssumptions.fromCurrency as string) || 'USD';
+              const toCurrency =
+                (scenarioAssumptions.toCurrency as string) || companyCurrency;
+              const liveRate = await this.exchangeRatesService.getRate(
+                companyId,
+                fromCurrency,
+                toCurrency,
+              );
+              const oldRate = scenarioAssumptions.oldRate
+                ? Number(scenarioAssumptions.oldRate)
+                : 1;
               const rateMultiplier = oldRate > 0 ? liveRate / oldRate : 1;
               unitPrice = unitPrice * rateMultiplier;
             }
@@ -1261,12 +1282,15 @@ export class ForecastsService {
     });
     const accountTypeMap = new Map(accounts.map((a) => [a.id, a.type]));
 
-    const productIds = [...new Set(lines.filter((l) => l.productId).map((l) => l.productId!))];
-    const products = productIds.length > 0
-      ? await this.prisma.product.findMany({
-          where: { id: { in: productIds }, companyId },
-        })
-      : [];
+    const productIds = [
+      ...new Set(lines.filter((l) => l.productId).map((l) => l.productId!)),
+    ];
+    const products =
+      productIds.length > 0
+        ? await this.prisma.product.findMany({
+            where: { id: { in: productIds }, companyId },
+          })
+        : [];
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     for (const line of lines) {
@@ -1290,7 +1314,8 @@ export class ForecastsService {
       entry.totalQuantity += qty;
     }
 
-    const productCostSummaries: ForecastCostingSummaryDto['productCostSummaries'] = [];
+    const productCostSummaries: ForecastCostingSummaryDto['productCostSummaries'] =
+      [];
 
     for (const [productId, lineData] of productLineMap) {
       const product = productMap.get(productId);
@@ -1311,9 +1336,10 @@ export class ForecastsService {
       const forecastedRevenue = lineData.totalRevenue;
       const forecastedCogs = lineData.totalCogs;
       const forecastedGrossProfit = forecastedRevenue - forecastedCogs;
-      const forecastedGrossMarginPct = forecastedRevenue > 0
-        ? (forecastedGrossProfit / forecastedRevenue) * 100
-        : 0;
+      const forecastedGrossMarginPct =
+        forecastedRevenue > 0
+          ? (forecastedGrossProfit / forecastedRevenue) * 100
+          : 0;
 
       productCostSummaries.push({
         productId: product.id.toString(),
@@ -1328,12 +1354,20 @@ export class ForecastsService {
       });
     }
 
-    const totalForecastedRevenue = productCostSummaries.reduce((s, p) => s + p.forecastedRevenue, 0);
-    const totalForecastedCogs = productCostSummaries.reduce((s, p) => s + p.forecastedCogs, 0);
-    const totalForecastedGrossProfit = totalForecastedRevenue - totalForecastedCogs;
-    const overallGrossMarginPct = totalForecastedRevenue > 0
-      ? (totalForecastedGrossProfit / totalForecastedRevenue) * 100
-      : 0;
+    const totalForecastedRevenue = productCostSummaries.reduce(
+      (s, p) => s + p.forecastedRevenue,
+      0,
+    );
+    const totalForecastedCogs = productCostSummaries.reduce(
+      (s, p) => s + p.forecastedCogs,
+      0,
+    );
+    const totalForecastedGrossProfit =
+      totalForecastedRevenue - totalForecastedCogs;
+    const overallGrossMarginPct =
+      totalForecastedRevenue > 0
+        ? (totalForecastedGrossProfit / totalForecastedRevenue) * 100
+        : 0;
 
     return {
       forecastCycleId: cycle.id.toString(),
@@ -1343,7 +1377,9 @@ export class ForecastsService {
       totals: {
         totalForecastedRevenue: Number(totalForecastedRevenue.toFixed(2)),
         totalForecastedCogs: Number(totalForecastedCogs.toFixed(2)),
-        totalForecastedGrossProfit: Number(totalForecastedGrossProfit.toFixed(2)),
+        totalForecastedGrossProfit: Number(
+          totalForecastedGrossProfit.toFixed(2),
+        ),
         overallGrossMarginPct: Number(overallGrossMarginPct.toFixed(2)),
       },
     };

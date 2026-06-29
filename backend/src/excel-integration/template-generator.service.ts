@@ -19,53 +19,57 @@ import {
 /** Friendly header → internal field mapping for transaction modules */
 export const FRIENDLY_HEADER_MAP: Record<string, Record<string, string>> = {
   budgetlines: {
-    'budgetcycle': 'budgetcyclename',
-    'fiscalyear': 'fiscalyear',
-    'account': 'accountcode',
-    'site': 'sitecode',
-    'costcenter': 'costcentercode',
-    'product': 'productsku',
-    'material': 'materialcode',
-    'customer': 'customercode',
-    'month': 'periodmonth',
-    'quantity': 'quantity',
-    'unitprice': 'unitprice',
-    'amount': 'amount',
-    'notes': 'notes',
+    budgetcycle: 'budgetcyclename',
+    fiscalyear: 'fiscalyear',
+    account: 'accountcode',
+    site: 'sitecode',
+    costcenter: 'costcentercode',
+    product: 'productsku',
+    material: 'materialcode',
+    customer: 'customercode',
+    month: 'periodmonth',
+    quantity: 'quantity',
+    unitprice: 'unitprice',
+    amount: 'amount',
+    notes: 'notes',
   },
   forecastlines: {
-    'forecastcycle': 'forecastcyclename',
-    'fiscalyear': 'fiscalyear',
-    'account': 'accountcode',
-    'site': 'sitecode',
-    'costcenter': 'costcentercode',
-    'product': 'productsku',
-    'material': 'materialcode',
-    'customer': 'customercode',
-    'month': 'periodmonth',
-    'quantity': 'quantity',
-    'unitprice': 'unitprice',
-    'amount': 'amount',
-    'drivertype': 'drivertype',
-    'notes': 'notes',
+    forecastcycle: 'forecastcyclename',
+    fiscalyear: 'fiscalyear',
+    account: 'accountcode',
+    site: 'sitecode',
+    costcenter: 'costcentercode',
+    product: 'productsku',
+    material: 'materialcode',
+    customer: 'customercode',
+    month: 'periodmonth',
+    quantity: 'quantity',
+    unitprice: 'unitprice',
+    amount: 'amount',
+    drivertype: 'drivertype',
+    notes: 'notes',
   },
   actuallines: {
-    'account': 'accountcode',
-    'site': 'sitecode',
-    'costcenter': 'costcentercode',
-    'product': 'productsku',
-    'material': 'materialcode',
-    'customer': 'customercode',
-    'transactiondate': 'transactiondate',
-    'quantity': 'quantity',
-    'unitprice': 'unitprice',
-    'amount': 'amount',
-    'referenceno': 'referenceno',
+    account: 'accountcode',
+    site: 'sitecode',
+    costcenter: 'costcentercode',
+    product: 'productsku',
+    material: 'materialcode',
+    customer: 'customercode',
+    transactiondate: 'transactiondate',
+    quantity: 'quantity',
+    unitprice: 'unitprice',
+    amount: 'amount',
+    referenceno: 'referenceno',
   },
 };
 
 /** Modules that get enhanced templates with reference sheets & dropdowns */
-const ENHANCED_MODULES = new Set(['budgetlines', 'forecastlines', 'actuallines']);
+const ENHANCED_MODULES = new Set([
+  'budgetlines',
+  'forecastlines',
+  'actuallines',
+]);
 
 /** Module dependency order for the Instructions sheet */
 const IMPORT_ORDER = [
@@ -115,28 +119,52 @@ export class TemplateGeneratorService {
       ['Welcome to the Harvest ERP Client Workbook Template.'],
       [''],
       ['HOW TO USE THIS WORKBOOK:'],
-      ['1. Fill each data sheet with your information. Each column is labeled with the expected data.'],
-      ['2. Required columns are marked with *. Optional columns can be left blank.'],
-      ['3. Reference data (Accounts, Sites, Cost Centers, Products, etc.) must be imported first.'],
-      ['4. Transaction data (Budget, Forecast, Actuals) can be imported after master data is loaded.'],
-      ['5. Sheets labeled as "Reference" contain lookup data for dropdowns — do not modify these directly.'],
+      [
+        '1. Fill each data sheet with your information. Each column is labeled with the expected data.',
+      ],
+      [
+        '2. Required columns are marked with *. Optional columns can be left blank.',
+      ],
+      [
+        '3. Reference data (Accounts, Sites, Cost Centers, Products, etc.) must be imported first.',
+      ],
+      [
+        '4. Transaction data (Budget, Forecast, Actuals) can be imported after master data is loaded.',
+      ],
+      [
+        '5. Sheets labeled as "Reference" contain lookup data for dropdowns — do not modify these directly.',
+      ],
       [''],
       ['SHEETS OVERVIEW:'],
-      ['  • Data Sheets (importable): Companies, Sites, Units, Accounts, Cost Centers,'],
-      ['    Product Categories, Customers, Suppliers, Materials, Products, BOM Recipes,'],
-      ['    Budget, Forecast, Actuals, Material Prices, Production Planning, Exchange Rates, KPI Targets'],
+      [
+        '  • Data Sheets (importable): Companies, Sites, Units, Accounts, Cost Centers,',
+      ],
+      [
+        '    Product Categories, Customers, Suppliers, Materials, Products, BOM Recipes,',
+      ],
+      [
+        '    Budget, Forecast, Actuals, Material Prices, Production Planning, Exchange Rates, KPI Targets',
+      ],
       ['  • Reference Sheets (not imported): Reference Lists'],
       ['  • Instruction Sheets (not imported): START HERE'],
       [''],
       ['IMPORT ORDER (required):'],
-      ['1. Companies → Sites → Units → Accounts → Cost Centers → Product Categories'],
+      [
+        '1. Companies → Sites → Units → Accounts → Cost Centers → Product Categories',
+      ],
       ['2. Customers → Suppliers → Materials → Products'],
       ['3. BOM Recipes → Budget → Forecast → Actuals'],
-      ['4. Material Prices → Production Planning → Exchange Rates → KPI Targets'],
+      [
+        '4. Material Prices → Production Planning → Exchange Rates → KPI Targets',
+      ],
       [''],
       ['ROUND-TRIP SAFETY:'],
-      ['This template was generated by the system. You can fill in data, save, and re-upload it.'],
-      ['The system will automatically skip this sheet and all Reference sheets during import.'],
+      [
+        'This template was generated by the system. You can fill in data, save, and re-upload it.',
+      ],
+      [
+        'The system will automatically skip this sheet and all Reference sheets during import.',
+      ],
       ['Only the data sheets will be processed.'],
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -144,12 +172,18 @@ export class TemplateGeneratorService {
     return ws;
   }
 
-  private buildReferenceListsSheet(ref: Awaited<ReturnType<TemplateGeneratorService['fetchReferenceData']>>): XLSX.WorkSheet {
+  private buildReferenceListsSheet(
+    ref: Awaited<ReturnType<TemplateGeneratorService['fetchReferenceData']>>,
+  ): XLSX.WorkSheet {
     const rows: string[][] = [
       ['Reference Lists — Master Data Lookup Values'],
       [],
-      ['This sheet summarizes all master data available in the system for reference.'],
-      ['It is not imported. It exists only to help you fill in the correct codes and names.'],
+      [
+        'This sheet summarizes all master data available in the system for reference.',
+      ],
+      [
+        'It is not imported. It exists only to help you fill in the correct codes and names.',
+      ],
       [],
     ];
 
@@ -159,7 +193,8 @@ export class TemplateGeneratorService {
     for (const a of ref.accounts) {
       rows.push([a.code, a.name, '']);
     }
-    if (ref.accounts.length === 0) rows.push(['(No accounts loaded yet)', '', '']);
+    if (ref.accounts.length === 0)
+      rows.push(['(No accounts loaded yet)', '', '']);
     rows.push([]);
 
     // Sites
@@ -177,7 +212,8 @@ export class TemplateGeneratorService {
     for (const cc of ref.costCenters) {
       rows.push([cc.code ?? '', cc.name, '']);
     }
-    if (ref.costCenters.length === 0) rows.push(['(No cost centers loaded yet)', '', '']);
+    if (ref.costCenters.length === 0)
+      rows.push(['(No cost centers loaded yet)', '', '']);
     rows.push([]);
 
     // Products
@@ -186,7 +222,8 @@ export class TemplateGeneratorService {
     for (const p of ref.products) {
       rows.push([p.sku, p.name, '']);
     }
-    if (ref.products.length === 0) rows.push(['(No products loaded yet)', '', '']);
+    if (ref.products.length === 0)
+      rows.push(['(No products loaded yet)', '', '']);
     rows.push([]);
 
     // Materials
@@ -195,7 +232,8 @@ export class TemplateGeneratorService {
     for (const m of ref.materials) {
       rows.push([m.code, m.name, '']);
     }
-    if (ref.materials.length === 0) rows.push(['(No materials loaded yet)', '', '']);
+    if (ref.materials.length === 0)
+      rows.push(['(No materials loaded yet)', '', '']);
     rows.push([]);
 
     // Customers
@@ -204,7 +242,8 @@ export class TemplateGeneratorService {
     for (const c of ref.customers) {
       rows.push([c.code, c.name, '']);
     }
-    if (ref.customers.length === 0) rows.push(['(No customers loaded yet)', '', '']);
+    if (ref.customers.length === 0)
+      rows.push(['(No customers loaded yet)', '', '']);
     rows.push([]);
 
     // Budget Cycles
@@ -213,7 +252,8 @@ export class TemplateGeneratorService {
     for (const bc of ref.budgetCycles) {
       rows.push([bc.name, String(bc.fiscalYear), bc.status ?? 'draft', '']);
     }
-    if (ref.budgetCycles.length === 0) rows.push(['(No budget cycles loaded yet)', '', '', '']);
+    if (ref.budgetCycles.length === 0)
+      rows.push(['(No budget cycles loaded yet)', '', '', '']);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [{ wch: 25 }, { wch: 40 }, { wch: 14 }, { wch: 14 }];
@@ -225,8 +265,12 @@ export class TemplateGeneratorService {
       ['Reference Lists — Master Data Lookup Values'],
       [],
       ['This sheet summarizes all available master data.'],
-      ['Since no company context was available, this reference sheet is empty.'],
-      ['After you import master data, download this template again to see populated reference values.'],
+      [
+        'Since no company context was available, this reference sheet is empty.',
+      ],
+      [
+        'After you import master data, download this template again to see populated reference values.',
+      ],
       [],
       ['=== ACCOUNTS ===', '', ''],
       ['Code', 'Name', ''],
@@ -254,7 +298,12 @@ export class TemplateGeneratorService {
       [],
       ['=== BUDGET CYCLES ===', '', '', ''],
       ['Budget Cycle', 'Fiscal Year', 'Status', ''],
-      ['(Import Budget Cycles first, then re-download this template)', '', '', ''],
+      [
+        '(Import Budget Cycles first, then re-download this template)',
+        '',
+        '',
+        '',
+      ],
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [{ wch: 50 }, { wch: 40 }, { wch: 14 }, { wch: 14 }];
@@ -314,7 +363,11 @@ export class TemplateGeneratorService {
     const isForecast = mod === 'forecastlines';
     const isActuals = mod === 'actuallines';
 
-    const cycleLabel = isBudget ? 'Budget Cycle' : isForecast ? 'Forecast Cycle' : '';
+    const cycleLabel = isBudget
+      ? 'Budget Cycle'
+      : isForecast
+        ? 'Forecast Cycle'
+        : '';
     const cycleExample = isBudget
       ? 'FY25 Annual Budget'
       : isForecast
@@ -325,19 +378,32 @@ export class TemplateGeneratorService {
       [`${sheet.sheetName} Template — Instructions`],
       [],
       ['How to fill this template:'],
-      ['1. Each row represents one budget line entry.' , ''],
-      ['2. Fill in the required columns (marked with *). Leave optional columns blank if not applicable.'],
-      ['3. You can enter either the Code or the Name for Account, Site, Cost Center, Product, Material, and Customer columns.'],
-      ['4. Use the dropdown lists in the data columns for quick selection from your existing master data.'],
-      ['5. Month must be a number between 1 and 12, a month name (e.g. January, Jan), or an Arabic month name.'],
-      ['6. Material and Customer are optional — leave blank if not applicable.'],
+      ['1. Each row represents one budget line entry.', ''],
+      [
+        '2. Fill in the required columns (marked with *). Leave optional columns blank if not applicable.',
+      ],
+      [
+        '3. You can enter either the Code or the Name for Account, Site, Cost Center, Product, Material, and Customer columns.',
+      ],
+      [
+        '4. Use the dropdown lists in the data columns for quick selection from your existing master data.',
+      ],
+      [
+        '5. Month must be a number between 1 and 12, a month name (e.g. January, Jan), or an Arabic month name.',
+      ],
+      [
+        '6. Material and Customer are optional — leave blank if not applicable.',
+      ],
       ['7. Save the file as .xlsx and upload it.'],
       [],
     ];
 
     if (isBudget || isForecast) {
       rows.push(
-        [`${cycleLabel}*`, `Enter the ${cycleLabel.toLowerCase()} name. Example: ${cycleExample}`],
+        [
+          `${cycleLabel}*`,
+          `Enter the ${cycleLabel.toLowerCase()} name. Example: ${cycleExample}`,
+        ],
         ['Fiscal Year*', 'Enter the 4-digit fiscal year. Example: 2025'],
       );
     }
@@ -358,19 +424,31 @@ export class TemplateGeneratorService {
 
     // Accepted values
     rows.push(['Accepted Values:']);
-    rows.push(['- Month: 1, 2, 3, ..., 12, or month names (January, Feb, Mar, ..., Dec), or Arabic month names (يناير, فبراير, ...)']);
+    rows.push([
+      '- Month: 1, 2, 3, ..., 12, or month names (January, Feb, Mar, ..., Dec), or Arabic month names (يناير, فبراير, ...)',
+    ]);
     rows.push(['- Fiscal Year: e.g. 2024, 2025, 2026']);
     if (isForecast) {
-      rows.push(['- Driver Type (Forecast only): driver_based, statistical, manual, trend, seasonal']);
+      rows.push([
+        '- Driver Type (Forecast only): driver_based, statistical, manual, trend, seasonal',
+      ]);
     }
     rows.push([]);
 
     // Missing master data
     rows.push(['If Master Data is Missing:']);
-    rows.push([`If you see errors about missing Accounts, Sites, Cost Centers, or Products,`]);
-    rows.push([`first import the required master data using the corresponding templates, then re-upload this file.`]);
-    rows.push([`Material and Customer are optional — you can leave those columns blank.`]);
-    rows.push([`Download master data templates from the Excel Integration page.`]);
+    rows.push([
+      `If you see errors about missing Accounts, Sites, Cost Centers, or Products,`,
+    ]);
+    rows.push([
+      `first import the required master data using the corresponding templates, then re-upload this file.`,
+    ]);
+    rows.push([
+      `Material and Customer are optional — you can leave those columns blank.`,
+    ]);
+    rows.push([
+      `Download master data templates from the Excel Integration page.`,
+    ]);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [{ wch: 70 }, { wch: 50 }];
@@ -380,53 +458,68 @@ export class TemplateGeneratorService {
   /* ─── Reference Data from DB ───────────────────────────────────────── */
 
   private async fetchReferenceData(companyId: bigint) {
-    const [accounts, sites, costCenters, products, materials, customers, budgetCycles] =
-      await Promise.all([
-        this.prisma.account.findMany({
-          where: { companyId, isActive: true },
-          select: { code: true, name: true },
-          orderBy: { code: 'asc' },
-          take: 500,
-        }),
-        this.prisma.site.findMany({
-          where: { companyId },
-          select: { name: true },
-          orderBy: { name: 'asc' },
-          take: 500,
-        }),
-        this.prisma.costCenter.findMany({
-          where: { companyId },
-          select: { code: true, name: true },
-          orderBy: { code: 'asc' },
-          take: 500,
-        }),
-        this.prisma.product.findMany({
-          where: { companyId, isActive: true },
-          select: { sku: true, name: true },
-          orderBy: { sku: 'asc' },
-          take: 500,
-        }),
-        this.prisma.material.findMany({
-          where: { companyId, isActive: true },
-          select: { code: true, name: true },
-          orderBy: { code: 'asc' },
-          take: 500,
-        }),
-        this.prisma.customer.findMany({
-          where: { companyId, isActive: true },
-          select: { code: true, name: true },
-          orderBy: { code: 'asc' },
-          take: 500,
-        }),
-        this.prisma.budgetCycle.findMany({
-          where: { companyId },
-          select: { name: true, fiscalYear: true, status: true },
-          orderBy: { fiscalYear: 'desc' },
-          take: 200,
-        }),
-      ]);
+    const [
+      accounts,
+      sites,
+      costCenters,
+      products,
+      materials,
+      customers,
+      budgetCycles,
+    ] = await Promise.all([
+      this.prisma.account.findMany({
+        where: { companyId, isActive: true },
+        select: { code: true, name: true },
+        orderBy: { code: 'asc' },
+        take: 500,
+      }),
+      this.prisma.site.findMany({
+        where: { companyId },
+        select: { name: true },
+        orderBy: { name: 'asc' },
+        take: 500,
+      }),
+      this.prisma.costCenter.findMany({
+        where: { companyId },
+        select: { code: true, name: true },
+        orderBy: { code: 'asc' },
+        take: 500,
+      }),
+      this.prisma.product.findMany({
+        where: { companyId, isActive: true },
+        select: { sku: true, name: true },
+        orderBy: { sku: 'asc' },
+        take: 500,
+      }),
+      this.prisma.material.findMany({
+        where: { companyId, isActive: true },
+        select: { code: true, name: true },
+        orderBy: { code: 'asc' },
+        take: 500,
+      }),
+      this.prisma.customer.findMany({
+        where: { companyId, isActive: true },
+        select: { code: true, name: true },
+        orderBy: { code: 'asc' },
+        take: 500,
+      }),
+      this.prisma.budgetCycle.findMany({
+        where: { companyId },
+        select: { name: true, fiscalYear: true, status: true },
+        orderBy: { fiscalYear: 'desc' },
+        take: 200,
+      }),
+    ]);
 
-    return { accounts, sites, costCenters, products, materials, customers, budgetCycles };
+    return {
+      accounts,
+      sites,
+      costCenters,
+      products,
+      materials,
+      customers,
+      budgetCycles,
+    };
   }
 
   /* ─── Add Reference Sheets ─────────────────────────────────────────── */
@@ -521,7 +614,11 @@ export class TemplateGeneratorService {
       cycleRows.push([bc.name, String(bc.fiscalYear), bc.status ?? 'draft']);
     }
     if (ref.budgetCycles.length === 0) {
-      cycleRows.push(['No records found. Budget cycles will be created automatically.', '', '']);
+      cycleRows.push([
+        'No records found. Budget cycles will be created automatically.',
+        '',
+        '',
+      ]);
     }
     const cycleWs = XLSX.utils.aoa_to_sheet(cycleRows);
     cycleWs['!cols'] = [{ wch: 30 }, { wch: 14 }, { wch: 12 }];
@@ -538,7 +635,6 @@ export class TemplateGeneratorService {
     moduleKey: string,
     _dropdownMap: Map<string, string[]>,
   ): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const validations: any[] = [];
     const maxRows = 5000;
 
@@ -559,42 +655,54 @@ export class TemplateGeneratorService {
           sqref,
           type: 'list',
           allowBlank: true,
-          formulae: [`"'Accounts Reference'!$A$2:$A$${Math.min(refAccountsCount(_dropdownMap, 'acc_') + 1, maxRows)}"`],
+          formulae: [
+            `"'Accounts Reference'!$A$2:$A$${Math.min(refAccountsCount(_dropdownMap, 'acc_') + 1, maxRows)}"`,
+          ],
         });
       } else if (col.field === 'siteCode') {
         validations.push({
           sqref,
           type: 'list',
           allowBlank: true,
-          formulae: [`"'Sites Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'site_') + 1, maxRows)}"`],
+          formulae: [
+            `"'Sites Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'site_') + 1, maxRows)}"`,
+          ],
         });
       } else if (col.field === 'costCenterCode') {
         validations.push({
           sqref,
           type: 'list',
           allowBlank: true,
-          formulae: [`"'Cost Centers Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'cc_') + 1, maxRows)}"`],
+          formulae: [
+            `"'Cost Centers Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'cc_') + 1, maxRows)}"`,
+          ],
         });
       } else if (col.field === 'productSku') {
         validations.push({
           sqref,
           type: 'list',
           allowBlank: true,
-          formulae: [`"'Products Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'prod_') + 1, maxRows)}"`],
+          formulae: [
+            `"'Products Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'prod_') + 1, maxRows)}"`,
+          ],
         });
       } else if (col.field === 'materialCode') {
         validations.push({
           sqref,
           type: 'list',
           allowBlank: true,
-          formulae: [`"'Materials Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'mat_') + 1, maxRows)}"`],
+          formulae: [
+            `"'Materials Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'mat_') + 1, maxRows)}"`,
+          ],
         });
       } else if (col.field === 'customerCode') {
         validations.push({
           sqref,
           type: 'list',
           allowBlank: true,
-          formulae: [`"'Customers Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'cust_') + 1, maxRows)}"`],
+          formulae: [
+            `"'Customers Reference'!$A$2:$A$${Math.min(refCount(_dropdownMap, 'cust_') + 1, maxRows)}"`,
+          ],
         });
       }
     }
@@ -606,8 +714,11 @@ export class TemplateGeneratorService {
 
   /* ─── Sheet Worksheet Generation ───────────────────────────────────── */
 
-  private generateSheetWorksheet(sheet: SheetDef, includeExamples = false): XLSX.WorkSheet {
-    const headers = [...sheet.columns.map(c => c.display)];
+  private generateSheetWorksheet(
+    sheet: SheetDef,
+    includeExamples = false,
+  ): XLSX.WorkSheet {
+    const headers = [...sheet.columns.map((c) => c.display)];
     const rows: string[][] = [headers];
 
     if (includeExamples) {
@@ -620,7 +731,7 @@ export class TemplateGeneratorService {
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
 
-    ws['!cols'] = sheet.columns.map(c => ({
+    ws['!cols'] = sheet.columns.map((c) => ({
       wch: Math.max(c.display.length + 4, 18),
     }));
 
@@ -629,20 +740,141 @@ export class TemplateGeneratorService {
 
   private buildExampleRows(sheet: SheetDef): string[][] {
     const examples: Record<string, string[][]> = {
-      companies: [['Acme Corp', 'Acme Corporation Legal Name', 'food_processing', 'EGP', '123-456-789', '1']],
-      sites: [['Cairo Factory', 'factory', 'Cairo', '123 Industrial Zone', 'Cairo', 'Egypt', '+20 2 1234 5678', 'active']],
+      companies: [
+        [
+          'Acme Corp',
+          'Acme Corporation Legal Name',
+          'food_processing',
+          'EGP',
+          '123-456-789',
+          '1',
+        ],
+      ],
+      sites: [
+        [
+          'Cairo Factory',
+          'factory',
+          'Cairo',
+          '123 Industrial Zone',
+          'Cairo',
+          'Egypt',
+          '+20 2 1234 5678',
+          'active',
+        ],
+      ],
       units: [['Kilogram', 'kg', 'weight']],
       accounts: [['4000', 'Sales Revenue', 'revenue', '', 'true']],
-      costcenters: [['CC-001', 'Production Line A', 'production', 'Cairo Factory']],
+      costcenters: [
+        ['CC-001', 'Production Line A', 'production', 'Cairo Factory'],
+      ],
       productcategories: [['Dairy Products', '']],
-      customers: [['CUST-001', 'Retail Chain X', 'retail', 'Cairo', 'Egypt', 'Cairo', '+20 2 9876 5432', 'info@retailchainx.com', '500000', '30', 'true']],
-      suppliers: [['SUPP-001', 'Raw Materials Co', 'raw_material', 'Egypt', 'Alexandria', '+20 3 5555 5555', 'sales@rawmaterials.com', '14', 'true']],
-      materials: [['RM-001', 'Sugar', 'raw_material', 'kg', '15.50', 'SUPP-001', '1000', '500', 'true']],
-      products: [['P-001', 'Yogurt 500ml', 'finished_good', 'Dairy Products', 'pcs', '8.00', '12.00', '0.5', 'true']],
-      bomrecipes: [['P-001', 'v1', '1', '2', '0.50', '0.30', 'RM-001', '0.250', '1']],
-      budget: [['FY26 Annual Budget', '2026', '5000', 'Cairo Factory', 'CC-001', 'P-001', '', '', '1', '10000', '10', '100000', 'Example budget entry']],
-      forecast: [['FY26 Rolling Q1', '2026', '4000', 'Cairo Factory', 'CC-001', 'P-001', '', '', '1', '5000', '12', '60000', 'manual', 'Example forecast entry']],
-      actuals: [['5000', 'Cairo Factory', 'CC-001', 'P-001', '', '', '2026-01-15', '1000', '12', '12000', 'INV-001']],
+      customers: [
+        [
+          'CUST-001',
+          'Retail Chain X',
+          'retail',
+          'Cairo',
+          'Egypt',
+          'Cairo',
+          '+20 2 9876 5432',
+          'info@retailchainx.com',
+          '500000',
+          '30',
+          'true',
+        ],
+      ],
+      suppliers: [
+        [
+          'SUPP-001',
+          'Raw Materials Co',
+          'raw_material',
+          'Egypt',
+          'Alexandria',
+          '+20 3 5555 5555',
+          'sales@rawmaterials.com',
+          '14',
+          'true',
+        ],
+      ],
+      materials: [
+        [
+          'RM-001',
+          'Sugar',
+          'raw_material',
+          'kg',
+          '15.50',
+          'SUPP-001',
+          '1000',
+          '500',
+          'true',
+        ],
+      ],
+      products: [
+        [
+          'P-001',
+          'Yogurt 500ml',
+          'finished_good',
+          'Dairy Products',
+          'pcs',
+          '8.00',
+          '12.00',
+          '0.5',
+          'true',
+        ],
+      ],
+      bomrecipes: [
+        ['P-001', 'v1', '1', '2', '0.50', '0.30', 'RM-001', '0.250', '1'],
+      ],
+      budget: [
+        [
+          'FY26 Annual Budget',
+          '2026',
+          '5000',
+          'Cairo Factory',
+          'CC-001',
+          'P-001',
+          '',
+          '',
+          '1',
+          '10000',
+          '10',
+          '100000',
+          'Example budget entry',
+        ],
+      ],
+      forecast: [
+        [
+          'FY26 Rolling Q1',
+          '2026',
+          '4000',
+          'Cairo Factory',
+          'CC-001',
+          'P-001',
+          '',
+          '',
+          '1',
+          '5000',
+          '12',
+          '60000',
+          'manual',
+          'Example forecast entry',
+        ],
+      ],
+      actuals: [
+        [
+          '5000',
+          'Cairo Factory',
+          'CC-001',
+          'P-001',
+          '',
+          '',
+          '2026-01-15',
+          '1000',
+          '12',
+          '12000',
+          'INV-001',
+        ],
+      ],
     };
 
     return examples[sheet.module] ?? [];
@@ -650,8 +882,13 @@ export class TemplateGeneratorService {
 
   /* ─── Utility: Get module list for dropdowns ───────────────────────── */
 
-  getModuleList(): Array<{ key: string; sheetName: string; description: string; columnCount: number }> {
-    return CLIENT_WORKBOOK_SHEETS.map(s => ({
+  getModuleList(): Array<{
+    key: string;
+    sheetName: string;
+    description: string;
+    columnCount: number;
+  }> {
+    return CLIENT_WORKBOOK_SHEETS.map((s) => ({
       key: s.module,
       sheetName: s.sheetName,
       description: s.description,
@@ -667,7 +904,7 @@ export class TemplateGeneratorService {
       throw new Error(`Unknown module: ${moduleKey}`);
     }
 
-    const headers = sheet.columns.map(c => c.display);
+    const headers = sheet.columns.map((c) => c.display);
     return headers.join(',');
   }
 }

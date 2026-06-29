@@ -330,7 +330,10 @@ export class ReportsController {
   }
 
   @Get('year-comparison')
-  @ApiOperation({ summary: 'Year-over-year comparison: current year vs previous year with variance analysis' })
+  @ApiOperation({
+    summary:
+      'Year-over-year comparison: current year vs previous year with variance analysis',
+  })
   @ApiResponse({ status: 200, type: YearComparisonResponseDto })
   getYearComparison(
     @CompanyId() companyId: bigint,

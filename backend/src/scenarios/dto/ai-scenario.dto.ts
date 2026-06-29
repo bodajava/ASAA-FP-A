@@ -18,7 +18,10 @@ import { Type } from 'class-transformer';
  * No raw company records, customer PII, or credentials are included.
  */
 export class AiAssumptionDto {
-  @ApiProperty({ description: 'Assumption parameter key', example: 'rawMaterialPriceChangePercent' })
+  @ApiProperty({
+    description: 'Assumption parameter key',
+    example: 'rawMaterialPriceChangePercent',
+  })
   @IsString()
   @IsNotEmpty()
   key!: string;
@@ -27,12 +30,19 @@ export class AiAssumptionDto {
   @IsNumber()
   value!: number;
 
-  @ApiProperty({ description: 'Unit of the value', example: 'percent', enum: ['percent', 'amount', 'count', 'text'] })
+  @ApiProperty({
+    description: 'Unit of the value',
+    example: 'percent',
+    enum: ['percent', 'amount', 'count', 'text'],
+  })
   @IsString()
   @IsNotEmpty()
   unit!: 'percent' | 'amount' | 'count' | 'text';
 
-  @ApiProperty({ description: 'Human-readable description', example: 'Expected raw material price increase' })
+  @ApiProperty({
+    description: 'Human-readable description',
+    example: 'Expected raw material price increase',
+  })
   @IsString()
   @IsNotEmpty()
   description!: string;
@@ -92,7 +102,10 @@ export class AiSimulationInputsDto {
  * No raw transaction rows, customer PII, supplier details, or credentials are sent.
  */
 export class AiScenarioSuggestionDto {
-  @ApiProperty({ description: 'Scenario title', example: 'Raw Material Price Surge Impact' })
+  @ApiProperty({
+    description: 'Scenario title',
+    example: 'Raw Material Price Surge Impact',
+  })
   @IsString()
   @IsNotEmpty()
   title!: string;
@@ -100,11 +113,22 @@ export class AiScenarioSuggestionDto {
   @ApiProperty({
     description: 'Scenario type',
     example: 'raw_material_price_increase',
-    enum: ['raw_material_price_increase', 'currency_change', 'demand_decrease', 'branch_expansion', 'mixed'],
+    enum: [
+      'raw_material_price_increase',
+      'currency_change',
+      'demand_decrease',
+      'branch_expansion',
+      'mixed',
+    ],
   })
   @IsString()
   @IsNotEmpty()
-  type!: 'raw_material_price_increase' | 'currency_change' | 'demand_decrease' | 'branch_expansion' | 'mixed';
+  type!:
+    | 'raw_material_price_increase'
+    | 'currency_change'
+    | 'demand_decrease'
+    | 'branch_expansion'
+    | 'mixed';
 
   @ApiProperty({ description: 'Confidence score (0-100)', example: 82 })
   @IsNumber()
@@ -112,7 +136,10 @@ export class AiScenarioSuggestionDto {
   @Max(100)
   confidence!: number;
 
-  @ApiProperty({ description: 'Human-readable summary', example: 'Based on current raw material price trends...' })
+  @ApiProperty({
+    description: 'Human-readable summary',
+    example: 'Based on current raw material price trends...',
+  })
   @IsString()
   @IsNotEmpty()
   summary!: string;
@@ -123,17 +150,26 @@ export class AiScenarioSuggestionDto {
   @Type(() => AiAssumptionDto)
   assumptions!: AiAssumptionDto[];
 
-  @ApiProperty({ description: 'Expected financial impact', type: AiExpectedImpactDto })
+  @ApiProperty({
+    description: 'Expected financial impact',
+    type: AiExpectedImpactDto,
+  })
   @ValidateNested()
   @Type(() => AiExpectedImpactDto)
   expectedImpact!: AiExpectedImpactDto;
 
-  @ApiProperty({ description: 'Recommended actions', example: ['Lock supplier contracts now', 'Hedge currency exposure'] })
+  @ApiProperty({
+    description: 'Recommended actions',
+    example: ['Lock supplier contracts now', 'Hedge currency exposure'],
+  })
   @IsArray()
   @IsString({ each: true })
   recommendedActions!: string[];
 
-  @ApiProperty({ description: 'Simulation inputs for manual form prefill', type: AiSimulationInputsDto })
+  @ApiProperty({
+    description: 'Simulation inputs for manual form prefill',
+    type: AiSimulationInputsDto,
+  })
   @ValidateNested()
   @Type(() => AiSimulationInputsDto)
   simulationInputs!: AiSimulationInputsDto;
@@ -145,7 +181,10 @@ export class AiScenarioSuggestionDto {
  * Only aggregated, anonymized summaries are used to generate these suggestions.
  */
 export class AiScenarioResponseDto {
-  @ApiProperty({ description: 'List of AI-generated scenario suggestions', type: [AiScenarioSuggestionDto] })
+  @ApiProperty({
+    description: 'List of AI-generated scenario suggestions',
+    type: [AiScenarioSuggestionDto],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AiScenarioSuggestionDto)
@@ -156,7 +195,10 @@ export class AiScenarioResponseDto {
  * Response DTO for the AI suggestions endpoint when Gemini is not configured.
  */
 export class AiUnavailableDto {
-  @ApiProperty({ description: 'Error message', example: 'AI suggestions unavailable. Please configure GEMINI_API_KEY.' })
+  @ApiProperty({
+    description: 'Error message',
+    example: 'AI suggestions unavailable. Please configure GEMINI_API_KEY.',
+  })
   @IsString()
   @IsNotEmpty()
   message!: string;
@@ -164,7 +206,10 @@ export class AiUnavailableDto {
   @ApiProperty({ description: 'Whether AI is available', example: false })
   available!: boolean;
 
-  @ApiProperty({ description: 'Error code for i18n', example: 'AI_UNAVAILABLE' })
+  @ApiProperty({
+    description: 'Error code for i18n',
+    example: 'AI_UNAVAILABLE',
+  })
   @IsString()
   code!: string;
 }

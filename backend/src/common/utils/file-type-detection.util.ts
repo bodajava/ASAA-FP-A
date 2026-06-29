@@ -46,9 +46,12 @@ function bufferToFileType(buffer: Buffer): DetectedFileType {
 
 function fileTypeLabel(type: DetectedFileType): string {
   switch (type) {
-    case 'xlsx': return 'Excel Workbook (.xlsx)';
-    case 'xls': return 'Excel 97-2003 (.xls)';
-    case 'csv': return 'CSV';
+    case 'xlsx':
+      return 'Excel Workbook (.xlsx)';
+    case 'xls':
+      return 'Excel 97-2003 (.xls)';
+    case 'csv':
+      return 'CSV';
   }
 }
 
@@ -56,7 +59,10 @@ function fileTypeLabel(type: DetectedFileType): string {
  * Detect the actual file type from buffer content and compare with extension.
  * Returns detection result including mismatch flag.
  */
-export function detectFileType(buffer: Buffer, fileName: string): FileTypeDetectionResult {
+export function detectFileType(
+  buffer: Buffer,
+  fileName: string,
+): FileTypeDetectionResult {
   const detectedType = bufferToFileType(buffer);
 
   const dot = fileName.lastIndexOf('.');
@@ -97,8 +103,8 @@ export class FileTypeMismatchError extends Error {
   ) {
     super(
       `The uploaded file format does not match its extension. ` +
-      `The file has a .${extension} extension but is actually a ${fileTypeLabel(actualType)}. ` +
-      `Please rename the file with the correct extension or upload it as the correct file type.`,
+        `The file has a .${extension} extension but is actually a ${fileTypeLabel(actualType)}. ` +
+        `Please rename the file with the correct extension or upload it as the correct file type.`,
     );
     this.name = 'FileTypeMismatchError';
   }

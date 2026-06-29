@@ -23,25 +23,38 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      message = typeof res === 'string' ? res : (res as { message?: string }).message ?? exception.message;
+      message =
+        typeof res === 'string'
+          ? res
+          : ((res as { message?: string }).message ?? exception.message);
     } else if (exception instanceof Error) {
       // Handle payloadTooLarge / request entity too large
       const msg = exception.message.toLowerCase();
-      if (msg.includes('payloadtoolarge') || msg.includes('entity too large') || msg.includes('request entity too large')) {
+      if (
+        msg.includes('payloadtoolarge') ||
+        msg.includes('entity too large') ||
+        msg.includes('request entity too large')
+      ) {
         status = HttpStatus.PAYLOAD_TOO_LARGE;
-        message = 'The uploaded file exceeds the allowed size (50 MB). Please reduce the file size and try again.';
+        message =
+          'The uploaded file exceeds the allowed size (50 MB). Please reduce the file size and try again.';
       } else if (msg.includes('limit') && msg.includes('content')) {
         status = HttpStatus.PAYLOAD_TOO_LARGE;
-        message = 'The uploaded file exceeds the allowed size (50 MB). Please reduce the file size and try again.';
+        message =
+          'The uploaded file exceeds the allowed size (50 MB). Please reduce the file size and try again.';
       } else {
-        this.logger.error(`Unhandled exception: ${exception.message}`, exception.stack);
+        this.logger.error(
+          `Unhandled exception: ${exception.message}`,
+          exception.stack,
+        );
         message = exception.message || 'An unexpected error occurred.';
       }
     }
 
     // Map status codes to friendly messages
     if (status === HttpStatus.PAYLOAD_TOO_LARGE) {
-      message = 'The uploaded file exceeds the allowed size (50 MB). Please reduce the file size and try again.';
+      message =
+        'The uploaded file exceeds the allowed size (50 MB). Please reduce the file size and try again.';
     }
 
     response.status(status).json({

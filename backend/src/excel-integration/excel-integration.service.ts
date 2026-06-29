@@ -16,8 +16,14 @@ import { ValidationEngineService } from './validation-engine.service';
 import { ErpModuleMapperService } from './erp-module-mapper.service';
 import { StreamingImportService } from './streaming-import.service';
 import {
-  WorkbookAnalysis, SheetAnalysis, ErpModuleMapping, ColumnMapping,
-  SheetValidationResult, ImportExecutionResult, ImportPlan, ImportSheetPlan,
+  WorkbookAnalysis,
+  SheetAnalysis,
+  ErpModuleMapping,
+  ColumnMapping,
+  SheetValidationResult,
+  ImportExecutionResult,
+  ImportPlan,
+  ImportSheetPlan,
   AnalysisWarning,
 } from './types/excel-integration.types';
 import * as XLSX from 'xlsx';
@@ -47,7 +53,9 @@ export class ExcelIntegrationService {
     mappings: ErpModuleMapping[];
     warnings: AnalysisWarning[];
   } {
-    this.logger.log(`Phase 2: Mapping ${analysis.sheets.length} sheets to ERP modules`);
+    this.logger.log(
+      `Phase 2: Mapping ${analysis.sheets.length} sheets to ERP modules`,
+    );
 
     const mappings = this.mapper.mapSheetsToModules(analysis.sheets);
     const warnings: AnalysisWarning[] = [...analysis.warnings];
@@ -72,7 +80,9 @@ export class ExcelIntegrationService {
     buffer: Buffer,
     analysis: WorkbookAnalysis,
   ): SheetValidationResult[] {
-    this.logger.log(`Phase 3: Validating data across ${analysis.sheets.length} sheets`);
+    this.logger.log(
+      `Phase 3: Validating data across ${analysis.sheets.length} sheets`,
+    );
 
     const workbook = XLSX.read(buffer, { type: 'buffer', cellStyles: false });
     const results: SheetValidationResult[] = [];
@@ -81,7 +91,9 @@ export class ExcelIntegrationService {
       const ws = workbook.Sheets[sheet.sheetName];
       if (!ws) continue;
 
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+        defval: null,
+      });
       const result = this.validator.validateSheet(sheet.sheetName, rows, sheet);
       results.push(result);
     }
@@ -98,12 +110,14 @@ export class ExcelIntegrationService {
   ): ImportPlan {
     this.logger.log(`Phase 4: Building import plan`);
 
-    const validationMap = new Map(validations.map(v => [v.sheetName, v]));
-    const mappingMap = new Map(mappings.map(m => [m.sheetName, m]));
+    const validationMap = new Map(validations.map((v) => [v.sheetName, v]));
+    const mappingMap = new Map(mappings.map((m) => [m.sheetName, m]));
 
     const sheets: ImportSheetPlan[] = analysis.importOrder
-      .map(sheetName => {
-        const sheetAnalysis = analysis.sheets.find(s => s.sheetName === sheetName);
+      .map((sheetName) => {
+        const sheetAnalysis = analysis.sheets.find(
+          (s) => s.sheetName === sheetName,
+        );
         const mapping = mappingMap.get(sheetName);
         const validation = validationMap.get(sheetName);
 
@@ -141,29 +155,41 @@ export class ExcelIntegrationService {
     mappings: ErpModuleMapping[],
     validations: SheetValidationResult[],
     companyId: number,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userColumnOverrides?: Record<string, Record<string, string>>; userId?: bigint | null },
+    options?: {
+      dryRun?: boolean;
+      skipErrors?: boolean;
+      userColumnOverrides?: Record<string, Record<string, string>>;
+      userId?: bigint | null;
+    },
   ): Promise<ImportExecutionResult> {
     this.logger.log(`Phase 5: Executing import for company ${companyId}`);
 
     const workbook = XLSX.read(buffer, { type: 'buffer', cellStyles: false });
-    const validationMap = new Map(validations.map(v => [v.sheetName, v]));
-    const mappingMap = new Map(mappings.map(m => [m.sheetName, m]));
+    const validationMap = new Map(validations.map((v) => [v.sheetName, v]));
+    const mappingMap = new Map(mappings.map((m) => [m.sheetName, m]));
 
     const sheetsToImport = analysis.importOrder
-      .map(sheetName => {
-        const sheetAnalysis = analysis.sheets.find(s => s.sheetName === sheetName);
+      .map((sheetName) => {
+        const sheetAnalysis = analysis.sheets.find(
+          (s) => s.sheetName === sheetName,
+        );
         const mapping = mappingMap.get(sheetName);
         const validation = validationMap.get(sheetName);
         const ws = workbook.Sheets[sheetName];
 
         if (!sheetAnalysis || !mapping || !ws || !validation) return null;
 
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+          defval: null,
+        });
 
         // Apply user column overrides
         const userOverrides = options?.userColumnOverrides?.[sheetName];
         const columnMappings = userOverrides
-          ? this.matcher.buildColumnMappings(sheetAnalysis.columns, userOverrides)
+          ? this.matcher.buildColumnMappings(
+              sheetAnalysis.columns,
+              userOverrides,
+            )
           : mapping.columnMappings;
 
         return {
@@ -175,7 +201,11 @@ export class ExcelIntegrationService {
       })
       .filter((s): s is NonNullable<typeof s> => s !== null);
 
-    return this.importer.importWorkbook(sheetsToImport, BigInt(companyId), options);
+    return this.importer.importWorkbook(
+      sheetsToImport,
+      BigInt(companyId),
+      options,
+    );
   }
 
   /* ─── Full Pipeline (convenience method) ───────────────────────────── */
@@ -184,7 +214,12 @@ export class ExcelIntegrationService {
     buffer: Buffer,
     fileName: string,
     companyId: number,
-    options?: { dryRun?: boolean; skipErrors?: boolean; userColumnOverrides?: Record<string, Record<string, string>>; userId?: bigint | null },
+    options?: {
+      dryRun?: boolean;
+      skipErrors?: boolean;
+      userColumnOverrides?: Record<string, Record<string, string>>;
+      userId?: bigint | null;
+    },
   ): Promise<{
     analysis: WorkbookAnalysis;
     mappings: ErpModuleMapping[];
@@ -192,7 +227,9 @@ export class ExcelIntegrationService {
     importResult: ImportExecutionResult;
     importPlan: ImportPlan;
   }> {
-    this.logger.log(`Starting full pipeline: "${fileName}" for company ${companyId}`);
+    this.logger.log(
+      `Starting full pipeline: "${fileName}" for company ${companyId}`,
+    );
 
     // Phase 1: Analyze
     const analysis = this.analyzeWorkbook(buffer, fileName);
@@ -208,16 +245,29 @@ export class ExcelIntegrationService {
     const importPlan = this.buildImportPlan(analysis, mappings, validations);
 
     // Phase 5: Execute
-    const importResult = await this.executeImport(buffer, analysis, mappings, validations, companyId, options);
+    const importResult = await this.executeImport(
+      buffer,
+      analysis,
+      mappings,
+      validations,
+      companyId,
+      options,
+    );
 
-    this.logger.log(`Full pipeline complete: ${importResult.status} (${importResult.insertedRows} inserted)`);
+    this.logger.log(
+      `Full pipeline complete: ${importResult.status} (${importResult.insertedRows} inserted)`,
+    );
 
     return { analysis, mappings, validations, importResult, importPlan };
   }
 
   /* ─── Query Helpers ────────────────────────────────────────────────── */
 
-  getAvailableModules(): Array<{ key: string; description: string; targetTable: string }> {
+  getAvailableModules(): Array<{
+    key: string;
+    description: string;
+    targetTable: string;
+  }> {
     return this.mapper.getAllModules();
   }
 

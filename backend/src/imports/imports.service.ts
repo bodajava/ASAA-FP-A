@@ -11,7 +11,6 @@ import {
   FileTypeMismatchError,
 } from '../common/utils/file-type-detection.util';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RowData = any;
 
 export interface MissingDataItem {
@@ -34,7 +33,7 @@ export interface ImportErrorResponse {
 
 export interface RowPreviewResult {
   index: number;
-  data: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  data: Record<string, any>;
   isValid: boolean;
   errors: string[];
 }
@@ -77,7 +76,10 @@ export class ImportsService {
       const mapping = FRIENDLY_HEADER_MAP[mod];
       if (mapping) {
         for (const [friendly, internal] of Object.entries(mapping)) {
-          if (normalized[friendly] !== undefined && normalized[internal] === undefined) {
+          if (
+            normalized[friendly] !== undefined &&
+            normalized[internal] === undefined
+          ) {
             normalized[internal] = normalized[friendly];
             delete normalized[friendly];
           }
@@ -92,7 +94,13 @@ export class ImportsService {
 
   private async resolveNameToCode(
     value: string,
-    model: 'account' | 'site' | 'costCenter' | 'product' | 'material' | 'customer',
+    model:
+      | 'account'
+      | 'site'
+      | 'costCenter'
+      | 'product'
+      | 'material'
+      | 'customer',
     companyId: bigint,
   ): Promise<{ resolved: string; isAmbiguous?: boolean; matches?: string[] }> {
     const trimmed = String(value).trim();
@@ -121,14 +129,15 @@ export class ImportsService {
         });
         const lower = trimmed.toLowerCase();
         const matches = all.filter(
-          a => a.code.toLowerCase() === lower || a.name.toLowerCase() === lower,
+          (a) =>
+            a.code.toLowerCase() === lower || a.name.toLowerCase() === lower,
         );
         if (matches.length === 1) return { resolved: matches[0].code };
         if (matches.length > 1) {
           return {
             resolved: trimmed,
             isAmbiguous: true,
-            matches: matches.map(m => `${m.code} (${m.name})`),
+            matches: matches.map((m) => `${m.code} (${m.name})`),
           };
         }
         return { resolved: trimmed };
@@ -145,13 +154,13 @@ export class ImportsService {
           select: { name: true },
         });
         const lower = trimmed.toLowerCase();
-        const matches = all.filter(s => s.name.toLowerCase() === lower);
+        const matches = all.filter((s) => s.name.toLowerCase() === lower);
         if (matches.length === 1) return { resolved: matches[0].name };
         if (matches.length > 1) {
           return {
             resolved: trimmed,
             isAmbiguous: true,
-            matches: matches.map(m => m.name),
+            matches: matches.map((m) => m.name),
           };
         }
         return { resolved: trimmed };
@@ -180,14 +189,16 @@ export class ImportsService {
         });
         const lower = trimmed.toLowerCase();
         const matches = all.filter(
-          cc => (cc.code?.toLowerCase() === lower) || cc.name.toLowerCase() === lower,
+          (cc) =>
+            cc.code?.toLowerCase() === lower || cc.name.toLowerCase() === lower,
         );
-        if (matches.length === 1) return { resolved: matches[0].code ?? matches[0].name };
+        if (matches.length === 1)
+          return { resolved: matches[0].code ?? matches[0].name };
         if (matches.length > 1) {
           return {
             resolved: trimmed,
             isAmbiguous: true,
-            matches: matches.map(m => `${m.code ?? m.name} (${m.name})`),
+            matches: matches.map((m) => `${m.code ?? m.name} (${m.name})`),
           };
         }
         return { resolved: trimmed };
@@ -211,14 +222,15 @@ export class ImportsService {
         });
         const lower = trimmed.toLowerCase();
         const matches = all.filter(
-          p => p.sku.toLowerCase() === lower || p.name.toLowerCase() === lower,
+          (p) =>
+            p.sku.toLowerCase() === lower || p.name.toLowerCase() === lower,
         );
         if (matches.length === 1) return { resolved: matches[0].sku };
         if (matches.length > 1) {
           return {
             resolved: trimmed,
             isAmbiguous: true,
-            matches: matches.map(m => `${m.sku} (${m.name})`),
+            matches: matches.map((m) => `${m.sku} (${m.name})`),
           };
         }
         return { resolved: trimmed };
@@ -242,14 +254,15 @@ export class ImportsService {
         });
         const lower = trimmed.toLowerCase();
         const matches = all.filter(
-          m => m.code.toLowerCase() === lower || m.name.toLowerCase() === lower,
+          (m) =>
+            m.code.toLowerCase() === lower || m.name.toLowerCase() === lower,
         );
         if (matches.length === 1) return { resolved: matches[0].code };
         if (matches.length > 1) {
           return {
             resolved: trimmed,
             isAmbiguous: true,
-            matches: matches.map(m => `${m.code} (${m.name})`),
+            matches: matches.map((m) => `${m.code} (${m.name})`),
           };
         }
         return { resolved: trimmed };
@@ -273,14 +286,15 @@ export class ImportsService {
         });
         const lower = trimmed.toLowerCase();
         const matches = all.filter(
-          c => c.code.toLowerCase() === lower || c.name.toLowerCase() === lower,
+          (c) =>
+            c.code.toLowerCase() === lower || c.name.toLowerCase() === lower,
         );
         if (matches.length === 1) return { resolved: matches[0].code };
         if (matches.length > 1) {
           return {
             resolved: trimmed,
             isAmbiguous: true,
-            matches: matches.map(m => `${m.code} (${m.name})`),
+            matches: matches.map((m) => `${m.code} (${m.name})`),
           };
         }
         return { resolved: trimmed };
@@ -299,7 +313,13 @@ export class ImportsService {
 
     const resolveField = async (
       internalField: string,
-      model: 'account' | 'site' | 'costCenter' | 'product' | 'material' | 'customer',
+      model:
+        | 'account'
+        | 'site'
+        | 'costCenter'
+        | 'product'
+        | 'material'
+        | 'customer',
       columnLabel: string,
     ) => {
       if (!resolved[internalField]) return;
@@ -317,7 +337,11 @@ export class ImportsService {
       }
     };
 
-    if (mod === 'budgetlines' || mod === 'forecastlines' || mod === 'actuallines') {
+    if (
+      mod === 'budgetlines' ||
+      mod === 'forecastlines' ||
+      mod === 'actuallines'
+    ) {
       await resolveField('accountcode', 'account', 'Account');
       await resolveField('sitecode', 'site', 'Site');
       await resolveField('costcentercode', 'costCenter', 'Cost Center');
@@ -341,14 +365,41 @@ export class ImportsService {
 
     const str = String(value).trim().toLowerCase();
     const monthMap: Record<string, number> = {
-      january: 1, february: 2, march: 3, april: 4,
-      may: 5, june: 6, july: 7, august: 8,
-      september: 9, october: 10, november: 11, december: 12,
-      jan: 1, feb: 2, mar: 3, apr: 4,
-      jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
-      'يناير': 1, 'فبراير': 2, 'مارس': 3, 'أبريل': 4,
-      'مايو': 5, 'يونيو': 6, 'يوليو': 7, 'أغسطس': 8,
-      'سبتمبر': 9, 'أكتوبر': 10, 'نوفمبر': 11, 'ديسمبر': 12,
+      january: 1,
+      february: 2,
+      march: 3,
+      april: 4,
+      may: 5,
+      june: 6,
+      july: 7,
+      august: 8,
+      september: 9,
+      october: 10,
+      november: 11,
+      december: 12,
+      jan: 1,
+      feb: 2,
+      mar: 3,
+      apr: 4,
+      jun: 6,
+      jul: 7,
+      aug: 8,
+      sep: 9,
+      oct: 10,
+      nov: 11,
+      dec: 12,
+      يناير: 1,
+      فبراير: 2,
+      مارس: 3,
+      أبريل: 4,
+      مايو: 5,
+      يونيو: 6,
+      يوليو: 7,
+      أغسطس: 8,
+      سبتمبر: 9,
+      أكتوبر: 10,
+      نوفمبر: 11,
+      ديسمبر: 12,
     };
     return monthMap[str] ?? null;
   }
@@ -509,13 +560,13 @@ export class ImportsService {
       if (message.includes('Invalid Opening Quote') || message.includes('PK')) {
         throw new BadRequestException(
           'The uploaded file format does not match its extension. ' +
-          'The file appears to be an Excel workbook saved with a .csv extension. ' +
-          'Please rename it with the correct .xlsx extension.',
+            'The file appears to be an Excel workbook saved with a .csv extension. ' +
+            'Please rename it with the correct .xlsx extension.',
         );
       }
       throw new BadRequestException(
         'The uploaded file could not be parsed. ' +
-        'Please ensure the file is not corrupted and is in CSV or Excel format.',
+          'Please ensure the file is not corrupted and is in CSV or Excel format.',
       );
     }
 
@@ -548,7 +599,7 @@ export class ImportsService {
       await this.validateRow(module, resolved, companyId, tenantId, errors);
 
       if (errors.length > 0) {
-        allErrors.push(...errors.map(e => `Row ${i + 1}: ${e}`));
+        allErrors.push(...errors.map((e) => `Row ${i + 1}: ${e}`));
       }
 
       results.push({
@@ -561,8 +612,8 @@ export class ImportsService {
 
     const summary: PreviewSummary = {
       totalRows: rawRows.length,
-      validRows: results.filter(r => r.isValid).length,
-      invalidRows: results.filter(r => !r.isValid).length,
+      validRows: results.filter((r) => r.isValid).length,
+      invalidRows: results.filter((r) => !r.isValid).length,
       skippedRows: 0,
       warnings: allWarnings,
       errors: allErrors,
@@ -586,8 +637,8 @@ export class ImportsService {
       if (message.includes('Invalid Opening Quote')) {
         throw new BadRequestException(
           'The uploaded file format does not match its extension. ' +
-          'This file appears to be an Excel workbook (.xlsx) saved with a .csv extension. ' +
-          'Please rename it with the correct .xlsx extension and upload again.',
+            'This file appears to be an Excel workbook (.xlsx) saved with a .csv extension. ' +
+            'Please rename it with the correct .xlsx extension and upload again.',
         );
       }
       throw new BadRequestException(
@@ -614,7 +665,7 @@ export class ImportsService {
       if (err instanceof BadRequestException) throw err;
       throw new BadRequestException(
         `The ${fileType === 'xlsx' ? 'Excel' : 'Excel 97-2003'} file could not be parsed. ` +
-        'Please ensure the file is not corrupted.',
+          'Please ensure the file is not corrupted.',
       );
     }
   }
@@ -623,10 +674,12 @@ export class ImportsService {
    * Parse all sheets from an Excel workbook for preview purposes.
    * Returns rows from the first sheet (primary import sheet).
    */
-  parseExcelAllSheets(buffer: Buffer): { sheetName: string; rows: RowData[] }[] {
+  parseExcelAllSheets(
+    buffer: Buffer,
+  ): { sheetName: string; rows: RowData[] }[] {
     try {
       const workbook = XLSX.read(buffer, { type: 'buffer' });
-      return workbook.SheetNames.map(name => {
+      return workbook.SheetNames.map((name) => {
         const sheet = workbook.Sheets[name];
         return {
           sheetName: name,
@@ -888,7 +941,9 @@ export class ImportsService {
         else {
           const parsed = this.parseMonthValue(row.periodmonth);
           if (parsed === null) {
-            errors.push('Month must be a number (1-12), month name (e.g. January, Jan), or Arabic month name.');
+            errors.push(
+              'Month must be a number (1-12), month name (e.g. January, Jan), or Arabic month name.',
+            );
           }
         }
         if (!row.amount) errors.push('Amount is required.');
@@ -982,15 +1037,16 @@ export class ImportsService {
         break;
       }
       case 'forecastlines': {
-        if (!row.forecastcyclename)
-          errors.push('Forecast Cycle is required.');
+        if (!row.forecastcyclename) errors.push('Forecast Cycle is required.');
         if (!row.fiscalyear) errors.push('Fiscal Year is required.');
         if (!row.accountcode) errors.push('Account is required.');
         if (!row.periodmonth) errors.push('Month is required.');
         else {
           const parsed = this.parseMonthValue(row.periodmonth);
           if (parsed === null) {
-            errors.push('Month must be a number (1-12), month name (e.g. January, Jan), or Arabic month name.');
+            errors.push(
+              'Month must be a number (1-12), month name (e.g. January, Jan), or Arabic month name.',
+            );
           }
         }
         if (!row.amount) errors.push('Amount is required.');

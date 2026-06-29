@@ -84,16 +84,16 @@ export class ApprovalsController {
     @Param('id') id: string,
     @Request() req: RequestWithUser,
   ): Promise<ApprovalResponseDto> {
-    return this.approvalsService.findOne(
-      BigInt(id),
-      req.user.tenantId,
-    );
+    return this.approvalsService.findOne(BigInt(id), req.user.tenantId);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Approve, reject, or cancel an approval' })
   @ApiResponse({ status: 200, description: 'Approval status updated.' })
-  @ApiResponse({ status: 400, description: 'Invalid action or approval not pending.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid action or approval not pending.',
+  })
   @ApiResponse({ status: 404, description: 'Approval not found.' })
   updateStatus(
     @Param('id') id: string,

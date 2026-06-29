@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiHeader,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CostingService } from './costing.service';
 import {
   ProductCostingDetailDto,
@@ -38,7 +53,9 @@ export class CostingController {
   constructor(private readonly costingService: CostingService) {}
 
   @Get('products/:productId/breakdown')
-  @ApiOperation({ summary: 'Get cost breakdown (Standard and Actual) for a product' })
+  @ApiOperation({
+    summary: 'Get cost breakdown (Standard and Actual) for a product',
+  })
   @ApiResponse({ status: 200, type: ProductCostingDetailDto })
   getProductBreakdown(
     @Param('productId') productIdStr: string,
@@ -71,7 +88,9 @@ export class CostingController {
   }
 
   @Post('products/:productId/recalculate')
-  @ApiOperation({ summary: 'Recalculate costs and store a new snapshot for a product' })
+  @ApiOperation({
+    summary: 'Recalculate costs and store a new snapshot for a product',
+  })
   @ApiResponse({ status: 200, type: ProductCostSnapshotDto })
   recalculate(
     @Param('productId') productIdStr: string,
@@ -138,7 +157,11 @@ export class CostingController {
     @Request() req: RequestWithUser,
     @Body() dto: CreateAllocationDto,
   ): Promise<unknown> {
-    return this.costingService.createAllocation(companyId, req.user.tenantId, dto);
+    return this.costingService.createAllocation(
+      companyId,
+      req.user.tenantId,
+      dto,
+    );
   }
 
   @Get('reports/product-cost-breakdown')
@@ -150,7 +173,11 @@ export class CostingController {
     @Query('period') period?: string,
   ): Promise<CostBreakdownReportItemDto[]> {
     const periodValue = period || new Date().toISOString().substring(0, 7);
-    return this.costingService.getCostBreakdownReport(companyId, req.user.tenantId, periodValue);
+    return this.costingService.getCostBreakdownReport(
+      companyId,
+      req.user.tenantId,
+      periodValue,
+    );
   }
 
   @Get('reports/manufacturing-cost')
@@ -162,7 +189,11 @@ export class CostingController {
     @Query('period') period?: string,
   ): Promise<ManufacturingCostReportItemDto[]> {
     const periodValue = period || new Date().toISOString().substring(0, 7);
-    return this.costingService.getManufacturingCostReport(companyId, req.user.tenantId, periodValue);
+    return this.costingService.getManufacturingCostReport(
+      companyId,
+      req.user.tenantId,
+      periodValue,
+    );
   }
 
   @Get('reports/packaging-cost')
@@ -174,7 +205,11 @@ export class CostingController {
     @Query('period') period?: string,
   ): Promise<PackagingCostReportItemDto[]> {
     const periodValue = period || new Date().toISOString().substring(0, 7);
-    return this.costingService.getPackagingCostReport(companyId, req.user.tenantId, periodValue);
+    return this.costingService.getPackagingCostReport(
+      companyId,
+      req.user.tenantId,
+      periodValue,
+    );
   }
 
   @Get('reports/material-consumption')
@@ -186,7 +221,11 @@ export class CostingController {
     @Query('period') period?: string,
   ): Promise<MaterialConsumptionReportItemDto[]> {
     const periodValue = period || new Date().toISOString().substring(0, 7);
-    return this.costingService.getMaterialConsumptionReport(companyId, req.user.tenantId, periodValue);
+    return this.costingService.getMaterialConsumptionReport(
+      companyId,
+      req.user.tenantId,
+      periodValue,
+    );
   }
 
   @Get('reports/yield-analysis')
@@ -198,7 +237,11 @@ export class CostingController {
     @Query('period') period?: string,
   ): Promise<YieldAnalysisReportItemDto[]> {
     const periodValue = period || new Date().toISOString().substring(0, 7);
-    return this.costingService.getYieldAnalysisReport(companyId, req.user.tenantId, periodValue);
+    return this.costingService.getYieldAnalysisReport(
+      companyId,
+      req.user.tenantId,
+      periodValue,
+    );
   }
 
   @Get('dashboard-summary')

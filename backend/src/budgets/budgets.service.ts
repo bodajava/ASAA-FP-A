@@ -704,7 +704,9 @@ export class BudgetsService {
     const lines = cycle.budgetLines;
 
     const accountIds = [...new Set(lines.map((l) => l.accountId))];
-    const materialIds = [...new Set(lines.filter((l) => l.materialId).map((l) => l.materialId!))];
+    const materialIds = [
+      ...new Set(lines.filter((l) => l.materialId).map((l) => l.materialId!)),
+    ];
 
     const [accounts, materials] = await Promise.all([
       this.prisma.account.findMany({
@@ -720,7 +722,10 @@ export class BudgetsService {
     const accountMap = new Map(accounts.map((a) => [a.id, a]));
     const materialMap = new Map(materials.map((m) => [m.id, m]));
 
-    const categoryAgg = new Map<string, { budgetAmount: number; lineCount: number }>();
+    const categoryAgg = new Map<
+      string,
+      { budgetAmount: number; lineCount: number }
+    >();
 
     for (const line of lines) {
       const account = accountMap.get(line.accountId);
@@ -735,33 +740,90 @@ export class BudgetsService {
       } else if (accType === 'cogs') {
         if (line.materialId) {
           const material = materialMap.get(line.materialId);
-          const matType = (material?.materialType ?? 'raw_material').toLowerCase();
-          if (['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(matType)) {
+          const matType = (
+            material?.materialType ?? 'raw_material'
+          ).toLowerCase();
+          if (
+            [
+              'packaging_material',
+              'packaging',
+              'can_container',
+              'lid_cover',
+              'label',
+              'carton_box',
+              'shrink_plastic',
+              'can',
+              'lid',
+              'carton',
+              'shrink',
+            ].includes(matType)
+          ) {
             category = 'packaging';
           } else {
             category = 'raw_materials';
           }
-        } else if (accName.includes('labor') || accName.includes('salary') || accName.includes('payroll')) {
+        } else if (
+          accName.includes('labor') ||
+          accName.includes('salary') ||
+          accName.includes('payroll')
+        ) {
           category = 'labor';
-        } else if (accName.includes('utilit') || accName.includes('power') || accName.includes('water') || accName.includes('electricity')) {
+        } else if (
+          accName.includes('utilit') ||
+          accName.includes('power') ||
+          accName.includes('water') ||
+          accName.includes('electricity')
+        ) {
           category = 'utilities';
-        } else if (accName.includes('overhead') || accName.includes('indirect')) {
+        } else if (
+          accName.includes('overhead') ||
+          accName.includes('indirect')
+        ) {
           category = 'overhead';
-        } else if (accName.includes('freight') || accName.includes('shipping') || accName.includes('transport') || accName.includes('delivery')) {
+        } else if (
+          accName.includes('freight') ||
+          accName.includes('shipping') ||
+          accName.includes('transport') ||
+          accName.includes('delivery')
+        ) {
           category = 'freight';
         } else {
           category = 'raw_materials';
         }
       } else if (accType === 'expense') {
-        if (accName.includes('labor') || accName.includes('salary') || accName.includes('payroll')) {
+        if (
+          accName.includes('labor') ||
+          accName.includes('salary') ||
+          accName.includes('payroll')
+        ) {
           category = 'labor';
-        } else if (accName.includes('utilit') || accName.includes('power') || accName.includes('water') || accName.includes('electricity')) {
+        } else if (
+          accName.includes('utilit') ||
+          accName.includes('power') ||
+          accName.includes('water') ||
+          accName.includes('electricity')
+        ) {
           category = 'utilities';
-        } else if (accName.includes('freight') || accName.includes('shipping') || accName.includes('transport') || accName.includes('delivery')) {
+        } else if (
+          accName.includes('freight') ||
+          accName.includes('shipping') ||
+          accName.includes('transport') ||
+          accName.includes('delivery')
+        ) {
           category = 'freight';
-        } else if (accName.includes('selling') || accName.includes('marketing') || accName.includes('advertising') || accName.includes('commission')) {
+        } else if (
+          accName.includes('selling') ||
+          accName.includes('marketing') ||
+          accName.includes('advertising') ||
+          accName.includes('commission')
+        ) {
           category = 'selling_expense';
-        } else if (accName.includes('overhead') || accName.includes('indirect') || accName.includes('depreciation') || accName.includes('rent')) {
+        } else if (
+          accName.includes('overhead') ||
+          accName.includes('indirect') ||
+          accName.includes('depreciation') ||
+          accName.includes('rent')
+        ) {
           category = 'overhead';
         } else {
           category = 'other';
@@ -792,7 +854,9 @@ export class BudgetsService {
       totalBudget += data.budgetAmount;
     }
 
-    categories.sort((a, b) => Math.abs(b.budgetAmount) - Math.abs(a.budgetAmount));
+    categories.sort(
+      (a, b) => Math.abs(b.budgetAmount) - Math.abs(a.budgetAmount),
+    );
 
     return {
       budgetCycleId: cycle.id.toString(),

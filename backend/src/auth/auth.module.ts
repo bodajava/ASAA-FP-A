@@ -10,7 +10,7 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error(
     'Missing required environment variable: JWT_SECRET. ' +
-    'Set a strong random string (minimum 32 characters) before starting the server.',
+      'Set a strong random string (minimum 32 characters) before starting the server.',
   );
 }
 

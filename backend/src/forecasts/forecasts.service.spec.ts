@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { ForecastsService, mapForecastCycleToResponse } from './forecasts.service';
+import {
+  ForecastsService,
+  mapForecastCycleToResponse,
+} from './forecasts.service';
 import { ForecastEngineService } from './forecast-engine.service';
 import { PrismaService } from '../prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -57,7 +60,9 @@ describe('ForecastsService', () => {
     holtLinear: jest.fn().mockReturnValue([0]),
     holtWinters: jest.fn().mockReturnValue([0]),
     seasonalNaive: jest.fn().mockReturnValue(0),
-    detectSeasonality: jest.fn().mockReturnValue({ hasSeasonality: false, seasonalFactors: [] }),
+    detectSeasonality: jest
+      .fn()
+      .mockReturnValue({ hasSeasonality: false, seasonalFactors: [] }),
     detectTrend: jest.fn().mockReturnValue({ hasTrend: false, slope: 0 }),
     adjustForRamadan: jest.fn().mockReturnValue(0),
     adjustForInflation: jest.fn().mockReturnValue(0),
@@ -68,7 +73,9 @@ describe('ForecastsService', () => {
       seasonalityDetected: false,
       trendDetected: false,
     }),
-    computeAccuracy: jest.fn().mockReturnValue({ mape: 10.5, mae: 100, rmse: 150, r2: 0.5 }),
+    computeAccuracy: jest
+      .fn()
+      .mockReturnValue({ mape: 10.5, mae: 100, rmse: 150, r2: 0.5 }),
     prepareMonthlyData: jest.fn().mockReturnValue([]),
     buildTimeSeries: jest.fn().mockReturnValue([]),
   };
@@ -137,7 +144,12 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.create.mockResolvedValue(mockForecastCycle);
       mockPrisma.forecastCycle.findUnique.mockResolvedValue(mockForecastCycle);
 
-      const result = await service.create(createDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.create(
+        createDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(mockPrisma.company.findFirst).toHaveBeenCalledWith({
         where: { id: mockCompanyId, tenantId: mockTenantId },
@@ -172,7 +184,11 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.findMany.mockResolvedValue([mockForecastCycle]);
 
       const pagination: PaginationDto = { page: 1, limit: 10 };
-      const result = await service.findAll(mockCompanyId, mockTenantId, pagination);
+      const result = await service.findAll(
+        mockCompanyId,
+        mockTenantId,
+        pagination,
+      );
 
       expect(result.total).toBe(1);
       expect(result.data).toHaveLength(1);
@@ -185,7 +201,11 @@ describe('ForecastsService', () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
 
-      const result = await service.findOne(mockCycleId, mockCompanyId, mockTenantId);
+      const result = await service.findOne(
+        mockCycleId,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.id).toBe('1');
       expect(result.name).toBe('FY2026 Forecast');
@@ -207,10 +227,22 @@ describe('ForecastsService', () => {
     it('should update a forecast cycle', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
-      mockPrisma.forecastCycle.update.mockResolvedValue({ ...mockForecastCycle, name: 'Updated Forecast' });
-      mockPrisma.forecastCycle.findUnique.mockResolvedValue({ ...mockForecastCycle, name: 'Updated Forecast' });
+      mockPrisma.forecastCycle.update.mockResolvedValue({
+        ...mockForecastCycle,
+        name: 'Updated Forecast',
+      });
+      mockPrisma.forecastCycle.findUnique.mockResolvedValue({
+        ...mockForecastCycle,
+        name: 'Updated Forecast',
+      });
 
-      const result = await service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.update(
+        mockCycleId,
+        updateDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(result.name).toBe('Updated Forecast');
       expect(mockPrisma.auditLog.create).toHaveBeenCalled();
@@ -221,25 +253,49 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockCycleId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if forecast is approved', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.forecastCycle.findFirst.mockResolvedValue({ ...mockForecastCycle, status: 'approved' });
+      mockPrisma.forecastCycle.findFirst.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'approved',
+      });
 
       await expect(
-        service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockCycleId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if forecast is locked', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.forecastCycle.findFirst.mockResolvedValue({ ...mockForecastCycle, status: 'locked' });
+      mockPrisma.forecastCycle.findFirst.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'locked',
+      });
 
       await expect(
-        service.update(mockCycleId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockCycleId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -250,16 +306,26 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
       mockPrisma.forecastCycle.delete.mockResolvedValue(mockForecastCycle);
 
-      const result = await service.remove(mockCycleId, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.remove(
+        mockCycleId,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
-      expect(mockPrisma.forecastCycle.delete).toHaveBeenCalledWith({ where: { id: mockCycleId } });
+      expect(mockPrisma.forecastCycle.delete).toHaveBeenCalledWith({
+        where: { id: mockCycleId },
+      });
       expect(mockPrisma.auditLog.create).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
 
     it('should throw BadRequestException if forecast is approved', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.forecastCycle.findFirst.mockResolvedValue({ ...mockForecastCycle, status: 'approved' });
+      mockPrisma.forecastCycle.findFirst.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'approved',
+      });
 
       await expect(
         service.remove(mockCycleId, mockCompanyId, mockTenantId, mockUserId),
@@ -268,7 +334,10 @@ describe('ForecastsService', () => {
 
     it('should throw BadRequestException if forecast is locked', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.forecastCycle.findFirst.mockResolvedValue({ ...mockForecastCycle, status: 'locked' });
+      mockPrisma.forecastCycle.findFirst.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'locked',
+      });
 
       await expect(
         service.remove(mockCycleId, mockCompanyId, mockTenantId, mockUserId),
@@ -289,10 +358,17 @@ describe('ForecastsService', () => {
     it('should transition from draft to submitted', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
-      mockPrisma.forecastCycle.update.mockResolvedValue({ ...mockForecastCycle, status: 'submitted' });
+      mockPrisma.forecastCycle.update.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'submitted',
+      });
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'submitted' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'submitted' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(result.status).toBe('submitted');
@@ -301,10 +377,18 @@ describe('ForecastsService', () => {
     it('should transition draft->approved and trigger notification', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
-      mockPrisma.forecastCycle.update.mockResolvedValue({ ...mockForecastCycle, status: 'approved', approvedBy: 1 });
+      mockPrisma.forecastCycle.update.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'approved',
+        approvedBy: 1,
+      });
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'approved' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'approved' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(result.status).toBe('approved');
@@ -313,11 +397,22 @@ describe('ForecastsService', () => {
 
     it('should transition approved->locked', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.forecastCycle.findFirst.mockResolvedValue({ ...mockForecastCycle, status: 'approved', approvedBy: 1 });
-      mockPrisma.forecastCycle.update.mockResolvedValue({ ...mockForecastCycle, status: 'locked' });
+      mockPrisma.forecastCycle.findFirst.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'approved',
+        approvedBy: 1,
+      });
+      mockPrisma.forecastCycle.update.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'locked',
+      });
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'locked' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'locked' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(result.status).toBe('locked');
@@ -328,7 +423,11 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
 
       const result = await service.updateStatus(
-        mockCycleId, { status: 'draft' }, mockCompanyId, mockTenantId, mockUserId,
+        mockCycleId,
+        { status: 'draft' },
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
       );
 
       expect(mockPrisma.forecastCycle.update).not.toHaveBeenCalled();
@@ -337,10 +436,19 @@ describe('ForecastsService', () => {
 
     it('should throw if locked cycle is transitioned', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
-      mockPrisma.forecastCycle.findFirst.mockResolvedValue({ ...mockForecastCycle, status: 'locked' });
+      mockPrisma.forecastCycle.findFirst.mockResolvedValue({
+        ...mockForecastCycle,
+        status: 'locked',
+      });
 
       await expect(
-        service.updateStatus(mockCycleId, { status: 'approved' }, mockCompanyId, mockTenantId, mockUserId),
+        service.updateStatus(
+          mockCycleId,
+          { status: 'approved' },
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -349,7 +457,13 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(mockForecastCycle);
 
       await expect(
-        service.updateStatus(mockCycleId, { status: 'locked' }, mockCompanyId, mockTenantId, mockUserId),
+        service.updateStatus(
+          mockCycleId,
+          { status: 'locked' },
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -358,7 +472,13 @@ describe('ForecastsService', () => {
       mockPrisma.forecastCycle.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateStatus(mockCycleId, { status: 'submitted' }, mockCompanyId, mockTenantId, mockUserId),
+        service.updateStatus(
+          mockCycleId,
+          { status: 'submitted' },
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -378,7 +498,11 @@ describe('ForecastsService', () => {
       mockPrisma.seasonalIndex.findMany.mockResolvedValue([]);
       mockPrisma.forecastCycle.findUnique.mockResolvedValue(mockForecastCycle);
 
-      const result = await service.generateForecastLines(mockCycleId, mockCompanyId, mockTenantId);
+      const result = await service.generateForecastLines(
+        mockCycleId,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(mockPrisma.forecastLine.deleteMany).toHaveBeenCalledWith({
         where: { forecastCycleId: mockCycleId },
@@ -398,7 +522,10 @@ describe('ForecastsService', () => {
     it('should throw BadRequestException for approved cycle', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastCycle.findFirst.mockResolvedValue({
-        ...mockForecastCycle, status: 'approved', scenario: null, forecastLines: [],
+        ...mockForecastCycle,
+        status: 'approved',
+        scenario: null,
+        forecastLines: [],
       });
 
       await expect(
@@ -411,10 +538,26 @@ describe('ForecastsService', () => {
     it('should return accuracy metrics', async () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastAccuracyLog.findMany.mockResolvedValue([
-        { id: 1, companyId: 1, forecastCycleId: 1, accountId: 1, fiscalYear: 2026, periodMonth: 1, forecastAmount: 1000, actualAmount: 1100, variancePct: 10, methodUsed: 'manual', confidenceScore: 90, createdAt: new Date() },
+        {
+          id: 1,
+          companyId: 1,
+          forecastCycleId: 1,
+          accountId: 1,
+          fiscalYear: 2026,
+          periodMonth: 1,
+          forecastAmount: 1000,
+          actualAmount: 1100,
+          variancePct: 10,
+          methodUsed: 'manual',
+          confidenceScore: 90,
+          createdAt: new Date(),
+        },
       ]);
 
-      const result = await service.getAccuracyMetrics(mockCompanyId, mockTenantId);
+      const result = await service.getAccuracyMetrics(
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.overallMape).toBe(10.5);
       expect(result.recentLogs).toHaveLength(1);
@@ -426,9 +569,24 @@ describe('ForecastsService', () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.forecastAccuracyLog.count.mockResolvedValue(1);
       mockPrisma.forecastAccuracyLog.findMany.mockResolvedValue([
-        { id: 1, companyId: 1, forecastCycleId: 1, accountId: 1, fiscalYear: 2026, periodMonth: 1, forecastAmount: 1000, actualAmount: 1100, variancePct: 10, methodUsed: 'manual', confidenceScore: 90, createdAt: new Date() },
+        {
+          id: 1,
+          companyId: 1,
+          forecastCycleId: 1,
+          accountId: 1,
+          fiscalYear: 2026,
+          periodMonth: 1,
+          forecastAmount: 1000,
+          actualAmount: 1100,
+          variancePct: 10,
+          methodUsed: 'manual',
+          confidenceScore: 90,
+          createdAt: new Date(),
+        },
       ]);
-      mockPrisma.account.findMany.mockResolvedValue([{ id: 1, name: 'Revenue' }]);
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: 1, name: 'Revenue' },
+      ]);
 
       const result = await service.getAccuracyLogs(mockCompanyId, mockTenantId);
 

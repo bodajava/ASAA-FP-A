@@ -211,7 +211,11 @@ export class ForecastsController {
     if (!/^\d+$/.test(id)) {
       throw new BadRequestException('Forecast ID must be a numeric string');
     }
-    return this.forecastsService.getForecastCostingSummary(BigInt(id), companyId, req.user.tenantId);
+    return this.forecastsService.getForecastCostingSummary(
+      BigInt(id),
+      companyId,
+      req.user.tenantId,
+    );
   }
 
   @Get('accuracy')

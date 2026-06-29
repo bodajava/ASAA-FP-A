@@ -26,7 +26,10 @@ export class PrismaService
     if (!urlObj.searchParams.has('allowPublicKeyRetrieval')) {
       urlObj.searchParams.set('allowPublicKeyRetrieval', 'true');
     }
-    const currentLimit = parseInt(urlObj.searchParams.get('connectionLimit') || '10', 10);
+    const currentLimit = parseInt(
+      urlObj.searchParams.get('connectionLimit') || '10',
+      10,
+    );
     if (currentLimit < 3) {
       urlObj.searchParams.set('connectionLimit', '5');
     }
@@ -40,11 +43,16 @@ export class PrismaService
     const isProduction = process.env.NODE_ENV === 'production';
     const forceDeploy = process.env.DEPLOY_VIEWS === 'true';
 
-    if (forceDeploy || (!isProduction && process.env.DEPLOY_VIEWS !== 'false')) {
+    if (
+      forceDeploy ||
+      (!isProduction && process.env.DEPLOY_VIEWS !== 'false')
+    ) {
       this.logger.log('Deploying database views...');
       await this.ensureViewsCreated();
     } else {
-      this.logger.log('Skipping database view deployment (production or disabled).');
+      this.logger.log(
+        'Skipping database view deployment (production or disabled).',
+      );
     }
   }
 

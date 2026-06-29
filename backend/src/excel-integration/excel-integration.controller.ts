@@ -6,8 +6,19 @@
  */
 
 import {
-  Controller, Post, Get, Body, Param, UploadedFile, UseInterceptors,
-  HttpCode, HttpStatus, BadRequestException, Headers, Res, Req,
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  UploadedFile,
+  UseInterceptors,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+  Headers,
+  Res,
+  Req,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -17,8 +28,11 @@ import { ExcelIntegrationService } from './excel-integration.service';
 import { TemplateGeneratorService } from './template-generator.service';
 import { ClientWorkbookImportService } from './client-workbook-import.service';
 import {
-  WorkbookAnalysis, ErpModuleMapping, SheetValidationResult,
-  ImportExecutionResult, ImportPlan,
+  WorkbookAnalysis,
+  ErpModuleMapping,
+  SheetValidationResult,
+  ImportExecutionResult,
+  ImportPlan,
 } from './types/excel-integration.types';
 
 const ALLOWED_EXTENSIONS = /\.(xlsx|xls|csv)$/i;
@@ -45,18 +59,28 @@ function multerConfig() {
   return {
     storage: memoryStorage(),
     limits: { fileSize: MAX_FILE_SIZE_BYTES },
-    fileFilter: (_req: Express.Request, file: MulterFile, cb: (error: Error | null, acceptFile: boolean) => void) => {
+    fileFilter: (
+      _req: Express.Request,
+      file: MulterFile,
+      cb: (error: Error | null, acceptFile: boolean) => void,
+    ) => {
       const ext = file.originalname.toLowerCase();
       if (ext.endsWith('.numbers')) {
-        cb(new BadRequestException(
-          'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
-        ), false);
+        cb(
+          new BadRequestException(
+            'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
+          ),
+          false,
+        );
         return;
       }
       if (!ALLOWED_EXTENSIONS.test(ext)) {
-        cb(new BadRequestException(
-          'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
-        ), false);
+        cb(
+          new BadRequestException(
+            'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
+          ),
+          false,
+        );
         return;
       }
       cb(null, true);
@@ -76,9 +100,7 @@ export class ExcelIntegrationController {
 
   @Post('analyze')
   @UseInterceptors(FileInterceptor('file', multerConfig()))
-  async analyze(
-    @UploadedFile() file: MulterFile,
-  ): Promise<WorkbookAnalysis> {
+  async analyze(@UploadedFile() file: MulterFile): Promise<WorkbookAnalysis> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -97,9 +119,7 @@ export class ExcelIntegrationController {
 
   @Post('map')
   @UseInterceptors(FileInterceptor('file', multerConfig()))
-  async mapToModules(
-    @UploadedFile() file: MulterFile,
-  ): Promise<{
+  async mapToModules(@UploadedFile() file: MulterFile): Promise<{
     analysis: WorkbookAnalysis;
     mappings: ErpModuleMapping[];
     warnings: any[];
@@ -108,7 +128,10 @@ export class ExcelIntegrationController {
       throw new BadRequestException('No file uploaded');
     }
 
-    const analysis = this.service.analyzeWorkbook(file.buffer, file.originalname);
+    const analysis = this.service.analyzeWorkbook(
+      file.buffer,
+      file.originalname,
+    );
     const { mappings, warnings } = this.service.mapToModules(analysis);
     analysis.warnings.push(...warnings);
 
@@ -119,9 +142,7 @@ export class ExcelIntegrationController {
 
   @Post('validate')
   @UseInterceptors(FileInterceptor('file', multerConfig()))
-  async validate(
-    @UploadedFile() file: MulterFile,
-  ): Promise<{
+  async validate(@UploadedFile() file: MulterFile): Promise<{
     analysis: WorkbookAnalysis;
     validations: SheetValidationResult[];
     summary: any;
@@ -130,17 +151,20 @@ export class ExcelIntegrationController {
       throw new BadRequestException('No file uploaded');
     }
 
-    const analysis = this.service.analyzeWorkbook(file.buffer, file.originalname);
+    const analysis = this.service.analyzeWorkbook(
+      file.buffer,
+      file.originalname,
+    );
     const validations = this.service.validateWorkbook(file.buffer, analysis);
 
     const summary = {
-      isValid: validations.every(v => v.errors.length === 0),
+      isValid: validations.every((v) => v.errors.length === 0),
       totalRows: validations.reduce((sum, v) => sum + v.totalRows, 0),
       validRows: validations.reduce((sum, v) => sum + v.validRows, 0),
       totalErrors: validations.reduce((sum, v) => sum + v.errors.length, 0),
       totalWarnings: validations.reduce((sum, v) => sum + v.warnings.length, 0),
       totalDuplicates: validations.reduce((sum, v) => sum + v.duplicateRows, 0),
-      sheets: validations.map(v => ({
+      sheets: validations.map((v) => ({
         name: v.sheetName,
         valid: v.errors.length === 0,
         errors: v.errors.length,
@@ -156,9 +180,7 @@ export class ExcelIntegrationController {
 
   @Post('plan')
   @UseInterceptors(FileInterceptor('file', multerConfig()))
-  async plan(
-    @UploadedFile() file: MulterFile,
-  ): Promise<{
+  async plan(@UploadedFile() file: MulterFile): Promise<{
     analysis: WorkbookAnalysis;
     mappings: ErpModuleMapping[];
     validations: SheetValidationResult[];
@@ -168,10 +190,17 @@ export class ExcelIntegrationController {
       throw new BadRequestException('No file uploaded');
     }
 
-    const analysis = this.service.analyzeWorkbook(file.buffer, file.originalname);
+    const analysis = this.service.analyzeWorkbook(
+      file.buffer,
+      file.originalname,
+    );
     const { mappings } = this.service.mapToModules(analysis);
     const validations = this.service.validateWorkbook(file.buffer, analysis);
-    const importPlan = this.service.buildImportPlan(analysis, mappings, validations);
+    const importPlan = this.service.buildImportPlan(
+      analysis,
+      mappings,
+      validations,
+    );
 
     return { analysis, mappings, validations, importPlan };
   }
@@ -184,7 +213,8 @@ export class ExcelIntegrationController {
   async import(
     @UploadedFile() file: MulterFile,
     @Headers('x-company-id') companyIdHeader: string,
-    @Body() body: { dryRun?: string; skipErrors?: string; columnOverrides?: string },
+    @Body()
+    body: { dryRun?: string; skipErrors?: string; columnOverrides?: string },
     @Req() req: any,
   ): Promise<{
     analysis: WorkbookAnalysis;
@@ -236,9 +266,7 @@ export class ExcelIntegrationController {
 
   @Post('client-workbook/preview')
   @UseInterceptors(FileInterceptor('file', multerConfig()))
-  async previewClientWorkbook(
-    @UploadedFile() file: MulterFile,
-  ) {
+  async previewClientWorkbook(@UploadedFile() file: MulterFile) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -279,7 +307,11 @@ export class ExcelIntegrationController {
   /* ─── GET /modules — List available ERP modules ─────────────────────── */
 
   @Get('modules')
-  getModules(): Array<{ key: string; description: string; targetTable: string }> {
+  getModules(): Array<{
+    key: string;
+    description: string;
+    targetTable: string;
+  }> {
     return this.service.getAvailableModules();
   }
 
@@ -297,25 +329,43 @@ export class ExcelIntegrationController {
     @Res() res: Response,
     @Headers('x-company-id') companyIdHeader?: string,
   ) {
-    const companyId = companyIdHeader ? parseInt(companyIdHeader, 10) : undefined;
+    const companyId = companyIdHeader
+      ? parseInt(companyIdHeader, 10)
+      : undefined;
     const buffer = await this.templateGenerator.generateFullWorkbook(
       !isNaN(companyId ?? NaN) ? BigInt(companyId!) : undefined,
     );
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
     res.setHeader('Content-Length', String(buffer.length));
-    res.setHeader('Content-Disposition', 'attachment; filename="Harvest_Workbook_Template.xlsx"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="Harvest_Workbook_Template.xlsx"',
+    );
     return res.status(HttpStatus.OK).send(buffer);
   }
 
   /* ─── GET /templates/:module — Download module-specific template ──── */
 
   @Get('templates/:module')
-  async downloadModuleTemplate(@Param('module') module: string, @Res() res: Response) {
+  async downloadModuleTemplate(
+    @Param('module') module: string,
+    @Res() res: Response,
+  ) {
     try {
-      const buffer = await this.templateGenerator.generateModuleTemplate(module);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const buffer =
+        await this.templateGenerator.generateModuleTemplate(module);
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
       res.setHeader('Content-Length', String(buffer.length));
-      res.setHeader('Content-Disposition', `attachment; filename="${module}_template.xlsx"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${module}_template.xlsx"`,
+      );
       return res.status(HttpStatus.OK).send(buffer);
     } catch {
       throw new BadRequestException(`Unknown module: ${module}`);

@@ -158,7 +158,11 @@ export class BudgetsController {
     if (!/^\d+$/.test(id)) {
       throw new BadRequestException('Budget ID must be a numeric string');
     }
-    return this.budgetsService.getBudgetByCostCategory(BigInt(id), companyId, req.user.tenantId);
+    return this.budgetsService.getBudgetByCostCategory(
+      BigInt(id),
+      companyId,
+      req.user.tenantId,
+    );
   }
 
   @Patch(':id/status')

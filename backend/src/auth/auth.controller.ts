@@ -44,7 +44,8 @@ export class AuthController {
   @ApiOperation({ summary: 'User login' })
   @ApiHeader({
     name: 'x-tenant-id',
-    description: 'Optional tenant ID. If not provided, tenant is resolved from email.',
+    description:
+      'Optional tenant ID. If not provided, tenant is resolved from email.',
     required: false,
   })
   @ApiResponse({
@@ -72,9 +73,10 @@ export class AuthController {
       try {
         tenantId = BigInt(tenantIdHeader);
       } catch {
-        throw new BadRequestException(
-          { message: 'Invalid x-tenant-id header. Must be a numeric value.', code: ErrorCodes.AUTH_TENANT_INVALID },
-        );
+        throw new BadRequestException({
+          message: 'Invalid x-tenant-id header. Must be a numeric value.',
+          code: ErrorCodes.AUTH_TENANT_INVALID,
+        });
       }
     }
 

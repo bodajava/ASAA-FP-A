@@ -41,8 +41,19 @@ describe('BomRecipesService', () => {
   const mockProductId = 10;
   const mockMaterialId = 100;
 
-  const mockProduct = { id: 10, companyId: 1, name: 'Test Product', sku: 'TP-001' };
-  const mockMaterial = { id: 100, companyId: 1, name: 'Raw Material', code: 'RM-001', purchasePrice: 50 };
+  const mockProduct = {
+    id: 10,
+    companyId: 1,
+    name: 'Test Product',
+    sku: 'TP-001',
+  };
+  const mockMaterial = {
+    id: 100,
+    companyId: 1,
+    name: 'Raw Material',
+    code: 'RM-001',
+    purchasePrice: 50,
+  };
   const mockRecipeRecord = {
     id: 1,
     companyId: 1,
@@ -59,15 +70,22 @@ describe('BomRecipesService', () => {
   const mockFullRecipe = {
     ...mockRecipeRecord,
     product: { id: 10, name: 'Test Product', sku: 'TP-001' },
-    bomLines: [{
-      id: 1,
-      bomId: 1,
-      materialId: 100,
-      qtyPerOutput: 2,
-      unitCost: 0,
-      wastagePct: 10,
-      material: { id: 100, name: 'Raw Material', code: 'RM-001', purchasePrice: 50 },
-    }],
+    bomLines: [
+      {
+        id: 1,
+        bomId: 1,
+        materialId: 100,
+        qtyPerOutput: 2,
+        unitCost: 0,
+        wastagePct: 10,
+        material: {
+          id: 100,
+          name: 'Raw Material',
+          code: 'RM-001',
+          purchasePrice: 50,
+        },
+      },
+    ],
   };
 
   const createDto: CreateBomRecipeDto = {
@@ -110,7 +128,12 @@ describe('BomRecipesService', () => {
       mockPrisma.bomRecipe.create.mockResolvedValue(mockRecipeRecord);
       mockPrisma.bomRecipe.findUnique.mockResolvedValue(mockFullRecipe);
 
-      const result = await service.create(createDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.create(
+        createDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(mockPrisma.company.findFirst).toHaveBeenCalledWith({
         where: { id: mockCompanyId, tenantId: mockTenantId },
@@ -169,7 +192,11 @@ describe('BomRecipesService', () => {
       mockPrisma.bomRecipe.findMany.mockResolvedValue([mockFullRecipe]);
 
       const pagination: PaginationDto = { page: 1, limit: 10 };
-      const result = await service.findAll(mockCompanyId, mockTenantId, pagination);
+      const result = await service.findAll(
+        mockCompanyId,
+        mockTenantId,
+        pagination,
+      );
 
       expect(result.total).toBe(1);
       expect(result.data).toHaveLength(1);
@@ -190,7 +217,11 @@ describe('BomRecipesService', () => {
       mockPrisma.company.findFirst.mockResolvedValue(mockCompany);
       mockPrisma.bomRecipe.findFirst.mockResolvedValue(mockFullRecipe);
 
-      const result = await service.findOne(mockRecipeId, mockCompanyId, mockTenantId);
+      const result = await service.findOne(
+        mockRecipeId,
+        mockCompanyId,
+        mockTenantId,
+      );
 
       expect(result.id).toBe('1');
       expect(result.product.name).toBe('Test Product');
@@ -242,7 +273,13 @@ describe('BomRecipesService', () => {
       mockPrisma.bomRecipe.update.mockResolvedValue(mockRecipeRecord);
       mockPrisma.bomRecipe.findUnique.mockResolvedValue(mockFullRecipe);
 
-      const result = await service.update(mockRecipeId, updateDto, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.update(
+        mockRecipeId,
+        updateDto,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
       expect(mockPrisma.bomRecipe.findFirst).toHaveBeenCalledWith({
         where: { id: mockRecipeId, companyId: mockCompanyId },
@@ -258,7 +295,13 @@ describe('BomRecipesService', () => {
       mockPrisma.bomRecipe.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.update(mockRecipeId, updateDto, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockRecipeId,
+          updateDto,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -267,10 +310,16 @@ describe('BomRecipesService', () => {
       mockPrisma.bomRecipe.findFirst.mockResolvedValue(mockFullRecipe);
       mockPrisma.product.findFirst.mockResolvedValue(null);
 
-      const dtoWithProduct: UpdateBomRecipeDto = { productId: '999' } as any;
+      const dtoWithProduct: UpdateBomRecipeDto = { productId: '999' };
 
       await expect(
-        service.update(mockRecipeId, dtoWithProduct, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockRecipeId,
+          dtoWithProduct,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -280,11 +329,17 @@ describe('BomRecipesService', () => {
       mockPrisma.material.findMany.mockResolvedValue([]);
 
       const dtoWithLines: UpdateBomRecipeDto = {
-        bomLines: [{ materialId: '999', qtyPerOutput: 1 }] as any,
+        bomLines: [{ materialId: '999', qtyPerOutput: 1 }],
       };
 
       await expect(
-        service.update(mockRecipeId, dtoWithLines, mockCompanyId, mockTenantId, mockUserId),
+        service.update(
+          mockRecipeId,
+          dtoWithLines,
+          mockCompanyId,
+          mockTenantId,
+          mockUserId,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -295,9 +350,16 @@ describe('BomRecipesService', () => {
       mockPrisma.bomRecipe.findFirst.mockResolvedValue(mockFullRecipe);
       mockPrisma.bomRecipe.delete.mockResolvedValue(mockFullRecipe);
 
-      const result = await service.remove(mockRecipeId, mockCompanyId, mockTenantId, mockUserId);
+      const result = await service.remove(
+        mockRecipeId,
+        mockCompanyId,
+        mockTenantId,
+        mockUserId,
+      );
 
-      expect(mockPrisma.bomRecipe.delete).toHaveBeenCalledWith({ where: { id: mockRecipeId } });
+      expect(mockPrisma.bomRecipe.delete).toHaveBeenCalledWith({
+        where: { id: mockRecipeId },
+      });
       expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           entityType: 'BomRecipe',

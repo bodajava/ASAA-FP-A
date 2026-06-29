@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards, Request, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  Request,
+  Res,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,7 +17,10 @@ import type { Response } from 'express';
 import { VarianceService } from './variance.service';
 import { VarianceQueryDto } from './dto/variance-query.dto';
 import { PaginatedVarianceResponseDto } from './dto/variance-response.dto';
-import { YoYComparisonQueryDto, YoYComparisonResponseDto } from './dto/yoy-comparison.dto';
+import {
+  YoYComparisonQueryDto,
+  YoYComparisonResponseDto,
+} from './dto/yoy-comparison.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CompanyId } from '../common/decorators/company.decorator';
@@ -128,7 +138,8 @@ export class VarianceController {
   @Get('yoy')
   @ApiOperation({
     summary: 'Year-over-Year (YoY) comparison analysis',
-    description: 'Compares previous year vs current year vs current year plan for major metrics.',
+    description:
+      'Compares previous year vs current year vs current year plan for major metrics.',
   })
   @ApiResponse({
     status: 200,
@@ -149,7 +160,8 @@ export class VarianceController {
   @Get(':compareType/export')
   @ApiOperation({
     summary: 'Export variance comparison as CSV',
-    description: 'Exports the selected comparison type (budget-vs-actual, budget-vs-forecast, actual-vs-forecast, budget-actual-forecast) as a downloadable CSV file.',
+    description:
+      'Exports the selected comparison type (budget-vs-actual, budget-vs-forecast, actual-vs-forecast, budget-actual-forecast) as a downloadable CSV file.',
   })
   @ApiResponse({ status: 200, description: 'CSV file returned.' })
   async exportComparison(
@@ -159,23 +171,52 @@ export class VarianceController {
     @Res() res: Response,
   ) {
     const compareType = (req.params as Record<string, string>).compareType;
-    const serviceMethods: Record<string, (cid: bigint, tid: bigint, q: VarianceQueryDto) => Promise<PaginatedVarianceResponseDto>> = {
-      'budget-vs-actual': (cid, tid, q) => this.varianceService.compareBudgetVsActual(cid, tid, q),
-      'budget-vs-forecast': (cid, tid, q) => this.varianceService.compareBudgetVsForecast(cid, tid, q),
-      'actual-vs-forecast': (cid, tid, q) => this.varianceService.compareActualVsForecast(cid, tid, q),
-      'budget-actual-forecast': (cid, tid, q) => this.varianceService.compareBudgetVsActualVsForecast(cid, tid, q),
+    const serviceMethods: Record<
+      string,
+      (
+        cid: bigint,
+        tid: bigint,
+        q: VarianceQueryDto,
+      ) => Promise<PaginatedVarianceResponseDto>
+    > = {
+      'budget-vs-actual': (cid, tid, q) =>
+        this.varianceService.compareBudgetVsActual(cid, tid, q),
+      'budget-vs-forecast': (cid, tid, q) =>
+        this.varianceService.compareBudgetVsForecast(cid, tid, q),
+      'actual-vs-forecast': (cid, tid, q) =>
+        this.varianceService.compareActualVsForecast(cid, tid, q),
+      'budget-actual-forecast': (cid, tid, q) =>
+        this.varianceService.compareBudgetVsActualVsForecast(cid, tid, q),
     };
 
     const method = serviceMethods[compareType];
     if (!method) {
-      res.status(400).json({ message: `Invalid comparison type: ${compareType}` });
+      res
+        .status(400)
+        .json({ message: `Invalid comparison type: ${compareType}` });
       return;
     }
 
-    const result = await method(companyId, req.user.tenantId, { ...queryDto, limit: 10000, page: 1 });
+    const result = await method(companyId, req.user.tenantId, {
+      ...queryDto,
+      limit: 10000,
+      page: 1,
+    });
     const records = result.data;
 
-    const headers = ['Account', 'Fiscal Year', 'Period Month', 'Site', 'Product', 'Customer', 'Budget Amount', 'Actual Amount', 'Forecast Amount', 'Variance Amount', 'Variance %'];
+    const headers = [
+      'Account',
+      'Fiscal Year',
+      'Period Month',
+      'Site',
+      'Product',
+      'Customer',
+      'Budget Amount',
+      'Actual Amount',
+      'Forecast Amount',
+      'Variance Amount',
+      'Variance %',
+    ];
     const csvRows = [headers.join(',')];
 
     for (const r of records) {
@@ -196,7 +237,10 @@ export class VarianceController {
     }
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="variance_${compareType}_export.csv"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="variance_${compareType}_export.csv"`,
+    );
     res.send(csvRows.join('\n'));
   }
 }

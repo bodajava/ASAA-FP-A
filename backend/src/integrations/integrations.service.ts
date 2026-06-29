@@ -13,7 +13,6 @@ import {
   SyncStatus,
   ImportStatus,
   ImportType,
-
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { TenantService } from '../common/services/tenant.service';
@@ -70,9 +69,10 @@ function mapMappingToResponse(mapping: ImportMapping): MappingResponseDto {
     name: mapping.name,
     sourceSystem: mapping.sourceSystem,
     importType: mapping.importType,
-    mappingConfig: typeof mapping.mappingConfig === 'string'
-      ? JSON.parse(mapping.mappingConfig)
-      : mapping.mappingConfig,
+    mappingConfig:
+      typeof mapping.mappingConfig === 'string'
+        ? JSON.parse(mapping.mappingConfig)
+        : mapping.mappingConfig,
     skipErrors: mapping.skipErrors,
     isDefault: mapping.isDefault,
     isActive: mapping.isActive,
@@ -100,14 +100,29 @@ export class IntegrationsService implements OnApplicationBootstrap {
     }
 
     if (config.targetModule) {
-      if (typeof config.targetModule !== 'string' || config.targetModule.trim() === '') {
-        throw new BadRequestException('targetModule must be a non-empty string');
+      if (
+        typeof config.targetModule !== 'string' ||
+        config.targetModule.trim() === ''
+      ) {
+        throw new BadRequestException(
+          'targetModule must be a non-empty string',
+        );
       }
-      if (config.sourceTable && (typeof config.sourceTable !== 'string' || config.sourceTable.trim() === '')) {
+      if (
+        config.sourceTable &&
+        (typeof config.sourceTable !== 'string' ||
+          config.sourceTable.trim() === '')
+      ) {
         throw new BadRequestException('sourceTable must be a non-empty string');
       }
-      if (config.columnMapping && (typeof config.columnMapping !== 'object' || Array.isArray(config.columnMapping))) {
-        throw new BadRequestException('columnMapping must be a valid JSON object');
+      if (
+        config.columnMapping &&
+        (typeof config.columnMapping !== 'object' ||
+          Array.isArray(config.columnMapping))
+      ) {
+        throw new BadRequestException(
+          'columnMapping must be a valid JSON object',
+        );
       }
       return;
     }
@@ -152,13 +167,23 @@ export class IntegrationsService implements OnApplicationBootstrap {
   private formatOracleError(err: unknown): { message: string; code: string } {
     const errMsg = err instanceof Error ? err.message : String(err);
     if (errMsg.includes('ORA-00942')) {
-      return { message: 'Oracle table or view not found. Please check your import mapping.', code: ErrorCodes.ORACLE_TABLE_NOT_FOUND };
+      return {
+        message:
+          'Oracle table or view not found. Please check your import mapping.',
+        code: ErrorCodes.ORACLE_TABLE_NOT_FOUND,
+      };
     }
     if (errMsg.includes('ORA-00904')) {
-      return { message: 'Invalid Oracle column name.', code: ErrorCodes.ORACLE_INVALID_COLUMN };
+      return {
+        message: 'Invalid Oracle column name.',
+        code: ErrorCodes.ORACLE_INVALID_COLUMN,
+      };
     }
     if (errMsg.includes('ORA-01017')) {
-      return { message: 'Invalid Oracle username or password.', code: ErrorCodes.ORACLE_INVALID_CREDENTIALS };
+      return {
+        message: 'Invalid Oracle username or password.',
+        code: ErrorCodes.ORACLE_INVALID_CREDENTIALS,
+      };
     }
     const networkKeywords = [
       'NJS-511',
@@ -167,10 +192,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
       'ETIMEDOUT',
       'ORA-12170',
       'ORA-12541',
-      'TNS-'
+      'TNS-',
     ];
-    if (networkKeywords.some(keyword => errMsg.includes(keyword))) {
-      return { message: 'Could not connect to Oracle host/port/service.', code: ErrorCodes.ORACLE_CONNECTION_FAILED };
+    if (networkKeywords.some((keyword) => errMsg.includes(keyword))) {
+      return {
+        message: 'Could not connect to Oracle host/port/service.',
+        code: ErrorCodes.ORACLE_CONNECTION_FAILED,
+      };
     }
     return { message: errMsg, code: ErrorCodes.ORACLE_UNKNOWN };
   }
@@ -187,11 +215,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
     });
 
     if (!connection) {
-      throw new NotFoundException(`Connection with ID ${connectionId} not found under this company`);
+      throw new NotFoundException(
+        `Connection with ID ${connectionId} not found under this company`,
+      );
     }
 
     if (connection.connectionType !== ConnectionType.oracle) {
-      throw new BadRequestException('Schema discovery is only supported for Oracle connections.');
+      throw new BadRequestException(
+        'Schema discovery is only supported for Oracle connections.',
+      );
     }
 
     if (connection.host?.toLowerCase() === 'mock') {
@@ -204,18 +236,38 @@ export class IntegrationsService implements OnApplicationBootstrap {
         { OWNER: 'MOCK', TABLE_NAME: 'FP_PRODUCTS', TABLE_TYPE: 'TABLE' },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_MATERIALS', TABLE_TYPE: 'TABLE' },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_COST_CENTERS', TABLE_TYPE: 'TABLE' },
-        { OWNER: 'MOCK', TABLE_NAME: 'FP_PRODUCT_CATEGORIES', TABLE_TYPE: 'TABLE' },
+        {
+          OWNER: 'MOCK',
+          TABLE_NAME: 'FP_PRODUCT_CATEGORIES',
+          TABLE_TYPE: 'TABLE',
+        },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_UNITS', TABLE_TYPE: 'TABLE' },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_SUPPLIERS', TABLE_TYPE: 'TABLE' },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_BOM_RECIPES', TABLE_TYPE: 'TABLE' },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_BOM_LINES', TABLE_TYPE: 'TABLE' },
-        { OWNER: 'MOCK', TABLE_NAME: 'FP_INVENTORY_SNAPSHOTS', TABLE_TYPE: 'TABLE' },
+        {
+          OWNER: 'MOCK',
+          TABLE_NAME: 'FP_INVENTORY_SNAPSHOTS',
+          TABLE_TYPE: 'TABLE',
+        },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_BUDGET_LINES', TABLE_TYPE: 'TABLE' },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_FORECAST_LINES', TABLE_TYPE: 'TABLE' },
-        { OWNER: 'MOCK', TABLE_NAME: 'FP_PRODUCTION_PLANS', TABLE_TYPE: 'TABLE' },
-        { OWNER: 'MOCK', TABLE_NAME: 'FP_HEADCOUNT_PLANS', TABLE_TYPE: 'TABLE' },
+        {
+          OWNER: 'MOCK',
+          TABLE_NAME: 'FP_PRODUCTION_PLANS',
+          TABLE_TYPE: 'TABLE',
+        },
+        {
+          OWNER: 'MOCK',
+          TABLE_NAME: 'FP_HEADCOUNT_PLANS',
+          TABLE_TYPE: 'TABLE',
+        },
         { OWNER: 'MOCK', TABLE_NAME: 'FP_PROMOTIONS', TABLE_TYPE: 'TABLE' },
-        { OWNER: 'MOCK', TABLE_NAME: 'FP_RAW_MATERIAL_PRICES', TABLE_TYPE: 'TABLE' },
+        {
+          OWNER: 'MOCK',
+          TABLE_NAME: 'FP_RAW_MATERIAL_PRICES',
+          TABLE_TYPE: 'TABLE',
+        },
       ];
     }
 
@@ -223,10 +275,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
+      throw new BadRequestException({
+        message: 'Oracle client is not configured.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
     }
 
-    const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+    const password = connection.passwordEnc
+      ? decrypt(connection.passwordEnc)
+      : '';
     const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
 
     let connInstance: any;
@@ -246,10 +303,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
       return result.rows || [];
     } catch (err: unknown) {
       const oracleErr = this.formatOracleError(err);
-      throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
+      throw new BadRequestException({
+        message: oracleErr.message,
+        code: oracleErr.code,
+      });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => { });
+        await connInstance.close().catch(() => {});
       }
     }
   }
@@ -267,15 +327,22 @@ export class IntegrationsService implements OnApplicationBootstrap {
     });
 
     if (!connection) {
-      throw new NotFoundException(`Connection with ID ${connectionId} not found under this company`);
+      throw new NotFoundException(
+        `Connection with ID ${connectionId} not found under this company`,
+      );
     }
 
     if (connection.connectionType !== ConnectionType.oracle) {
-      throw new BadRequestException('Column discovery is only supported for Oracle connections.');
+      throw new BadRequestException(
+        'Column discovery is only supported for Oracle connections.',
+      );
     }
 
     if (!/^[A-Za-z0-9_$#]+$/.test(tableName)) {
-      throw new BadRequestException({ message: 'Invalid table name format.', code: ErrorCodes.PREVIEW_INVALID_TABLE });
+      throw new BadRequestException({
+        message: 'Invalid table name format.',
+        code: ErrorCodes.PREVIEW_INVALID_TABLE,
+      });
     }
 
     if (connection.host?.toLowerCase() === 'mock') {
@@ -315,10 +382,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
+      throw new BadRequestException({
+        message: 'Oracle client is not configured.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
     }
 
-    const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+    const password = connection.passwordEnc
+      ? decrypt(connection.passwordEnc)
+      : '';
     const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
 
     let connInstance: any;
@@ -338,10 +410,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
       return result.rows || [];
     } catch (err: unknown) {
       const oracleErr = this.formatOracleError(err);
-      throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
+      throw new BadRequestException({
+        message: oracleErr.message,
+        code: oracleErr.code,
+      });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => { });
+        await connInstance.close().catch(() => {});
       }
     }
   }
@@ -361,27 +436,39 @@ export class IntegrationsService implements OnApplicationBootstrap {
     });
 
     if (!connection) {
-      throw new NotFoundException(`Connection with ID ${connectionId} not found under this company`);
+      throw new NotFoundException(
+        `Connection with ID ${connectionId} not found under this company`,
+      );
     }
 
     if (connection.connectionType !== ConnectionType.oracle) {
-      throw new BadRequestException('Row preview is only supported for Oracle connections.');
+      throw new BadRequestException(
+        'Row preview is only supported for Oracle connections.',
+      );
     }
 
     if (!/^[A-Za-z0-9_$#."]+$/.test(sourceTable)) {
-      throw new BadRequestException({ message: 'Invalid table name format.', code: ErrorCodes.PREVIEW_INVALID_TABLE });
+      throw new BadRequestException({
+        message: 'Invalid table name format.',
+        code: ErrorCodes.PREVIEW_INVALID_TABLE,
+      });
     }
 
     const selectColumns: string[] = [];
-    const flatMapping = mappingConfig.columnMapping && typeof mappingConfig.columnMapping === 'object'
-      ? (mappingConfig.columnMapping as Record<string, string | null>)
-      : mappingConfig;
+    const flatMapping =
+      mappingConfig.columnMapping &&
+      typeof mappingConfig.columnMapping === 'object'
+        ? (mappingConfig.columnMapping as Record<string, string | null>)
+        : mappingConfig;
 
     for (const key of Object.keys(flatMapping)) {
       const val = flatMapping[key];
       if (typeof val === 'string' && val.trim() !== '') {
         if (!/^[A-Za-z0-9_$#"]+$/.test(val)) {
-          throw new BadRequestException({ message: `Invalid column name: ${val}`, code: ErrorCodes.PREVIEW_INVALID_COLUMN });
+          throw new BadRequestException({
+            message: `Invalid column name: ${val}`,
+            code: ErrorCodes.PREVIEW_INVALID_COLUMN,
+          });
         }
         if (!selectColumns.includes(val)) {
           selectColumns.push(val);
@@ -389,7 +476,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
       }
     }
 
-    const selectClause = selectColumns.length > 0 ? selectColumns.map(c => c).join(', ') : '*';
+    const selectClause =
+      selectColumns.length > 0 ? selectColumns.map((c) => c).join(', ') : '*';
 
     if (connection.host?.toLowerCase() === 'mock') {
       const mockConfig: Record<string, string | null> = {};
@@ -411,10 +499,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
+      throw new BadRequestException({
+        message: 'Oracle client is not configured.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
     }
 
-    const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+    const password = connection.passwordEnc
+      ? decrypt(connection.passwordEnc)
+      : '';
     const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
 
     let connInstance: any;
@@ -435,10 +528,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
       return result.rows || [];
     } catch (err: unknown) {
       const oracleErr = this.formatOracleError(err);
-      throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
+      throw new BadRequestException({
+        message: oracleErr.message,
+        code: oracleErr.code,
+      });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => { });
+        await connInstance.close().catch(() => {});
       }
     }
   }
@@ -451,7 +547,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
     userId: bigint,
     skipErrors: boolean = false,
   ): Promise<number> {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     const tenantId = company?.tenantId || 1n;
     const moduleName = targetModule.toLowerCase().replace(/[^a-z]/g, '');
 
@@ -459,18 +557,26 @@ export class IntegrationsService implements OnApplicationBootstrap {
       const sourceCol = columnMapping[targetField];
       if (!sourceCol) return undefined;
       if (row[sourceCol] !== undefined) return row[sourceCol];
-      if (row[sourceCol.toUpperCase()] !== undefined) return row[sourceCol.toUpperCase()];
-      if (row[sourceCol.toLowerCase()] !== undefined) return row[sourceCol.toLowerCase()];
+      if (row[sourceCol.toUpperCase()] !== undefined)
+        return row[sourceCol.toUpperCase()];
+      if (row[sourceCol.toLowerCase()] !== undefined)
+        return row[sourceCol.toLowerCase()];
       return undefined;
     };
 
     let syncedCount = 0;
 
-    if (moduleName === 'inventorysnapshots' || moduleName === 'inventorysnapshot') {
+    if (
+      moduleName === 'inventorysnapshots' ||
+      moduleName === 'inventorysnapshot'
+    ) {
       await this.prisma.inventorySnapshot.deleteMany({ where: { companyId } });
     } else if (moduleName === 'promotions' || moduleName === 'promotion') {
       await this.prisma.promotion.deleteMany({ where: { companyId } });
-    } else if (moduleName === 'rawmaterialprices' || moduleName === 'rawmaterialprice') {
+    } else if (
+      moduleName === 'rawmaterialprices' ||
+      moduleName === 'rawmaterialprice'
+    ) {
       await this.prisma.rawMaterialPrice.deleteMany({ where: { companyId } });
     }
 
@@ -482,11 +588,22 @@ export class IntegrationsService implements OnApplicationBootstrap {
           const companyCodeStr = codeVal ? String(codeVal) : '';
           const parsedCompanyId = this.parseCompanyId(companyCodeStr);
           if (!parsedCompanyId) {
-            throw new Error(`Could not parse company ID from "${companyCodeStr}"`);
+            throw new Error(
+              `Could not parse company ID from "${companyCodeStr}"`,
+            );
           }
-          const name = String(getValue(row, 'name') || `Company ${parsedCompanyId}`);
-          const industryStr = String(getValue(row, 'industryType') || 'mixed').toLowerCase();
-          const industryType = ['food_manufacturing', 'food_retail', 'mixed', 'other'].includes(industryStr)
+          const name = String(
+            getValue(row, 'name') || `Company ${parsedCompanyId}`,
+          );
+          const industryStr = String(
+            getValue(row, 'industryType') || 'mixed',
+          ).toLowerCase();
+          const industryType = [
+            'food_manufacturing',
+            'food_retail',
+            'mixed',
+            'other',
+          ].includes(industryStr)
             ? industryStr
             : 'mixed';
           const currencyCode = String(getValue(row, 'currencyCode') || 'EGP');
@@ -494,19 +611,36 @@ export class IntegrationsService implements OnApplicationBootstrap {
           await this.prisma.company.upsert({
             where: { id: parsedCompanyId },
             update: { name, industryType: industryType as any, currencyCode },
-            create: { id: parsedCompanyId, tenantId, name, industryType: industryType as any, currencyCode },
+            create: {
+              id: parsedCompanyId,
+              tenantId,
+              name,
+              industryType: industryType as any,
+              currencyCode,
+            },
           });
-
         } else if (moduleName === 'sites' || moduleName === 'site') {
           const name = String(getValue(row, 'name') || '');
           if (!name) throw new Error('Site name is required');
-          const typeStr = String(getValue(row, 'type') || 'factory').toLowerCase();
-          const type = ['factory', 'branch', 'warehouse', 'office', 'distribution_center'].includes(typeStr)
+          const typeStr = String(
+            getValue(row, 'type') || 'factory',
+          ).toLowerCase();
+          const type = [
+            'factory',
+            'branch',
+            'warehouse',
+            'office',
+            'distribution_center',
+          ].includes(typeStr)
             ? typeStr
             : 'factory';
-          const region = getValue(row, 'region') ? String(getValue(row, 'region')) : null;
+          const region = getValue(row, 'region')
+            ? String(getValue(row, 'region'))
+            : null;
 
-          const existing = await this.prisma.site.findFirst({ where: { companyId, name } });
+          const existing = await this.prisma.site.findFirst({
+            where: { companyId, name },
+          });
           if (existing) {
             await this.prisma.site.update({
               where: { id: existing.id },
@@ -514,35 +648,70 @@ export class IntegrationsService implements OnApplicationBootstrap {
             });
           } else {
             await this.prisma.site.create({
-              data: { companyId, name, type: type as any, region, status: 'active' },
+              data: {
+                companyId,
+                name,
+                type: type as any,
+                region,
+                status: 'active',
+              },
             });
           }
-
         } else if (moduleName === 'accounts' || moduleName === 'account') {
           const code = String(getValue(row, 'code') || '');
           if (!code) throw new Error('Account code is required');
           const name = String(getValue(row, 'name') || `Account ${code}`);
-          const typeStr = String(getValue(row, 'type') || 'expense').toLowerCase();
-          const type = ['revenue', 'cogs', 'expense', 'asset', 'liability', 'equity', 'cashflow'].includes(typeStr)
+          const typeStr = String(
+            getValue(row, 'type') || 'expense',
+          ).toLowerCase();
+          const type = [
+            'revenue',
+            'cogs',
+            'expense',
+            'asset',
+            'liability',
+            'equity',
+            'cashflow',
+          ].includes(typeStr)
             ? typeStr
             : 'expense';
 
           await this.prisma.account.upsert({
             where: { companyId_code: { companyId, code } },
             update: { name, type: type as any, isActive: true },
-            create: { companyId, code, name, type: type as any, isActive: true },
+            create: {
+              companyId,
+              code,
+              name,
+              type: type as any,
+              isActive: true,
+            },
           });
-
-        } else if (moduleName === 'costcenters' || moduleName === 'costcenter') {
+        } else if (
+          moduleName === 'costcenters' ||
+          moduleName === 'costcenter'
+        ) {
           const code = String(getValue(row, 'code') || '');
           if (!code) throw new Error('Cost center code is required');
           const name = String(getValue(row, 'name') || `Cost Center ${code}`);
-          const typeStr = String(getValue(row, 'type') || 'other').toLowerCase();
-          const type = ['sales', 'production', 'admin', 'marketing', 'logistics', 'maintenance', 'other'].includes(typeStr)
+          const typeStr = String(
+            getValue(row, 'type') || 'other',
+          ).toLowerCase();
+          const type = [
+            'sales',
+            'production',
+            'admin',
+            'marketing',
+            'logistics',
+            'maintenance',
+            'other',
+          ].includes(typeStr)
             ? typeStr
             : 'other';
 
-          const existing = await this.prisma.costCenter.findFirst({ where: { companyId, code } });
+          const existing = await this.prisma.costCenter.findFirst({
+            where: { companyId, code },
+          });
           if (existing) {
             await this.prisma.costCenter.update({
               where: { id: existing.id },
@@ -553,22 +722,33 @@ export class IntegrationsService implements OnApplicationBootstrap {
               data: { companyId, code, name, type: type as any },
             });
           }
-
-        } else if (moduleName === 'productcategories' || moduleName === 'productcategory') {
+        } else if (
+          moduleName === 'productcategories' ||
+          moduleName === 'productcategory'
+        ) {
           const name = String(getValue(row, 'name') || '');
           if (!name) throw new Error('Product category name is required');
-          const existing = await this.prisma.productCategory.findFirst({ where: { companyId, name } });
+          const existing = await this.prisma.productCategory.findFirst({
+            where: { companyId, name },
+          });
           if (!existing) {
-            await this.prisma.productCategory.create({ data: { companyId, name } });
+            await this.prisma.productCategory.create({
+              data: { companyId, name },
+            });
           }
-
         } else if (moduleName === 'suppliers' || moduleName === 'supplier') {
           const name = String(getValue(row, 'name') || '');
           if (!name) throw new Error('Supplier name is required');
-          const phone = getValue(row, 'phone') ? String(getValue(row, 'phone')) : null;
-          const email = getValue(row, 'email') ? String(getValue(row, 'email')) : null;
+          const phone = getValue(row, 'phone')
+            ? String(getValue(row, 'phone'))
+            : null;
+          const email = getValue(row, 'email')
+            ? String(getValue(row, 'email'))
+            : null;
 
-          const existing = await this.prisma.supplier.findFirst({ where: { companyId, name } });
+          const existing = await this.prisma.supplier.findFirst({
+            where: { companyId, name },
+          });
           if (existing) {
             await this.prisma.supplier.update({
               where: { id: existing.id },
@@ -579,101 +759,187 @@ export class IntegrationsService implements OnApplicationBootstrap {
               data: { companyId, name, phone, email },
             });
           }
-
         } else if (moduleName === 'customers' || moduleName === 'customer') {
           const code = String(getValue(row, 'code') || '');
           if (!code) throw new Error('Customer code is required');
           const name = String(getValue(row, 'name') || `Customer ${code}`);
-          const typeStr = String(getValue(row, 'type') || 'retail').toLowerCase();
-          const customerType = ['retail', 'wholesale', 'distributor', 'internal', 'other'].includes(typeStr)
+          const typeStr = String(
+            getValue(row, 'type') || 'retail',
+          ).toLowerCase();
+          const customerType = [
+            'retail',
+            'wholesale',
+            'distributor',
+            'internal',
+            'other',
+          ].includes(typeStr)
             ? typeStr
             : 'retail';
-          const region = getValue(row, 'region') ? String(getValue(row, 'region')) : null;
+          const region = getValue(row, 'region')
+            ? String(getValue(row, 'region'))
+            : null;
 
           await this.prisma.customer.upsert({
             where: { companyId_code: { companyId, code } },
-            update: { name, customerType: customerType as any, region, isActive: true },
-            create: { companyId, code, name, customerType: customerType as any, region, isActive: true },
+            update: {
+              name,
+              customerType: customerType as any,
+              region,
+              isActive: true,
+            },
+            create: {
+              companyId,
+              code,
+              name,
+              customerType: customerType as any,
+              region,
+              isActive: true,
+            },
           });
-
         } else if (moduleName === 'products' || moduleName === 'product') {
-          const sku = String(getValue(row, 'sku') || getValue(row, 'code') || '');
+          const sku = String(
+            getValue(row, 'sku') || getValue(row, 'code') || '',
+          );
           if (!sku) throw new Error('Product SKU is required');
           const name = String(getValue(row, 'name') || `Product ${sku}`);
-          const categoryName = getValue(row, 'category') ? String(getValue(row, 'category')) : null;
-          const unitSymbol = getValue(row, 'unit') ? String(getValue(row, 'unit')) : null;
+          const categoryName = getValue(row, 'category')
+            ? String(getValue(row, 'category'))
+            : null;
+          const unitSymbol = getValue(row, 'unit')
+            ? String(getValue(row, 'unit'))
+            : null;
           const salePrice = Number(getValue(row, 'salePrice') || 0);
           const standardCost = Number(getValue(row, 'standardCost') || 0);
 
           let categoryId: bigint | null = null;
           if (categoryName) {
-            let cat = await this.prisma.productCategory.findFirst({ where: { companyId, name: categoryName } });
-            if (!cat) cat = await this.prisma.productCategory.create({ data: { companyId, name: categoryName } });
+            let cat = await this.prisma.productCategory.findFirst({
+              where: { companyId, name: categoryName },
+            });
+            if (!cat)
+              cat = await this.prisma.productCategory.create({
+                data: { companyId, name: categoryName },
+              });
             categoryId = cat.id;
           }
 
           let unitId: bigint | null = null;
           if (unitSymbol) {
-            let unit = await this.prisma.unit.findFirst({ where: { companyId, symbol: unitSymbol } });
-            if (!unit) unit = await this.prisma.unit.create({ data: { companyId, symbol: unitSymbol, name: unitSymbol } });
+            let unit = await this.prisma.unit.findFirst({
+              where: { companyId, symbol: unitSymbol },
+            });
+            if (!unit)
+              unit = await this.prisma.unit.create({
+                data: { companyId, symbol: unitSymbol, name: unitSymbol },
+              });
             unitId = unit.id;
           }
 
           await this.prisma.product.upsert({
             where: { companyId_sku: { companyId, sku } },
-            update: { name, salePrice, standardCost, categoryId, unitId, isActive: true },
-            create: { companyId, sku, name, salePrice, standardCost, categoryId, unitId, isActive: true },
+            update: {
+              name,
+              salePrice,
+              standardCost,
+              categoryId,
+              unitId,
+              isActive: true,
+            },
+            create: {
+              companyId,
+              sku,
+              name,
+              salePrice,
+              standardCost,
+              categoryId,
+              unitId,
+              isActive: true,
+            },
           });
-
         } else if (moduleName === 'materials' || moduleName === 'material') {
           const code = String(getValue(row, 'code') || '');
           if (!code) throw new Error('Material code is required');
           const name = String(getValue(row, 'name') || `Material ${code}`);
-          const unitSymbol = getValue(row, 'unit') ? String(getValue(row, 'unit')) : null;
+          const unitSymbol = getValue(row, 'unit')
+            ? String(getValue(row, 'unit'))
+            : null;
           const purchasePrice = Number(getValue(row, 'purchasePrice') || 0);
-          const supplierName = getValue(row, 'supplier') || getValue(row, 'supplierCode') ? String(getValue(row, 'supplier') || getValue(row, 'supplierCode')) : null;
+          const supplierName =
+            getValue(row, 'supplier') || getValue(row, 'supplierCode')
+              ? String(
+                  getValue(row, 'supplier') || getValue(row, 'supplierCode'),
+                )
+              : null;
 
           let unitId: bigint | null = null;
           if (unitSymbol) {
-            let unit = await this.prisma.unit.findFirst({ where: { companyId, symbol: unitSymbol } });
-            if (!unit) unit = await this.prisma.unit.create({ data: { companyId, symbol: unitSymbol, name: unitSymbol } });
+            let unit = await this.prisma.unit.findFirst({
+              where: { companyId, symbol: unitSymbol },
+            });
+            if (!unit)
+              unit = await this.prisma.unit.create({
+                data: { companyId, symbol: unitSymbol, name: unitSymbol },
+              });
             unitId = unit.id;
           }
 
           let supplierId: bigint | null = null;
           if (supplierName) {
-            let supp = await this.prisma.supplier.findFirst({ where: { companyId, name: supplierName } });
-            if (!supp) supp = await this.prisma.supplier.create({ data: { companyId, name: supplierName } });
+            let supp = await this.prisma.supplier.findFirst({
+              where: { companyId, name: supplierName },
+            });
+            if (!supp)
+              supp = await this.prisma.supplier.create({
+                data: { companyId, name: supplierName },
+              });
             supplierId = supp.id;
           }
 
           await this.prisma.material.upsert({
             where: { companyId_code: { companyId, code } },
             update: { name, purchasePrice, unitId, supplierId, isActive: true },
-            create: { companyId, code, name, purchasePrice, unitId, supplierId, isActive: true },
+            create: {
+              companyId,
+              code,
+              name,
+              purchasePrice,
+              unitId,
+              supplierId,
+              isActive: true,
+            },
           });
-
         } else if (moduleName === 'units' || moduleName === 'unit') {
           const symbol = String(getValue(row, 'symbol') || '');
           if (!symbol) throw new Error('Unit symbol is required');
           const name = String(getValue(row, 'name') || symbol);
 
-          const existing = await this.prisma.unit.findFirst({ where: { companyId, symbol } });
+          const existing = await this.prisma.unit.findFirst({
+            where: { companyId, symbol },
+          });
           if (!existing) {
-            await this.prisma.unit.create({ data: { companyId, symbol, name } });
+            await this.prisma.unit.create({
+              data: { companyId, symbol, name },
+            });
           }
-
         } else if (moduleName === 'bomrecipes' || moduleName === 'bomrecipe') {
-          const productSku = String(getValue(row, 'productSku') || getValue(row, 'productCode') || '');
-          if (!productSku) throw new Error('Product SKU is required for recipe');
-          const product = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
-          if (!product) throw new Error(`Product not found for SKU: ${productSku}`);
+          const productSku = String(
+            getValue(row, 'productSku') || getValue(row, 'productCode') || '',
+          );
+          if (!productSku)
+            throw new Error('Product SKU is required for recipe');
+          const product = await this.prisma.product.findFirst({
+            where: { companyId, sku: productSku },
+          });
+          if (!product)
+            throw new Error(`Product not found for SKU: ${productSku}`);
           const version = String(getValue(row, 'version') || 'v1');
           const outputQty = Number(getValue(row, 'outputQty') ?? 1);
           const laborCost = Number(getValue(row, 'laborCost') ?? 0);
           const overheadCost = Number(getValue(row, 'overheadCost') ?? 0);
 
-          const existing = await this.prisma.bomRecipe.findFirst({ where: { companyId, productId: product.id, version } });
+          const existing = await this.prisma.bomRecipe.findFirst({
+            where: { companyId, productId: product.id, version },
+          });
           if (existing) {
             await this.prisma.bomRecipe.update({
               where: { id: existing.id },
@@ -681,28 +947,53 @@ export class IntegrationsService implements OnApplicationBootstrap {
             });
           } else {
             await this.prisma.bomRecipe.create({
-              data: { companyId, productId: product.id, version, outputQty, laborCost, overheadCost },
+              data: {
+                companyId,
+                productId: product.id,
+                version,
+                outputQty,
+                laborCost,
+                overheadCost,
+              },
             });
           }
-
         } else if (moduleName === 'bomlines' || moduleName === 'bomline') {
-          const productSku = String(getValue(row, 'productSku') || getValue(row, 'productCode') || '');
-          if (!productSku) throw new Error('Product SKU is required for BOM line recipe lookup');
-          const product = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
-          if (!product) throw new Error(`Product not found for SKU: ${productSku}`);
+          const productSku = String(
+            getValue(row, 'productSku') || getValue(row, 'productCode') || '',
+          );
+          if (!productSku)
+            throw new Error(
+              'Product SKU is required for BOM line recipe lookup',
+            );
+          const product = await this.prisma.product.findFirst({
+            where: { companyId, sku: productSku },
+          });
+          if (!product)
+            throw new Error(`Product not found for SKU: ${productSku}`);
           const version = String(getValue(row, 'version') || 'v1');
-          const recipe = await this.prisma.bomRecipe.findFirst({ where: { companyId, productId: product.id, version } });
-          if (!recipe) throw new Error(`BOM Recipe not found for SKU ${productSku} version ${version}`);
+          const recipe = await this.prisma.bomRecipe.findFirst({
+            where: { companyId, productId: product.id, version },
+          });
+          if (!recipe)
+            throw new Error(
+              `BOM Recipe not found for SKU ${productSku} version ${version}`,
+            );
 
           const materialCode = String(getValue(row, 'materialCode') || '');
-          if (!materialCode) throw new Error('Material code is required for BOM line');
-          const material = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
-          if (!material) throw new Error(`Material not found for code: ${materialCode}`);
+          if (!materialCode)
+            throw new Error('Material code is required for BOM line');
+          const material = await this.prisma.material.findFirst({
+            where: { companyId, code: materialCode },
+          });
+          if (!material)
+            throw new Error(`Material not found for code: ${materialCode}`);
 
           const qtyPerOutput = Number(getValue(row, 'qtyPerOutput') ?? 1);
           const unitCost = Number(getValue(row, 'unitCost') ?? 0);
 
-          const existing = await this.prisma.bomLine.findFirst({ where: { bomId: recipe.id, materialId: material.id } });
+          const existing = await this.prisma.bomLine.findFirst({
+            where: { bomId: recipe.id, materialId: material.id },
+          });
           if (existing) {
             await this.prisma.bomLine.update({
               where: { id: existing.id },
@@ -710,47 +1001,103 @@ export class IntegrationsService implements OnApplicationBootstrap {
             });
           } else {
             await this.prisma.bomLine.create({
-              data: { bomId: recipe.id, materialId: material.id, qtyPerOutput, unitCost },
+              data: {
+                bomId: recipe.id,
+                materialId: material.id,
+                qtyPerOutput,
+                unitCost,
+              },
             });
           }
-
-        } else if (moduleName === 'inventorysnapshots' || moduleName === 'inventorysnapshot') {
-          const siteName = String(getValue(row, 'siteName') || getValue(row, 'siteCode') || '');
-          if (!siteName) throw new Error('Site name/code is required for inventory snapshot');
-          const site = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+        } else if (
+          moduleName === 'inventorysnapshots' ||
+          moduleName === 'inventorysnapshot'
+        ) {
+          const siteName = String(
+            getValue(row, 'siteName') || getValue(row, 'siteCode') || '',
+          );
+          if (!siteName)
+            throw new Error(
+              'Site name/code is required for inventory snapshot',
+            );
+          const site = await this.prisma.site.findFirst({
+            where: { companyId, name: siteName },
+          });
           if (!site) throw new Error(`Site not found: ${siteName}`);
 
-          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          const productSku =
+            getValue(row, 'productSku') || getValue(row, 'productCode')
+              ? String(
+                  getValue(row, 'productSku') || getValue(row, 'productCode'),
+                )
+              : null;
           let productId: bigint | null = null;
           if (productSku) {
-            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            const p = await this.prisma.product.findFirst({
+              where: { companyId, sku: productSku },
+            });
             if (p) productId = p.id;
           }
 
-          const materialCode = getValue(row, 'materialCode') ? String(getValue(row, 'materialCode')) : null;
+          const materialCode = getValue(row, 'materialCode')
+            ? String(getValue(row, 'materialCode'))
+            : null;
           let materialId: bigint | null = null;
           if (materialCode) {
-            const m = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+            const m = await this.prisma.material.findFirst({
+              where: { companyId, code: materialCode },
+            });
             if (m) materialId = m.id;
           }
 
-          const snapshotDate = new Date(getValue(row, 'snapshotDate') || new Date());
+          const snapshotDate = new Date(
+            getValue(row, 'snapshotDate') || new Date(),
+          );
           const qtyOnHand = Number(getValue(row, 'qtyOnHand') || 0);
           const inventoryValue = Number(getValue(row, 'inventoryValue') || 0);
 
           await this.prisma.inventorySnapshot.create({
-            data: { companyId, siteId: site.id, productId, materialId, snapshotDate, qtyOnHand, inventoryValue },
+            data: {
+              companyId,
+              siteId: site.id,
+              productId,
+              materialId,
+              snapshotDate,
+              qtyOnHand,
+              inventoryValue,
+            },
           });
+        } else if (
+          moduleName === 'budgetcycles' ||
+          moduleName === 'budgetcycle'
+        ) {
+          const fiscalYear = Number(
+            getValue(row, 'fiscalYear') || new Date().getFullYear(),
+          );
+          const name = String(
+            getValue(row, 'name') || `FY ${fiscalYear} - Budget`,
+          );
+          const statusStr = String(
+            getValue(row, 'status') || 'approved',
+          ).toLowerCase();
+          const status = [
+            'draft',
+            'under_review',
+            'approved',
+            'rejected',
+          ].includes(statusStr)
+            ? statusStr
+            : 'approved';
+          const startDate = new Date(
+            getValue(row, 'startDate') || `${fiscalYear}-01-01`,
+          );
+          const endDate = new Date(
+            getValue(row, 'endDate') || `${fiscalYear}-12-31`,
+          );
 
-        } else if (moduleName === 'budgetcycles' || moduleName === 'budgetcycle') {
-          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
-          const name = String(getValue(row, 'name') || `FY ${fiscalYear} - Budget`);
-          const statusStr = String(getValue(row, 'status') || 'approved').toLowerCase();
-          const status = ['draft', 'under_review', 'approved', 'rejected'].includes(statusStr) ? statusStr : 'approved';
-          const startDate = new Date(getValue(row, 'startDate') || `${fiscalYear}-01-01`);
-          const endDate = new Date(getValue(row, 'endDate') || `${fiscalYear}-12-31`);
-
-          const existing = await this.prisma.budgetCycle.findFirst({ where: { companyId, fiscalYear } });
+          const existing = await this.prisma.budgetCycle.findFirst({
+            where: { companyId, fiscalYear },
+          });
           if (existing) {
             await this.prisma.budgetCycle.update({
               where: { id: existing.id },
@@ -758,13 +1105,26 @@ export class IntegrationsService implements OnApplicationBootstrap {
             });
           } else {
             await this.prisma.budgetCycle.create({
-              data: { companyId, fiscalYear, name, status: status as any, startDate, endDate },
+              data: {
+                companyId,
+                fiscalYear,
+                name,
+                status: status as any,
+                startDate,
+                endDate,
+              },
             });
           }
-
-        } else if (moduleName === 'budgetlines' || moduleName === 'budgetline') {
-          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
-          let budgetCycle = await this.prisma.budgetCycle.findFirst({ where: { companyId, fiscalYear } });
+        } else if (
+          moduleName === 'budgetlines' ||
+          moduleName === 'budgetline'
+        ) {
+          const fiscalYear = Number(
+            getValue(row, 'fiscalYear') || new Date().getFullYear(),
+          );
+          let budgetCycle = await this.prisma.budgetCycle.findFirst({
+            where: { companyId, fiscalYear },
+          });
           if (!budgetCycle) {
             budgetCycle = await this.prisma.budgetCycle.create({
               data: {
@@ -779,46 +1139,75 @@ export class IntegrationsService implements OnApplicationBootstrap {
           }
 
           if (syncedCount === 0) {
-            await this.prisma.budgetLine.deleteMany({ where: { budgetCycleId: budgetCycle.id } });
+            await this.prisma.budgetLine.deleteMany({
+              where: { budgetCycleId: budgetCycle.id },
+            });
           }
 
           const accountCode = String(getValue(row, 'accountCode') || '');
-          if (!accountCode) throw new Error('Account code is required for budget line');
-          const account = await this.prisma.account.findFirst({ where: { companyId, code: accountCode } });
+          if (!accountCode)
+            throw new Error('Account code is required for budget line');
+          const account = await this.prisma.account.findFirst({
+            where: { companyId, code: accountCode },
+          });
           if (!account) throw new Error(`Account not found: ${accountCode}`);
 
           let siteId: bigint | null = null;
-          const siteName = getValue(row, 'siteName') || getValue(row, 'siteCode') ? String(getValue(row, 'siteName') || getValue(row, 'siteCode')) : null;
+          const siteName =
+            getValue(row, 'siteName') || getValue(row, 'siteCode')
+              ? String(getValue(row, 'siteName') || getValue(row, 'siteCode'))
+              : null;
           if (siteName) {
-            const s = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+            const s = await this.prisma.site.findFirst({
+              where: { companyId, name: siteName },
+            });
             if (s) siteId = s.id;
           }
 
           let costCenterId: bigint | null = null;
-          const costCenterCode = getValue(row, 'costCenterCode') ? String(getValue(row, 'costCenterCode')) : null;
+          const costCenterCode = getValue(row, 'costCenterCode')
+            ? String(getValue(row, 'costCenterCode'))
+            : null;
           if (costCenterCode) {
-            const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: costCenterCode } });
+            const cc = await this.prisma.costCenter.findFirst({
+              where: { companyId, code: costCenterCode },
+            });
             if (cc) costCenterId = cc.id;
           }
 
           let productId: bigint | null = null;
-          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          const productSku =
+            getValue(row, 'productSku') || getValue(row, 'productCode')
+              ? String(
+                  getValue(row, 'productSku') || getValue(row, 'productCode'),
+                )
+              : null;
           if (productSku) {
-            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            const p = await this.prisma.product.findFirst({
+              where: { companyId, sku: productSku },
+            });
             if (p) productId = p.id;
           }
 
           let materialId: bigint | null = null;
-          const materialCode = getValue(row, 'materialCode') ? String(getValue(row, 'materialCode')) : null;
+          const materialCode = getValue(row, 'materialCode')
+            ? String(getValue(row, 'materialCode'))
+            : null;
           if (materialCode) {
-            const m = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+            const m = await this.prisma.material.findFirst({
+              where: { companyId, code: materialCode },
+            });
             if (m) materialId = m.id;
           }
 
           let customerId: bigint | null = null;
-          const customerCode = getValue(row, 'customerCode') ? String(getValue(row, 'customerCode')) : null;
+          const customerCode = getValue(row, 'customerCode')
+            ? String(getValue(row, 'customerCode'))
+            : null;
           if (customerCode) {
-            const c = await this.prisma.customer.findFirst({ where: { companyId, code: customerCode } });
+            const c = await this.prisma.customer.findFirst({
+              where: { companyId, code: customerCode },
+            });
             if (c) customerId = c.id;
           }
 
@@ -826,25 +1215,54 @@ export class IntegrationsService implements OnApplicationBootstrap {
           const quantity = Number(getValue(row, 'quantity') || 0);
           const unitPrice = Number(getValue(row, 'unitPrice') || 0);
           const amount = Number(getValue(row, 'amount') || 0);
-          const notes = getValue(row, 'notes') ? String(getValue(row, 'notes')) : null;
+          const notes = getValue(row, 'notes')
+            ? String(getValue(row, 'notes'))
+            : null;
 
           await this.prisma.budgetLine.create({
             data: {
               budgetCycleId: budgetCycle.id,
               accountId: account.id,
-              siteId, costCenterId, productId, materialId, customerId,
-              periodMonth, quantity, unitPrice, amount, notes,
+              siteId,
+              costCenterId,
+              productId,
+              materialId,
+              customerId,
+              periodMonth,
+              quantity,
+              unitPrice,
+              amount,
+              notes,
             },
           });
+        } else if (
+          moduleName === 'forecastcycles' ||
+          moduleName === 'forecastcycle'
+        ) {
+          const fiscalYear = Number(
+            getValue(row, 'fiscalYear') || new Date().getFullYear(),
+          );
+          const name = String(
+            getValue(row, 'name') || `FY ${fiscalYear} - Forecast`,
+          );
+          const basePeriod = new Date(
+            getValue(row, 'basePeriod') || `${fiscalYear}-01-01`,
+          );
+          const statusStr = String(
+            getValue(row, 'status') || 'approved',
+          ).toLowerCase();
+          const status = [
+            'draft',
+            'under_review',
+            'approved',
+            'rejected',
+          ].includes(statusStr)
+            ? statusStr
+            : 'approved';
 
-        } else if (moduleName === 'forecastcycles' || moduleName === 'forecastcycle') {
-          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
-          const name = String(getValue(row, 'name') || `FY ${fiscalYear} - Forecast`);
-          const basePeriod = new Date(getValue(row, 'basePeriod') || `${fiscalYear}-01-01`);
-          const statusStr = String(getValue(row, 'status') || 'approved').toLowerCase();
-          const status = ['draft', 'under_review', 'approved', 'rejected'].includes(statusStr) ? statusStr : 'approved';
-
-          const existing = await this.prisma.forecastCycle.findFirst({ where: { companyId, fiscalYear } });
+          const existing = await this.prisma.forecastCycle.findFirst({
+            where: { companyId, fiscalYear },
+          });
           if (existing) {
             await this.prisma.forecastCycle.update({
               where: { id: existing.id },
@@ -852,13 +1270,25 @@ export class IntegrationsService implements OnApplicationBootstrap {
             });
           } else {
             await this.prisma.forecastCycle.create({
-              data: { companyId, fiscalYear, name, basePeriod, status: status as any },
+              data: {
+                companyId,
+                fiscalYear,
+                name,
+                basePeriod,
+                status: status as any,
+              },
             });
           }
-
-        } else if (moduleName === 'forecastlines' || moduleName === 'forecastline') {
-          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
-          let forecastCycle = await this.prisma.forecastCycle.findFirst({ where: { companyId, fiscalYear } });
+        } else if (
+          moduleName === 'forecastlines' ||
+          moduleName === 'forecastline'
+        ) {
+          const fiscalYear = Number(
+            getValue(row, 'fiscalYear') || new Date().getFullYear(),
+          );
+          let forecastCycle = await this.prisma.forecastCycle.findFirst({
+            where: { companyId, fiscalYear },
+          });
           if (!forecastCycle) {
             forecastCycle = await this.prisma.forecastCycle.create({
               data: {
@@ -872,46 +1302,75 @@ export class IntegrationsService implements OnApplicationBootstrap {
           }
 
           if (syncedCount === 0) {
-            await this.prisma.forecastLine.deleteMany({ where: { forecastCycleId: forecastCycle.id } });
+            await this.prisma.forecastLine.deleteMany({
+              where: { forecastCycleId: forecastCycle.id },
+            });
           }
 
           const accountCode = String(getValue(row, 'accountCode') || '');
-          if (!accountCode) throw new Error('Account code is required for forecast line');
-          const account = await this.prisma.account.findFirst({ where: { companyId, code: accountCode } });
+          if (!accountCode)
+            throw new Error('Account code is required for forecast line');
+          const account = await this.prisma.account.findFirst({
+            where: { companyId, code: accountCode },
+          });
           if (!account) throw new Error(`Account not found: ${accountCode}`);
 
           let siteId: bigint | null = null;
-          const siteName = getValue(row, 'siteName') || getValue(row, 'siteCode') ? String(getValue(row, 'siteName') || getValue(row, 'siteCode')) : null;
+          const siteName =
+            getValue(row, 'siteName') || getValue(row, 'siteCode')
+              ? String(getValue(row, 'siteName') || getValue(row, 'siteCode'))
+              : null;
           if (siteName) {
-            const s = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+            const s = await this.prisma.site.findFirst({
+              where: { companyId, name: siteName },
+            });
             if (s) siteId = s.id;
           }
 
           let costCenterId: bigint | null = null;
-          const costCenterCode = getValue(row, 'costCenterCode') ? String(getValue(row, 'costCenterCode')) : null;
+          const costCenterCode = getValue(row, 'costCenterCode')
+            ? String(getValue(row, 'costCenterCode'))
+            : null;
           if (costCenterCode) {
-            const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: costCenterCode } });
+            const cc = await this.prisma.costCenter.findFirst({
+              where: { companyId, code: costCenterCode },
+            });
             if (cc) costCenterId = cc.id;
           }
 
           let productId: bigint | null = null;
-          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          const productSku =
+            getValue(row, 'productSku') || getValue(row, 'productCode')
+              ? String(
+                  getValue(row, 'productSku') || getValue(row, 'productCode'),
+                )
+              : null;
           if (productSku) {
-            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            const p = await this.prisma.product.findFirst({
+              where: { companyId, sku: productSku },
+            });
             if (p) productId = p.id;
           }
 
           let materialId: bigint | null = null;
-          const materialCode = getValue(row, 'materialCode') ? String(getValue(row, 'materialCode')) : null;
+          const materialCode = getValue(row, 'materialCode')
+            ? String(getValue(row, 'materialCode'))
+            : null;
           if (materialCode) {
-            const m = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+            const m = await this.prisma.material.findFirst({
+              where: { companyId, code: materialCode },
+            });
             if (m) materialId = m.id;
           }
 
           let customerId: bigint | null = null;
-          const customerCode = getValue(row, 'customerCode') ? String(getValue(row, 'customerCode')) : null;
+          const customerCode = getValue(row, 'customerCode')
+            ? String(getValue(row, 'customerCode'))
+            : null;
           if (customerCode) {
-            const c = await this.prisma.customer.findFirst({ where: { companyId, code: customerCode } });
+            const c = await this.prisma.customer.findFirst({
+              where: { companyId, code: customerCode },
+            });
             if (c) customerId = c.id;
           }
 
@@ -919,51 +1378,119 @@ export class IntegrationsService implements OnApplicationBootstrap {
           const quantity = Number(getValue(row, 'quantity') || 0);
           const unitPrice = Number(getValue(row, 'unitPrice') || 0);
           const amount = Number(getValue(row, 'amount') || 0);
-          const driverType = getValue(row, 'driverType') ? String(getValue(row, 'driverType')) : null;
-          const notes = getValue(row, 'notes') ? String(getValue(row, 'notes')) : null;
+          const driverType = getValue(row, 'driverType')
+            ? String(getValue(row, 'driverType'))
+            : null;
+          const notes = getValue(row, 'notes')
+            ? String(getValue(row, 'notes'))
+            : null;
 
           await this.prisma.forecastLine.create({
             data: {
               forecastCycleId: forecastCycle.id,
               accountId: account.id,
-              siteId, costCenterId, productId, materialId, customerId,
-              periodMonth, quantity, unitPrice, amount, driverType, notes,
+              siteId,
+              costCenterId,
+              productId,
+              materialId,
+              customerId,
+              periodMonth,
+              quantity,
+              unitPrice,
+              amount,
+              driverType,
+              notes,
             },
           });
-
-        } else if (moduleName === 'productionplans' || moduleName === 'productionplan') {
-          const siteName = String(getValue(row, 'siteName') || getValue(row, 'siteCode') || '');
-          if (!siteName) throw new Error('Site name/code is required for production plan');
-          const site = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+        } else if (
+          moduleName === 'productionplans' ||
+          moduleName === 'productionplan'
+        ) {
+          const siteName = String(
+            getValue(row, 'siteName') || getValue(row, 'siteCode') || '',
+          );
+          if (!siteName)
+            throw new Error('Site name/code is required for production plan');
+          const site = await this.prisma.site.findFirst({
+            where: { companyId, name: siteName },
+          });
           if (!site) throw new Error(`Site not found: ${siteName}`);
 
-          const productSku = String(getValue(row, 'productSku') || getValue(row, 'productCode') || '');
-          if (!productSku) throw new Error('Product SKU is required for production plan');
-          const product = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+          const productSku = String(
+            getValue(row, 'productSku') || getValue(row, 'productCode') || '',
+          );
+          if (!productSku)
+            throw new Error('Product SKU is required for production plan');
+          const product = await this.prisma.product.findFirst({
+            where: { companyId, sku: productSku },
+          });
           if (!product) throw new Error(`Product not found: ${productSku}`);
 
-          const planSourceStr = String(getValue(row, 'planSource') || 'manual').toLowerCase();
+          const planSourceStr = String(
+            getValue(row, 'planSource') || 'manual',
+          ).toLowerCase();
           const planSource = planSourceStr === 'auto' ? 'auto' : 'manual';
-          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
+          const fiscalYear = Number(
+            getValue(row, 'fiscalYear') || new Date().getFullYear(),
+          );
           const periodMonth = Number(getValue(row, 'periodMonth') || 1);
           const plannedQty = Number(getValue(row, 'plannedQty') || 0);
-          const actualQty = getValue(row, 'actualQty') !== undefined && getValue(row, 'actualQty') !== null ? Number(getValue(row, 'actualQty')) : null;
-          const estimatedCost = getValue(row, 'estimatedCost') !== undefined && getValue(row, 'estimatedCost') !== null ? Number(getValue(row, 'estimatedCost')) : null;
-          const actualCost = getValue(row, 'actualCost') !== undefined && getValue(row, 'actualCost') !== null ? Number(getValue(row, 'actualCost')) : null;
+          const actualQty =
+            getValue(row, 'actualQty') !== undefined &&
+            getValue(row, 'actualQty') !== null
+              ? Number(getValue(row, 'actualQty'))
+              : null;
+          const estimatedCost =
+            getValue(row, 'estimatedCost') !== undefined &&
+            getValue(row, 'estimatedCost') !== null
+              ? Number(getValue(row, 'estimatedCost'))
+              : null;
+          const actualCost =
+            getValue(row, 'actualCost') !== undefined &&
+            getValue(row, 'actualCost') !== null
+              ? Number(getValue(row, 'actualCost'))
+              : null;
 
           await this.prisma.productionPlan.upsert({
             where: {
               companyId_siteId_productId_fiscalYear_periodMonth: {
-                companyId, siteId: site.id, productId: product.id, fiscalYear, periodMonth,
+                companyId,
+                siteId: site.id,
+                productId: product.id,
+                fiscalYear,
+                periodMonth,
               },
             },
-            update: { plannedQty, actualQty, estimatedCost, actualCost, planSource: planSource as any },
-            create: { companyId, siteId: site.id, productId: product.id, fiscalYear, periodMonth, plannedQty, actualQty, estimatedCost, actualCost, planSource: planSource as any },
+            update: {
+              plannedQty,
+              actualQty,
+              estimatedCost,
+              actualCost,
+              planSource: planSource as any,
+            },
+            create: {
+              companyId,
+              siteId: site.id,
+              productId: product.id,
+              fiscalYear,
+              periodMonth,
+              plannedQty,
+              actualQty,
+              estimatedCost,
+              actualCost,
+              planSource: planSource as any,
+            },
           });
-
-        } else if (moduleName === 'headcountplans' || moduleName === 'headcountplan') {
-          const fiscalYear = Number(getValue(row, 'fiscalYear') || new Date().getFullYear());
-          let budgetCycle = await this.prisma.budgetCycle.findFirst({ where: { companyId, fiscalYear } });
+        } else if (
+          moduleName === 'headcountplans' ||
+          moduleName === 'headcountplan'
+        ) {
+          const fiscalYear = Number(
+            getValue(row, 'fiscalYear') || new Date().getFullYear(),
+          );
+          let budgetCycle = await this.prisma.budgetCycle.findFirst({
+            where: { companyId, fiscalYear },
+          });
           if (!budgetCycle) {
             budgetCycle = await this.prisma.budgetCycle.create({
               data: {
@@ -978,94 +1505,182 @@ export class IntegrationsService implements OnApplicationBootstrap {
           }
 
           if (syncedCount === 0) {
-            await this.prisma.headcountPlan.deleteMany({ where: { budgetCycleId: budgetCycle.id } });
+            await this.prisma.headcountPlan.deleteMany({
+              where: { budgetCycleId: budgetCycle.id },
+            });
           }
 
           let siteId: bigint | null = null;
-          const siteName = getValue(row, 'siteName') || getValue(row, 'siteCode') ? String(getValue(row, 'siteName') || getValue(row, 'siteCode')) : null;
+          const siteName =
+            getValue(row, 'siteName') || getValue(row, 'siteCode')
+              ? String(getValue(row, 'siteName') || getValue(row, 'siteCode'))
+              : null;
           if (siteName) {
-            const s = await this.prisma.site.findFirst({ where: { companyId, name: siteName } });
+            const s = await this.prisma.site.findFirst({
+              where: { companyId, name: siteName },
+            });
             if (s) siteId = s.id;
           }
 
           let costCenterId: bigint | null = null;
-          const costCenterCode = getValue(row, 'costCenterCode') ? String(getValue(row, 'costCenterCode')) : null;
+          const costCenterCode = getValue(row, 'costCenterCode')
+            ? String(getValue(row, 'costCenterCode'))
+            : null;
           if (costCenterCode) {
-            const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: costCenterCode } });
+            const cc = await this.prisma.costCenter.findFirst({
+              where: { companyId, code: costCenterCode },
+            });
             if (cc) costCenterId = cc.id;
           }
 
           const jobTitle = String(getValue(row, 'jobTitle') || 'Staff');
-          const department = String(getValue(row, 'department') || 'Operations');
-          const empTypeStr = String(getValue(row, 'employmentType') || 'full_time').toLowerCase();
-          const employmentType = ['full_time', 'part_time', 'contract', 'seasonal'].includes(empTypeStr) ? empTypeStr : 'full_time';
+          const department = String(
+            getValue(row, 'department') || 'Operations',
+          );
+          const empTypeStr = String(
+            getValue(row, 'employmentType') || 'full_time',
+          ).toLowerCase();
+          const employmentType = [
+            'full_time',
+            'part_time',
+            'contract',
+            'seasonal',
+          ].includes(empTypeStr)
+            ? empTypeStr
+            : 'full_time';
           const headcount = Number(getValue(row, 'headcount') ?? 1);
           const periodMonth = Number(getValue(row, 'periodMonth') || 1);
           const basicSalary = Number(getValue(row, 'basicSalary') || 0);
           const allowances = Number(getValue(row, 'allowances') || 0);
           const socialInsurance = Number(getValue(row, 'socialInsurance') || 0);
           const totalCost = Number(getValue(row, 'totalCost') || 0);
-          const notes = getValue(row, 'notes') ? String(getValue(row, 'notes')) : null;
+          const notes = getValue(row, 'notes')
+            ? String(getValue(row, 'notes'))
+            : null;
 
           await this.prisma.headcountPlan.create({
             data: {
-              budgetCycleId: budgetCycle.id, siteId, costCenterId,
-              jobTitle, department, employmentType: employmentType as any,
-              headcount, periodMonth, basicSalary, allowances, socialInsurance, totalCost, notes,
+              budgetCycleId: budgetCycle.id,
+              siteId,
+              costCenterId,
+              jobTitle,
+              department,
+              employmentType: employmentType as any,
+              headcount,
+              periodMonth,
+              basicSalary,
+              allowances,
+              socialInsurance,
+              totalCost,
+              notes,
             },
           });
-
         } else if (moduleName === 'promotions' || moduleName === 'promotion') {
           const name = String(getValue(row, 'name') || '');
           if (!name) throw new Error('Promotion name is required');
-          const description = getValue(row, 'description') ? String(getValue(row, 'description')) : null;
+          const description = getValue(row, 'description')
+            ? String(getValue(row, 'description'))
+            : null;
 
           let productId: bigint | null = null;
-          const productSku = getValue(row, 'productSku') || getValue(row, 'productCode') ? String(getValue(row, 'productSku') || getValue(row, 'productCode')) : null;
+          const productSku =
+            getValue(row, 'productSku') || getValue(row, 'productCode')
+              ? String(
+                  getValue(row, 'productSku') || getValue(row, 'productCode'),
+                )
+              : null;
           if (productSku) {
-            const p = await this.prisma.product.findFirst({ where: { companyId, sku: productSku } });
+            const p = await this.prisma.product.findFirst({
+              where: { companyId, sku: productSku },
+            });
             if (p) productId = p.id;
           }
 
           let customerId: bigint | null = null;
-          const customerCode = getValue(row, 'customerCode') ? String(getValue(row, 'customerCode')) : null;
+          const customerCode = getValue(row, 'customerCode')
+            ? String(getValue(row, 'customerCode'))
+            : null;
           if (customerCode) {
-            const c = await this.prisma.customer.findFirst({ where: { companyId, code: customerCode } });
+            const c = await this.prisma.customer.findFirst({
+              where: { companyId, code: customerCode },
+            });
             if (c) customerId = c.id;
           }
 
-          const discountPct = getValue(row, 'discountPct') !== undefined && getValue(row, 'discountPct') !== null ? Number(getValue(row, 'discountPct')) : null;
-          const discountAmt = getValue(row, 'discountAmount') !== undefined && getValue(row, 'discountAmount') !== null ? Number(getValue(row, 'discountAmount')) : null;
+          const discountPct =
+            getValue(row, 'discountPct') !== undefined &&
+            getValue(row, 'discountPct') !== null
+              ? Number(getValue(row, 'discountPct'))
+              : null;
+          const discountAmt =
+            getValue(row, 'discountAmount') !== undefined &&
+            getValue(row, 'discountAmount') !== null
+              ? Number(getValue(row, 'discountAmount'))
+              : null;
           const startDate = new Date(getValue(row, 'startDate') || new Date());
-          const endDate = getValue(row, 'endDate') ? new Date(getValue(row, 'endDate')) : null;
+          const endDate = getValue(row, 'endDate')
+            ? new Date(getValue(row, 'endDate'))
+            : null;
           const budgetAmt = Number(getValue(row, 'budgetAmount') || 0);
           const actualCost = Number(getValue(row, 'actualCost') || 0);
-          const incrementalRevenue = Number(getValue(row, 'incrementalRevenue') || 0);
-          const roi = getValue(row, 'roi') !== undefined && getValue(row, 'roi') !== null ? Number(getValue(row, 'roi')) : null;
-          const isActive = getValue(row, 'isActive') === 'Y' || getValue(row, 'isActive') === 1 || getValue(row, 'isActive') === true || getValue(row, 'isActive') === 'true';
+          const incrementalRevenue = Number(
+            getValue(row, 'incrementalRevenue') || 0,
+          );
+          const roi =
+            getValue(row, 'roi') !== undefined && getValue(row, 'roi') !== null
+              ? Number(getValue(row, 'roi'))
+              : null;
+          const isActive =
+            getValue(row, 'isActive') === 'Y' ||
+            getValue(row, 'isActive') === 1 ||
+            getValue(row, 'isActive') === true ||
+            getValue(row, 'isActive') === 'true';
 
           await this.prisma.promotion.create({
             data: {
-              companyId, name, description, productId, customerId,
-              discountPct, discountAmt, startDate, endDate, budgetAmt, actualCost,
-              incrementalRevenue, roi, isActive,
+              companyId,
+              name,
+              description,
+              productId,
+              customerId,
+              discountPct,
+              discountAmt,
+              startDate,
+              endDate,
+              budgetAmt,
+              actualCost,
+              incrementalRevenue,
+              roi,
+              isActive,
             },
           });
-
-        } else if (moduleName === 'rawmaterialprices' || moduleName === 'rawmaterialprice') {
+        } else if (
+          moduleName === 'rawmaterialprices' ||
+          moduleName === 'rawmaterialprice'
+        ) {
           const materialCode = String(getValue(row, 'materialCode') || '');
-          if (!materialCode) throw new Error('Material code is required for price sync');
-          const material = await this.prisma.material.findFirst({ where: { companyId, code: materialCode } });
+          if (!materialCode)
+            throw new Error('Material code is required for price sync');
+          const material = await this.prisma.material.findFirst({
+            where: { companyId, code: materialCode },
+          });
           if (!material) throw new Error(`Material not found: ${materialCode}`);
 
           const price = Number(getValue(row, 'price') || 0);
           const priceDate = new Date(getValue(row, 'priceDate') || new Date());
-          const source = getValue(row, 'source') ? String(getValue(row, 'source')) : 'oracle-custom-sync';
+          const source = getValue(row, 'source')
+            ? String(getValue(row, 'source'))
+            : 'oracle-custom-sync';
 
           await this.prisma.rawMaterialPrice.create({
-            data: { companyId, materialId: material.id, price, priceDate, source },
+            data: {
+              companyId,
+              materialId: material.id,
+              price,
+              priceDate,
+              source,
+            },
           });
-
         } else {
           throw new Error(`Unsupported custom module: ${targetModule}`);
         }
@@ -1073,9 +1688,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
         syncedCount++;
       } catch (err: any) {
         if (!skipErrors) {
-          throw new BadRequestException(`Failed to sync row ${i + 1}: ${err.message}`);
+          throw new BadRequestException(
+            `Failed to sync row ${i + 1}: ${err.message}`,
+          );
         } else {
-          console.error(`[syncCustomDataRows] Skipping error on row ${i + 1}: ${err.message}`);
+          console.error(
+            `[syncCustomDataRows] Skipping error on row ${i + 1}: ${err.message}`,
+          );
         }
       }
     }
@@ -1110,7 +1729,12 @@ export class IntegrationsService implements OnApplicationBootstrap {
         passwordEnc,
         apiBaseUrl: dto.apiBaseUrl ?? null,
         apiKeyEnc,
-        extraConfig: dto.extraConfig !== undefined ? dto.extraConfig ? JSON.stringify(dto.extraConfig) : null : undefined,
+        extraConfig:
+          dto.extraConfig !== undefined
+            ? dto.extraConfig
+              ? JSON.stringify(dto.extraConfig)
+              : null
+            : undefined,
         syncSchedule: dto.syncSchedule ?? SyncSchedule.manual,
         isActive: dto.isActive ?? true,
         createdBy: userId,
@@ -1128,7 +1752,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
       },
     });
 
-
     return maskConnection(connection);
   }
 
@@ -1143,10 +1766,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
       companyId,
       ...(paginationDto.search
         ? {
-          name: {
-            contains: paginationDto.search,
-          },
-        }
+            name: {
+              contains: paginationDto.search,
+            },
+          }
         : {}),
     };
 
@@ -1253,7 +1876,6 @@ export class IntegrationsService implements OnApplicationBootstrap {
       },
     });
 
-
     return maskConnection(updatedConnection);
   }
 
@@ -1359,10 +1981,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
       companyId,
       ...(paginationDto.search
         ? {
-          name: {
-            contains: paginationDto.search,
-          },
-        }
+            name: {
+              contains: paginationDto.search,
+            },
+          }
         : {}),
     };
 
@@ -1564,7 +2186,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
+      throw new BadRequestException({
+        message: 'Oracle client is not configured.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
     }
 
     const result = await connInstance.execute(
@@ -1768,7 +2393,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
+      throw new BadRequestException({
+        message: 'Oracle client is not configured.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
     }
 
     // 1. Sync Accounts
@@ -2089,7 +2717,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_COST_CENTERS sync: ${e.message}`);
+      console.warn(
+        `[syncMasterData] Skipping FP_COST_CENTERS sync: ${e.message}`,
+      );
     }
 
     // 7. Sync Product Categories (standalone)
@@ -2114,7 +2744,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_PRODUCT_CATEGORIES sync: ${e.message}`);
+      console.warn(
+        `[syncMasterData] Skipping FP_PRODUCT_CATEGORIES sync: ${e.message}`,
+      );
     }
 
     // 8. Sync Units (standalone)
@@ -2242,7 +2874,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_BOM_RECIPES sync: ${e.message}`);
+      console.warn(
+        `[syncMasterData] Skipping FP_BOM_RECIPES sync: ${e.message}`,
+      );
     }
 
     // 11. Sync BOM Lines
@@ -2308,16 +2942,22 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
       const invRows = (invResult.rows || []) as any[];
       for (const row of invRows) {
-        const site = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } });
+        const site = await this.prisma.site.findFirst({
+          where: { companyId, name: row.SITE_CODE },
+        });
         if (!site) continue;
         let productId: bigint | null = null;
         if (row.PRODUCT_CODE) {
-          const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } });
+          const p = await this.prisma.product.findFirst({
+            where: { companyId, sku: row.PRODUCT_CODE },
+          });
           if (p) productId = p.id;
         }
         let materialId: bigint | null = null;
         if (row.MATERIAL_CODE) {
-          const m = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } });
+          const m = await this.prisma.material.findFirst({
+            where: { companyId, code: row.MATERIAL_CODE },
+          });
           if (m) materialId = m.id;
         }
         await this.prisma.inventorySnapshot.create({
@@ -2357,7 +2997,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
           },
         });
       }
-      await this.prisma.budgetLine.deleteMany({ where: { budgetCycleId: budgetCycle.id } });
+      await this.prisma.budgetLine.deleteMany({
+        where: { budgetCycleId: budgetCycle.id },
+      });
       const budgetResult = await connInstance.execute(
         `SELECT ACCOUNT_CODE, SITE_CODE, COST_CENTER_CODE, PRODUCT_CODE, MATERIAL_CODE, CUSTOMER_CODE, PERIOD_MONTH, QUANTITY, UNIT_PRICE, AMOUNT, NOTES FROM FP_BUDGET_LINES WHERE COMPANY_CODE = :companyCode`,
         [companyCode],
@@ -2365,23 +3007,54 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
       const budgetRows = (budgetResult.rows || []) as any[];
       for (const row of budgetRows) {
-        const account = await this.prisma.account.findFirst({ where: { companyId, code: row.ACCOUNT_CODE } });
+        const account = await this.prisma.account.findFirst({
+          where: { companyId, code: row.ACCOUNT_CODE },
+        });
         if (!account) continue;
         let siteId: bigint | null = null;
-        if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+        if (row.SITE_CODE) {
+          const s = await this.prisma.site.findFirst({
+            where: { companyId, name: row.SITE_CODE },
+          });
+          if (s) siteId = s.id;
+        }
         let costCenterId: bigint | null = null;
-        if (row.COST_CENTER_CODE) { const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: row.COST_CENTER_CODE } }); if (cc) costCenterId = cc.id; }
+        if (row.COST_CENTER_CODE) {
+          const cc = await this.prisma.costCenter.findFirst({
+            where: { companyId, code: row.COST_CENTER_CODE },
+          });
+          if (cc) costCenterId = cc.id;
+        }
         let productId: bigint | null = null;
-        if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+        if (row.PRODUCT_CODE) {
+          const p = await this.prisma.product.findFirst({
+            where: { companyId, sku: row.PRODUCT_CODE },
+          });
+          if (p) productId = p.id;
+        }
         let materialId: bigint | null = null;
-        if (row.MATERIAL_CODE) { const m = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } }); if (m) materialId = m.id; }
+        if (row.MATERIAL_CODE) {
+          const m = await this.prisma.material.findFirst({
+            where: { companyId, code: row.MATERIAL_CODE },
+          });
+          if (m) materialId = m.id;
+        }
         let customerId: bigint | null = null;
-        if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+        if (row.CUSTOMER_CODE) {
+          const c = await this.prisma.customer.findFirst({
+            where: { companyId, code: row.CUSTOMER_CODE },
+          });
+          if (c) customerId = c.id;
+        }
         await this.prisma.budgetLine.create({
           data: {
             budgetCycleId: budgetCycle.id,
             accountId: account.id,
-            siteId, costCenterId, productId, materialId, customerId,
+            siteId,
+            costCenterId,
+            productId,
+            materialId,
+            customerId,
             periodMonth: row.PERIOD_MONTH,
             quantity: row.QUANTITY ?? 0,
             unitPrice: row.UNIT_PRICE ?? 0,
@@ -2414,7 +3087,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
           },
         });
       }
-      await this.prisma.forecastLine.deleteMany({ where: { forecastCycleId: forecastCycle.id } });
+      await this.prisma.forecastLine.deleteMany({
+        where: { forecastCycleId: forecastCycle.id },
+      });
       const forecastResult = await connInstance.execute(
         `SELECT ACCOUNT_CODE, SITE_CODE, COST_CENTER_CODE, PRODUCT_CODE, MATERIAL_CODE, CUSTOMER_CODE, PERIOD_MONTH, QUANTITY, UNIT_PRICE, AMOUNT, DRIVER_TYPE, NOTES FROM FP_FORECAST_LINES WHERE COMPANY_CODE = :companyCode`,
         [companyCode],
@@ -2422,23 +3097,54 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
       const forecastRows = (forecastResult.rows || []) as any[];
       for (const row of forecastRows) {
-        const account = await this.prisma.account.findFirst({ where: { companyId, code: row.ACCOUNT_CODE } });
+        const account = await this.prisma.account.findFirst({
+          where: { companyId, code: row.ACCOUNT_CODE },
+        });
         if (!account) continue;
         let siteId: bigint | null = null;
-        if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+        if (row.SITE_CODE) {
+          const s = await this.prisma.site.findFirst({
+            where: { companyId, name: row.SITE_CODE },
+          });
+          if (s) siteId = s.id;
+        }
         let costCenterId: bigint | null = null;
-        if (row.COST_CENTER_CODE) { const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: row.COST_CENTER_CODE } }); if (cc) costCenterId = cc.id; }
+        if (row.COST_CENTER_CODE) {
+          const cc = await this.prisma.costCenter.findFirst({
+            where: { companyId, code: row.COST_CENTER_CODE },
+          });
+          if (cc) costCenterId = cc.id;
+        }
         let productId: bigint | null = null;
-        if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+        if (row.PRODUCT_CODE) {
+          const p = await this.prisma.product.findFirst({
+            where: { companyId, sku: row.PRODUCT_CODE },
+          });
+          if (p) productId = p.id;
+        }
         let materialId: bigint | null = null;
-        if (row.MATERIAL_CODE) { const m = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } }); if (m) materialId = m.id; }
+        if (row.MATERIAL_CODE) {
+          const m = await this.prisma.material.findFirst({
+            where: { companyId, code: row.MATERIAL_CODE },
+          });
+          if (m) materialId = m.id;
+        }
         let customerId: bigint | null = null;
-        if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+        if (row.CUSTOMER_CODE) {
+          const c = await this.prisma.customer.findFirst({
+            where: { companyId, code: row.CUSTOMER_CODE },
+          });
+          if (c) customerId = c.id;
+        }
         await this.prisma.forecastLine.create({
           data: {
             forecastCycleId: forecastCycle.id,
             accountId: account.id,
-            siteId, costCenterId, productId, materialId, customerId,
+            siteId,
+            costCenterId,
+            productId,
+            materialId,
+            customerId,
             periodMonth: row.PERIOD_MONTH,
             quantity: row.QUANTITY ?? 0,
             unitPrice: row.UNIT_PRICE ?? 0,
@@ -2465,23 +3171,46 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
       const ppRows = (ppResult.rows || []) as any[];
       for (const row of ppRows) {
-        const site = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } });
+        const site = await this.prisma.site.findFirst({
+          where: { companyId, name: row.SITE_CODE },
+        });
         if (!site) continue;
-        const product = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } });
+        const product = await this.prisma.product.findFirst({
+          where: { companyId, sku: row.PRODUCT_CODE },
+        });
         if (!product) continue;
-        const planSource = row.PLAN_SOURCE?.toLowerCase() === 'auto' ? 'auto' as any : 'manual' as any;
+        const planSource =
+          row.PLAN_SOURCE?.toLowerCase() === 'auto'
+            ? ('auto' as any)
+            : ('manual' as any);
         await this.prisma.productionPlan.upsert({
           where: {
             companyId_siteId_productId_fiscalYear_periodMonth: {
-              companyId, siteId: site.id, productId: product.id,
-              fiscalYear: row.FISCAL_YEAR, periodMonth: row.PERIOD_MONTH,
+              companyId,
+              siteId: site.id,
+              productId: product.id,
+              fiscalYear: row.FISCAL_YEAR,
+              periodMonth: row.PERIOD_MONTH,
             },
           },
-          update: { plannedQty: row.PLANNED_QTY ?? 0, actualQty: row.ACTUAL_QTY, estimatedCost: row.ESTIMATED_COST, actualCost: row.ACTUAL_COST, planSource },
+          update: {
+            plannedQty: row.PLANNED_QTY ?? 0,
+            actualQty: row.ACTUAL_QTY,
+            estimatedCost: row.ESTIMATED_COST,
+            actualCost: row.ACTUAL_COST,
+            planSource,
+          },
           create: {
-            companyId, siteId: site.id, productId: product.id,
-            fiscalYear: row.FISCAL_YEAR, periodMonth: row.PERIOD_MONTH,
-            plannedQty: row.PLANNED_QTY ?? 0, actualQty: row.ACTUAL_QTY, estimatedCost: row.ESTIMATED_COST, actualCost: row.ACTUAL_COST, planSource,
+            companyId,
+            siteId: site.id,
+            productId: product.id,
+            fiscalYear: row.FISCAL_YEAR,
+            periodMonth: row.PERIOD_MONTH,
+            plannedQty: row.PLANNED_QTY ?? 0,
+            actualQty: row.ACTUAL_QTY,
+            estimatedCost: row.ESTIMATED_COST,
+            actualCost: row.ACTUAL_COST,
+            planSource,
           },
         });
       }
@@ -2501,12 +3230,18 @@ export class IntegrationsService implements OnApplicationBootstrap {
         const y = new Date().getFullYear();
         hcBudgetCycle = await this.prisma.budgetCycle.create({
           data: {
-            companyId, name: `FY ${y} - Oracle Sync`, fiscalYear: y,
-            status: 'approved' as any, startDate: new Date(`${y}-01-01`), endDate: new Date(`${y}-12-31`),
+            companyId,
+            name: `FY ${y} - Oracle Sync`,
+            fiscalYear: y,
+            status: 'approved' as any,
+            startDate: new Date(`${y}-01-01`),
+            endDate: new Date(`${y}-12-31`),
           },
         });
       }
-      await this.prisma.headcountPlan.deleteMany({ where: { budgetCycleId: hcBudgetCycle.id } });
+      await this.prisma.headcountPlan.deleteMany({
+        where: { budgetCycleId: hcBudgetCycle.id },
+      });
       const hcResult = await connInstance.execute(
         `SELECT SITE_CODE, COST_CENTER_CODE, JOB_TITLE, DEPARTMENT, EMPLOYMENT_TYPE, HEADCOUNT, PERIOD_MONTH, BASIC_SALARY, ALLOWANCES, SOCIAL_INSURANCE, TOTAL_COST, NOTES FROM FP_HEADCOUNT_PLANS WHERE COMPANY_CODE = :companyCode`,
         [companyCode],
@@ -2516,18 +3251,36 @@ export class IntegrationsService implements OnApplicationBootstrap {
       const validEmpTypes = ['full_time', 'part_time', 'contractor', 'intern'];
       for (const row of hcRows) {
         let siteId: bigint | null = null;
-        if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+        if (row.SITE_CODE) {
+          const s = await this.prisma.site.findFirst({
+            where: { companyId, name: row.SITE_CODE },
+          });
+          if (s) siteId = s.id;
+        }
         let costCenterId: bigint | null = null;
-        if (row.COST_CENTER_CODE) { const cc = await this.prisma.costCenter.findFirst({ where: { companyId, code: row.COST_CENTER_CODE } }); if (cc) costCenterId = cc.id; }
+        if (row.COST_CENTER_CODE) {
+          const cc = await this.prisma.costCenter.findFirst({
+            where: { companyId, code: row.COST_CENTER_CODE },
+          });
+          if (cc) costCenterId = cc.id;
+        }
         const empType = row.EMPLOYMENT_TYPE?.toLowerCase() || 'full_time';
         await this.prisma.headcountPlan.create({
           data: {
-            budgetCycleId: hcBudgetCycle.id, siteId, costCenterId,
-            jobTitle: row.JOB_TITLE, department: row.DEPARTMENT,
-            employmentType: validEmpTypes.includes(empType) ? empType as any : 'full_time',
-            headcount: row.HEADCOUNT ?? 1, periodMonth: row.PERIOD_MONTH,
-            basicSalary: row.BASIC_SALARY ?? 0, allowances: row.ALLOWANCES ?? 0,
-            socialInsurance: row.SOCIAL_INSURANCE ?? 0, totalCost: row.TOTAL_COST ?? 0,
+            budgetCycleId: hcBudgetCycle.id,
+            siteId,
+            costCenterId,
+            jobTitle: row.JOB_TITLE,
+            department: row.DEPARTMENT,
+            employmentType: validEmpTypes.includes(empType)
+              ? empType
+              : 'full_time',
+            headcount: row.HEADCOUNT ?? 1,
+            periodMonth: row.PERIOD_MONTH,
+            basicSalary: row.BASIC_SALARY ?? 0,
+            allowances: row.ALLOWANCES ?? 0,
+            socialInsurance: row.SOCIAL_INSURANCE ?? 0,
+            totalCost: row.TOTAL_COST ?? 0,
             notes: row.NOTES ?? null,
           },
         });
@@ -2550,19 +3303,38 @@ export class IntegrationsService implements OnApplicationBootstrap {
       const promoRows = (promoResult.rows || []) as any[];
       for (const row of promoRows) {
         let productId: bigint | null = null;
-        if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+        if (row.PRODUCT_CODE) {
+          const p = await this.prisma.product.findFirst({
+            where: { companyId, sku: row.PRODUCT_CODE },
+          });
+          if (p) productId = p.id;
+        }
         let customerId: bigint | null = null;
-        if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
-        const isActive = row.IS_ACTIVE === 'Y' || row.IS_ACTIVE === 1 || row.IS_ACTIVE === true;
+        if (row.CUSTOMER_CODE) {
+          const c = await this.prisma.customer.findFirst({
+            where: { companyId, code: row.CUSTOMER_CODE },
+          });
+          if (c) customerId = c.id;
+        }
+        const isActive =
+          row.IS_ACTIVE === 'Y' ||
+          row.IS_ACTIVE === 1 ||
+          row.IS_ACTIVE === true;
         await this.prisma.promotion.create({
           data: {
-            companyId, name: row.NAME, description: row.DESCRIPTION,
-            productId, customerId,
-            discountPct: row.DISCOUNT_PCT, discountAmt: row.DISCOUNT_AMOUNT,
+            companyId,
+            name: row.NAME,
+            description: row.DESCRIPTION,
+            productId,
+            customerId,
+            discountPct: row.DISCOUNT_PCT,
+            discountAmt: row.DISCOUNT_AMOUNT,
             startDate: new Date(row.START_DATE),
             endDate: row.END_DATE ? new Date(row.END_DATE) : null,
-            budgetAmt: row.BUDGET_AMOUNT ?? 0, actualCost: row.ACTUAL_COST ?? 0,
-            incrementalRevenue: row.INCREMENTAL_REVENUE ?? 0, roi: row.ROI,
+            budgetAmt: row.BUDGET_AMOUNT ?? 0,
+            actualCost: row.ACTUAL_COST ?? 0,
+            incrementalRevenue: row.INCREMENTAL_REVENUE ?? 0,
+            roi: row.ROI,
             isActive,
           },
         });
@@ -2584,11 +3356,14 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
       const rmpRows = (rmpResult.rows || []) as any[];
       for (const row of rmpRows) {
-        const material = await this.prisma.material.findFirst({ where: { companyId, code: row.MATERIAL_CODE } });
+        const material = await this.prisma.material.findFirst({
+          where: { companyId, code: row.MATERIAL_CODE },
+        });
         if (!material) continue;
         await this.prisma.rawMaterialPrice.create({
           data: {
-            companyId, materialId: material.id,
+            companyId,
+            materialId: material.id,
             price: row.PRICE ?? 0,
             priceDate: new Date(row.PRICE_DATE),
             source: row.SOURCE ?? 'oracle-sync',
@@ -2620,25 +3395,50 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
         const actualImport = await this.prisma.actualImport.create({
           data: {
-            companyId, sourceSystem: 'oracle', importType: 'expenses',
-            periodFrom: minDate, periodTo: maxDate,
-            status: 'validated', importedBy: null,
+            companyId,
+            sourceSystem: 'oracle',
+            importType: 'expenses',
+            periodFrom: minDate,
+            periodTo: maxDate,
+            status: 'validated',
+            importedBy: null,
           },
         });
         for (const row of glRows) {
-          const account = await this.prisma.account.findFirst({ where: { companyId, code: row.ACCOUNT_CODE } });
+          const account = await this.prisma.account.findFirst({
+            where: { companyId, code: row.ACCOUNT_CODE },
+          });
           if (!account) continue;
           let siteId: bigint | null = null;
-          if (row.SITE_CODE) { const s = await this.prisma.site.findFirst({ where: { companyId, name: row.SITE_CODE } }); if (s) siteId = s.id; }
+          if (row.SITE_CODE) {
+            const s = await this.prisma.site.findFirst({
+              where: { companyId, name: row.SITE_CODE },
+            });
+            if (s) siteId = s.id;
+          }
           let productId: bigint | null = null;
-          if (row.PRODUCT_CODE) { const p = await this.prisma.product.findFirst({ where: { companyId, sku: row.PRODUCT_CODE } }); if (p) productId = p.id; }
+          if (row.PRODUCT_CODE) {
+            const p = await this.prisma.product.findFirst({
+              where: { companyId, sku: row.PRODUCT_CODE },
+            });
+            if (p) productId = p.id;
+          }
           let customerId: bigint | null = null;
-          if (row.CUSTOMER_CODE) { const c = await this.prisma.customer.findFirst({ where: { companyId, code: row.CUSTOMER_CODE } }); if (c) customerId = c.id; }
+          if (row.CUSTOMER_CODE) {
+            const c = await this.prisma.customer.findFirst({
+              where: { companyId, code: row.CUSTOMER_CODE },
+            });
+            if (c) customerId = c.id;
+          }
           await this.prisma.actualLine.create({
             data: {
-              actualImportId: actualImport.id, accountId: account.id,
-              siteId, productId, customerId,
-              quantity: row.QUANTITY ?? 0, amount: row.AMOUNT ?? 0,
+              actualImportId: actualImport.id,
+              accountId: account.id,
+              siteId,
+              productId,
+              customerId,
+              quantity: row.QUANTITY ?? 0,
+              amount: row.AMOUNT ?? 0,
               transactionDate: new Date(row.TRANSACTION_DATE),
               referenceNo: row.REFERENCE_NO ?? null,
             },
@@ -2690,7 +3490,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       console.error('Failed to sync companies during connection event:', err);
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => { });
+        await connInstance.close().catch(() => {});
       }
     }
   }
@@ -2944,7 +3744,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
     let parsedConfig: any = {};
     try {
       parsedConfig = JSON.parse(mapping.mappingConfig);
-    } catch { }
+    } catch {}
 
     if (parsedConfig && parsedConfig.targetModule) {
       const targetModule = parsedConfig.targetModule;
@@ -2952,7 +3752,9 @@ export class IntegrationsService implements OnApplicationBootstrap {
       const columnMapping = parsedConfig.columnMapping || {};
 
       if (!sourceTable) {
-        throw new BadRequestException('sourceTable is required in custom mappingConfig');
+        throw new BadRequestException(
+          'sourceTable is required in custom mappingConfig',
+        );
       }
 
       let rawRows: any[] = [];
@@ -2965,12 +3767,14 @@ export class IntegrationsService implements OnApplicationBootstrap {
           : mapping.connectionId;
         const connection = connectionId
           ? await this.prisma.integrationConnection.findFirst({
-            where: { id: connectionId, companyId },
-          })
+              where: { id: connectionId, companyId },
+            })
           : null;
 
         if (!connection) {
-          throw new BadRequestException('A connection is required to trigger sync.');
+          throw new BadRequestException(
+            'A connection is required to trigger sync.',
+          );
         }
 
         if (connection.connectionType === ConnectionType.oracle) {
@@ -2985,10 +3789,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
             try {
               oracledb = require('oracledb');
             } catch {
-              throw new BadRequestException({ message: 'Oracle client is not configured.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED });
+              throw new BadRequestException({
+                message: 'Oracle client is not configured.',
+                code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+              });
             }
 
-            const password = connection.passwordEnc ? decrypt(connection.passwordEnc) : '';
+            const password = connection.passwordEnc
+              ? decrypt(connection.passwordEnc)
+              : '';
             const connectString = `${connection.host}:${connection.port || 1521}/${connection.databaseName || ''}`;
 
             let connInstance: any;
@@ -3004,7 +3813,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
                 const val = columnMapping[key];
                 if (typeof val === 'string' && val.trim() !== '') {
                   if (!/^[A-Za-z0-9_$#"]+$/.test(val)) {
-                    throw new BadRequestException({ message: `Invalid column name: ${val}`, code: ErrorCodes.PREVIEW_INVALID_COLUMN });
+                    throw new BadRequestException({
+                      message: `Invalid column name: ${val}`,
+                      code: ErrorCodes.PREVIEW_INVALID_COLUMN,
+                    });
                   }
                   if (!selectColumns.includes(val)) {
                     selectColumns.push(val);
@@ -3012,24 +3824,31 @@ export class IntegrationsService implements OnApplicationBootstrap {
                 }
               }
 
-              const selectClause = selectColumns.length > 0 ? selectColumns.map(c => c).join(', ') : '*';
+              const selectClause =
+                selectColumns.length > 0
+                  ? selectColumns.map((c) => c).join(', ')
+                  : '*';
               if (!/^[A-Za-z0-9_$#."]+$/.test(sourceTable)) {
-                throw new BadRequestException({ message: 'Invalid table name format.', code: ErrorCodes.PREVIEW_INVALID_TABLE });
+                throw new BadRequestException({
+                  message: 'Invalid table name format.',
+                  code: ErrorCodes.PREVIEW_INVALID_TABLE,
+                });
               }
 
               const query = `SELECT ${selectClause} FROM ${sourceTable}`;
-              const result = await connInstance.execute(
-                query,
-                [],
-                { outFormat: oracledb.OUT_FORMAT_OBJECT },
-              );
+              const result = await connInstance.execute(query, [], {
+                outFormat: oracledb.OUT_FORMAT_OBJECT,
+              });
               rawRows = result.rows || [];
             } catch (err: unknown) {
               const oracleErr = this.formatOracleError(err);
-              throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
+              throw new BadRequestException({
+                message: oracleErr.message,
+                code: oracleErr.code,
+              });
             } finally {
               if (connInstance) {
-                await connInstance.close().catch(() => { });
+                await connInstance.close().catch(() => {});
               }
             }
           }
@@ -3043,7 +3862,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
       }
 
       if (rawRows.length === 0) {
-        throw new BadRequestException({ message: 'No rows retrieved to execute manual synchronization.', code: ErrorCodes.SYNC_NO_ROWS });
+        throw new BadRequestException({
+          message: 'No rows retrieved to execute manual synchronization.',
+          code: ErrorCodes.SYNC_NO_ROWS,
+        });
       }
 
       const syncedCount = await this.syncCustomDataRows(
@@ -3118,8 +3940,8 @@ export class IntegrationsService implements OnApplicationBootstrap {
         : mapping.connectionId;
       const connection = connectionId
         ? await this.prisma.integrationConnection.findFirst({
-          where: { id: connectionId, companyId },
-        })
+            where: { id: connectionId, companyId },
+          })
         : null;
 
       if (connection) {
@@ -3130,7 +3952,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
         if (connection.connectionType === ConnectionType.oracle) {
           if (connection.host?.toLowerCase() === 'mock') {
             rawRows = await this.generateMockRows(
-              JSON.parse(mapping.mappingConfig) as Record<string, string | null>,
+              JSON.parse(mapping.mappingConfig) as Record<
+                string,
+                string | null
+              >,
               companyId,
             );
           } else {
@@ -3139,9 +3964,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
               // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
               oracledb = require('oracledb');
             } catch {
-              throw new BadRequestException(
-                { message: 'Oracle client is not configured on this server.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED },
-              );
+              throw new BadRequestException({
+                message: 'Oracle client is not configured on this server.',
+                code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+              });
             }
 
             const password = connection.passwordEnc
@@ -3162,7 +3988,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
               await this.syncMasterData(connInstance, companyId);
 
               // Build dynamic select query mapping Oracle columns to mapped fields
-              const config = JSON.parse(mapping.mappingConfig) as Record<string, string | null>;
+              const config = JSON.parse(mapping.mappingConfig) as Record<
+                string,
+                string | null
+              >;
               const selectParts: string[] = [];
               if (config.accountCode)
                 selectParts.push(`ACCOUNT_CODE AS "${config.accountCode}"`);
@@ -3240,11 +4069,14 @@ export class IntegrationsService implements OnApplicationBootstrap {
               }
             } catch (err: unknown) {
               const oracleErr = this.formatOracleError(err);
-              throw new BadRequestException({ message: oracleErr.message, code: oracleErr.code });
+              throw new BadRequestException({
+                message: oracleErr.message,
+                code: oracleErr.code,
+              });
             } finally {
               if (connInstance) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                await (connInstance.close() as Promise<void>).catch(() => { });
+                await (connInstance.close() as Promise<void>).catch(() => {});
               }
             }
           }
@@ -3463,7 +4295,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           createdImport.id,
           createdImport.errorLog ?? 'Validation failed',
         )
-        .catch(() => { });
+        .catch(() => {});
     } else if (
       createdImport.status === 'validated' ||
       createdImport.status === 'posted'
@@ -3474,7 +4306,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
           tenantId,
           periodFrom.getFullYear(),
         )
-        .catch(() => { });
+        .catch(() => {});
     }
 
     return {
@@ -3624,7 +4456,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
 
             await this.syncMasterData(connInstance, conn.companyId);
 
-            const config = JSON.parse(mapping.mappingConfig) as Record<string, string | null>;
+            const config = JSON.parse(mapping.mappingConfig) as Record<
+              string,
+              string | null
+            >;
             const selectParts: string[] = [];
             if (config.accountCode)
               selectParts.push(`ACCOUNT_CODE AS "${config.accountCode}"`);
@@ -3711,10 +4546,10 @@ export class IntegrationsService implements OnApplicationBootstrap {
           const initialStatus = hasErrors ? 'failed' : 'validated';
           const errorLog = hasErrors
             ? JSON.stringify(
-              resolvedLines
-                .filter((r) => !r.success)
-                .map((r) => `Row \${r.rowIdx}: \${r.errors.join(', ')}`),
-            )
+                resolvedLines
+                  .filter((r) => !r.success)
+                  .map((r) => `Row \${r.rowIdx}: \${r.errors.join(', ')}`),
+              )
             : null;
 
           await this.prisma.$transaction(async (tx) => {
@@ -3813,16 +4648,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
         if (config && config.targetModule) {
           customMappings.push({ mapping: m, config });
         }
-      } catch { }
+      } catch {}
     }
 
     let oracledb: any;
     try {
       oracledb = require('oracledb');
     } catch {
-      throw new BadRequestException(
-        { message: 'Oracle client is not configured on this server.', code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED },
-      );
+      throw new BadRequestException({
+        message: 'Oracle client is not configured on this server.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
     }
 
     const password = connection.passwordEnc
@@ -3846,10 +4682,14 @@ export class IntegrationsService implements OnApplicationBootstrap {
           const columnMapping = config.columnMapping || {};
 
           if (!sourceTable) {
-            throw new Error(`sourceTable is missing in custom mapping "${mapping.name}"`);
+            throw new Error(
+              `sourceTable is missing in custom mapping "${mapping.name}"`,
+            );
           }
           if (!/^[A-Za-z0-9_$#."]+$/.test(sourceTable)) {
-            throw new Error(`Invalid sourceTable name format in mapping "${mapping.name}"`);
+            throw new Error(
+              `Invalid sourceTable name format in mapping "${mapping.name}"`,
+            );
           }
 
           const selectColumns: string[] = [];
@@ -3865,14 +4705,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
             }
           }
 
-          const selectClause = selectColumns.length > 0 ? selectColumns.map(c => c).join(', ') : '*';
+          const selectClause =
+            selectColumns.length > 0
+              ? selectColumns.map((c) => c).join(', ')
+              : '*';
           const query = `SELECT ${selectClause} FROM ${sourceTable}`;
 
-          const result = await connInstance.execute(
-            query,
-            [],
-            { outFormat: oracledb.OUT_FORMAT_OBJECT },
-          );
+          const result = await connInstance.execute(query, [], {
+            outFormat: oracledb.OUT_FORMAT_OBJECT,
+          });
 
           const rows = result.rows || [];
           const count = await this.syncCustomDataRows(
@@ -3927,10 +4768,13 @@ export class IntegrationsService implements OnApplicationBootstrap {
           lastSyncLog: `Full sync failed: ${oracleErr.message}`,
         },
       });
-      throw new BadRequestException({ message: `Full sync failed: ${oracleErr.message}`, code: oracleErr.code });
+      throw new BadRequestException({
+        message: `Full sync failed: ${oracleErr.message}`,
+        code: oracleErr.code,
+      });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => { });
+        await connInstance.close().catch(() => {});
       }
     }
   }

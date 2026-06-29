@@ -74,9 +74,7 @@ export class RawMaterialPricesService {
         entityType: 'RawMaterialPrice',
         entityId: record.id,
         action: existing ? 'update' : 'create',
-        oldValues: existing
-          ? (JSON.stringify(existing))
-          : undefined,
+        oldValues: existing ? JSON.stringify(existing) : undefined,
         newValues: JSON.stringify(record),
       },
     });

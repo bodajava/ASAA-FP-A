@@ -115,9 +115,7 @@ export class EnterpriseImportService {
           mappedData: null,
         });
         failedCount++;
-        errors.push(
-          ...result.errors.map((e) => `Row ${rowNum}: ${e}`),
-        );
+        errors.push(...result.errors.map((e) => `Row ${rowNum}: ${e}`));
       }
     }
 
@@ -304,12 +302,7 @@ export class EnterpriseImportService {
     };
   }
 
-  async getImportLogs(
-    jobId: bigint,
-    companyId: bigint,
-    page = 1,
-    limit = 50,
-  ) {
+  async getImportLogs(jobId: bigint, companyId: bigint, page = 1, limit = 50) {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
     });

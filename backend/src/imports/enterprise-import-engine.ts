@@ -34,7 +34,14 @@ export interface ImportProgress {
   progressPct: number;
   rowsPerSecond: number;
   estimatedTimeRemainingMs: number;
-  status: 'idle' | 'parsing' | 'validating' | 'importing' | 'completed' | 'failed' | 'cancelled';
+  status:
+    | 'idle'
+    | 'parsing'
+    | 'validating'
+    | 'importing'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
   errors: ImportError[];
   warnings: ImportWarning[];
 }
@@ -131,7 +138,13 @@ export const MODULE_CONFIGS: Record<string, ImportModuleConfig> = {
       unitId: { table: 'units', field: 'id' },
     },
     enumFields: {
-      materialType: ['raw_material', 'packaging', 'component', 'consumable', 'mro'],
+      materialType: [
+        'raw_material',
+        'packaging',
+        'component',
+        'consumable',
+        'mro',
+      ],
     },
     numericFields: ['purchasePrice', 'minStock', 'reorderPoint'],
     dateFields: [],
@@ -143,7 +156,13 @@ export const MODULE_CONFIGS: Record<string, ImportModuleConfig> = {
     uniqueFields: ['code'],
     foreignKeys: {},
     enumFields: {
-      customerType: ['retail', 'wholesale', 'distributor', 'institutional', 'export'],
+      customerType: [
+        'retail',
+        'wholesale',
+        'distributor',
+        'institutional',
+        'export',
+      ],
     },
     numericFields: ['creditLimit'],
     dateFields: [],
@@ -191,13 +210,19 @@ export class EnterpriseImportEngine {
       const lines = text.split('\n');
       if (lines.length === 0) return;
 
-      const headers = this.normalizeKeys(lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '')));
+      const headers = this.normalizeKeys(
+        lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, '')),
+      );
 
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const values = lines[i]
+          .split(',')
+          .map((v) => v.trim().replace(/^"|"$/g, ''));
         const row: Record<string, string> = {};
-        headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] || '';
+        });
         rows.push(row);
         if (rows.length >= chunkSize) {
           yield rows;
@@ -236,7 +261,11 @@ export class EnterpriseImportEngine {
     rows: Array<Record<string, unknown>>,
     config: ImportModuleConfig,
     startRow: number,
-  ): { valid: Array<Record<string, unknown>>; errors: ValidationError[]; warnings: ValidationWarning[] } {
+  ): {
+    valid: Array<Record<string, unknown>>;
+    errors: ValidationError[];
+    warnings: ValidationWarning[];
+  } {
     const valid: Array<Record<string, unknown>> = [];
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
@@ -249,8 +278,18 @@ export class EnterpriseImportEngine {
 
       // Required fields
       for (const field of config.requiredFields) {
-        if (row[field] === undefined || row[field] === null || row[field] === '') {
-          errors.push({ row: rowNum, field, code: 'REQUIRED', message: `${field} is required`, value: row[field] });
+        if (
+          row[field] === undefined ||
+          row[field] === null ||
+          row[field] === ''
+        ) {
+          errors.push({
+            row: rowNum,
+            field,
+            code: 'REQUIRED',
+            message: `${field} is required`,
+            value: row[field],
+          });
           rowValid = false;
         }
       }
@@ -259,7 +298,13 @@ export class EnterpriseImportEngine {
       for (const field of config.uniqueFields) {
         const val = String(row[field] || '').trim();
         if (val && seenKeys.has(val)) {
-          errors.push({ row: rowNum, field, code: 'DUPLICATE', message: `Duplicate ${field}: ${val}`, value: row[field] });
+          errors.push({
+            row: rowNum,
+            field,
+            code: 'DUPLICATE',
+            message: `Duplicate ${field}: ${val}`,
+            value: row[field],
+          });
           rowValid = false;
         }
         if (val) seenKeys.set(val, rowNum);
@@ -269,7 +314,13 @@ export class EnterpriseImportEngine {
       for (const [field, allowed] of Object.entries(config.enumFields)) {
         const val = String(row[field] || '').trim();
         if (val && !allowed.includes(val)) {
-          errors.push({ row: rowNum, field, code: 'INVALID_ENUM', message: `Invalid ${field}: ${val}. Allowed: ${allowed.join(', ')}`, value: row[field] });
+          errors.push({
+            row: rowNum,
+            field,
+            code: 'INVALID_ENUM',
+            message: `Invalid ${field}: ${val}. Allowed: ${allowed.join(', ')}`,
+            value: row[field],
+          });
           rowValid = false;
         }
       }
@@ -280,10 +331,21 @@ export class EnterpriseImportEngine {
         if (val !== undefined && val !== null && val !== '') {
           const num = Number(val);
           if (isNaN(num)) {
-            errors.push({ row: rowNum, field, code: 'NOT_NUMERIC', message: `${field} must be a number, got: ${val}`, value: row[field] });
+            errors.push({
+              row: rowNum,
+              field,
+              code: 'NOT_NUMERIC',
+              message: `${field} must be a number, got: ${val}`,
+              value: row[field],
+            });
             rowValid = false;
           } else if (num < 0) {
-            warnings.push({ row: rowNum, field, code: 'NEGATIVE', message: `${field} is negative: ${val}` });
+            warnings.push({
+              row: rowNum,
+              field,
+              code: 'NEGATIVE',
+              message: `${field} is negative: ${val}`,
+            });
           }
         }
       }
@@ -294,7 +356,13 @@ export class EnterpriseImportEngine {
         if (val) {
           const date = new Date(val);
           if (isNaN(date.getTime())) {
-            errors.push({ row: rowNum, field, code: 'INVALID_DATE', message: `Invalid date for ${field}: ${val}`, value: row[field] });
+            errors.push({
+              row: rowNum,
+              field,
+              code: 'INVALID_DATE',
+              message: `Invalid date for ${field}: ${val}`,
+              value: row[field],
+            });
             rowValid = false;
           }
         }
@@ -321,7 +389,6 @@ export class EnterpriseImportEngine {
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = await (this.prisma as any)[tableName].createMany({
           data: batch,
           skipDuplicates: true,
@@ -329,15 +396,17 @@ export class EnterpriseImportEngine {
         inserted += result.count;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        this.logger.warn(`Batch insert failed for ${tableName} at offset ${i}: ${msg}`);
+        this.logger.warn(
+          `Batch insert failed for ${tableName} at offset ${i}: ${msg}`,
+        );
         // Fall back to individual inserts for this batch
         for (let j = 0; j < batch.length; j++) {
           try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (this.prisma as any)[tableName].create({ data: batch[j] });
             inserted++;
           } catch (innerErr: unknown) {
-            const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+            const innerMsg =
+              innerErr instanceof Error ? innerErr.message : String(innerErr);
             errors.push({
               row: i + j + 1,
               field: 'id',
@@ -357,13 +426,9 @@ export class EnterpriseImportEngine {
    * Pre-load all foreign key values for a table into a Set.
    * Used for fast FK validation without per-row DB queries.
    */
-  async preloadFKSet(
-    tableName: string,
-    field: string,
-  ): Promise<Set<string>> {
+  async preloadFKSet(tableName: string, field: string): Promise<Set<string>> {
     const values = new Set<string>();
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = await (this.prisma as any)[tableName].findMany({
         select: { [field]: true },
         where: { [field]: { not: null } },
@@ -376,7 +441,9 @@ export class EnterpriseImportEngine {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Failed to preload FK for ${tableName}.${field}: ${msg}`);
+      this.logger.warn(
+        `Failed to preload FK for ${tableName}.${field}: ${msg}`,
+      );
     }
     return values;
   }
@@ -422,24 +489,37 @@ export class EnterpriseImportEngine {
       onProgress?.(progress);
 
       // Step 2: Validate chunk
-      const { valid, errors, warnings } = this.validateBatch(chunk, moduleConfig, progress.totalRows - chunk.length + 1);
+      const { valid, errors, warnings } = this.validateBatch(
+        chunk,
+        moduleConfig,
+        progress.totalRows - chunk.length + 1,
+      );
       allValid.push(...valid);
       allErrors.push(...errors);
       allWarnings.push(...warnings);
       progress.processedRows += chunk.length;
       progress.failedRows += errors.length;
-      progress.duplicateRows += errors.filter(e => e.code === 'DUPLICATE').length;
-      progress.progressPct = Math.round((progress.processedRows / Math.max(progress.totalRows, 1)) * 100);
+      progress.duplicateRows += errors.filter(
+        (e) => e.code === 'DUPLICATE',
+      ).length;
+      progress.progressPct = Math.round(
+        (progress.processedRows / Math.max(progress.totalRows, 1)) * 100,
+      );
       onProgress?.(progress);
     }
 
     // Step 3: Batch insert
     if (allValid.length > 0) {
-      this.logger.log(`Inserting ${allValid.length} valid rows into ${moduleConfig.tableName}...`);
+      this.logger.log(
+        `Inserting ${allValid.length} valid rows into ${moduleConfig.tableName}...`,
+      );
       progress.status = 'importing';
       onProgress?.(progress);
 
-      const { inserted, errors: insertErrors } = await this.batchInsert(moduleConfig.tableName, allValid);
+      const { inserted, errors: insertErrors } = await this.batchInsert(
+        moduleConfig.tableName,
+        allValid,
+      );
       progress.successRows = inserted;
       progress.failedRows += insertErrors.length;
       allErrors.push(...insertErrors);
@@ -467,14 +547,17 @@ export class EnterpriseImportEngine {
       validationReport: {
         totalRows: progress.totalRows,
         validRows: allValid.length,
-        invalidRows: allErrors.filter(e => e.code !== 'DUPLICATE').length,
+        invalidRows: allErrors.filter((e) => e.code !== 'DUPLICATE').length,
         duplicateRows: progress.duplicateRows,
         errors: allErrors,
         warnings: allWarnings,
-        summary: allErrors.reduce((acc, e) => {
-          acc[e.code] = (acc[e.code] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
+        summary: allErrors.reduce(
+          (acc, e) => {
+            acc[e.code] = (acc[e.code] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       },
     };
   }
@@ -496,7 +579,11 @@ export class EnterpriseImportEngine {
     for await (const chunk of this.parseFileStream(buffer, fileName)) {
       const startRow = totalRows + 1;
       totalRows += chunk.length;
-      const { valid, errors, warnings } = this.validateBatch(chunk, moduleConfig, startRow);
+      const { valid, errors, warnings } = this.validateBatch(
+        chunk,
+        moduleConfig,
+        startRow,
+      );
       validRows += valid.length;
       allErrors.push(...errors);
       allWarnings.push(...warnings);
@@ -506,20 +593,23 @@ export class EnterpriseImportEngine {
       totalRows,
       validRows,
       invalidRows: totalRows - validRows,
-      duplicateRows: allErrors.filter(e => e.code === 'DUPLICATE').length,
+      duplicateRows: allErrors.filter((e) => e.code === 'DUPLICATE').length,
       errors: allErrors,
       warnings: allWarnings,
-      summary: allErrors.reduce((acc, e) => {
-        acc[e.code] = (acc[e.code] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      summary: allErrors.reduce(
+        (acc, e) => {
+          acc[e.code] = (acc[e.code] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     };
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────
 
   private normalizeKeys(keys: string[]): string[] {
-    return keys.map(k => this.normalizeKey(k));
+    return keys.map((k) => this.normalizeKey(k));
   }
 
   private normalizeKey(key: string): string {

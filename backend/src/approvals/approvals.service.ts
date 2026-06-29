@@ -7,7 +7,10 @@ import { Prisma, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateApprovalDto } from './dto/create-approval.dto';
-import { UpdateApprovalStatusDto, ApprovalAction } from './dto/update-approval-status.dto';
+import {
+  UpdateApprovalStatusDto,
+  ApprovalAction,
+} from './dto/update-approval-status.dto';
 import { ApprovalResponseDto } from './dto/approval-response.dto';
 export { ApprovalResponseDto };
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -48,7 +51,9 @@ export class ApprovalsService {
           where: { id: entityId, companyId },
         });
         if (!entity) {
-          throw new NotFoundException(`BudgetCycle not found under this company`);
+          throw new NotFoundException(
+            `BudgetCycle not found under this company`,
+          );
         }
         break;
       }
@@ -57,7 +62,9 @@ export class ApprovalsService {
           where: { id: entityId, companyId },
         });
         if (!entity) {
-          throw new NotFoundException(`ForecastCycle not found under this company`);
+          throw new NotFoundException(
+            `ForecastCycle not found under this company`,
+          );
         }
         break;
       }
@@ -110,7 +117,11 @@ export class ApprovalsService {
   async findAll(
     companyId: bigint,
     tenantId: bigint,
-    paginationDto: PaginationDto & { entityType?: string; entityId?: string; status?: string },
+    paginationDto: PaginationDto & {
+      entityType?: string;
+      entityId?: string;
+      status?: string;
+    },
   ) {
     const page = paginationDto.page ?? 1;
     const limit = paginationDto.limit ?? 10;
@@ -149,16 +160,15 @@ export class ApprovalsService {
     };
   }
 
-  async findOne(
-    id: bigint,
-    tenantId: bigint,
-  ): Promise<ApprovalResponseDto> {
+  async findOne(id: bigint, tenantId: bigint): Promise<ApprovalResponseDto> {
     const approval = await this.prisma.approval.findFirst({
       where: { id, tenantId },
     });
 
     if (!approval) {
-      throw new NotFoundException(`Approval with ID ${id} not found under this tenant`);
+      throw new NotFoundException(
+        `Approval with ID ${id} not found under this tenant`,
+      );
     }
 
     return mapApprovalToResponse(approval);
@@ -176,7 +186,9 @@ export class ApprovalsService {
     });
 
     if (!approval) {
-      throw new NotFoundException(`Approval with ID ${id} not found under this tenant`);
+      throw new NotFoundException(
+        `Approval with ID ${id} not found under this tenant`,
+      );
     }
 
     if (approval.status !== ApprovalStatus.pending) {
@@ -249,7 +261,9 @@ export class ApprovalsService {
     });
 
     if (!approval) {
-      throw new NotFoundException(`Approval with ID ${id} not found under this tenant`);
+      throw new NotFoundException(
+        `Approval with ID ${id} not found under this tenant`,
+      );
     }
 
     await this.prisma.approval.delete({

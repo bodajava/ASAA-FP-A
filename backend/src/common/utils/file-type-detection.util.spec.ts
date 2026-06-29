@@ -14,7 +14,9 @@ import {
 } from './file-type-detection.util';
 
 // Real XLSX magic bytes: PK.. (ZIP format)
-const XLSX_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00]);
+const XLSX_MAGIC = Buffer.from([
+  0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00,
+]);
 // Real XLS magic bytes: D0 CF 11 E0
 const XLS_MAGIC = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
 
@@ -35,7 +37,9 @@ describe('file-type-detection', () => {
     });
 
     it('should detect CSV from plain text', () => {
-      const csvContent = Buffer.from('Name,Amount,Date\nWidget,100,2024-01-01\n');
+      const csvContent = Buffer.from(
+        'Name,Amount,Date\nWidget,100,2024-01-01\n',
+      );
       const result = detectFileType(csvContent, 'data.csv');
       expect(result.detectedType).toBe('csv');
       expect(result.mismatch).toBe(false);
@@ -127,10 +131,16 @@ describe('file-type-detection', () => {
     });
 
     it('should throw FileTypeMismatchError for mismatched types', () => {
-      expect(() => assertFileTypeMatch(XLSX_MAGIC, 'data.csv')).toThrow(FileTypeMismatchError);
-      expect(() => assertFileTypeMatch(XLS_MAGIC, 'data.csv')).toThrow(FileTypeMismatchError);
+      expect(() => assertFileTypeMatch(XLSX_MAGIC, 'data.csv')).toThrow(
+        FileTypeMismatchError,
+      );
+      expect(() => assertFileTypeMatch(XLS_MAGIC, 'data.csv')).toThrow(
+        FileTypeMismatchError,
+      );
       const csv = Buffer.from('Name,Amount\n');
-      expect(() => assertFileTypeMatch(csv, 'data.xlsx')).toThrow(FileTypeMismatchError);
+      expect(() => assertFileTypeMatch(csv, 'data.xlsx')).toThrow(
+        FileTypeMismatchError,
+      );
     });
   });
 });

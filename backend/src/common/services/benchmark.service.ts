@@ -60,12 +60,8 @@ export class BenchmarkService {
         testName: `Generate ${rowCount} ${module}`,
         rows: rowCount,
         durationMs: endTime - startTime,
-        rowsPerSecond: Math.round(
-          rowCount / ((endTime - startTime) / 1000),
-        ),
-        memoryUsageMb: Math.round(
-          (endMemory - startMemory) / 1024 / 1024,
-        ),
+        rowsPerSecond: Math.round(rowCount / ((endTime - startTime) / 1000)),
+        memoryUsageMb: Math.round((endMemory - startMemory) / 1024 / 1024),
         success: true,
       };
     } catch (error) {
@@ -135,12 +131,8 @@ export class BenchmarkService {
         testName: `Import ${rowCount} actual lines`,
         rows: rowCount,
         durationMs: endTime - startTime,
-        rowsPerSecond: Math.round(
-          rowCount / ((endTime - startTime) / 1000),
-        ),
-        memoryUsageMb: Math.round(
-          (endMemory - startMemory) / 1024 / 1024,
-        ),
+        rowsPerSecond: Math.round(rowCount / ((endTime - startTime) / 1000)),
+        memoryUsageMb: Math.round((endMemory - startMemory) / 1024 / 1024),
         success: true,
       };
     } catch (error) {
@@ -290,13 +282,7 @@ export class BenchmarkService {
     companyId: bigint,
     count: number,
   ): Promise<void> {
-    const types = [
-      'revenue',
-      'expense',
-      'cogs',
-      'asset',
-      'liability',
-    ] as const;
+    const types = ['revenue', 'expense', 'cogs', 'asset', 'liability'] as const;
     const batchSize = 500;
     const batches = Math.ceil(count / batchSize);
 

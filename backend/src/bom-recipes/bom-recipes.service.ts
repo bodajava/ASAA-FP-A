@@ -117,9 +117,8 @@ export function mapRecipeToResponse(
     .plus(labor)
     .plus(overhead)
     .times(new Decimal(1).plus(new Decimal(recipeWastage).div(100)));
-  const estimatedCostPerUnit = outputQty > 0
-    ? estimatedCost.div(outputQty)
-    : new Decimal(0);
+  const estimatedCostPerUnit =
+    outputQty > 0 ? estimatedCost.div(outputQty) : new Decimal(0);
 
   return {
     id: recipe.id.toString(),
@@ -645,8 +644,12 @@ export class BomRecipesService {
         }
       }
 
-      const productLaborCost = new Decimal(Number(recipe.laborCost)).times(factor);
-      const productOverheadCost = new Decimal(Number(recipe.overheadCost)).times(factor);
+      const productLaborCost = new Decimal(Number(recipe.laborCost)).times(
+        factor,
+      );
+      const productOverheadCost = new Decimal(
+        Number(recipe.overheadCost),
+      ).times(factor);
       const recipeWastagePct = Number(recipe.wastagePct);
       const recipeWastageCost = productMaterialCost
         .plus(productLaborCost)

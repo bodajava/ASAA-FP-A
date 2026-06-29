@@ -23,12 +23,16 @@ async function main() {
       id: true,
       name: true,
       tenantId: true,
-    }
+    },
   });
   console.log('--- Companies in DB ---');
-  console.log(JSON.stringify(companies, (key, value) =>
-    typeof value === 'bigint' ? value.toString() : value, 2
-  ));
+  console.log(
+    JSON.stringify(
+      companies,
+      (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+      2,
+    ),
+  );
   await prisma.$disconnect();
 }
 

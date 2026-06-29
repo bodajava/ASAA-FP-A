@@ -76,7 +76,12 @@ export class ImportDependencyCheckerService {
   async checkDependencies(
     companyId: bigint,
     moduleType: string,
-    data?: Array<{ code?: string; sheetName?: string; rowNumber?: number; columnName?: string }>,
+    data?: Array<{
+      code?: string;
+      sheetName?: string;
+      rowNumber?: number;
+      columnName?: string;
+    }>,
   ): Promise<DependencyCheckResult> {
     const rules = DEPENDENCY_RULES[moduleType as keyof ModuleDependencyRules];
 
@@ -117,11 +122,18 @@ export class ImportDependencyCheckerService {
   private async checkModuleExists(
     companyId: bigint,
     moduleType: string,
-    data?: Array<{ code?: string; sheetName?: string; rowNumber?: number; columnName?: string }>,
+    data?: Array<{
+      code?: string;
+      sheetName?: string;
+      rowNumber?: number;
+      columnName?: string;
+    }>,
   ): Promise<DependencyCheckResult['missingEntities']> {
     const missing: DependencyCheckResult['missingEntities'] = [];
     const orderIndex = IMPORT_ORDER.indexOf(moduleType);
-    const requiredImportOrder = IMPORT_ORDER.slice(0, orderIndex + 1).join(' → ');
+    const requiredImportOrder = IMPORT_ORDER.slice(0, orderIndex + 1).join(
+      ' → ',
+    );
 
     let count = 0;
     try {
@@ -151,7 +163,9 @@ export class ImportDependencyCheckerService {
           count = await this.prisma.unit.count({ where: { companyId } });
           break;
         case 'productCategories':
-          count = await this.prisma.productCategory.count({ where: { companyId } });
+          count = await this.prisma.productCategory.count({
+            where: { companyId },
+          });
           break;
         default:
           count = 1; // Unknown modules pass by default

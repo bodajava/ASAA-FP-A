@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { TenantService } from '../common/services/tenant.service';
@@ -31,7 +35,10 @@ export class CostingService {
   /**
    * Helper to ensure company belongs to the tenant
    */
-  private async ensureCompanyBelongsToTenant(companyId: bigint, tenantId: bigint): Promise<void> {
+  private async ensureCompanyBelongsToTenant(
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<void> {
     const company = await this.prisma.company.findFirst({
       where: { id: companyId, tenantId },
     });
@@ -107,9 +114,13 @@ export class CostingService {
 
     const outputQty = new Decimal(bomRecipe.outputQty.toString() || '1');
     const recipeLabor = new Decimal(bomRecipe.laborCost.toString() || '0');
-    const recipeOverhead = new Decimal(bomRecipe.overheadCost.toString() || '0');
+    const recipeOverhead = new Decimal(
+      bomRecipe.overheadCost.toString() || '0',
+    );
     let recipeWastage = new Decimal(bomRecipe.wastagePct.toString() || '0');
-    let recipeYield = new Decimal(100).minus(new Decimal(bomRecipe.wastagePct?.toString() || '0'));
+    let recipeYield = new Decimal(100).minus(
+      new Decimal(bomRecipe.wastagePct?.toString() || '0'),
+    );
 
     // Apply recipe-level assumptions:
     if (assumptions) {
@@ -132,21 +143,42 @@ export class CostingService {
 
     for (const line of bomRecipe.bomLines) {
       const qty = new Decimal(line.qtyPerOutput?.toString() || '0');
-      let unitCost = new Decimal(line.unitCost?.toString() || line.material.purchasePrice.toString() || '0');
-      let wastage = new Decimal(line.wastagePct?.toString() || '0');
-      let yieldPct = new Decimal(line.yieldPct?.toString() || '100');
+      let unitCost = new Decimal(
+        line.unitCost?.toString() ||
+          line.material.purchasePrice.toString() ||
+          '0',
+      );
+      const wastage = new Decimal(line.wastagePct?.toString() || '0');
+      const yieldPct = new Decimal(line.yieldPct?.toString() || '100');
 
       // Apply line item assumptions:
       if (assumptions) {
         const percentage = Number(assumptions.percentage ?? 0);
-        const materialIds = assumptions.materialIds as string[] | undefined;
+        const materialIds = assumptions.materialIds;
 
         if (assumptions.subtype === 'increase_material_prices') {
           // Check if global increase or targeted to specific material ID
-          const isTargeted = !materialIds || materialIds.includes(line.materialId.toString());
+          const isTargeted =
+            !materialIds || materialIds.includes(line.materialId.toString());
           if (isTargeted) {
-            const rawCat = (line.costCategory || line.material.materialType || 'raw_material').toLowerCase();
-            const isPackaging = ['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(rawCat);
+            const rawCat = (
+              line.costCategory ||
+              line.material.materialType ||
+              'raw_material'
+            ).toLowerCase();
+            const isPackaging = [
+              'packaging_material',
+              'packaging',
+              'can_container',
+              'lid_cover',
+              'label',
+              'carton_box',
+              'shrink_plastic',
+              'can',
+              'lid',
+              'carton',
+              'shrink',
+            ].includes(rawCat);
 
             // If we want packaging material price increase
             if (assumptions.isPackagingOnly && isPackaging) {
@@ -166,12 +198,33 @@ export class CostingService {
       // Formula: qty * unitCost * (1 + wastage/100) / (yield/100)
       const multiplier = new Decimal(1).plus(wastage.div(100));
       const yieldDivisor = yieldPct.div(100);
-      const lineCost = qty.times(unitCost).times(multiplier).div(yieldDivisor.isZero() ? new Decimal(1) : yieldDivisor);
+      const lineCost = qty
+        .times(unitCost)
+        .times(multiplier)
+        .div(yieldDivisor.isZero() ? new Decimal(1) : yieldDivisor);
 
-      let category = (line.costCategory || line.material.materialType || 'raw_material').toLowerCase();
-      
+      let category = (
+        line.costCategory ||
+        line.material.materialType ||
+        'raw_material'
+      ).toLowerCase();
+
       // Fix packaging classification bug
-      if (['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(category)) {
+      if (
+        [
+          'packaging_material',
+          'packaging',
+          'can_container',
+          'lid_cover',
+          'label',
+          'carton_box',
+          'shrink_plastic',
+          'can',
+          'lid',
+          'carton',
+          'shrink',
+        ].includes(category)
+      ) {
         category = 'packaging_material';
       }
 
@@ -197,14 +250,17 @@ export class CostingService {
     }
 
     // Divide sums by output qty to get per-unit values
-    let rawMaterialCost = rawMaterialCostSum.div(outputQty).toNumber();
-    let packagingCost = packagingCostSum.div(outputQty).toNumber();
+    const rawMaterialCost = rawMaterialCostSum.div(outputQty).toNumber();
+    const packagingCost = packagingCostSum.div(outputQty).toNumber();
     let laborCost = laborCostSum.plus(recipeLabor).div(outputQty).toNumber();
     let utilitiesCost = utilitiesCostSum.div(outputQty).toNumber();
-    let overheadCost = overheadCostSum.plus(recipeOverhead).div(outputQty).toNumber();
-    let warehouseCost = warehouseCostSum.div(outputQty).toNumber();
+    const overheadCost = overheadCostSum
+      .plus(recipeOverhead)
+      .div(outputQty)
+      .toNumber();
+    const warehouseCost = warehouseCostSum.div(outputQty).toNumber();
     let freightCost = freightCostSum.div(outputQty).toNumber();
-    let sellingCost = sellingCostSum.div(outputQty).toNumber();
+    const sellingCost = sellingCostSum.div(outputQty).toNumber();
 
     // Apply component-level assumptions:
     if (assumptions) {
@@ -222,21 +278,49 @@ export class CostingService {
     const wastageMultiplier = new Decimal(1).plus(recipeWastage.div(100));
     // Yield multiplier: recipeYield is out of 100, so we divide by (recipeYield/100)
     const yieldFactor = recipeYield.div(100);
-    const finalMultiplier = wastageMultiplier.div(yieldFactor.isZero() ? new Decimal(1) : yieldFactor);
+    const finalMultiplier = wastageMultiplier.div(
+      yieldFactor.isZero() ? new Decimal(1) : yieldFactor,
+    );
 
-    const finalRawMaterialCost = new Decimal(rawMaterialCost).times(finalMultiplier).toNumber();
-    const finalPackagingCost = new Decimal(packagingCost).times(finalMultiplier).toNumber();
-    const finalLaborCost = new Decimal(laborCost).times(finalMultiplier).toNumber();
-    const finalUtilitiesCost = new Decimal(utilitiesCost).times(finalMultiplier).toNumber();
-    const finalOverheadCost = new Decimal(overheadCost).times(finalMultiplier).toNumber();
-    const finalWarehouseCost = new Decimal(warehouseCost).times(finalMultiplier).toNumber();
-    const finalFreightCost = new Decimal(freightCost).times(finalMultiplier).toNumber();
-    const finalSellingCost = new Decimal(sellingCost).times(finalMultiplier).toNumber();
+    const finalRawMaterialCost = new Decimal(rawMaterialCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalPackagingCost = new Decimal(packagingCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalLaborCost = new Decimal(laborCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalUtilitiesCost = new Decimal(utilitiesCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalOverheadCost = new Decimal(overheadCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalWarehouseCost = new Decimal(warehouseCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalFreightCost = new Decimal(freightCost)
+      .times(finalMultiplier)
+      .toNumber();
+    const finalSellingCost = new Decimal(sellingCost)
+      .times(finalMultiplier)
+      .toNumber();
 
-    const manufacturingCost = new Decimal(finalLaborCost).plus(finalUtilitiesCost).plus(finalOverheadCost).toNumber();
-    const cogs = new Decimal(finalRawMaterialCost).plus(finalPackagingCost).plus(manufacturingCost).toNumber();
+    const manufacturingCost = new Decimal(finalLaborCost)
+      .plus(finalUtilitiesCost)
+      .plus(finalOverheadCost)
+      .toNumber();
+    const cogs = new Decimal(finalRawMaterialCost)
+      .plus(finalPackagingCost)
+      .plus(manufacturingCost)
+      .toNumber();
 
-    const totalCost = new Decimal(cogs).plus(finalWarehouseCost).plus(finalFreightCost).plus(finalSellingCost).toNumber();
+    const totalCost = new Decimal(cogs)
+      .plus(finalWarehouseCost)
+      .plus(finalFreightCost)
+      .plus(finalSellingCost)
+      .toNumber();
 
     let sellingPrice = Number(product.salePrice);
     if (assumptions && assumptions.subtype === 'selling_price_change') {
@@ -245,10 +329,16 @@ export class CostingService {
     }
 
     const grossProfit = new Decimal(sellingPrice).minus(cogs).toNumber();
-    const grossMarginPct = sellingPrice > 0 ? new Decimal(grossProfit).div(sellingPrice).times(100).toNumber() : 0;
+    const grossMarginPct =
+      sellingPrice > 0
+        ? new Decimal(grossProfit).div(sellingPrice).times(100).toNumber()
+        : 0;
 
     const netProfit = new Decimal(sellingPrice).minus(totalCost).toNumber();
-    const netMarginPct = sellingPrice > 0 ? new Decimal(netProfit).div(sellingPrice).times(100).toNumber() : 0;
+    const netMarginPct =
+      sellingPrice > 0
+        ? new Decimal(netProfit).div(sellingPrice).times(100).toNumber()
+        : 0;
 
     return {
       rawMaterialCost: finalRawMaterialCost,
@@ -289,7 +379,11 @@ export class CostingService {
     }
 
     // Default values if no actual calculations are available
-    const standardCost = await this.calculateStandardCost(productId, companyId, tenantId);
+    const standardCost = await this.calculateStandardCost(
+      productId,
+      companyId,
+      tenantId,
+    );
 
     // Fetch active BOM
     const bomRecipe = await this.prisma.bomRecipe.findFirst({
@@ -317,7 +411,7 @@ export class CostingService {
     // 1. Fetch Actual average material purchase prices in this period
     // From ActualLine where materialId is in bomLines and transactionDate is within range
     const materialIds = bomRecipe.bomLines.map((l) => l.materialId);
-    
+
     // Group actual transactions for these materials to get average prices
     const actualLines = await this.prisma.actualLine.findMany({
       where: {
@@ -328,12 +422,23 @@ export class CostingService {
 
     const materialActualPriceMap = new Map<string, number>();
     for (const materialId of materialIds) {
-      const lines = actualLines.filter((l) => l.materialId?.toString() === materialId.toString());
+      const lines = actualLines.filter(
+        (l) => l.materialId?.toString() === materialId.toString(),
+      );
       if (lines.length > 0) {
-        const totalAmount = lines.reduce((sum, l) => sum.plus(l.amount.toString()), new Decimal(0));
-        const totalQty = lines.reduce((sum, l) => sum.plus(l.quantity?.toString() || '0'), new Decimal(0));
+        const totalAmount = lines.reduce(
+          (sum, l) => sum.plus(l.amount.toString()),
+          new Decimal(0),
+        );
+        const totalQty = lines.reduce(
+          (sum, l) => sum.plus(l.quantity?.toString() || '0'),
+          new Decimal(0),
+        );
         if (totalQty.greaterThan(0)) {
-          materialActualPriceMap.set(materialId.toString(), totalAmount.div(totalQty).toNumber());
+          materialActualPriceMap.set(
+            materialId.toString(),
+            totalAmount.div(totalQty).toNumber(),
+          );
         }
       }
     }
@@ -348,7 +453,10 @@ export class CostingService {
       },
     });
 
-    const actualQty = Number(productionPlan?.actualQty) || Number(productionPlan?.plannedQty) || 1;
+    const actualQty =
+      Number(productionPlan?.actualQty) ||
+      Number(productionPlan?.plannedQty) ||
+      1;
 
     // 3. Fetch allocations for this company and period
     const allocations = await this.prisma.productionCostAllocation.findMany({
@@ -366,11 +474,17 @@ export class CostingService {
       },
     });
 
-    const totalCompanyProdQty = totalProdPlans.reduce((sum, p) => sum + (Number(p.actualQty) || Number(p.plannedQty) || 0), 0) || 1;
+    const totalCompanyProdQty =
+      totalProdPlans.reduce(
+        (sum, p) => sum + (Number(p.actualQty) || Number(p.plannedQty) || 0),
+        0,
+      ) || 1;
     const prodShare = actualQty / totalCompanyProdQty;
 
     const getAllocatedAmount = (category: string): number => {
-      const catAllocations = allocations.filter((a) => a.costCategory === category);
+      const catAllocations = allocations.filter(
+        (a) => a.costCategory === category,
+      );
       let sum = new Decimal(0);
       for (const alloc of catAllocations) {
         const amount = new Decimal(alloc.allocatedAmount.toString());
@@ -394,19 +508,41 @@ export class CostingService {
 
     for (const line of bomRecipe.bomLines) {
       const qty = new Decimal(line.qtyPerOutput?.toString() || '0');
-      const actualUnitPrice = materialActualPriceMap.get(line.materialId.toString()) ?? 
-                             Number(line.unitCost) ?? 
-                             Number(line.material.purchasePrice);
+      const actualUnitPrice =
+        materialActualPriceMap.get(line.materialId.toString()) ??
+        Number(line.unitCost) ??
+        Number(line.material.purchasePrice);
       const unitCost = new Decimal(actualUnitPrice);
       const wastage = new Decimal(line.wastagePct?.toString() || '0');
       const yieldPct = new Decimal(line.yieldPct?.toString() || '100');
 
       const multiplier = new Decimal(1).plus(wastage.div(100));
       const yieldDivisor = yieldPct.div(100);
-      const lineCost = qty.times(unitCost).times(multiplier).div(yieldDivisor.isZero() ? new Decimal(1) : yieldDivisor);
+      const lineCost = qty
+        .times(unitCost)
+        .times(multiplier)
+        .div(yieldDivisor.isZero() ? new Decimal(1) : yieldDivisor);
 
-      let category = (line.costCategory || line.material.materialType || 'raw_material').toLowerCase();
-      if (['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(category)) {
+      let category = (
+        line.costCategory ||
+        line.material.materialType ||
+        'raw_material'
+      ).toLowerCase();
+      if (
+        [
+          'packaging_material',
+          'packaging',
+          'can_container',
+          'lid_cover',
+          'label',
+          'carton_box',
+          'shrink_plastic',
+          'can',
+          'lid',
+          'carton',
+          'shrink',
+        ].includes(category)
+      ) {
         category = 'packaging_material';
       }
 
@@ -432,20 +568,40 @@ export class CostingService {
 
     const wastageMultiplier = new Decimal(1).plus(recipeWastage.div(100));
 
-    const finalRawMaterialCost = new Decimal(rawMaterialCost).times(wastageMultiplier).toNumber();
-    const finalPackagingCost = new Decimal(packagingCost).times(wastageMultiplier).toNumber();
+    const finalRawMaterialCost = new Decimal(rawMaterialCost)
+      .times(wastageMultiplier)
+      .toNumber();
+    const finalPackagingCost = new Decimal(packagingCost)
+      .times(wastageMultiplier)
+      .toNumber();
 
     // Actual manufacturing = allocated labor + utilities + overhead
-    const laborCost = allocatedLabor > 0 ? allocatedLabor : standardCost.laborCost;
-    const utilitiesCost = allocatedUtilities > 0 ? allocatedUtilities : standardCost.utilitiesCost;
-    const overheadCost = allocatedOverhead > 0 ? allocatedOverhead : standardCost.overheadCost;
-    const warehouseCost = allocatedWarehouse > 0 ? allocatedWarehouse : standardCost.warehouseCost;
-    const freightCost = allocatedFreight > 0 ? allocatedFreight : standardCost.freightCost;
-    const sellingCost = allocatedSelling > 0 ? allocatedSelling : standardCost.sellingCost;
+    const laborCost =
+      allocatedLabor > 0 ? allocatedLabor : standardCost.laborCost;
+    const utilitiesCost =
+      allocatedUtilities > 0 ? allocatedUtilities : standardCost.utilitiesCost;
+    const overheadCost =
+      allocatedOverhead > 0 ? allocatedOverhead : standardCost.overheadCost;
+    const warehouseCost =
+      allocatedWarehouse > 0 ? allocatedWarehouse : standardCost.warehouseCost;
+    const freightCost =
+      allocatedFreight > 0 ? allocatedFreight : standardCost.freightCost;
+    const sellingCost =
+      allocatedSelling > 0 ? allocatedSelling : standardCost.sellingCost;
 
-    const manufacturingCost = new Decimal(laborCost).plus(utilitiesCost).plus(overheadCost).toNumber();
-    const cogs = new Decimal(finalRawMaterialCost).plus(finalPackagingCost).plus(manufacturingCost).toNumber();
-    const totalCost = new Decimal(cogs).plus(warehouseCost).plus(freightCost).plus(sellingCost).toNumber();
+    const manufacturingCost = new Decimal(laborCost)
+      .plus(utilitiesCost)
+      .plus(overheadCost)
+      .toNumber();
+    const cogs = new Decimal(finalRawMaterialCost)
+      .plus(finalPackagingCost)
+      .plus(manufacturingCost)
+      .toNumber();
+    const totalCost = new Decimal(cogs)
+      .plus(warehouseCost)
+      .plus(freightCost)
+      .plus(sellingCost)
+      .toNumber();
 
     // Actual average selling price from sales transactions
     const salesLines = await this.prisma.actualLine.findMany({
@@ -460,18 +616,30 @@ export class CostingService {
 
     let sellingPrice = standardCost.sellingPrice;
     if (salesLines.length > 0) {
-      const totalRevenue = salesLines.reduce((sum, l) => sum.plus(l.amount.toString()), new Decimal(0));
-      const totalSalesQty = salesLines.reduce((sum, l) => sum.plus(l.quantity?.toString() || '0'), new Decimal(0));
+      const totalRevenue = salesLines.reduce(
+        (sum, l) => sum.plus(l.amount.toString()),
+        new Decimal(0),
+      );
+      const totalSalesQty = salesLines.reduce(
+        (sum, l) => sum.plus(l.quantity?.toString() || '0'),
+        new Decimal(0),
+      );
       if (totalSalesQty.greaterThan(0)) {
         sellingPrice = totalRevenue.div(totalSalesQty).toNumber();
       }
     }
 
     const grossProfit = new Decimal(sellingPrice).minus(cogs).toNumber();
-    const grossMarginPct = sellingPrice > 0 ? new Decimal(grossProfit).div(sellingPrice).times(100).toNumber() : 0;
+    const grossMarginPct =
+      sellingPrice > 0
+        ? new Decimal(grossProfit).div(sellingPrice).times(100).toNumber()
+        : 0;
 
     const netProfit = new Decimal(sellingPrice).minus(totalCost).toNumber();
-    const netMarginPct = sellingPrice > 0 ? new Decimal(netProfit).div(sellingPrice).times(100).toNumber() : 0;
+    const netMarginPct =
+      sellingPrice > 0
+        ? new Decimal(netProfit).div(sellingPrice).times(100).toNumber()
+        : 0;
 
     return {
       rawMaterialCost: finalRawMaterialCost,
@@ -501,8 +669,17 @@ export class CostingService {
     tenantId: bigint,
     period: string,
   ): Promise<ProductCostSnapshotDto> {
-    const standard = await this.calculateStandardCost(productId, companyId, tenantId);
-    const actual = await this.calculateActualCost(productId, companyId, tenantId, period);
+    const standard = await this.calculateStandardCost(
+      productId,
+      companyId,
+      tenantId,
+    );
+    const actual = await this.calculateActualCost(
+      productId,
+      companyId,
+      tenantId,
+      period,
+    );
 
     const activeBom = await this.prisma.bomRecipe.findFirst({
       where: { productId, companyId, isActive: true },
@@ -701,8 +878,17 @@ export class CostingService {
       throw new NotFoundException(`Product not found`);
     }
 
-    const standard = await this.calculateStandardCost(productId, companyId, tenantId);
-    const actual = await this.calculateActualCost(productId, companyId, tenantId, period);
+    const standard = await this.calculateStandardCost(
+      productId,
+      companyId,
+      tenantId,
+    );
+    const actual = await this.calculateActualCost(
+      productId,
+      companyId,
+      tenantId,
+      period,
+    );
 
     return {
       productId: product.id.toString(),
@@ -763,12 +949,24 @@ export class CostingService {
         },
       });
 
-      const quantitySold = salesLines.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
+      const quantitySold = salesLines.reduce(
+        (sum, l) => sum + (Number(l.quantity) || 0),
+        0,
+      );
       const revenue = salesLines.reduce((sum, l) => sum + Number(l.amount), 0);
 
-      const costs = await this.calculateActualCost(prod.id, companyId, tenantId, period);
+      const costs = await this.calculateActualCost(
+        prod.id,
+        companyId,
+        tenantId,
+        period,
+      );
 
-      const standardCosts = await this.calculateStandardCost(prod.id, companyId, tenantId);
+      const standardCosts = await this.calculateStandardCost(
+        prod.id,
+        companyId,
+        tenantId,
+      );
 
       report.push({
         productId: prod.id.toString(),
@@ -778,9 +976,25 @@ export class CostingService {
         quantitySold,
         standardCost: standardCosts.totalCost,
         actualCost: costs.totalCost,
-        grossProfit: quantitySold > 0 ? new Decimal(revenue).minus(new Decimal(costs.rawMaterialCost + costs.packagingCost + costs.manufacturingCost).times(quantitySold)).toNumber() : 0,
+        grossProfit:
+          quantitySold > 0
+            ? new Decimal(revenue)
+                .minus(
+                  new Decimal(
+                    costs.rawMaterialCost +
+                      costs.packagingCost +
+                      costs.manufacturingCost,
+                  ).times(quantitySold),
+                )
+                .toNumber()
+            : 0,
         grossMarginPct: costs.grossMarginPct,
-        netProfit: quantitySold > 0 ? new Decimal(revenue).minus(new Decimal(costs.totalCost).times(quantitySold)).toNumber() : 0,
+        netProfit:
+          quantitySold > 0
+            ? new Decimal(revenue)
+                .minus(new Decimal(costs.totalCost).times(quantitySold))
+                .toNumber()
+            : 0,
         netMarginPct: costs.netMarginPct,
       });
     }
@@ -805,11 +1019,21 @@ export class CostingService {
     const report: StandardVsActualItemDto[] = [];
 
     for (const prod of products) {
-      const standard = await this.calculateStandardCost(prod.id, companyId, tenantId);
-      const actual = await this.calculateActualCost(prod.id, companyId, tenantId, period);
+      const standard = await this.calculateStandardCost(
+        prod.id,
+        companyId,
+        tenantId,
+      );
+      const actual = await this.calculateActualCost(
+        prod.id,
+        companyId,
+        tenantId,
+        period,
+      );
 
       const variance = actual.totalCost - standard.totalCost;
-      const variancePct = standard.totalCost > 0 ? (variance / standard.totalCost) * 100 : 0;
+      const variancePct =
+        standard.totalCost > 0 ? (variance / standard.totalCost) * 100 : 0;
 
       let reason = 'Within normal limits';
       if (variancePct > 5) {
@@ -820,11 +1044,23 @@ export class CostingService {
 
         if (matDiff > packDiff && matDiff > laborDiff && matDiff > utilDiff) {
           reason = 'Material Price Increase';
-        } else if (packDiff > matDiff && packDiff > laborDiff && packDiff > utilDiff) {
+        } else if (
+          packDiff > matDiff &&
+          packDiff > laborDiff &&
+          packDiff > utilDiff
+        ) {
           reason = 'Packaging Cost Increase';
-        } else if (laborDiff > matDiff && laborDiff > packDiff && laborDiff > utilDiff) {
+        } else if (
+          laborDiff > matDiff &&
+          laborDiff > packDiff &&
+          laborDiff > utilDiff
+        ) {
           reason = 'Labor cost increase';
-        } else if (utilDiff > matDiff && utilDiff > packDiff && utilDiff > laborDiff) {
+        } else if (
+          utilDiff > matDiff &&
+          utilDiff > packDiff &&
+          utilDiff > laborDiff
+        ) {
           reason = 'Utility rate increase';
         } else {
           reason = 'Overhead allocation increase';
@@ -851,7 +1087,10 @@ export class CostingService {
   /**
    * Cost Drivers analysis
    */
-  async getCostDrivers(companyId: bigint, tenantId: bigint): Promise<CostDriverItemDto[]> {
+  async getCostDrivers(
+    companyId: bigint,
+    tenantId: bigint,
+  ): Promise<CostDriverItemDto[]> {
     await this.ensureCompanyBelongsToTenant(companyId, tenantId);
 
     // Dynamic cost drivers computed from database deviations
@@ -864,19 +1103,22 @@ export class CostingService {
         name: 'USD to EGP Exchange Rate Fluctuation',
         driverType: 'exchange_rate',
         impactPct: exchangeRateIncrease,
-        description: 'Fluctuation in imported raw material prices due to currency changes.',
+        description:
+          'Fluctuation in imported raw material prices due to currency changes.',
       },
       {
         name: 'Canned Food Tin Raw Material Cost Increase',
         driverType: 'material',
         impactPct: materialIncrease,
-        description: 'Global tin can price changes impacting packaging material cost.',
+        description:
+          'Global tin can price changes impacting packaging material cost.',
       },
       {
         name: 'Sea Freight / Logistics Costs Increase',
         driverType: 'freight',
         impactPct: freightIncrease,
-        description: 'Freight charge allocations from port shipments to warehouse.',
+        description:
+          'Freight charge allocations from port shipments to warehouse.',
       },
     ];
   }
@@ -958,9 +1200,15 @@ export class CostingService {
     for (const p of products) {
       const cost = await this.calculateStandardCost(p.id, companyId, tenantId);
       const plan = await this.prisma.productionPlan.findFirst({
-        where: { productId: p.id, companyId, fiscalYear: yearNum, periodMonth: monthNum },
+        where: {
+          productId: p.id,
+          companyId,
+          fiscalYear: yearNum,
+          periodMonth: monthNum,
+        },
       });
-      const productionQty = Number(plan?.actualQty) || Number(plan?.plannedQty) || 0;
+      const productionQty =
+        Number(plan?.actualQty) || Number(plan?.plannedQty) || 0;
       report.push({
         productId: p.id.toString(),
         sku: p.sku,
@@ -1000,13 +1248,18 @@ export class CostingService {
       if (bom) {
         const outputQty = Number(bom.outputQty) || 1;
         for (const line of bom.bomLines) {
-          const cat = line.costCategory || line.material.materialType || 'raw_material';
+          const cat =
+            line.costCategory || line.material.materialType || 'raw_material';
           if (cat === 'packaging_material') {
             const lineQty = Number(line.qtyPerOutput) || 0;
-            const linePrice = Number(line.unitCost) || Number(line.material.purchasePrice) || 0;
+            const linePrice =
+              Number(line.unitCost) || Number(line.material.purchasePrice) || 0;
             const lineWaste = Number(line.wastagePct) || 0;
             const lineYield = Number(line.yieldPct) || 100;
-            const cost = (lineQty * linePrice * (1 + lineWaste / 100)) / (lineYield / 100) / outputQty;
+            const cost =
+              (lineQty * linePrice * (1 + lineWaste / 100)) /
+              (lineYield / 100) /
+              outputQty;
 
             totalPackagingCost += cost;
 
@@ -1059,7 +1312,16 @@ export class CostingService {
       include: { material: { include: { unit: true } } },
     });
 
-    const matMap = new Map<string, { consumedQty: Prisma.Decimal; totalSpend: Prisma.Decimal; code: string; name: string; unit: string }>();
+    const matMap = new Map<
+      string,
+      {
+        consumedQty: Prisma.Decimal;
+        totalSpend: Prisma.Decimal;
+        code: string;
+        name: string;
+        unit: string;
+      }
+    >();
 
     for (const line of actualLines) {
       if (!line.material) continue;
@@ -1084,7 +1346,9 @@ export class CostingService {
 
     const report: MaterialConsumptionReportItemDto[] = [];
     matMap.forEach((val, key) => {
-      const avgPrice = val.consumedQty.greaterThan(0) ? val.totalSpend.div(val.consumedQty).toNumber() : 0;
+      const avgPrice = val.consumedQty.greaterThan(0)
+        ? val.totalSpend.div(val.consumedQty).toNumber()
+        : 0;
       report.push({
         materialId: key,
         code: val.code,
@@ -1115,20 +1379,26 @@ export class CostingService {
     const report: YieldAnalysisReportItemDto[] = [];
     for (const p of products) {
       const plan = await this.prisma.productionPlan.findFirst({
-        where: { productId: p.id, companyId, fiscalYear: yearNum, periodMonth: monthNum },
+        where: {
+          productId: p.id,
+          companyId,
+          fiscalYear: yearNum,
+          periodMonth: monthNum,
+        },
       });
       const bom = await this.prisma.bomRecipe.findFirst({
         where: { productId: p.id, companyId, isActive: true },
       });
 
-      const outputQty = Number(plan?.actualQty) || Number(plan?.plannedQty) || 0;
+      const outputQty =
+        Number(plan?.actualQty) || Number(plan?.plannedQty) || 0;
       const recipeWastage = Number(bom?.wastagePct) || 0;
 
       // Yield calculation: outputQty = inputQty * (1 - wastage/100)
       // Standard inputQty needed: outputQty / (1 - wastage/100)
       const wastePct = recipeWastage;
       const yieldPct = 100 - wastePct;
-      const inputQty = yieldPct > 0 ? (outputQty / (yieldPct / 100)) : outputQty;
+      const inputQty = yieldPct > 0 ? outputQty / (yieldPct / 100) : outputQty;
       const wasteQty = inputQty - outputQty;
 
       report.push({
@@ -1191,8 +1461,17 @@ export class CostingService {
 
     for (const prod of products) {
       try {
-        const std = await this.calculateStandardCost(prod.id, companyId, tenantId);
-        const act = await this.calculateActualCost(prod.id, companyId, tenantId, period);
+        const std = await this.calculateStandardCost(
+          prod.id,
+          companyId,
+          tenantId,
+        );
+        const act = await this.calculateActualCost(
+          prod.id,
+          companyId,
+          tenantId,
+          period,
+        );
 
         standardCosts.push({
           product: { id: prod.id, name: prod.name, sku: prod.sku },
@@ -1221,10 +1500,23 @@ export class CostingService {
             account: { code: { startsWith: '4' } },
           },
         });
-        const qtySold = salesLines.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
-        const revenue = salesLines.reduce((sum, l) => sum + Number(l.amount), 0);
-        const grossProfit = qtySold > 0 ? revenue - (act.rawMaterialCost + act.packagingCost + act.manufacturingCost) * qtySold : 0;
-        
+        const qtySold = salesLines.reduce(
+          (sum, l) => sum + (Number(l.quantity) || 0),
+          0,
+        );
+        const revenue = salesLines.reduce(
+          (sum, l) => sum + Number(l.amount),
+          0,
+        );
+        const grossProfit =
+          qtySold > 0
+            ? revenue -
+              (act.rawMaterialCost +
+                act.packagingCost +
+                act.manufacturingCost) *
+                qtySold
+            : 0;
+
         profitabilityList.push({
           product: { id: prod.id, name: prod.name, sku: prod.sku },
           profit: grossProfit,
@@ -1252,32 +1544,49 @@ export class CostingService {
       };
     }
 
-    const averageProductCost = standardCosts.reduce((sum, item) => sum + item.cost, 0) / standardCosts.length;
+    const averageProductCost =
+      standardCosts.reduce((sum, item) => sum + item.cost, 0) /
+      standardCosts.length;
     const sortedByCost = [...standardCosts].sort((a, b) => b.cost - a.cost);
     const highestCost = sortedByCost[0];
-    const lowestCost = [...standardCosts].filter(item => item.cost > 0).sort((a, b) => a.cost - b.cost)[0] || highestCost;
+    const lowestCost =
+      [...standardCosts]
+        .filter((item) => item.cost > 0)
+        .sort((a, b) => a.cost - b.cost)[0] || highestCost;
 
-    const sortedByMargin = [...standardCosts].sort((a, b) => b.marginPct - a.marginPct);
+    const sortedByMargin = [...standardCosts].sort(
+      (a, b) => b.marginPct - a.marginPct,
+    );
     const highestMargin = sortedByMargin[0];
     const lowestMargin = sortedByMargin[sortedByMargin.length - 1];
 
-    const materialCost = standardCosts.reduce((sum, item) => sum + item.rawMaterialCost, 0) / standardCosts.length;
-    const packagingCost = standardCosts.reduce((sum, item) => sum + item.packagingCost, 0) / standardCosts.length;
-    const manufacturingCost = standardCosts.reduce((sum, item) => sum + item.manufacturingCost, 0) / standardCosts.length;
+    const materialCost =
+      standardCosts.reduce((sum, item) => sum + item.rawMaterialCost, 0) /
+      standardCosts.length;
+    const packagingCost =
+      standardCosts.reduce((sum, item) => sum + item.packagingCost, 0) /
+      standardCosts.length;
+    const manufacturingCost =
+      standardCosts.reduce((sum, item) => sum + item.manufacturingCost, 0) /
+      standardCosts.length;
 
     const boms = await this.prisma.bomRecipe.findMany({
       where: { companyId, isActive: true },
     });
-    const wasteCost = boms.length > 0
-      ? boms.reduce((sum, b) => sum + Number(b.wastagePct), 0) / boms.length
-      : 0;
+    const wasteCost =
+      boms.length > 0
+        ? boms.reduce((sum, b) => sum + Number(b.wastagePct), 0) / boms.length
+        : 0;
 
     const snapshots = await this.prisma.productCostSnapshot.findMany({
       where: { companyId },
       orderBy: { period: 'asc' },
     });
-    
-    const trendMap = new Map<string, { stdSum: number; actSum: number; count: number }>();
+
+    const trendMap = new Map<
+      string,
+      { stdSum: number; actSum: number; count: number }
+    >();
     snapshots.forEach((snap) => {
       const p = snap.period;
       const stdCost = Number(snap.totalCost);
@@ -1290,14 +1599,18 @@ export class CostingService {
       });
     });
 
-    const costTrend = Array.from(trendMap.entries()).map(([p, data]) => ({
-      period: p,
-      averageStandardCost: data.stdSum / data.count,
-      averageActualCost: data.actSum / data.count,
-    })).slice(-6);
+    const costTrend = Array.from(trendMap.entries())
+      .map(([p, data]) => ({
+        period: p,
+        averageStandardCost: data.stdSum / data.count,
+        averageActualCost: data.actSum / data.count,
+      }))
+      .slice(-6);
 
-    const sortedByProfit = [...profitabilityList].sort((a, b) => b.profit - a.profit);
-    const top10Profitable = sortedByProfit.slice(0, 10).map(p => ({
+    const sortedByProfit = [...profitabilityList].sort(
+      (a, b) => b.profit - a.profit,
+    );
+    const top10Profitable = sortedByProfit.slice(0, 10).map((p) => ({
       id: p.product.id.toString(),
       name: p.product.name,
       sku: p.product.sku,
@@ -1305,20 +1618,43 @@ export class CostingService {
       marginPct: p.marginPct,
     }));
 
-    const top10Loss = [...profitabilityList].sort((a, b) => a.profit - b.profit).slice(0, 10).map(p => ({
-      id: p.product.id.toString(),
-      name: p.product.name,
-      sku: p.product.sku,
-      profit: p.profit,
-      marginPct: p.marginPct,
-    }));
+    const top10Loss = [...profitabilityList]
+      .sort((a, b) => a.profit - b.profit)
+      .slice(0, 10)
+      .map((p) => ({
+        id: p.product.id.toString(),
+        name: p.product.name,
+        sku: p.product.sku,
+        profit: p.profit,
+        marginPct: p.marginPct,
+      }));
 
     return {
       averageProductCost,
-      highestCostProduct: { id: highestCost.product.id.toString(), name: highestCost.product.name, sku: highestCost.product.sku, cost: highestCost.cost },
-      lowestCostProduct: { id: lowestCost.product.id.toString(), name: lowestCost.product.name, sku: lowestCost.product.sku, cost: lowestCost.cost },
-      highestMarginProduct: { id: highestMargin.product.id.toString(), name: highestMargin.product.name, sku: highestMargin.product.sku, marginPct: highestMargin.marginPct },
-      lowestMarginProduct: { id: lowestMargin.product.id.toString(), name: lowestMargin.product.name, sku: lowestMargin.product.sku, marginPct: lowestMargin.marginPct },
+      highestCostProduct: {
+        id: highestCost.product.id.toString(),
+        name: highestCost.product.name,
+        sku: highestCost.product.sku,
+        cost: highestCost.cost,
+      },
+      lowestCostProduct: {
+        id: lowestCost.product.id.toString(),
+        name: lowestCost.product.name,
+        sku: lowestCost.product.sku,
+        cost: lowestCost.cost,
+      },
+      highestMarginProduct: {
+        id: highestMargin.product.id.toString(),
+        name: highestMargin.product.name,
+        sku: highestMargin.product.sku,
+        marginPct: highestMargin.marginPct,
+      },
+      lowestMarginProduct: {
+        id: lowestMargin.product.id.toString(),
+        name: lowestMargin.product.name,
+        sku: lowestMargin.product.sku,
+        marginPct: lowestMargin.marginPct,
+      },
       manufacturingCost,
       packagingCost,
       materialCost,

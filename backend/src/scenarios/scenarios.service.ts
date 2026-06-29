@@ -574,7 +574,9 @@ export class ScenariosService {
         if (originalCost.sellingPrice > 0) {
           productPriceFactors.set(
             recipe.productId,
-            new Decimal(simulatedCost.sellingPrice).div(originalCost.sellingPrice),
+            new Decimal(simulatedCost.sellingPrice).div(
+              originalCost.sellingPrice,
+            ),
           );
         } else {
           productPriceFactors.set(recipe.productId, new Decimal(1));
@@ -585,7 +587,10 @@ export class ScenariosService {
         const origAmt = new Decimal(Number(line.amount));
         let simAmt = origAmt;
 
-        if (line.materialId && assumptions.subtype === 'increase_material_prices') {
+        if (
+          line.materialId &&
+          assumptions.subtype === 'increase_material_prices'
+        ) {
           let isAffected = true;
           if (assumptions.materialIds && assumptions.materialIds.length > 0) {
             isAffected = assumptions.materialIds.includes(
@@ -594,10 +599,26 @@ export class ScenariosService {
           }
           if (isAffected) {
             // Check packaging flag if set
-            const dbMat = await this.prisma.material.findFirst({ where: { id: line.materialId } });
+            const dbMat = await this.prisma.material.findFirst({
+              where: { id: line.materialId },
+            });
             if (dbMat) {
-              const rawCat = (dbMat.materialType ?? 'raw_material').toLowerCase();
-              const isPackaging = ['packaging_material', 'packaging', 'can_container', 'lid_cover', 'label', 'carton_box', 'shrink_plastic', 'can', 'lid', 'carton', 'shrink'].includes(rawCat);
+              const rawCat = (
+                dbMat.materialType ?? 'raw_material'
+              ).toLowerCase();
+              const isPackaging = [
+                'packaging_material',
+                'packaging',
+                'can_container',
+                'lid_cover',
+                'label',
+                'carton_box',
+                'shrink_plastic',
+                'can',
+                'lid',
+                'carton',
+                'shrink',
+              ].includes(rawCat);
               if (assumptions.isPackagingOnly && !isPackaging) {
                 isAffected = false;
               } else if (!assumptions.isPackagingOnly && isPackaging) {
@@ -607,38 +628,64 @@ export class ScenariosService {
           }
           if (isAffected) {
             simAmt = origAmt.times(
-              new Decimal(1).plus(new Decimal(assumptions.percentage ?? 0).div(100)),
+              new Decimal(1).plus(
+                new Decimal(assumptions.percentage ?? 0).div(100),
+              ),
             );
           }
         } else if (line.productId) {
           const accType = accountMap.get(line.accountId);
           if (accType === 'cogs' || accType === 'expense') {
-            const factor = productCostFactors.get(line.productId) ?? new Decimal(1);
+            const factor =
+              productCostFactors.get(line.productId) ?? new Decimal(1);
             simAmt = origAmt.times(factor);
           } else if (accType === 'revenue') {
-            const factor = productPriceFactors.get(line.productId) ?? new Decimal(1);
+            const factor =
+              productPriceFactors.get(line.productId) ?? new Decimal(1);
             simAmt = origAmt.times(factor);
           }
         } else {
           // General GL accounts for labor, utilities, or freight without a product
           const accType = accountMap.get(line.accountId);
           if (accType === 'expense' || accType === 'cogs') {
-            const dbAcc = await this.prisma.account.findUnique({ where: { id: line.accountId } });
+            const dbAcc = await this.prisma.account.findUnique({
+              where: { id: line.accountId },
+            });
             if (dbAcc) {
               const accName = dbAcc.name.toLowerCase();
               let isAffected = false;
               const percentage = Number(assumptions.percentage ?? 0);
 
-              if (assumptions.subtype === 'labor_cost_increase' && (accName.includes('labor') || accName.includes('salary') || accName.includes('payroll'))) {
+              if (
+                assumptions.subtype === 'labor_cost_increase' &&
+                (accName.includes('labor') ||
+                  accName.includes('salary') ||
+                  accName.includes('payroll'))
+              ) {
                 isAffected = true;
-              } else if (assumptions.subtype === 'utilities_cost_increase' && (accName.includes('utility') || accName.includes('utilities') || accName.includes('power') || accName.includes('water') || accName.includes('electricity'))) {
+              } else if (
+                assumptions.subtype === 'utilities_cost_increase' &&
+                (accName.includes('utility') ||
+                  accName.includes('utilities') ||
+                  accName.includes('power') ||
+                  accName.includes('water') ||
+                  accName.includes('electricity'))
+              ) {
                 isAffected = true;
-              } else if (assumptions.subtype === 'freight_cost_increase' && (accName.includes('freight') || accName.includes('shipping') || accName.includes('transport') || accName.includes('delivery'))) {
+              } else if (
+                assumptions.subtype === 'freight_cost_increase' &&
+                (accName.includes('freight') ||
+                  accName.includes('shipping') ||
+                  accName.includes('transport') ||
+                  accName.includes('delivery'))
+              ) {
                 isAffected = true;
               }
 
               if (isAffected) {
-                simAmt = origAmt.times(new Decimal(1).plus(new Decimal(percentage).div(100)));
+                simAmt = origAmt.times(
+                  new Decimal(1).plus(new Decimal(percentage).div(100)),
+                );
               }
             }
           }
@@ -670,7 +717,9 @@ export class ScenariosService {
         orderBy: { rateDate: 'desc' },
       });
       const oldRate = rateRecord ? Number(rateRecord.rate) : 1;
-      const rateMultiplier = new Decimal(assumptions.newRate ?? oldRate).div(oldRate);
+      const rateMultiplier = new Decimal(assumptions.newRate ?? oldRate).div(
+        oldRate,
+      );
 
       const materials = await this.prisma.material.findMany({
         where: { companyId },
@@ -744,7 +793,9 @@ export class ScenariosService {
           }
           if (isAffected) {
             simAmt = origAmt.times(
-              new Decimal(1).minus(new Decimal(assumptions.percentage ?? 0).div(100)),
+              new Decimal(1).minus(
+                new Decimal(assumptions.percentage ?? 0).div(100),
+              ),
             );
           }
         }
@@ -786,8 +837,12 @@ export class ScenariosService {
       }
 
       // Add simulated branch lines distributed equally over 12 months
-      const simulatedRevenuePerMonth = new Decimal(assumptions.revenueAmount ?? 0).div(12);
-      const simulatedExpensePerMonth = new Decimal(assumptions.expenseAmount ?? 0).div(12);
+      const simulatedRevenuePerMonth = new Decimal(
+        assumptions.revenueAmount ?? 0,
+      ).div(12);
+      const simulatedExpensePerMonth = new Decimal(
+        assumptions.expenseAmount ?? 0,
+      ).div(12);
 
       for (let month = 1; month <= 12; month++) {
         // Simulated Revenue
@@ -826,10 +881,13 @@ export class ScenariosService {
       originalTotal: originalTotal.toNumber(),
       simulatedTotal: simulatedTotal.toNumber(),
       varianceAmount: simulatedTotal.minus(originalTotal).toNumber(),
-      variancePercentage:
-        originalTotal.gt(0)
-          ? simulatedTotal.minus(originalTotal).div(originalTotal).times(100).toNumber()
-          : 0,
+      variancePercentage: originalTotal.gt(0)
+        ? simulatedTotal
+            .minus(originalTotal)
+            .div(originalTotal)
+            .times(100)
+            .toNumber()
+        : 0,
       lines: simulatedLines,
     };
   }
@@ -845,7 +903,9 @@ export class ScenariosService {
       where: { id: scenarioId, companyId },
     });
     if (!scenario) {
-      throw new NotFoundException(`Scenario with ID ${scenarioId} not found under this company`);
+      throw new NotFoundException(
+        `Scenario with ID ${scenarioId} not found under this company`,
+      );
     }
 
     const assumptions: ScenarioAssumptionsDto = scenario.assumptionsJson
@@ -907,10 +967,12 @@ export class ScenariosService {
 
       const previousStandardCost = originalCost.totalCost;
       const newSimulatedStandardCost = simulatedCost.totalCost;
-      const costIncreaseAmount = newSimulatedStandardCost - previousStandardCost;
-      const costIncreasePct = previousStandardCost > 0
-        ? (costIncreaseAmount / previousStandardCost) * 100
-        : 0;
+      const costIncreaseAmount =
+        newSimulatedStandardCost - previousStandardCost;
+      const costIncreasePct =
+        previousStandardCost > 0
+          ? (costIncreaseAmount / previousStandardCost) * 100
+          : 0;
       const previousGrossMarginPct = originalCost.grossMarginPct;
       const newGrossMarginPct = simulatedCost.grossMarginPct;
       const profitImpact = simulatedCost.grossProfit - originalCost.grossProfit;
@@ -931,14 +993,23 @@ export class ScenariosService {
       });
     }
 
-    affectedProducts.sort((a, b) => Math.abs(b.costIncreasePct) - Math.abs(a.costIncreasePct));
+    affectedProducts.sort(
+      (a, b) => Math.abs(b.costIncreasePct) - Math.abs(a.costIncreasePct),
+    );
 
     const totalProducts = affectedProducts.length;
-    const affectedCount = affectedProducts.filter((p) => p.costIncreaseAmount !== 0).length;
-    const averageCostIncreasePct = totalProducts > 0
-      ? affectedProducts.reduce((sum, p) => sum + p.costIncreasePct, 0) / totalProducts
-      : 0;
-    const totalProfitImpact = affectedProducts.reduce((sum, p) => sum + p.profitImpact, 0);
+    const affectedCount = affectedProducts.filter(
+      (p) => p.costIncreaseAmount !== 0,
+    ).length;
+    const averageCostIncreasePct =
+      totalProducts > 0
+        ? affectedProducts.reduce((sum, p) => sum + p.costIncreasePct, 0) /
+          totalProducts
+        : 0;
+    const totalProfitImpact = affectedProducts.reduce(
+      (sum, p) => sum + p.profitImpact,
+      0,
+    );
 
     const topCostDrivers: ScenarioCostingImpactDto['topCostDrivers'] = [];
     if (assumptions.subtype && assumptions.percentage) {
@@ -992,11 +1063,22 @@ export class ScenariosService {
         },
       });
 
-      const accounts = await this.prisma.account.findMany({ where: { companyId } });
-      const accountMap = new Map(accounts.map(a => [a.id.toString(), a.type]));
+      const accounts = await this.prisma.account.findMany({
+        where: { companyId },
+      });
+      const accountMap = new Map(
+        accounts.map((a) => [a.id.toString(), a.type]),
+      );
 
-      let sales = 0, inventory = 0, rawMaterials = 0, packaging = 0, labor = 0, utilities = 0, overhead = 0;
-      let productionQty = 0, waste = 0;
+      let sales = 0,
+        inventory = 0,
+        rawMaterials = 0,
+        packaging = 0,
+        labor = 0,
+        utilities = 0,
+        overhead = 0;
+      let productionQty = 0,
+        waste = 0;
 
       const allLines = [...budgetLines, ...actualLines];
       for (const line of allLines) {
@@ -1015,9 +1097,16 @@ export class ScenariosService {
       }
 
       const inventorySnapshots = await this.prisma.inventorySnapshot.findMany({
-        where: { companyId, snapshotDate: { gte: new Date(fy, 0, 1), lt: new Date(fy + 1, 0, 1) }, ...productFilter },
+        where: {
+          companyId,
+          snapshotDate: { gte: new Date(fy, 0, 1), lt: new Date(fy + 1, 0, 1) },
+          ...productFilter,
+        },
       });
-      inventory = inventorySnapshots.reduce((sum, s) => sum + Number(s.inventoryValue), 0);
+      inventory = inventorySnapshots.reduce(
+        (sum, s) => sum + Number(s.inventoryValue),
+        0,
+      );
 
       const bomRecipes = await this.prisma.bomRecipe.findMany({
         where: { companyId, isActive: true },
@@ -1028,21 +1117,56 @@ export class ScenariosService {
         const wastePct = Number(bom.wastagePct) || 0;
         waste += wastePct;
         for (const line of bom.bomLines) {
-          const cat = (line.costCategory || line.material.materialType || 'raw_material').toLowerCase();
-          const lineCost = Number(line.qtyPerOutput) * Number(line.unitCost || line.material.purchasePrice);
+          const cat = (
+            line.costCategory ||
+            line.material.materialType ||
+            'raw_material'
+          ).toLowerCase();
+          const lineCost =
+            Number(line.qtyPerOutput) *
+            Number(line.unitCost || line.material.purchasePrice);
           if (cat === 'raw_material') rawMaterials += lineCost / outputQty;
-          else if (['packaging', 'packaging_material', 'can', 'lid', 'carton', 'label'].includes(cat)) packaging += lineCost / outputQty;
+          else if (
+            [
+              'packaging',
+              'packaging_material',
+              'can',
+              'lid',
+              'carton',
+              'label',
+            ].includes(cat)
+          )
+            packaging += lineCost / outputQty;
           else if (cat === 'labor') labor += lineCost / outputQty;
-          else if (cat === 'utilities' || cat === 'utility') utilities += lineCost / outputQty;
+          else if (cat === 'utilities' || cat === 'utility')
+            utilities += lineCost / outputQty;
           else if (cat === 'overhead') overhead += lineCost / outputQty;
         }
       }
       if (bomRecipes.length > 0) waste = waste / bomRecipes.length;
 
-      const grossMargin = sales > 0 ? ((sales - rawMaterials - packaging) / sales) * 100 : 0;
-      const netMargin = sales > 0 ? ((sales - rawMaterials - packaging - labor - utilities - overhead) / sales) * 100 : 0;
+      const grossMargin =
+        sales > 0 ? ((sales - rawMaterials - packaging) / sales) * 100 : 0;
+      const netMargin =
+        sales > 0
+          ? ((sales - rawMaterials - packaging - labor - utilities - overhead) /
+              sales) *
+            100
+          : 0;
 
-      return { sales, inventory, rawMaterials, packaging, labor, utilities, overhead, productionQty, waste, grossMargin, netMargin };
+      return {
+        sales,
+        inventory,
+        rawMaterials,
+        packaging,
+        labor,
+        utilities,
+        overhead,
+        productionQty,
+        waste,
+        grossMargin,
+        netMargin,
+      };
     };
 
     const prevYearData = await getYearTotals(previousYear);
@@ -1054,34 +1178,60 @@ export class ScenariosService {
         where: { id: scenarioId, companyId },
       });
       if (scenario) {
-        const assumptions = (scenario.assumptionsJson ? JSON.parse(scenario.assumptionsJson as string) : {}) as ScenarioAssumptionsDto;
+        const assumptions = (
+          scenario.assumptionsJson ? JSON.parse(scenario.assumptionsJson) : {}
+        ) as ScenarioAssumptionsDto;
         const percentage = Number(assumptions.percentage ?? 0);
         scenarioData = { ...currYearData };
         if (assumptions.subtype === 'increase_material_prices') {
-          scenarioData.rawMaterials = currYearData.rawMaterials * (1 + percentage / 100);
+          scenarioData.rawMaterials =
+            currYearData.rawMaterials * (1 + percentage / 100);
         } else if (assumptions.subtype === 'demand_decrease') {
           scenarioData.sales = currYearData.sales * (1 - percentage / 100);
-          scenarioData.productionQty = currYearData.productionQty * (1 - percentage / 100);
+          scenarioData.productionQty =
+            currYearData.productionQty * (1 - percentage / 100);
         } else if (assumptions.subtype === 'labor_cost_increase') {
           scenarioData.labor = currYearData.labor * (1 + percentage / 100);
         } else if (assumptions.subtype === 'utilities_cost_increase') {
-          scenarioData.utilities = currYearData.utilities * (1 + percentage / 100);
+          scenarioData.utilities =
+            currYearData.utilities * (1 + percentage / 100);
         }
       }
     }
 
-    const categories = ['sales', 'inventory', 'rawMaterials', 'packaging', 'labor', 'utilities', 'overhead', 'productionQty', 'waste', 'grossMargin', 'netMargin'] as const;
+    const categories = [
+      'sales',
+      'inventory',
+      'rawMaterials',
+      'packaging',
+      'labor',
+      'utilities',
+      'overhead',
+      'productionQty',
+      'waste',
+      'grossMargin',
+      'netMargin',
+    ] as const;
     const labels: Record<string, string> = {
-      sales: 'Sales', inventory: 'Inventory Value', rawMaterials: 'Raw Materials', packaging: 'Packaging',
-      labor: 'Labor', utilities: 'Utilities', overhead: 'Overhead', productionQty: 'Production Quantity',
-      waste: 'Waste %', grossMargin: 'Gross Margin %', netMargin: 'Net Margin %',
+      sales: 'Sales',
+      inventory: 'Inventory Value',
+      rawMaterials: 'Raw Materials',
+      packaging: 'Packaging',
+      labor: 'Labor',
+      utilities: 'Utilities',
+      overhead: 'Overhead',
+      productionQty: 'Production Quantity',
+      waste: 'Waste %',
+      grossMargin: 'Gross Margin %',
+      netMargin: 'Net Margin %',
     };
 
-    return categories.map(cat => {
+    return categories.map((cat) => {
       const prev = Number(prevYearData[cat]);
       const curr = Number(currYearData[cat]);
       const scen = Number(scenarioData[cat]);
-      const variancePct = curr !== 0 ? ((scen - curr) / Math.abs(curr)) * 100 : 0;
+      const variancePct =
+        curr !== 0 ? ((scen - curr) / Math.abs(curr)) * 100 : 0;
       return {
         category: labels[cat],
         previousYear: Number(prev.toFixed(2)),

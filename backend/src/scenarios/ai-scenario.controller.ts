@@ -72,7 +72,10 @@ export class AiScenarioController {
     type: AiUnavailableDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden - requires Business plan.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - requires Business plan.',
+  })
   async generateSuggestions(
     @CompanyId() companyId: bigint,
     @Request() _req: RequestWithUser,
@@ -95,7 +98,8 @@ export class AiScenarioController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Check AI scenario planner availability',
-    description: 'Returns whether the AI scenario planner is configured and available.',
+    description:
+      'Returns whether the AI scenario planner is configured and available.',
   })
   @ApiResponse({
     status: 200,

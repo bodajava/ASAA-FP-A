@@ -7,7 +7,12 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { SheetAnalysis, ErpModuleMapping, ColumnMapping, ColumnAnalysis } from './types/excel-integration.types';
+import {
+  SheetAnalysis,
+  ErpModuleMapping,
+  ColumnMapping,
+  ColumnAnalysis,
+} from './types/excel-integration.types';
 
 @Injectable()
 export class ErpModuleMapperService {
@@ -28,15 +33,34 @@ export class ErpModuleMapperService {
       patterns: [/^compan(y|ies)$/i],
       description: 'Company master data',
       targetTable: 'Company',
-      columnDefaults: { code: 'code', name: 'name', legalname: 'legalName', industrytype: 'industryType', taxnumber: 'taxNumber', fiscalyearstartmonth: 'fiscalYearStartMonth', currency: 'baseCurrency' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        legalname: 'legalName',
+        industrytype: 'industryType',
+        taxnumber: 'taxNumber',
+        fiscalyearstartmonth: 'fiscalYearStartMonth',
+        currency: 'baseCurrency',
+      },
     },
     {
       key: 'sites',
-      patterns: [/^site(s)?$/i, /^branch(es)?$/i, /^factor(y|ies)$/i, /^warehouse(s)?$/i],
+      patterns: [
+        /^site(s)?$/i,
+        /^branch(es)?$/i,
+        /^factor(y|ies)$/i,
+        /^warehouse(s)?$/i,
+      ],
       description: 'Sites, branches, factories, warehouses',
       targetTable: 'Site',
       requiresParent: 'companies',
-      columnDefaults: { code: 'code', name: 'name', type: 'type', sitecode: 'code', companyid: 'companyId' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        type: 'type',
+        sitecode: 'code',
+        companyid: 'companyId',
+      },
     },
     {
       key: 'units',
@@ -47,10 +71,20 @@ export class ErpModuleMapperService {
     },
     {
       key: 'accounts',
-      patterns: [/^account(s)?$/i, /^chart[_\s]?of[_\s]?account(s)?$/i, /^coa$/i],
+      patterns: [
+        /^account(s)?$/i,
+        /^chart[_\s]?of[_\s]?account(s)?$/i,
+        /^coa$/i,
+      ],
       description: 'Chart of accounts',
       targetTable: 'Account',
-      columnDefaults: { code: 'code', name: 'name', type: 'type', accountcode: 'code', glcode: 'code' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        type: 'type',
+        accountcode: 'code',
+        glcode: 'code',
+      },
     },
     {
       key: 'costcenters',
@@ -64,43 +98,102 @@ export class ErpModuleMapperService {
       patterns: [/^product[_\s]?categor(y|ies)$/i, /^categor(y|ies)$/i],
       description: 'Product categories',
       targetTable: 'ProductCategory',
-      columnDefaults: { code: 'code', name: 'name', description: 'description' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        description: 'description',
+      },
     },
     {
       key: 'customers',
       patterns: [/^customer(s)?$/i, /^client(s)?$/i],
       description: 'Customer master data',
       targetTable: 'Customer',
-      columnDefaults: { code: 'code', name: 'name', type: 'type', email: 'email', phone: 'phone', address: 'address', customertype: 'customerType' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        type: 'type',
+        email: 'email',
+        phone: 'phone',
+        address: 'address',
+        customertype: 'customerType',
+      },
     },
     {
       key: 'suppliers',
       patterns: [/^supplier(s)?$/i, /^vendor(s)?$/i],
       description: 'Supplier / vendor master data',
       targetTable: 'Supplier',
-      columnDefaults: { code: 'code', name: 'name', type: 'type', email: 'email', phone: 'phone', address: 'address', suppliertype: 'supplierType' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        type: 'type',
+        email: 'email',
+        phone: 'phone',
+        address: 'address',
+        suppliertype: 'supplierType',
+      },
     },
     {
       key: 'materials',
-      patterns: [/^material(s)?$/i, /^raw[_\s]?material(s)?$/i, /^rm$/i, /^packaging$/i],
+      patterns: [
+        /^material(s)?$/i,
+        /^raw[_\s]?material(s)?$/i,
+        /^rm$/i,
+        /^packaging$/i,
+      ],
       description: 'Raw materials & packaging',
       targetTable: 'Material',
-      columnDefaults: { code: 'code', name: 'name', type: 'type', unit: 'unit', weight: 'weight', materialcode: 'code', materialtype: 'materialType' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        type: 'type',
+        unit: 'unit',
+        weight: 'weight',
+        materialcode: 'code',
+        materialtype: 'materialType',
+      },
     },
     {
       key: 'products',
-      patterns: [/^product(s)?$/i, /^finished[_\s]?good(s)?$/i, /^fg$/i, /^item(s)?$/i],
+      patterns: [
+        /^product(s)?$/i,
+        /^finished[_\s]?good(s)?$/i,
+        /^fg$/i,
+        /^item(s)?$/i,
+      ],
       description: 'Finished goods / products',
       targetTable: 'Product',
-      columnDefaults: { code: 'code', sku: 'sku', name: 'name', type: 'type', unit: 'unit', price: 'price', sellingprice: 'sellingPrice', weight: 'weight', categoryid: 'productCategoryId' },
+      columnDefaults: {
+        code: 'code',
+        sku: 'sku',
+        name: 'name',
+        type: 'type',
+        unit: 'unit',
+        price: 'price',
+        sellingprice: 'sellingPrice',
+        weight: 'weight',
+        categoryid: 'productCategoryId',
+      },
     },
     {
       key: 'bomrecipes',
-      patterns: [/^bom[_\s]?recipe(s)?$/i, /^bill[_\s]?of[_\s]?material(s)?$/i, /^bom$/i],
+      patterns: [
+        /^bom[_\s]?recipe(s)?$/i,
+        /^bill[_\s]?of[_\s]?material(s)?$/i,
+        /^bom$/i,
+      ],
       description: 'Bill of materials',
       targetTable: 'BomRecipe',
       requiresParent: 'products',
-      columnDefaults: { code: 'code', name: 'name', productsku: 'productSku', yieldpct: 'yieldPct', wastagepct: 'wastagePct', version: 'version' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        productsku: 'productSku',
+        yieldpct: 'yieldPct',
+        wastagepct: 'wastagePct',
+        version: 'version',
+      },
     },
     {
       key: 'bomlines',
@@ -108,91 +201,223 @@ export class ErpModuleMapperService {
       description: 'BOM line items',
       targetTable: 'BomLine',
       requiresParent: 'bomrecipes',
-      columnDefaults: { bomid: 'bomRecipeId', materialcode: 'materialCode', quantity: 'quantity', unit: 'unit', cost: 'cost' },
+      columnDefaults: {
+        bomid: 'bomRecipeId',
+        materialcode: 'materialCode',
+        quantity: 'quantity',
+        unit: 'unit',
+        cost: 'cost',
+      },
     },
     {
       key: 'productionplans',
-      patterns: [/^production[_\s]?plan/i, /^manufacturing[_\s]?plan/i, /^pp$/i],
+      patterns: [
+        /^production[_\s]?plan/i,
+        /^manufacturing[_\s]?plan/i,
+        /^pp$/i,
+      ],
       description: 'Production planning',
       targetTable: 'ProductionPlan',
       requiresParent: 'products',
-      columnDefaults: { productsku: 'productSku', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', plannedquantity: 'plannedQuantity', sitecode: 'siteCode' },
+      columnDefaults: {
+        productsku: 'productSku',
+        periodmonth: 'periodMonth',
+        fiscalyear: 'fiscalYear',
+        plannedquantity: 'plannedQuantity',
+        sitecode: 'siteCode',
+      },
     },
     {
       key: 'inventory',
-      patterns: [/^inventory|stock|warehouse[_\s]?stock|opening[_\s]?stock|closing[_\s]?stock/i],
+      patterns: [
+        /^inventory|stock|warehouse[_\s]?stock|opening[_\s]?stock|closing[_\s]?stock/i,
+      ],
       description: 'Inventory snapshots',
       targetTable: 'InventorySnapshot',
       requiresParent: 'materials',
-      columnDefaults: { materialcode: 'materialCode', quantity: 'quantity', snapshotdate: 'snapshotDate', sitecode: 'siteCode' },
+      columnDefaults: {
+        materialcode: 'materialCode',
+        quantity: 'quantity',
+        snapshotdate: 'snapshotDate',
+        sitecode: 'siteCode',
+      },
     },
     {
       key: 'materialprices',
-      patterns: [/^raw[_\s]?material[_\s]?price(s)?|material[_\s]?price(s)?|rm[_\s]?price(s)?|price[_\s]?list$/i],
+      patterns: [
+        /^raw[_\s]?material[_\s]?price(s)?|material[_\s]?price(s)?|rm[_\s]?price(s)?|price[_\s]?list$/i,
+      ],
       description: 'Raw material prices',
       targetTable: 'RawMaterialPrice',
       requiresParent: 'materials',
-      columnDefaults: { materialcode: 'materialCode', price: 'price', priceDate: 'priceDate', currency: 'currency' },
+      columnDefaults: {
+        materialcode: 'materialCode',
+        price: 'price',
+        priceDate: 'priceDate',
+        currency: 'currency',
+      },
     },
     {
       key: 'budgetlines',
       patterns: [/^budget[_\s]?line/i, /^budget/i, /^annual[_\s]?budget/i],
       description: 'Budget data',
       targetTable: 'BudgetLine',
-      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', sitecode: 'siteCode', costcentercode: 'costCenterCode', budgetcyclename: 'budgetCycleName', productsku: 'productSku', materialcode: 'materialCode', customercode: 'customerCode', quantity: 'quantity', unitprice: 'unitPrice', notes: 'notes' },
+      columnDefaults: {
+        accountcode: 'accountCode',
+        periodmonth: 'periodMonth',
+        fiscalyear: 'fiscalYear',
+        amount: 'amount',
+        sitecode: 'siteCode',
+        costcentercode: 'costCenterCode',
+        budgetcyclename: 'budgetCycleName',
+        productsku: 'productSku',
+        materialcode: 'materialCode',
+        customercode: 'customerCode',
+        quantity: 'quantity',
+        unitprice: 'unitPrice',
+        notes: 'notes',
+      },
     },
     {
       key: 'forecastlines',
-      patterns: [/^forecast[_\s]?line/i, /^forecast/i, /^monthly[_\s]?forecast/i],
+      patterns: [
+        /^forecast[_\s]?line/i,
+        /^forecast/i,
+        /^monthly[_\s]?forecast/i,
+      ],
       description: 'Forecast data',
       targetTable: 'ForecastLine',
-      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', scenario: 'scenario', sitecode: 'siteCode', forecastcyclename: 'forecastCycleName', costcentercode: 'costCenterCode', productsku: 'productSku', materialcode: 'materialCode', customercode: 'customerCode', quantity: 'quantity', unitprice: 'unitPrice', drivertype: 'driverType', notes: 'notes' },
+      columnDefaults: {
+        accountcode: 'accountCode',
+        periodmonth: 'periodMonth',
+        fiscalyear: 'fiscalYear',
+        amount: 'amount',
+        scenario: 'scenario',
+        sitecode: 'siteCode',
+        forecastcyclename: 'forecastCycleName',
+        costcentercode: 'costCenterCode',
+        productsku: 'productSku',
+        materialcode: 'materialCode',
+        customercode: 'customerCode',
+        quantity: 'quantity',
+        unitprice: 'unitPrice',
+        drivertype: 'driverType',
+        notes: 'notes',
+      },
     },
     {
       key: 'actuallines',
-      patterns: [/^actual(s)?|actual[_\s]?line(s)?|gl[_\s]?entry(s)?|journal[_\s]?entry(s)?|transaction(s)?|p&l|profit[_\s]?&[_\s]?loss|income[_\s]?statement|financial[_\s]?statement|data|s&m|g&a|operating[_\s]?expense/i],
+      patterns: [
+        /^actual(s)?|actual[_\s]?line(s)?|gl[_\s]?entry(s)?|journal[_\s]?entry(s)?|transaction(s)?|p&l|profit[_\s]?&[_\s]?loss|income[_\s]?statement|financial[_\s]?statement|data|s&m|g&a|operating[_\s]?expense/i,
+      ],
       description: 'Actual transactions / GL entries',
       targetTable: 'ActualLine',
-      columnDefaults: { accountcode: 'accountCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear', amount: 'amount', sitecode: 'siteCode', costcentercode: 'costCenterCode', sourcesystem: 'sourceSystem', importtype: 'importType', periodfrom: 'periodFrom', periodto: 'periodTo', productsku: 'productSku', materialcode: 'materialCode', customercode: 'customerCode', transactiondate: 'transactionDate', quantity: 'quantity', unitprice: 'unitPrice', referenceno: 'referenceNo' },
+      columnDefaults: {
+        accountcode: 'accountCode',
+        periodmonth: 'periodMonth',
+        fiscalyear: 'fiscalYear',
+        amount: 'amount',
+        sitecode: 'siteCode',
+        costcentercode: 'costCenterCode',
+        sourcesystem: 'sourceSystem',
+        importtype: 'importType',
+        periodfrom: 'periodFrom',
+        periodto: 'periodTo',
+        productsku: 'productSku',
+        materialcode: 'materialCode',
+        customercode: 'customerCode',
+        transactiondate: 'transactionDate',
+        quantity: 'quantity',
+        unitprice: 'unitPrice',
+        referenceno: 'referenceNo',
+      },
     },
     {
       key: 'kpitargets',
       patterns: [/^kpi[_\s]?target(s)?|kpi(s)?$/i],
       description: 'KPI targets',
       targetTable: 'KpiTarget',
-      columnDefaults: { kpiname: 'kpiName', kpicategory: 'kpiCategory', targetvalue: 'targetValue', actualvalue: 'actualValue', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear' },
+      columnDefaults: {
+        kpiname: 'kpiName',
+        kpicategory: 'kpiCategory',
+        targetvalue: 'targetValue',
+        actualvalue: 'actualValue',
+        periodmonth: 'periodMonth',
+        fiscalyear: 'fiscalYear',
+      },
     },
     {
       key: 'exchangerates',
-      patterns: [/^exchange[_\s]?rate(s)?|currency[_\s]?rate(s)?|fx[_\s]?rate(s)?$/i],
+      patterns: [
+        /^exchange[_\s]?rate(s)?|currency[_\s]?rate(s)?|fx[_\s]?rate(s)?$/i,
+      ],
       description: 'Exchange rates',
       targetTable: 'ExchangeRate',
-      columnDefaults: { fromcurrency: 'fromCurrency', tocurrency: 'toCurrency', rate: 'rate', ratedate: 'rateDate' },
+      columnDefaults: {
+        fromcurrency: 'fromCurrency',
+        tocurrency: 'toCurrency',
+        rate: 'rate',
+        ratedate: 'rateDate',
+      },
     },
     {
       key: 'promotions',
-      patterns: [/^promotion(s)?|discount(s)?|offer(s)?|commercial[_\s]?polic(y|ies)/i],
+      patterns: [
+        /^promotion(s)?|discount(s)?|offer(s)?|commercial[_\s]?polic(y|ies)/i,
+      ],
       description: 'Promotions & discounts',
       targetTable: 'Promotion',
-      columnDefaults: { code: 'code', name: 'name', type: 'type', discountpct: 'discountPct', productsku: 'productSku' },
+      columnDefaults: {
+        code: 'code',
+        name: 'name',
+        type: 'type',
+        discountpct: 'discountPct',
+        productsku: 'productSku',
+      },
     },
     {
       key: 'headcountplans',
-      patterns: [/^headcount[_\s]?plan/i, /^hr[_\s]?plan/i, /^staffing[_\s]?plan/i, /^headcount/i],
+      patterns: [
+        /^headcount[_\s]?plan/i,
+        /^hr[_\s]?plan/i,
+        /^staffing[_\s]?plan/i,
+        /^headcount/i,
+      ],
       description: 'Headcount planning',
       targetTable: 'HeadcountPlan',
-      columnDefaults: { sitecode: 'siteCode', department: 'department', position: 'position', headcount: 'headCount', costcentercode: 'costCenterCode', periodmonth: 'periodMonth', fiscalyear: 'fiscalYear' },
+      columnDefaults: {
+        sitecode: 'siteCode',
+        department: 'department',
+        position: 'position',
+        headcount: 'headCount',
+        costcentercode: 'costCenterCode',
+        periodmonth: 'periodMonth',
+        fiscalyear: 'fiscalYear',
+      },
     },
     {
       key: 'notificationrules',
       patterns: [/^notification[_\s]?rule(s)?|alert[_\s]?rule(s)?$/i],
       description: 'Notification rules',
       targetTable: 'NotificationRule',
-      columnDefaults: { name: 'name', type: 'type', condition: 'condition', channel: 'channel' },
+      columnDefaults: {
+        name: 'name',
+        type: 'type',
+        condition: 'condition',
+        channel: 'channel',
+      },
     },
     {
       key: 'informational',
-      patterns: [/^start[_\s]?here/i, /^reference[_\s]?lists?/i, /^instructions?/i, /^notes?/i, /^weight[_\s]?per[_\s]?carton/i, /^hrv[_\s]?rates/i, /^price[_\s]?list/i],
+      patterns: [
+        /^start[_\s]?here/i,
+        /^reference[_\s]?lists?/i,
+        /^instructions?/i,
+        /^notes?/i,
+        /^weight[_\s]?per[_\s]?carton/i,
+        /^hrv[_\s]?rates/i,
+        /^price[_\s]?list/i,
+      ],
       description: 'Informational Sheets',
       targetTable: '',
       columnDefaults: {},
@@ -202,7 +427,7 @@ export class ErpModuleMapperService {
   /* ─── Main Mapping Function ────────────────────────────────────────── */
 
   mapSheetsToModules(sheets: SheetAnalysis[]): ErpModuleMapping[] {
-    return sheets.map(sheet => this.mapSheet(sheet));
+    return sheets.map((sheet) => this.mapSheet(sheet));
   }
 
   private mapSheet(sheet: SheetAnalysis): ErpModuleMapping {
@@ -215,7 +440,10 @@ export class ErpModuleMapperService {
     }
 
     // Build column mappings
-    const columnMappings = this.buildColumnMappings(sheet, moduleDef.columnDefaults);
+    const columnMappings = this.buildColumnMappings(
+      sheet,
+      moduleDef.columnDefaults,
+    );
 
     return {
       sheetName: sheet.sheetName,
@@ -230,7 +458,9 @@ export class ErpModuleMapperService {
 
   /* ─── Module Matching ──────────────────────────────────────────────── */
 
-  private findModuleDefinition(sheet: SheetAnalysis): typeof this.MODULE_REGISTRY[0] | null {
+  private findModuleDefinition(
+    sheet: SheetAnalysis,
+  ): (typeof this.MODULE_REGISTRY)[0] | null {
     const cleaned = sheet.sheetName.replace(/[_\s-]+/g, '').toLowerCase();
 
     for (const mod of this.MODULE_REGISTRY) {
@@ -245,10 +475,10 @@ export class ErpModuleMapperService {
 
   private calculateConfidence(
     sheet: SheetAnalysis,
-    moduleDef: typeof this.MODULE_REGISTRY[0],
+    moduleDef: (typeof this.MODULE_REGISTRY)[0],
   ): number {
     // High confidence if sheet name matches module pattern exactly
-    const nameMatch = moduleDef.patterns.some(p => p.test(sheet.sheetName));
+    const nameMatch = moduleDef.patterns.some((p) => p.test(sheet.sheetName));
     if (nameMatch) return 0.95;
 
     // Medium confidence based on column analysis
@@ -256,7 +486,10 @@ export class ErpModuleMapperService {
       Object.keys(moduleDef.columnDefaults).includes(c.normalizedKey),
     ).length;
 
-    return Math.min(0.9, 0.3 + (matchCount / Math.max(sheet.columns.length, 1)) * 0.6);
+    return Math.min(
+      0.9,
+      0.3 + (matchCount / Math.max(sheet.columns.length, 1)) * 0.6,
+    );
   }
 
   /* ─── Column Mapping Builder ───────────────────────────────────────── */
@@ -301,12 +534,14 @@ export class ErpModuleMapperService {
   /* ─── Generic Mapping (Unknown Sheets) ─────────────────────────────── */
 
   private createGenericMapping(sheet: SheetAnalysis): ErpModuleMapping {
-    const columnMappings: ColumnMapping[] = sheet.columns.map((col: ColumnAnalysis) => ({
-      excelColumn: col.originalName,
-      erpField: col.mappedErpField || col.normalizedKey,
-      type: 'skip' as const,
-      confidence: 0.1,
-    }));
+    const columnMappings: ColumnMapping[] = sheet.columns.map(
+      (col: ColumnAnalysis) => ({
+        excelColumn: col.originalName,
+        erpField: col.mappedErpField || col.normalizedKey,
+        type: 'skip' as const,
+        confidence: 0.1,
+      }),
+    );
 
     return {
       sheetName: sheet.sheetName,
@@ -320,12 +555,16 @@ export class ErpModuleMapperService {
 
   /* ─── Utilities ────────────────────────────────────────────────────── */
 
-  getModuleByKey(key: string): typeof this.MODULE_REGISTRY[0] | undefined {
-    return this.MODULE_REGISTRY.find(m => m.key === key);
+  getModuleByKey(key: string): (typeof this.MODULE_REGISTRY)[0] | undefined {
+    return this.MODULE_REGISTRY.find((m) => m.key === key);
   }
 
-  getAllModules(): Array<{ key: string; description: string; targetTable: string }> {
-    return this.MODULE_REGISTRY.map(m => ({
+  getAllModules(): Array<{
+    key: string;
+    description: string;
+    targetTable: string;
+  }> {
+    return this.MODULE_REGISTRY.map((m) => ({
       key: m.key,
       description: m.description,
       targetTable: m.targetTable,

@@ -82,7 +82,7 @@ interface ImportResult {
   failedRows: number;
   skippedRows: number;
   durationMs: number;
-  rowsPerSecond: number;
+  rowsPerSecond: number | null;
   sheets: Array<{
     sheetName: string;
     erpModule: string;
@@ -562,19 +562,19 @@ export default function ExcelIntegrationPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-xl border border-border bg-card p-3 text-center">
-              <p className="text-2xl font-bold text-primary">{importResult.insertedRows.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-primary">{importResult.insertedRows?.toLocaleString() ?? '0'}</p>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase">{t('page.excelIntegration.rowsInserted')}</p>
             </div>
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
-              <p className="text-2xl font-bold text-destructive">{importResult.failedRows.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-destructive">{importResult.failedRows?.toLocaleString() ?? '0'}</p>
               <p className="text-[10px] font-semibold text-destructive uppercase">{t('page.excelIntegration.rowsFailed')}</p>
             </div>
             <div className="rounded-xl border border-border bg-card p-3 text-center">
-              <p className="text-2xl font-bold text-card-foreground">{(importResult.durationMs / 1000).toFixed(1)}s</p>
+              <p className="text-2xl font-bold text-card-foreground">{importResult.durationMs != null ? `${(importResult.durationMs / 1000).toFixed(1)}s` : '—'}</p>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase">{t('page.excelIntegration.duration')}</p>
             </div>
             <div className="rounded-xl border border-border bg-card p-3 text-center">
-              <p className="text-2xl font-bold text-card-foreground">{importResult.rowsPerSecond.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-card-foreground">{importResult.rowsPerSecond?.toLocaleString() ?? '—'}</p>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase">rows/sec</p>
             </div>
           </div>

@@ -8,6 +8,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { ImportSourceSystem, ImportType, Prisma } from '@prisma/client';
 import {
   SheetAnalysis, ColumnMapping, ImportExecutionResult, SheetImportResult,
   ImportError, ImportReport, SheetValidationResult, RowLevelReport,
@@ -135,6 +136,28 @@ export class StreamingImportService {
       };
     }
 
+    if (analysis.erpModule === 'informational' || analysis.erpModule === 'generic') {
+      return {
+        sheetName: analysis.sheetName,
+        erpModule: analysis.erpModule,
+        status: 'skipped',
+        totalRows: rows.length,
+        insertedRows: 0,
+        failedRows: 0,
+        skippedRows: rows.length,
+        durationMs: Date.now() - startTime,
+        rowsPerSecond: 0,
+        errors: [],
+        rowReports: rows.map((_, i) => ({
+          sheetName: analysis.sheetName,
+          rowNumber: i + 2,
+          module: analysis.erpModule,
+          status: 'skipped',
+          reason: 'Informational or generic sheet skipped'
+        }))
+      };
+    }
+
     if (validation.errorRowNumbers.length > 0) {
       validation.errorRowNumbers.forEach(rowNum => {
         rowReports.push({ sheetName: analysis.sheetName, rowNumber: rowNum, module: analysis.erpModule, status: 'skipped', reason: 'Validation error' });
@@ -154,6 +177,7 @@ export class StreamingImportService {
     }
 
     const columnMap = this.buildColumnMap(mappings);
+    this.logger.debug(`[DEBUG] columnMap: ${JSON.stringify(Array.from(columnMap.entries()))}`);
     let insertedCount = 0;
     const errors: ImportError[] = [];
     const chunks = this.chunkArray(importableRows, this.CHUNK_SIZE);
@@ -164,7 +188,8 @@ export class StreamingImportService {
 
       try {
         const resolvedChunk = await this.resolveReferences(analysis.erpModule, mappedChunk, companyId, options);
-        const result = await this.insertChunk(analysis.erpModule, resolvedChunk, chunkMeta.map(x => x.rowNum));
+        const cleanedChunk = resolvedChunk.map(row => this.stripUnknownFields(analysis.erpModule, row));
+        const result = await this.insertChunk(analysis.erpModule, cleanedChunk, chunkMeta.map(x => x.rowNum));
         insertedCount += result.count;
         
         result.rowReports.forEach(r => {
@@ -234,6 +259,10 @@ export class StreamingImportService {
     // Always inject companyId
     mapped.companyId = companyId;
 
+    if (mapped.fiscalYear) {
+      console.error(`[DEBUG] mapRow produced: ${JSON.stringify(mapped)}`);
+    }
+
     return mapped;
   }
 
@@ -243,7 +272,7 @@ export class StreamingImportService {
     const str = String(value).trim();
 
     // Numeric fields
-    if (/^(price|cost|amount|rate|quantity|qty|total|sum|value|target|actual|weight|limit|discount|yield|wastage|budget|forecast|planned)$/i.test(field)) {
+    if (/^(price|cost|amount|rate|quantity|qty|total|sum|value|target|actual|weight|limit|discount|yield|wastage|budget|forecast|planned|fiscalyear|fiscalmonth|periodmonth|period|unitprice)$/i.test(field)) {
       const cleaned = str.replace(/[$€£EGP,\s]/g, '');
       const num = Number(cleaned);
       return isNaN(num) ? str : num;
@@ -254,13 +283,34 @@ export class StreamingImportService {
       return /^(true|yes|1)$/i.test(str);
     }
 
-    // Date fields
-    if (/^(date|effectivedate|startdate|enddate|duedate|createdat|snapshotdate|ratedate|fiscalmonth|fiscalyear)$/i.test(field)) {
+    // Date fields — match any field containing "date" anywhere in the name
+    if (/date/i.test(field)) {
       const d = new Date(str);
       return isNaN(d.getTime()) ? str : d;
     }
 
     return str;
+  }
+
+  /** Normalise importType strings to valid Prisma ImportType enum values */
+  private normaliseImportType(raw: string): string {
+    const v = String(raw).toLowerCase().trim();
+    const validTypes = ['actual', 'budget', 'forecast', 'master_data'];
+    if (validTypes.includes(v)) return v;
+    // Map common synonyms
+    if (/sale|revenue|actual|real/i.test(v)) return 'actual';
+    if (/budget|plan|target/i.test(v)) return 'budget';
+    if (/forecast|proj/i.test(v)) return 'forecast';
+    if (/master|ref|data/i.test(v)) return 'master_data';
+    return 'actual'; // safe fallback
+  }
+
+  /** Normalise sourceSystem strings to valid Prisma ImportSourceSystem enum values */
+  private normaliseSourceSystem(raw: string): string {
+    const v = String(raw).toLowerCase().trim();
+    const validSystems = ['excel', 'oracle', 'sap', 'erp', 'pms', 'odoo', 'pos', 'woocommerce', 'manual', 'api'];
+    if (validSystems.includes(v)) return v;
+    return 'excel'; // safe fallback
   }
 
   /* ─── ID Pre-Resolution Phase ──────────────────────────────────────── */
@@ -293,18 +343,46 @@ export class StreamingImportService {
       materialCode: new Set<string>(),
       unit: new Set<string>(),
       categoryId: new Set<string>(),
+      forecastCycleName: new Set<string>(),
+      budgetCycleName: new Set<string>(),
+      sourceSystem: new Set<string>(),
+      bomRecipeRef: new Set<string>(),
     };
 
     rows.forEach(row => {
       if (row.productSku) uniqueIds.productSku.add(String(row.productSku));
-      if (row.siteCode) uniqueIds.siteCode.add(String(row.siteCode));
-      if (row.costCenterCode) uniqueIds.costCenterCode.add(String(row.costCenterCode));
-      if (row.accountCode) uniqueIds.accountCode.add(String(row.accountCode));
-      if (row.customerCode) uniqueIds.customerCode.add(String(row.customerCode));
-      if (row.supplierCode) uniqueIds.supplierCode.add(String(row.supplierCode));
-      if (row.materialCode) uniqueIds.materialCode.add(String(row.materialCode));
-      if (row.unit) uniqueIds.unit.add(String(row.unit));
+      
+      const siteVal = row.siteCode || row.sitename || row.siteName;
+      if (siteVal) uniqueIds.siteCode.add(String(siteVal));
+
+      const ccVal = row.costCenterCode || row.costcentername || row.costCenterName;
+      if (ccVal) uniqueIds.costCenterCode.add(String(ccVal));
+
+      const accVal = row.accountCode || row.accountname || row.accountName;
+      if (accVal) uniqueIds.accountCode.add(String(accVal));
+
+      const custVal = row.customerCode || row.customername || row.customerName;
+      if (custVal) uniqueIds.customerCode.add(String(custVal));
+
+      const suppVal = row.supplierCode || row.suppliername || row.supplierName;
+      if (suppVal) uniqueIds.supplierCode.add(String(suppVal));
+
+      const matVal = row.materialCode || row.materialname || row.materialName;
+      if (matVal) uniqueIds.materialCode.add(String(matVal));
+
+      const unitVal = row.unit || row.unitname || row.unitName;
+      if (unitVal) uniqueIds.unit.add(String(unitVal));
+      
       if (row.productCategoryId) uniqueIds.categoryId.add(String(row.productCategoryId));
+      if (row.forecastCycleName) uniqueIds.forecastCycleName.add(String(row.forecastCycleName));
+      if (row.budgetCycleName) uniqueIds.budgetCycleName.add(String(row.budgetCycleName));
+      // Normalise enums BEFORE building the ref key so lookup and substitution keys always match
+      if (row.sourceSystem) {
+        const normSource = this.normaliseSourceSystem(String(row.sourceSystem));
+        const normImportType = this.normaliseImportType(String(row.importType || 'actual'));
+        uniqueIds.sourceSystem.add(`${normSource}|${normImportType}|${row.periodFrom || ''}|${row.periodTo || ''}`);
+      }
+      if (module === 'bomlines' && row.productSku && row.version) uniqueIds.bomRecipeRef.add(`${row.productSku}|${row.version}`);
     });
 
     const lookups = {
@@ -317,111 +395,153 @@ export class StreamingImportService {
       material: new Map<string, bigint>(),
       unit: new Map<string, bigint>(),
       category: new Map<string, bigint>(),
+      forecastCycle: new Map<string, bigint>(),
+      budgetCycle: new Map<string, bigint>(),
+      actualImport: new Map<string, bigint>(),
+      bomRecipe: new Map<string, bigint>(),
     };
 
     // Bulk resolve and auto-create
     if (uniqueIds.productSku.size > 0) {
-      const skus = Array.from(uniqueIds.productSku);
-      const items = await this.prisma.product.findMany({ where: { companyId, sku: { in: skus } } });
-      items.forEach(i => lookups.product.set(i.sku, i.id));
-      const missing = skus.filter(s => !lookups.product.has(s));
+      const vals = Array.from(uniqueIds.productSku);
+      const items = await this.prisma.product.findMany({ where: { companyId, OR: [{ sku: { in: vals } }, { name: { in: vals } }] } });
+      items.forEach(i => {
+        if (i.sku) lookups.product.set(i.sku, i.id);
+        if (i.name) lookups.product.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.product.has(v));
       if (missing.length > 0) {
         await this.prisma.product.createMany({
-          data: missing.map(sku => ({ companyId, sku, name: `Product ${sku}` }))
+          data: missing.map(val => ({ companyId, sku: val, name: `Product ${val}` }))
         });
-        const created = await this.prisma.product.findMany({ where: { companyId, sku: { in: missing } } });
-        created.forEach(i => lookups.product.set(i.sku, i.id));
+        const created = await this.prisma.product.findMany({ where: { companyId, OR: [{ sku: { in: missing } }, { name: { in: missing } }] } });
+        created.forEach(i => {
+          if (i.sku) lookups.product.set(i.sku, i.id);
+          if (i.name) lookups.product.set(i.name, i.id);
+        });
       }
     }
 
     if (uniqueIds.siteCode.size > 0) {
-      const names = Array.from(uniqueIds.siteCode);
-      const items = await this.prisma.site.findMany({ where: { companyId, name: { in: names } } });
-      items.forEach(i => lookups.site.set(i.name, i.id));
-      const missing = names.filter(n => !lookups.site.has(n));
+      const vals = Array.from(uniqueIds.siteCode);
+      const items = await this.prisma.site.findMany({ where: { companyId, name: { in: vals } } });
+      items.forEach(i => {
+        if (i.name) lookups.site.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.site.has(v));
       if (missing.length > 0) {
         await this.prisma.site.createMany({
-          data: missing.map(name => ({ companyId, name, type: 'branch' as any }))
+          data: missing.map(val => ({ companyId, name: val, type: 'branch' as any }))
         });
         const created = await this.prisma.site.findMany({ where: { companyId, name: { in: missing } } });
-        created.forEach(i => lookups.site.set(i.name, i.id));
+        created.forEach(i => {
+          if (i.name) lookups.site.set(i.name, i.id);
+        });
       }
     }
 
     if (uniqueIds.costCenterCode.size > 0) {
-      const codes = Array.from(uniqueIds.costCenterCode);
-      const items = await this.prisma.costCenter.findMany({ where: { companyId, code: { in: codes } } });
-      items.forEach(i => { if (i.code) lookups.costCenter.set(i.code, i.id) });
-      const missing = codes.filter(c => !lookups.costCenter.has(c));
+      const vals = Array.from(uniqueIds.costCenterCode);
+      const items = await this.prisma.costCenter.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
+      items.forEach(i => {
+        if (i.code) lookups.costCenter.set(i.code, i.id);
+        if (i.name) lookups.costCenter.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.costCenter.has(v));
       if (missing.length > 0) {
         await this.prisma.costCenter.createMany({
-          data: missing.map(code => ({ companyId, code, name: `Cost Center ${code}`, type: 'department' as any }))
+          data: missing.map(val => ({ companyId, code: val, name: `Cost Center ${val}`, type: 'other' as any }))
         });
-        const created = await this.prisma.costCenter.findMany({ where: { companyId, code: { in: missing } } });
-        created.forEach(i => { if (i.code) lookups.costCenter.set(i.code, i.id) });
+        const created = await this.prisma.costCenter.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
+        created.forEach(i => {
+          if (i.code) lookups.costCenter.set(i.code, i.id);
+          if (i.name) lookups.costCenter.set(i.name, i.id);
+        });
       }
     }
 
     if (uniqueIds.accountCode.size > 0) {
-      const codes = Array.from(uniqueIds.accountCode);
-      const items = await this.prisma.account.findMany({ where: { companyId, code: { in: codes } } });
-      items.forEach(i => lookups.account.set(i.code, i.id));
-      const missing = codes.filter(c => !lookups.account.has(c));
+      const vals = Array.from(uniqueIds.accountCode);
+      const items = await this.prisma.account.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
+      items.forEach(i => {
+        if (i.code) lookups.account.set(i.code, i.id);
+        if (i.name) lookups.account.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.account.has(v));
       if (missing.length > 0) {
-        const toCreate = missing.map(code => {
+        const toCreate = missing.map(val => {
           // Attempt to find name and type from row
-          const row = rows.find(r => String(r.accountCode) === code);
+          const row = rows.find(r => String(r.accountCode) === val || String(r.accountName) === val || String(r.accountname) === val);
           const type = row?.type ? String(row.type).toLowerCase() : 'expense';
-          const name = row?.name ? String(row.name) : `Account ${code}`;
-          return { companyId, code, name, type: type as any };
+          const name = row?.name ? String(row.name) : `Account ${val}`;
+          return { companyId, code: val, name, type: type as any };
         });
         await this.prisma.account.createMany({ data: toCreate });
-        const created = await this.prisma.account.findMany({ where: { companyId, code: { in: missing } } });
-        created.forEach(i => lookups.account.set(i.code, i.id));
+        const created = await this.prisma.account.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
+        created.forEach(i => {
+          if (i.code) lookups.account.set(i.code, i.id);
+          if (i.name) lookups.account.set(i.name, i.id);
+        });
       }
     }
 
     if (uniqueIds.customerCode.size > 0) {
-      const codes = Array.from(uniqueIds.customerCode);
-      const items = await this.prisma.customer.findMany({ where: { companyId, code: { in: codes } } });
-      items.forEach(i => lookups.customer.set(i.code, i.id));
-      const missing = codes.filter(c => !lookups.customer.has(c));
+      const vals = Array.from(uniqueIds.customerCode);
+      const items = await this.prisma.customer.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
+      items.forEach(i => {
+        if (i.code) lookups.customer.set(i.code, i.id);
+        if (i.name) lookups.customer.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.customer.has(v));
       if (missing.length > 0) {
         await this.prisma.customer.createMany({
-          data: missing.map(code => ({ companyId, code, name: `Customer ${code}` }))
+          data: missing.map(val => ({ companyId, code: val, name: `Customer ${val}` }))
         });
-        const created = await this.prisma.customer.findMany({ where: { companyId, code: { in: missing } } });
-        created.forEach(i => lookups.customer.set(i.code, i.id));
+        const created = await this.prisma.customer.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
+        created.forEach(i => {
+          if (i.code) lookups.customer.set(i.code, i.id);
+          if (i.name) lookups.customer.set(i.name, i.id);
+        });
       }
     }
 
     if (uniqueIds.supplierCode.size > 0) {
-      const names = Array.from(uniqueIds.supplierCode);
-      const items = await this.prisma.supplier.findMany({ where: { companyId, name: { in: names } } });
-      items.forEach(i => lookups.supplier.set(i.name, i.id));
-      const missing = names.filter(n => !lookups.supplier.has(n));
+      const vals = Array.from(uniqueIds.supplierCode);
+      const items = await this.prisma.supplier.findMany({ where: { companyId, name: { in: vals } } });
+      items.forEach(i => {
+        if (i.name) lookups.supplier.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.supplier.has(v));
       if (missing.length > 0) {
         if (!options?.dryRun) {
           await this.prisma.supplier.createMany({
-            data: missing.map(name => ({ companyId, name }))
+            data: missing.map(val => ({ companyId, name: val }))
           });
           const created = await this.prisma.supplier.findMany({ where: { companyId, name: { in: missing } } });
-          created.forEach(i => lookups.supplier.set(i.name, i.id));
+          created.forEach(i => {
+            if (i.name) lookups.supplier.set(i.name, i.id);
+          });
         }
       }
     }
 
     if (uniqueIds.materialCode.size > 0) {
-      const codes = Array.from(uniqueIds.materialCode);
-      const items = await this.prisma.material.findMany({ where: { companyId, code: { in: codes } } });
-      items.forEach(i => lookups.material.set(i.code, i.id));
-      const missing = codes.filter(c => !lookups.material.has(c));
+      const vals = Array.from(uniqueIds.materialCode);
+      const items = await this.prisma.material.findMany({ where: { companyId, OR: [{ code: { in: vals } }, { name: { in: vals } }] } });
+      items.forEach(i => {
+        if (i.code) lookups.material.set(i.code, i.id);
+        if (i.name) lookups.material.set(i.name, i.id);
+      });
+      const missing = vals.filter(v => !lookups.material.has(v));
       if (missing.length > 0) {
         await this.prisma.material.createMany({
-          data: missing.map(code => ({ companyId, code, name: `Material ${code}` }))
+          data: missing.map(val => ({ companyId, code: val, name: `Material ${val}` }))
         });
-        const created = await this.prisma.material.findMany({ where: { companyId, code: { in: missing } } });
-        created.forEach(i => lookups.material.set(i.code, i.id));
+        const created = await this.prisma.material.findMany({ where: { companyId, OR: [{ code: { in: missing } }, { name: { in: missing } }] } });
+        created.forEach(i => {
+          if (i.code) lookups.material.set(i.code, i.id);
+          if (i.name) lookups.material.set(i.name, i.id);
+        });
       }
     }
 
@@ -453,6 +573,86 @@ export class StreamingImportService {
       }
     }
 
+    if (uniqueIds.forecastCycleName.size > 0) {
+      const names = Array.from(uniqueIds.forecastCycleName);
+      const items = await this.prisma.forecastCycle.findMany({ where: { companyId, name: { in: names } } });
+      items.forEach(i => lookups.forecastCycle.set(i.name, i.id));
+      const missing = names.filter(n => !lookups.forecastCycle.has(n));
+      if (missing.length > 0 && !options?.dryRun) {
+        await this.prisma.forecastCycle.createMany({
+          data: missing.map(name => ({ companyId, name, status: 'draft', fiscalYear: new Date().getFullYear(), basePeriod: new Date() }))
+        });
+        const created = await this.prisma.forecastCycle.findMany({ where: { companyId, name: { in: missing } } });
+        created.forEach(i => lookups.forecastCycle.set(i.name, i.id));
+      }
+    }
+
+    if (uniqueIds.budgetCycleName.size > 0) {
+      const names = Array.from(uniqueIds.budgetCycleName);
+      const items = await this.prisma.budgetCycle.findMany({ where: { companyId, name: { in: names } } });
+      items.forEach(i => lookups.budgetCycle.set(i.name, i.id));
+      const missing = names.filter(n => !lookups.budgetCycle.has(n));
+      if (missing.length > 0 && !options?.dryRun) {
+        await this.prisma.budgetCycle.createMany({
+          data: missing.map(name => ({ companyId, name, status: 'draft' as any, fiscalYear: new Date().getFullYear() }))
+        });
+        const created = await this.prisma.budgetCycle.findMany({ where: { companyId, name: { in: missing } } });
+        created.forEach(i => lookups.budgetCycle.set(i.name, i.id));
+      }
+    }
+
+    if (uniqueIds.bomRecipeRef.size > 0) {
+      const refs = Array.from(uniqueIds.bomRecipeRef);
+      for (const ref of refs) {
+        const [sku, version] = ref.split('|');
+        const productId = lookups.product.get(sku);
+        if (productId) {
+          let recipe = await this.prisma.bomRecipe.findFirst({ where: { companyId, productId, version } });
+          if (!recipe && !options?.dryRun) {
+            recipe = await this.prisma.bomRecipe.create({
+              data: { companyId, productId, version, outputQty: 1 }
+            });
+          }
+          if (recipe) {
+            lookups.bomRecipe.set(ref, recipe.id);
+          }
+        }
+      }
+    }
+
+    if (uniqueIds.sourceSystem.size > 0) {
+      // Refs are already normalised (built with normaliseSourceSystem/normaliseImportType above)
+      const refs = Array.from(uniqueIds.sourceSystem);
+      for (const ref of refs) {
+        const [validSource, validImportType, periodFromStr, periodToStr] = ref.split('|');
+
+        const periodFrom = periodFromStr ? new Date(periodFromStr) : new Date();
+        const periodTo = periodToStr ? new Date(periodToStr) : new Date();
+        
+        let actualImport = await this.prisma.actualImport.findFirst({
+          where: { companyId, sourceSystem: validSource as ImportSourceSystem, importType: validImportType as ImportType }
+        });
+        
+        if (!actualImport && !options?.dryRun) {
+          actualImport = await this.prisma.actualImport.create({
+            data: { 
+              companyId, 
+              sourceSystem: validSource as ImportSourceSystem, 
+              importType: validImportType as ImportType, 
+              periodFrom, 
+              periodTo 
+            }
+          });
+        }
+        if (actualImport) {
+          lookups.actualImport.set(ref, actualImport.id);
+          this.logger.log(`[actualImport] resolved ref="${ref}" → id=${actualImport.id}`);
+        } else {
+          this.logger.warn(`[actualImport] FAILED to resolve/create ref="${ref}"`);
+        }
+      }
+    }
+
     // Substitute strings with IDs
     return rows.map(row => {
       const newRow = { ...row };
@@ -461,37 +661,99 @@ export class StreamingImportService {
         newRow.productId = lookups.product.get(String(newRow.productSku));
         delete newRow.productSku;
       }
-      if (newRow.siteCode) {
-        newRow.siteId = lookups.site.get(String(newRow.siteCode));
+      
+      const siteVal = newRow.siteCode || newRow.sitename || newRow.siteName;
+      if (siteVal) {
+        newRow.siteId = lookups.site.get(String(siteVal));
         delete newRow.siteCode;
+        delete newRow.sitename;
+        delete newRow.siteName;
       }
-      if (newRow.costCenterCode) {
-        newRow.costCenterId = lookups.costCenter.get(String(newRow.costCenterCode));
+      
+      const ccVal = newRow.costCenterCode || newRow.costcentername || newRow.costCenterName;
+      if (ccVal) {
+        newRow.costCenterId = lookups.costCenter.get(String(ccVal));
         delete newRow.costCenterCode;
+        delete newRow.costcentername;
+        delete newRow.costCenterName;
       }
-      if (newRow.accountCode) {
-        newRow.accountId = lookups.account.get(String(newRow.accountCode));
+      
+      const accVal = newRow.accountCode || newRow.accountname || newRow.accountName;
+      if (accVal) {
+        newRow.accountId = lookups.account.get(String(accVal));
         delete newRow.accountCode;
+        delete newRow.accountname;
+        delete newRow.accountName;
       }
-      if (newRow.customerCode) {
-        newRow.customerId = lookups.customer.get(String(newRow.customerCode));
+      
+      const custVal = newRow.customerCode || newRow.customername || newRow.customerName;
+      if (custVal) {
+        newRow.customerId = lookups.customer.get(String(custVal));
         delete newRow.customerCode;
+        delete newRow.customername;
+        delete newRow.customerName;
       }
-      if (newRow.supplierCode) {
-        newRow.supplierId = lookups.supplier.get(String(newRow.supplierCode));
+      
+      const suppVal = newRow.supplierCode || newRow.suppliername || newRow.supplierName;
+      if (suppVal) {
+        newRow.supplierId = lookups.supplier.get(String(suppVal));
         delete newRow.supplierCode;
+        delete newRow.suppliername;
+        delete newRow.supplierName;
       }
-      if (newRow.materialCode) {
-        newRow.materialId = lookups.material.get(String(newRow.materialCode));
+      
+      const matVal = newRow.materialCode || newRow.materialname || newRow.materialName;
+      if (matVal) {
+        newRow.materialId = lookups.material.get(String(matVal));
         delete newRow.materialCode;
+        delete newRow.materialname;
+        delete newRow.materialName;
       }
-      if (newRow.unit) {
-        newRow.unitId = lookups.unit.get(String(newRow.unit));
+      
+      const unitVal = newRow.unit || newRow.unitname || newRow.unitName;
+      if (unitVal) {
+        newRow.unitId = lookups.unit.get(String(unitVal));
         delete newRow.unit;
+        delete newRow.unitname;
+        delete newRow.unitName;
       }
       if (newRow.productCategoryId) {
         newRow.categoryId = lookups.category.get(String(newRow.productCategoryId));
         delete newRow.productCategoryId;
+      }
+      if (newRow.forecastCycleName) {
+        newRow.forecastCycleId = lookups.forecastCycle.get(String(newRow.forecastCycleName));
+        delete newRow.forecastCycleName;
+      }
+      if (newRow.budgetCycleName) {
+        newRow.budgetCycleId = lookups.budgetCycle.get(String(newRow.budgetCycleName));
+        delete newRow.budgetCycleName;
+      }
+      if (newRow.sourceSystem) {
+        // MUST normalise enums to the same key that was built during collection
+        const normSource = this.normaliseSourceSystem(String(newRow.sourceSystem));
+        const normImportType = this.normaliseImportType(String(newRow.importType || 'actual'));
+        const ref = `${normSource}|${normImportType}|${newRow.periodFrom || ''}|${newRow.periodTo || ''}`;
+        const resolvedId = lookups.actualImport.get(ref);
+        if (!resolvedId) {
+          this.logger.warn(`[resolveReferences] actualImportId not found for ref="${ref}". Available keys: ${Array.from(lookups.actualImport.keys()).join(', ')}`);
+        }
+        newRow.actualImportId = resolvedId;
+        delete newRow.sourceSystem;
+        delete newRow.importType;
+        delete newRow.periodFrom;
+        delete newRow.periodTo;
+      }
+      if (module === 'bomlines' && row.productSku && row.version) {
+        const ref = `${row.productSku}|${row.version}`;
+        // BomLine uses bomId (maps to bom_id) — NOT bomRecipeId
+        newRow.bomId = lookups.bomRecipe.get(ref);
+        delete newRow.bomRecipeId;
+        // Also fix quantity field name: BomLine uses qtyPerOutput
+        if (newRow.quantity !== undefined) {
+          newRow.qtyPerOutput = newRow.quantity;
+          delete newRow.quantity;
+        }
       }
 
       // Handle createdBy globally if needed by specific modules like ForecastCycle
@@ -523,6 +785,11 @@ export class StreamingImportService {
     const model = this.getPrismaModel(module);
     if (!model) {
       throw new Error(`Unknown module: ${module}`);
+    }
+
+    // Debug logging for key transactional modules
+    if (['productionplans', 'bomlines', 'actuallines', 'budgetlines', 'forecastlines'].includes(module)) {
+      this.logger.debug(`[insertChunk] module=${module} rowCount=${rows.length} firstRow=${JSON.stringify(rows[0])}`);
     }
 
     try {
@@ -579,6 +846,52 @@ export class StreamingImportService {
     };
 
     return modelMap[module] || null;
+  }
+
+  private getPrismaModelName(module: string): string | null {
+    const modelMap: Record<string, string> = {
+      companies: 'Company',
+      sites: 'Site',
+      units: 'Unit',
+      accounts: 'Account',
+      costcenters: 'CostCenter',
+      productcategories: 'ProductCategory',
+      customers: 'Customer',
+      suppliers: 'Supplier',
+      materials: 'Material',
+      products: 'Product',
+      bomrecipes: 'BomRecipe',
+      bomlines: 'BomLine',
+      productionplans: 'ProductionPlan',
+      inventory: 'InventorySnapshot',
+      materialprices: 'RawMaterialPrice',
+      budgetlines: 'BudgetLine',
+      forecastlines: 'ForecastLine',
+      actuallines: 'ActualLine',
+      kpitargets: 'KpiTarget',
+      exchangerates: 'ExchangeRate',
+      promotions: 'Promotion',
+      headcountplans: 'HeadcountPlan',
+    };
+    return modelMap[module] || null;
+  }
+
+  private stripUnknownFields(module: string, row: Record<string, unknown>): Record<string, unknown> {
+    const modelName = this.getPrismaModelName(module);
+    if (!modelName) return row;
+
+    const modelDef = Prisma.dmmf.datamodel.models.find(m => m.name === modelName);
+    if (!modelDef) return row;
+
+    const validFields = new Set(modelDef.fields.map(f => f.name));
+    const cleanRow: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(row)) {
+      if (validFields.has(key)) {
+        cleanRow[key] = value;
+      }
+    }
+    return cleanRow;
   }
 
   /* ─── Utilities ────────────────────────────────────────────────────── */

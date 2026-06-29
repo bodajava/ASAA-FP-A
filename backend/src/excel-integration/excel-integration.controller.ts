@@ -285,8 +285,14 @@ export class ExcelIntegrationController {
   /* ─── GET /templates/client-workbook — Download full workbook template ── */
 
   @Get('templates/client-workbook')
-  async downloadClientWorkbook(@Res() res: Response) {
-    const buffer = await this.templateGenerator.generateFullWorkbook();
+  async downloadClientWorkbook(
+    @Res() res: Response,
+    @Headers('x-company-id') companyIdHeader?: string,
+  ) {
+    const companyId = companyIdHeader ? parseInt(companyIdHeader, 10) : undefined;
+    const buffer = await this.templateGenerator.generateFullWorkbook(
+      !isNaN(companyId ?? NaN) ? BigInt(companyId!) : undefined,
+    );
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Length', String(buffer.length));
     res.setHeader('Content-Disposition', 'attachment; filename="Harvest_Workbook_Template.xlsx"');

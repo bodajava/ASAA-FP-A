@@ -24,6 +24,8 @@ export interface ColumnDef {
   allowedValues?: string[];
 }
 
+export type SheetRole = 'data' | 'reference' | 'instruction' | 'ignored';
+
 export interface SheetDef {
   /** Exact sheet name in the workbook */
   sheetName: string;
@@ -35,15 +37,58 @@ export interface SheetDef {
   columns: ColumnDef[];
   /** Module key that must be imported first */
   requiresParent?: string;
+  /** Role of the sheet: data (importable), reference (reference data lookup), instruction (how-to guide), ignored (skipped entirely) */
+  role: SheetRole;
 }
 
 /* ─── Client Workbook Schema ─────────────────────────────────────────── */
+
+/* ─── Non-data sheet names (reference/instruction) ──────────────────── */
+
+export const NON_DATA_SHEET_NAMES = new Set([
+  'start here',
+  'instructions',
+  'reference lists',
+  'accounts reference',
+  'sites reference',
+  'cost centers reference',
+  'products reference',
+  'materials reference',
+  'customers reference',
+  'budget cycles reference',
+]);
+
+export const REFERENCE_SHEET_NAMES = new Set([
+  'reference lists',
+  'accounts reference',
+  'sites reference',
+  'cost centers reference',
+  'products reference',
+  'materials reference',
+  'customers reference',
+  'budget cycles reference',
+]);
+
+export function classifySheetRole(sheetName: string): { role: SheetRole; mappedModule: string } {
+  const sn = sheetName.toLowerCase().trim();
+  if (sn === 'start here' || sn === 'instructions') {
+    return { role: 'instruction', mappedModule: '' };
+  }
+  if (REFERENCE_SHEET_NAMES.has(sn)) {
+    return { role: 'reference', mappedModule: '' };
+  }
+  if (sn.startsWith('_') || sn.startsWith('hidden') || sn === 'sheet1') {
+    return { role: 'ignored', mappedModule: '' };
+  }
+  return { role: 'data', mappedModule: '' };
+}
 
 export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
   {
     sheetName: 'Companies',
     module: 'companies',
     description: 'Company master data',
+    role: 'data',
     columns: [
       { display: 'Company Name', field: 'name', required: true, type: 'string', description: 'Trading name of the company' },
       { display: 'Legal Name', field: 'legalName', required: false, type: 'string', description: 'Official registered legal name' },
@@ -57,6 +102,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Sites',
     module: 'sites',
     description: 'Factories, warehouses, branches, and offices',
+    role: 'data',
     columns: [
       { display: 'Site Name', field: 'name', required: true, type: 'string', description: 'Name of the site' },
       { display: 'Type', field: 'type', required: true, type: 'string', description: 'Site type', allowedValues: ['factory', 'warehouse', 'branch', 'office', 'distribution_center'] },
@@ -72,6 +118,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Units',
     module: 'units',
     description: 'Units of measurement',
+    role: 'data',
     requiresParent: undefined,
     columns: [
       { display: 'Unit Name', field: 'name', required: true, type: 'string', description: 'Full name (e.g. Kilogram)' },
@@ -83,6 +130,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Accounts',
     module: 'accounts',
     description: 'Chart of accounts',
+    role: 'data',
     columns: [
       { display: 'Account Code', field: 'code', required: true, type: 'string', description: 'Unique GL account code' },
       { display: 'Account Name', field: 'name', required: true, type: 'string', description: 'Account display name' },
@@ -95,6 +143,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Cost Centers',
     module: 'costcenters',
     description: 'Cost centers and departments',
+    role: 'data',
     columns: [
       { display: 'Cost Center Code', field: 'code', required: true, type: 'string', description: 'Unique cost center code' },
       { display: 'Cost Center Name', field: 'name', required: true, type: 'string', description: 'Department or cost center name' },
@@ -106,6 +155,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Product Categories',
     module: 'productcategories',
     description: 'Product category hierarchy',
+    role: 'data',
     columns: [
       { display: 'Category Name', field: 'name', required: true, type: 'string', description: 'Category name' },
       { display: 'Parent Category', field: 'parentCategoryName', required: false, type: 'string', description: 'Parent category name for hierarchy' },
@@ -115,6 +165,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Customers',
     module: 'customers',
     description: 'Customer master data',
+    role: 'data',
     columns: [
       { display: 'Customer Code', field: 'code', required: true, type: 'string', description: 'Unique customer code' },
       { display: 'Customer Name', field: 'name', required: true, type: 'string', description: 'Customer business name' },
@@ -133,6 +184,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Suppliers',
     module: 'suppliers',
     description: 'Supplier and vendor master data',
+    role: 'data',
     columns: [
       { display: 'Supplier Code', field: 'code', required: false, type: 'string', description: 'Unique supplier code' },
       { display: 'Supplier Name', field: 'name', required: true, type: 'string', description: 'Supplier business name' },
@@ -149,6 +201,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Materials',
     module: 'materials',
     description: 'Raw materials and packaging',
+    role: 'data',
     columns: [
       { display: 'Material Code', field: 'code', required: true, type: 'string', description: 'Unique material code' },
       { display: 'Material Name', field: 'name', required: true, type: 'string', description: 'Material description' },
@@ -165,6 +218,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Products',
     module: 'products',
     description: 'Finished goods and sellable products',
+    role: 'data',
     requiresParent: 'productcategories',
     columns: [
       { display: 'SKU', field: 'sku', required: true, type: 'string', description: 'Stock keeping unit code' },
@@ -182,6 +236,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'BOM Recipes',
     module: 'bomrecipes',
     description: 'Bill of materials recipes',
+    role: 'data',
     requiresParent: 'products',
     columns: [
       { display: 'Product SKU', field: 'productSku', required: true, type: 'string', description: 'Product SKU this BOM belongs to' },
@@ -199,6 +254,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Budget',
     module: 'budgetlines',
     description: 'Annual budget data by account, site, cost center',
+    role: 'data',
     columns: [
       { display: 'Budget Cycle', field: 'budgetCycleName', required: true, type: 'string', description: 'Budget cycle name (e.g. FY25 Annual Budget)' },
       { display: 'Fiscal Year', field: 'fiscalYear', required: true, type: 'number', description: 'Fiscal year (e.g. 2025)' },
@@ -219,6 +275,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Forecast',
     module: 'forecastlines',
     description: 'Monthly forecast data',
+    role: 'data',
     columns: [
       { display: 'Forecast Cycle', field: 'forecastCycleName', required: true, type: 'string', description: 'Forecast cycle name (e.g. FY25 Rolling Q1)' },
       { display: 'Fiscal Year', field: 'fiscalYear', required: true, type: 'number', description: 'Fiscal year (e.g. 2025)' },
@@ -240,6 +297,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Actuals',
     module: 'actuallines',
     description: 'Actual transactions and GL entries',
+    role: 'data',
     columns: [
       { display: 'Account', field: 'accountCode', required: true, type: 'string', description: 'Account code or name from Accounts master data' },
       { display: 'Site', field: 'siteCode', required: false, type: 'string', description: 'Site name from Sites master data' },
@@ -256,8 +314,9 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
   },
   {
     sheetName: 'Material Prices',
-    module: 'materialprices',
+    module: 'rawmaterialprices',
     description: 'Raw material price history',
+    role: 'data',
     requiresParent: 'materials',
     columns: [
       { display: 'Material Code', field: 'materialCode', required: true, type: 'string', description: 'Material code' },
@@ -270,6 +329,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Production Planning',
     module: 'productionplans',
     description: 'Production planning by product and period',
+    role: 'data',
     requiresParent: 'products',
     columns: [
       { display: 'Product SKU', field: 'productSku', required: true, type: 'string', description: 'Product SKU' },
@@ -285,6 +345,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'Exchange Rates',
     module: 'exchangerates',
     description: 'Currency exchange rates',
+    role: 'data',
     columns: [
       { display: 'From Currency', field: 'fromCurrency', required: true, type: 'string', description: 'Source currency ISO code (e.g. USD)' },
       { display: 'To Currency', field: 'toCurrency', required: true, type: 'string', description: 'Target currency ISO code (e.g. EGP)' },
@@ -296,6 +357,7 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     sheetName: 'KPI Targets',
     module: 'kpitargets',
     description: 'KPI target values by period',
+    role: 'data',
     columns: [
       { display: 'KPI Name', field: 'kpiName', required: true, type: 'string', description: 'Name of the KPI' },
       { display: 'KPI Category', field: 'kpiCategory', required: false, type: 'string', description: 'KPI category', allowedValues: ['financial', 'operational', 'sales', 'production', 'hr'] },

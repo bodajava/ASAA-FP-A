@@ -277,6 +277,45 @@ export interface WorkbookAnalysis {
   totalRows: number;
 }
 
+/* ─── Sheet Role Classification ──────────────────────────────────────────── */
+
+export type SheetRole = 'data' | 'reference' | 'instruction' | 'ignored';
+
+export interface SheetPreviewEntry {
+  sheetName: string;
+  sheetRole: SheetRole;
+  mappedModule: string;
+  importable: boolean;
+  rowCount: number;
+  validRows: number;
+  errors: SheetPreviewError[];
+  warnings: string[];
+  status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
+}
+
+export interface SheetPreviewError {
+  row: number;
+  column: string;
+  reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+  message: string;
+  value: unknown;
+}
+
+export interface WorkbookPreviewResultV2 {
+  workbookType: string;
+  fileName: string;
+  sheets: SheetPreviewEntry[];
+  summary: {
+    totalWorkbookRows: number;
+    importableRows: number;
+    referenceRows: number;
+    instructionRows: number;
+    validImportableRows: number;
+    invalidImportableRows: number;
+  };
+  warnings: string[];
+}
+
 /* ─── ERP Module Mapping ────────────────────────────────────────────────── */
 
 export interface ErpModuleMapping {

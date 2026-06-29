@@ -32,6 +32,7 @@ const MONTH_MAP: Record<string, number> = {
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
 export type WorkbookType = 'sales_analysis' | 'planning_costing' | 'unknown';
+export type SheetRole = 'data' | 'reference' | 'instruction' | 'ignored';
 
 export interface SheetImportPlan {
   sheetName: string;
@@ -56,6 +57,8 @@ export interface WorkbookImportResult {
   sheetsProcessed: number;
   sheetsImported: number;
   sheetsSkipped: number;
+  sheetsReference: number;
+  sheetsInstruction: number;
   autoCreated: AutoCreatedEntity[];
   totals: {
     products: number;
@@ -79,7 +82,8 @@ export interface WorkbookImportResult {
   errors: string[];
   sheetResults: Array<{
     sheetName: string;
-    status: 'imported' | 'skipped' | 'error';
+    sheetRole: SheetRole;
+    status: 'imported' | 'skipped' | 'error' | 'reference' | 'instruction';
     rowsImported: number;
     message: string;
   }>;
@@ -90,12 +94,32 @@ export interface WorkbookPreviewResult {
   fileName: string;
   sheets: Array<{
     name: string;
+    sheetRole: SheetRole;
     rowCount: number;
     columnCount: number;
     headers: string[];
-    targetModule: string;
+    mappedModule: string;
+    importable: boolean;
+    validRows: number;
+    errors: Array<{
+      row: number;
+      column: string;
+      reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+      message: string;
+      value: unknown;
+    }>;
+    warnings: string[];
+    status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
     sampleRows: Record<string, unknown>[];
   }>;
+  summary: {
+    totalWorkbookRows: number;
+    importableRows: number;
+    referenceRows: number;
+    instructionRows: number;
+    validImportableRows: number;
+    invalidImportableRows: number;
+  };
   autoCreatePlan: string[];
   warnings: string[];
   readyToImport: boolean;
@@ -114,7 +138,6 @@ export class ClientWorkbookImportService {
    * ═══════════════════════════════════════════════════════════════════════ */
 
   async preview(buffer: Buffer, fileName: string): Promise<WorkbookPreviewResult> {
-    // Validate file type from magic bytes
     const typeResult = detectFileType(buffer, fileName);
     if (typeResult.mismatch) {
       throw new FileTypeMismatchError(
@@ -133,17 +156,43 @@ export class ClientWorkbookImportService {
 
     const workbook = XLSX.read(buffer, { type: 'buffer', sheetRows: 20 });
     const workbookType = this.detectWorkbookType(workbook);
-    const sheets = this.previewSheets(workbook);
+    const sheets = this.previewSheetsV2(workbook);
     const autoCreatePlan = this.buildAutoCreatePlan(workbookType, sheets);
-    const warnings = this.buildPreviewWarnings(workbookType, sheets);
+    const warnings = this.buildPreviewWarningsV2(workbookType, sheets);
+
+    let totalWorkbookRows = 0;
+    let importableRows = 0;
+    let referenceRows = 0;
+    let instructionRows = 0;
+    let validImportableRows = 0;
+    let invalidImportableRows = 0;
+
+    for (const s of sheets) {
+      totalWorkbookRows += s.rowCount;
+      if (s.sheetRole === 'reference') referenceRows += s.rowCount;
+      else if (s.sheetRole === 'instruction') instructionRows += s.rowCount;
+      else if (s.importable) {
+        importableRows += s.rowCount;
+        validImportableRows += s.validRows;
+        invalidImportableRows += (s.rowCount - s.validRows);
+      }
+    }
 
     return {
       workbookType,
       fileName,
       sheets,
+      summary: {
+        totalWorkbookRows,
+        importableRows,
+        referenceRows,
+        instructionRows,
+        validImportableRows,
+        invalidImportableRows,
+      },
       autoCreatePlan,
       warnings,
-      readyToImport: workbookType !== 'unknown',
+      readyToImport: workbookType !== 'unknown' && importableRows > 0,
     };
   }
 
@@ -167,6 +216,8 @@ export class ClientWorkbookImportService {
         sheetsProcessed: 0,
         sheetsImported: 0,
         sheetsSkipped: 0,
+        sheetsReference: 0,
+        sheetsInstruction: 0,
         autoCreated: [],
         totals: {
           products: 0, customers: 0, materials: 0, sites: 0, units: 0,
@@ -189,6 +240,8 @@ export class ClientWorkbookImportService {
         sheetsProcessed: 0,
         sheetsImported: 0,
         sheetsSkipped: 0,
+        sheetsReference: 0,
+        sheetsInstruction: 0,
         autoCreated: [],
         totals: {
           products: 0, customers: 0, materials: 0, sites: 0, units: 0,
@@ -213,6 +266,8 @@ export class ClientWorkbookImportService {
         sheetsProcessed: 0,
         sheetsImported: 0,
         sheetsSkipped: 0,
+        sheetsReference: 0,
+        sheetsInstruction: 0,
         autoCreated: [],
         totals: {
           products: 0, customers: 0, materials: 0, sites: 0, units: 0,
@@ -235,6 +290,8 @@ export class ClientWorkbookImportService {
       sheetsProcessed: 0,
       sheetsImported: 0,
       sheetsSkipped: 0,
+      sheetsReference: 0,
+      sheetsInstruction: 0,
       autoCreated: [],
       totals: {
         products: 0, customers: 0, materials: 0, sites: 0, units: 0,
@@ -246,6 +303,37 @@ export class ClientWorkbookImportService {
       errors: [],
       sheetResults: [],
     };
+
+    // Pre-classify all sheets and skip non-data sheets
+    const { classifySheetRole } = require('./client-workbook-schema');
+    for (const name of fullWorkbook.SheetNames) {
+      const { role } = classifySheetRole(name);
+      const ws = fullWorkbook.Sheets[name];
+      const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+
+      if (role === 'instruction') {
+        result.sheetsInstruction++;
+        result.sheetResults.push({
+          sheetName: name,
+          sheetRole: 'instruction',
+          status: 'instruction',
+          rowsImported: 0,
+          message: 'Instructions sheet — skipped during import',
+        });
+        continue;
+      }
+      if (role === 'reference') {
+        result.sheetsReference++;
+        result.sheetResults.push({
+          sheetName: name,
+          sheetRole: 'reference',
+          status: 'reference',
+          rowsImported: 0,
+          message: 'Reference data sheet — skipped during import',
+        });
+        continue;
+      }
+    }
 
     try {
       if (workbookType === 'sales_analysis') {
@@ -309,23 +397,141 @@ export class ClientWorkbookImportService {
    * PREVIEW HELPERS
    * ═══════════════════════════════════════════════════════════════════════ */
 
-  private previewSheets(workbook: XLSX.WorkBook) {
+  private previewSheetsV2(workbook: XLSX.WorkBook) {
+    const { classifySheetRole, REFERENCE_SHEET_NAMES } = require('./client-workbook-schema');
     return workbook.SheetNames.map(name => {
       const ws = workbook.Sheets[name];
       const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
       const headers = rawData.length > 0 ? Object.keys(rawData[0]) : [];
-      const targetModule = this.mapSheetToModule(name, headers);
+      const { role, mappedModule: classifiedModule } = classifySheetRole(name);
+      const mappedModule = role === 'data' ? this.mapSheetToModuleV2(name, headers) : '';
+      const importable = role === 'data' && mappedModule !== 'unknown' && mappedModule !== '';
       const sampleRows = rawData.slice(0, 3);
+
+      const errors: Array<{
+        row: number; column: string;
+        reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+        message: string; value: unknown;
+      }> = [];
+      const warnings: string[] = [];
+
+      if (role === 'data' && mappedModule === 'unknown') {
+        errors.push({
+          row: 0,
+          column: '',
+          reason: 'unsupported_sheet',
+          message: `Sheet "${name}" has no matching ERP module. This sheet requires implementation.`,
+          value: name,
+        });
+      }
+
+      if (role === 'data' && mappedModule === 'needs_implementation') {
+        errors.push({
+          row: 0,
+          column: '',
+          reason: 'unsupported_sheet',
+          message: `Sheet "${name}" maps to a module that is not yet implemented. Supported later.`,
+          value: name,
+        });
+      }
+
+      let status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
+      if (role === 'instruction') status = 'instruction';
+      else if (role === 'reference') status = 'reference';
+      else if (role === 'ignored') status = 'ignored';
+      else if (mappedModule === 'unknown') status = 'unsupported';
+      else if (mappedModule === 'needs_implementation') status = 'needs_mapping';
+      else status = 'ready';
 
       return {
         name,
+        sheetRole: role,
         rowCount: rawData.length,
         columnCount: headers.length,
         headers,
-        targetModule,
+        mappedModule,
+        importable,
+        validRows: status === 'ready' ? rawData.length : 0,
+        errors,
+        warnings,
+        status,
         sampleRows,
       };
     });
+  }
+
+  private mapSheetToModuleV2(sheetName: string, headers: string[]): string {
+    const sn = sheetName.toLowerCase().replace(/[_\s-]+/g, '');
+    const hUpper = headers.map(h => h.toUpperCase().trim());
+
+    // Master data sheets
+    if (sn === 'companies') return 'companies';
+    if (sn === 'sites') return 'sites';
+    if (sn === 'units') return 'units';
+    if (sn === 'accounts') return 'accounts';
+    if (sn === 'costcenters' || sn === 'costcenters') return 'costcenters';
+    if (sn === 'productcategories' || sn === 'productcategories' || sn === 'categories') return 'productcategories';
+    if (sn === 'customers') return 'customers';
+    if (sn === 'suppliers') return 'suppliers';
+    if (sn === 'materials') return 'materials';
+    if (sn === 'products') return 'products';
+
+    // BOM
+    if (sn === 'bomrecipes' || sn === 'bomrecipes' || sn.includes('bomrecipe') || sn.includes('bomrecipe')) return 'bomrecipes';
+    if (sn.includes('bomline') || sn.includes('bomline')) return 'bomlines';
+
+    // Budget
+    if (sn === 'budget' || sn === 'budgetlines') return 'budgetlines';
+
+    // Forecast Qty → forecastlines
+    if (sn.includes('forcasteqty') || sn.includes('forecasteqty') || sn.includes('forcasteqty') || sn.includes('forecasteqty') ||
+        (hUpper.includes('ORG.') && hUpper.includes('CODE-') && hUpper.some(h => /jan|feb|mar|apr/i.test(h)))) return 'forecastlines';
+
+    // Actual Sales → actuallines
+    if (hUpper.includes('PERIOD') && hUpper.includes('ITEM_CODE') && hUpper.includes('TOTAL_QTY')) return 'actuallines';
+
+    // Drill Down → bomrecipes
+    if (sn.includes('drilldown') || (hUpper.includes('PRD NO') && hUpper.includes('ING NO'))) return 'bomrecipes';
+
+    // Material Prices → rawmaterialprices
+    if (sn.includes('materialprice') || sn.includes('materialprice') || sn.includes('hrvmprice') || sn.includes('hrvm.price') ||
+        sn.includes('hrvmprice') || sn.includes('hrvm') || (hUpper.some(h => h.includes('كود')))) return 'rawmaterialprices';
+
+    // Discounts → promotions
+    if (sn.includes('discount') || hUpper.some(h => h.includes('LINE DISCOUNT'))) return 'promotions';
+
+    // Price List → productprices (needs implementation if module doesn't exist)
+    if ((sn.includes('pricelist') || sn.includes('pricelist')) && !sn.includes('pricelist(2)') && !sn.includes('pricelist2')) return 'productprices';
+    if (sn.includes('pricelist2') || sn.includes('pricelist(2)') || sn.includes('pricelist(2)')) return 'productprices';
+
+    // Weight per Carton → products (packaging metadata)
+    if (sn.includes('weightpercarton') || sn.includes('weightpercton') || sn.includes('weightpercarton')) return 'products';
+
+    // HRV Rates → costdrivers (production cost rates)
+    if (sn.includes('hvrrates') || sn.includes('hrvrates') || sn.includes('hvrrate') || sn.includes('hrvrate')) return 'costdrivers';
+
+    // Bawadi Rates → costdrivers (production cost rates)
+    if (sn.includes('bawadirats') || sn.includes('bawadirates') || sn.includes('bawadirate') || sn.includes('bawadirate')) return 'costdrivers';
+
+    // S&M G&A → productioncostallocations (needs implementation if module doesn't exist)
+    if (sn.includes('s&mg&a') || sn.includes('smg&a') || sn.includes('s&mg&a') || sn.includes('smg&a')) return 'productioncostallocations';
+
+    // Production Planning → productionplans
+    if (sn.includes('productionplan') || sn.includes('productionplan') || sn.includes('productionplanning') || sn.includes('productionplanning')) return 'productionplans';
+
+    // Exchange Rates → exchangerates
+    if (sn === 'exchangerates' || sn === 'exchangerates' || sn.includes('exchangerate') || sn.includes('exchangerate')) return 'exchangerates';
+
+    // KPI Targets → kpitargets
+    if (sn === 'kpitargets' || sn === 'kpitargets' || sn.includes('kpitarget') || sn.includes('kpitarget')) return 'kpitargets';
+
+    // P&L → actuallines
+    if (sn === 'p&l' || sn.includes('p&l')) return 'actuallines';
+
+    // Data sheet (generic) → products
+    if (sn === 'data') return 'products';
+
+    return 'unknown';
   }
 
   mapSheetToModule(sheetName: string, headers: string[]): string {
@@ -350,7 +556,7 @@ export class ClientWorkbookImportService {
     return 'unknown';
   }
 
-  private buildAutoCreatePlan(workbookType: WorkbookType, sheets: ReturnType<typeof this.previewSheets>): string[] {
+  private buildAutoCreatePlan(workbookType: WorkbookType, sheets: ReturnType<typeof this.previewSheetsV2>): string[] {
     const plan: string[] = [];
 
     if (workbookType === 'sales_analysis') {
@@ -380,26 +586,28 @@ export class ClientWorkbookImportService {
     return plan;
   }
 
-  private buildPreviewWarnings(workbookType: WorkbookType, sheets: ReturnType<typeof this.previewSheets>): string[] {
+  private buildPreviewWarningsV2(workbookType: WorkbookType, sheets: ReturnType<typeof this.previewSheetsV2>): string[] {
     const warnings: string[] = [];
 
     if (workbookType === 'unknown') {
       warnings.push('Could not automatically detect workbook type. Import may not work correctly.');
     }
 
-    let totalDataRows = 0;
+    let totalImportableRows = 0;
+    let unsupportedCount = 0;
     for (const sheet of sheets) {
-      totalDataRows += sheet.rowCount;
-      if (sheet.rowCount === 0) {
-        warnings.push(`Sheet "${sheet.name}" has no data rows.`);
+      if (sheet.importable) totalImportableRows += sheet.rowCount;
+      if (sheet.sheetRole === 'data' && sheet.mappedModule === 'unknown') {
+        unsupportedCount++;
+        warnings.push(`Sheet "${sheet.name}" → unsupported (no matching ERP module). Requires implementation.`);
       }
-      if (sheet.targetModule === 'unknown') {
-        warnings.push(`Sheet "${sheet.name}" will be skipped (no matching ERP module).`);
+      if (sheet.sheetRole === 'data' && sheet.mappedModule === 'needs_implementation') {
+        unsupportedCount++;
+        warnings.push(`Sheet "${sheet.name}" → needs implementation in target module. Supported later.`);
       }
     }
 
-    // Detect empty template: all sheets have 0 rows or only header rows
-    if (totalDataRows === 0) {
+    if (totalImportableRows === 0 && unsupportedCount === 0) {
       warnings.push(
         'This workbook contains no importable data rows. ' +
         'Fill the Data sheets first, then upload again.',
@@ -438,7 +646,7 @@ export class ClientWorkbookImportService {
     result.sheetsProcessed++;
 
     if (rows.length === 0) {
-      result.sheetResults.push({ sheetName, status: 'skipped', rowsImported: 0, message: 'No data rows' });
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data rows' });
       return;
     }
 
@@ -618,7 +826,7 @@ export class ClientWorkbookImportService {
       }
 
       result.sheetResults.push({
-        sheetName,
+        sheetName, sheetRole: 'data',
         status: 'imported',
         rowsImported: imported,
         message: `Imported ${imported} sales transactions`,
@@ -875,7 +1083,7 @@ export class ClientWorkbookImportService {
 
     // Row 1 (index 1) has headers: Org., Type, Code-, Item Desc, Jan-26...Dec-26
     if (rows.length < 2) {
-      result.sheetResults.push({ sheetName, status: 'skipped', rowsImported: 0, message: 'No data' });
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data' });
       return;
     }
 
@@ -889,7 +1097,7 @@ export class ClientWorkbookImportService {
     }
 
     if (monthHeaders.length === 0) {
-      result.sheetResults.push({ sheetName, status: 'skipped', rowsImported: 0, message: 'No month columns found' });
+      result.sheetResults.push({ sheetName, sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No month columns found' });
       return;
     }
 
@@ -936,7 +1144,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName, status: imported > 0 ? 'imported' : 'skipped',
+      sheetName, sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Imported ${imported} forecast lines`,
     });
     if (imported > 0) result.sheetsImported++;
@@ -959,7 +1167,7 @@ export class ClientWorkbookImportService {
     result.sheetsProcessed++;
 
     if (rows.length < 4) {
-      result.sheetResults.push({ sheetName: 'Drill Down', status: 'skipped', rowsImported: 0, message: 'No data rows' });
+      result.sheetResults.push({ sheetName: 'Drill Down', sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'No data rows' });
       return;
     }
 
@@ -1058,7 +1266,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName: 'Drill Down', status: imported > 0 ? 'imported' : 'skipped',
+      sheetName: 'Drill Down', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Imported ${result.totals.bomRecipes} BOM recipes with ${imported} material lines`,
     });
     if (imported > 0) result.sheetsImported++;
@@ -1080,7 +1288,7 @@ export class ClientWorkbookImportService {
     result.sheetsProcessed++;
 
     if (rows.length < 3) {
-      result.sheetResults.push({ sheetName: 'HRV M.Price', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
+      result.sheetResults.push({ sheetName: 'HRV M.Price', sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
       return;
     }
 
@@ -1141,7 +1349,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName: 'HRV M.Price', status: imported > 0 ? 'imported' : 'skipped',
+      sheetName: 'HRV M.Price', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Imported ${imported} material price entries`,
     });
     if (imported > 0) result.sheetsImported++;
@@ -1164,7 +1372,7 @@ export class ClientWorkbookImportService {
 
     // Row 3 has headers: Item Code, Description, Type, Main Price List, Jan-26...Dec-26
     if (rows.length < 5) {
-      result.sheetResults.push({ sheetName: 'Price list (2)', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
+      result.sheetResults.push({ sheetName: 'Price list (2)', sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
       return;
     }
 
@@ -1209,7 +1417,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName: 'Price list (2)', status: imported > 0 ? 'imported' : 'skipped',
+      sheetName: 'Price list (2)', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Processed ${imported} price list entries`,
     });
     if (imported > 0) result.sheetsImported++;
@@ -1232,7 +1440,7 @@ export class ClientWorkbookImportService {
 
     // Row 4 has headers: Code-, Item Desc, Line Discount, Invoice Discount, Indirect Discount per month
     if (rows.length < 5) {
-      result.sheetResults.push({ sheetName: 'Discount', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
+      result.sheetResults.push({ sheetName: 'Discount', sheetRole: 'data', status: 'skipped', rowsImported: 0, message: 'Insufficient data' });
       return;
     }
 
@@ -1270,7 +1478,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName: 'Discount', status: imported > 0 ? 'imported' : 'skipped',
+      sheetName: 'Discount', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Processed ${imported} discount entries`,
     });
     if (imported > 0) result.sheetsImported++;
@@ -1307,7 +1515,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName: 'Weight per carton', status: imported > 0 ? 'imported' : 'skipped',
+      sheetName: 'Weight per carton', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Updated ${imported} product weights`,
     });
     if (imported > 0) result.sheetsImported++;
@@ -1342,7 +1550,7 @@ export class ClientWorkbookImportService {
       }
 
       result.sheetResults.push({
-        sheetName: 'HRV Rates', status: imported > 0 ? 'imported' : 'skipped',
+        sheetName: 'HRV Rates', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
         rowsImported: imported, message: `Processed ${imported} rate entries`,
       });
       if (imported > 0) result.sheetsImported++;
@@ -1364,7 +1572,7 @@ export class ClientWorkbookImportService {
       }
 
       result.sheetResults.push({
-        sheetName: 'Bawadi Rats', status: imported > 0 ? 'imported' : 'skipped',
+        sheetName: 'Bawadi Rats', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
         rowsImported: imported, message: `Processed ${imported} Bawadi rate entries`,
       });
       if (imported > 0) result.sheetsImported++;
@@ -1400,7 +1608,7 @@ export class ClientWorkbookImportService {
     }
 
     result.sheetResults.push({
-      sheetName: 'S&M G&A', status: imported > 0 ? 'imported' : 'skipped',
+      sheetName: 'S&M G&A', sheetRole: 'data', status: imported > 0 ? 'imported' : 'skipped',
       rowsImported: imported, message: `Processed ${imported} G&A allocation entries`,
     });
     if (imported > 0) result.sheetsImported++;

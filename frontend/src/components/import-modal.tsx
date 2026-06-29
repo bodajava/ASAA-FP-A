@@ -63,31 +63,51 @@ export interface ImportErrorResponse {
   actions: string[];
 }
 
+export type SheetRole = 'data' | 'reference' | 'instruction' | 'ignored';
+
+export interface SheetPreviewError {
+  row: number;
+  column: string;
+  reason: 'missing_required' | 'invalid_enum' | 'missing_dependency' | 'unsupported_sheet' | 'database_insert_error' | 'duplicate' | 'validation_error';
+  message: string;
+  value: unknown;
+}
+
 export interface ClientWorkbookSheetPreview {
-  sheetName: string;
-  type: string;
+  name: string;
+  sheetRole: SheetRole;
   rowCount: number;
-  columns: string[];
+  columnCount: number;
+  headers: string[];
+  mappedModule: string;
+  importable: boolean;
+  validRows: number;
+  errors: SheetPreviewError[];
+  warnings: string[];
+  status: 'ready' | 'needs_mapping' | 'unsupported' | 'reference' | 'instruction' | 'ignored';
+  sampleRows: Record<string, unknown>[];
 }
 
 export interface ClientWorkbookPreview {
   workbookType: 'sales_analysis' | 'planning_costing' | 'unknown';
   fileName: string;
   sheets: ClientWorkbookSheetPreview[];
-  autoCreatePlan: {
-    units: string[];
-    sites: string[];
-    categories: string[];
-    products: string[];
-    materials: string[];
-    costCenters: string[];
+  summary: {
+    totalWorkbookRows: number;
+    importableRows: number;
+    referenceRows: number;
+    instructionRows: number;
+    validImportableRows: number;
+    invalidImportableRows: number;
   };
+  autoCreatePlan: string[];
   warnings: string[];
   readyToImport: boolean;
 }
 
 export interface ClientWorkbookSheetResult {
   sheetName: string;
+  sheetRole: SheetRole;
   status: string;
   rowsImported: number;
   message: string;
@@ -100,6 +120,8 @@ export interface ClientWorkbookImportResult {
   sheetsProcessed: number;
   sheetsImported: number;
   sheetsSkipped: number;
+  sheetsReference: number;
+  sheetsInstruction: number;
   autoCreated: Array<{ type: string; code: string; name: string; created: boolean }>;
   totals: Record<string, number>;
   sheetResults: ClientWorkbookSheetResult[];
@@ -1078,8 +1100,27 @@ export function ImportModal({
                       {clientWorkbookResult.success ? 'Import Complete' : 'Import Failed'}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {clientWorkbookResult.sheetsProcessed} sheet(s) processed, {clientWorkbookResult.sheetsImported} imported, {clientWorkbookResult.sheetsSkipped} skipped
+                      {clientWorkbookResult.sheetsImported} sheet(s) imported · {clientWorkbookResult.sheetsReference ?? 0} reference sheet(s) skipped · {clientWorkbookResult.sheetsInstruction ?? 0} instruction sheet(s) skipped · {clientWorkbookResult.sheetsSkipped} data sheet(s) with no rows
                     </p>
+                  </div>
+                </div>
+                {/* Stats */}
+                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
+                    <p className="text-lg font-bold text-emerald-600">{clientWorkbookResult.sheetsImported}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Inserted</p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
+                    <p className="text-lg font-bold text-muted-foreground">{clientWorkbookResult.sheetsReference ?? 0}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Reference Skipped</p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
+                    <p className="text-lg font-bold text-muted-foreground">{clientWorkbookResult.sheetsInstruction ?? 0}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Instruction Skipped</p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
+                    <p className="text-lg font-bold text-amber-600">{clientWorkbookResult.sheetsSkipped}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">No Data Skipped</p>
                   </div>
                 </div>
               </div>
@@ -1103,25 +1144,51 @@ export function ImportModal({
               )}
 
               {/* Sheet Results */}
-              <div className="rounded-xl border border-border bg-card p-4">
-                <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3">
-                  Sheet Results
-                </h4>
-                <div className="space-y-1.5">
-                  {clientWorkbookResult.sheetResults.map((sr, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs rounded-lg bg-secondary/50 px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        {sr.status === 'imported' ? (
-                          <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
-                        ) : (
-                          <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
-                        )}
-                        <span className="font-medium text-card-foreground">{sr.sheetName}</span>
-                      </div>
-                      <span className="text-muted-foreground">{sr.message}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-secondary/50 border-b border-border">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Sheet Name</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Role</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Status</th>
+                      <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">Rows</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {clientWorkbookResult.sheetResults.map((sr, idx) => (
+                      <tr key={idx} className="hover:bg-secondary/50">
+                        <td className="px-4 py-2.5 font-medium text-card-foreground">{sr.sheetName}</td>
+                        <td className="px-4 py-2.5">
+                          {sr.sheetRole === 'data' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Data Sheet</span>
+                          ) : sr.sheetRole === 'reference' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">Reference Sheet</span>
+                          ) : sr.sheetRole === 'instruction' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Instructions</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500">Ignored</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {sr.status === 'imported' ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                              <CheckCircle className="h-3 w-3" /> Imported
+                            </span>
+                          ) : sr.status === 'reference' || sr.status === 'instruction' ? (
+                            <span className="inline-flex items-center gap-1 text-muted-foreground">
+                              Skipped
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                              <AlertCircle className="h-3 w-3" /> {sr.status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{sr.rowsImported}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* Warnings */}

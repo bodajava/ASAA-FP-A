@@ -10,17 +10,26 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'name',
       'companyname',
       'legalname',
-      'companyname',
       'tradingas',
       'company_name',
       'company name',
+      'company',
+      'entity',
+      'entityname',
+      'entity_name',
+      'organisationname',
+      'organisation_name',
+      'organizationname',
+      'organization_name',
     ],
     legalName: [
       'legalname',
       'legal_name',
       'legal name',
       'registeredname',
+      'registered_name',
       'officialname',
+      'official_name',
     ],
     industryType: [
       'industrytype',
@@ -35,15 +44,19 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'fiscal year start month',
       'fystartmonth',
       'startmonth',
+      'fystart',
     ],
     taxNumber: [
       'taxnumber',
       'tax_number',
       'tax number',
       'vatnumber',
-      'vatnumber',
+      'vat_number',
       'tin',
       'crnumber',
+      'cr_number',
+      'commercialregister',
+      'commercial_registration',
     ],
     currencyCode: [
       'currencycode',
@@ -54,9 +67,9 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
   },
   sites: {
-    name: ['name', 'sitename', 'site_name', 'site name', 'location', 'org'],
+    name: ['name', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization', 'organisation'],
     type: ['type', 'sitetype', 'site_type', 'site type'],
-    address: ['address', 'location', 'street', 'cityaddress'],
+    address: ['address', 'location', 'street', 'cityaddress', 'address1'],
     status: ['status', 'sitestatus', 'site_status'],
     companyId: [
       'companycode',
@@ -64,24 +77,27 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
-    region: ['region', 'area', 'district'],
-    city: ['city', 'town'],
+    region: ['region', 'area', 'district', 'zone'],
+    city: ['city', 'town', 'municipality'],
     country: ['country', 'nation'],
-    phone: ['phone', 'telephone', 'tel', 'mobile'],
+    phone: ['phone', 'telephone', 'tel', 'mobile', 'phone1'],
   },
   units: {
-    name: ['name', 'unitname', 'unit_name', 'unit name', 'uomname'],
+    name: ['name', 'unitname', 'unit_name', 'unit name', 'unit', 'uomname', 'uom name', 'uom_name'],
     symbol: [
       'symbol',
       'code',
       'uom',
-      'unit',
       'unitsymbol',
       'unit_symbol',
       'unit symbol',
       'uomcode',
+      'uom_code',
       'measure',
+      'abbreviation',
+      'abbr',
     ],
     type: ['type', 'unittype', 'unit_type', 'uomtype'],
     companyId: [
@@ -90,6 +106,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
   },
   accounts: {
@@ -99,17 +116,20 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'account_code',
       'account code',
       'glcode',
+      'gl_code',
       'accountnumber',
+      'account_number',
       'gl_number',
       'glno',
     ],
-    name: ['name', 'accountname', 'account_name', 'account name', 'title'],
+    name: ['name', 'accountname', 'account_name', 'account name', 'title', 'account'],
     type: [
       'type',
       'accounttype',
       'account_type',
       'account type',
       'classification',
+      'accountcategory',
     ],
     isActive: ['isactive', 'is_active', 'active', 'status'],
     companyId: [
@@ -118,8 +138,9 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
-    parentCode: ['parentcode', 'parent_code', 'parent code', 'parent'],
+    parentCode: ['parentcode', 'parent_code', 'parent code', 'parent', 'parentaccount'],
   },
   costcenters: {
     code: [
@@ -136,6 +157,11 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'cost_center_name',
       'cost center name',
       'ccname',
+      'costcenter',
+      'costcenter',
+      'department',
+      'departmentname',
+      'department_name',
     ],
     type: ['type', 'costcentertype', 'cost_center_type'],
     siteId: ['sitecode', 'sitename', 'site_code', 'site_name', 'site'],
@@ -145,10 +171,11 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
   },
   productcategories: {
-    name: ['name', 'categoryname', 'category_name', 'category name', 'catname'],
+    name: ['name', 'categoryname', 'category_name', 'category name', 'category', 'catname', 'productcategory', 'product_category'],
     code: ['code', 'categorycode', 'category_code', 'category code', 'catcode'],
     companyId: [
       'companycode',
@@ -156,12 +183,14 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
     parentCategoryName: [
       'parentcategoryname',
       'parent_category_name',
       'parent category',
       'parentname',
+      'parent',
     ],
   },
   customers: {
@@ -171,9 +200,13 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'customer_code',
       'customer code',
       'clientcode',
+      'client_code',
       'customerid',
       'customernumber',
       'customer_number',
+      'customer no',
+      'customer_no',
+      'accountnumber',
     ],
     name: [
       'name',
@@ -181,6 +214,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'customer_name',
       'customer name',
       'clientname',
+      'client_name',
       'company',
     ],
     customerType: [
@@ -190,8 +224,8 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'type',
       'segment',
     ],
-    phone: ['phone', 'telephone', 'tel', 'mobile', 'phone1'],
-    email: ['email', 'e-mail', 'mail'],
+    phone: ['phone', 'telephone', 'tel', 'mobile', 'phone1', 'phone2'],
+    email: ['email', 'e-mail', 'mail', 'emailaddress'],
     creditLimit: [
       'creditlimit',
       'credit_limit',
@@ -205,6 +239,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'payment terms',
       'terms',
       'paymentdays',
+      'paymentdays',
     ],
     isActive: ['isactive', 'is_active', 'active', 'status'],
     companyId: [
@@ -213,6 +248,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
     region: ['region', 'area', 'city'],
     country: ['country', 'nation'],
@@ -225,6 +261,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'supplier_code',
       'supplier code',
       'vendorcode',
+      'vendor_code',
       'supplierid',
     ],
     name: [
@@ -233,6 +270,8 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'supplier_name',
       'supplier name',
       'vendorname',
+      'vendor_name',
+      'vendor',
       'company',
     ],
     phone: ['phone', 'telephone', 'tel', 'mobile'],
@@ -243,10 +282,11 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
     country: ['country', 'nation'],
     city: ['city', 'town'],
-    supplierType: ['suppliertype', 'supplier_type', 'type'],
+    supplierType: ['suppliertype', 'supplier_type', 'type', 'vendortype'],
     isActive: ['isactive', 'is_active', 'active', 'status'],
     leadTimeDays: ['leadtimedays', 'lead_time_days', 'lead time'],
   },
@@ -257,8 +297,11 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'material_code',
       'material code',
       'rmcode',
+      'rm_code',
       'rawmaterialcode',
+      'raw_material_code',
       'itemcode',
+      'item_code',
       'ingno',
       'ing no',
       'ing_no',
@@ -269,11 +312,13 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'material_name',
       'material name',
       'materialdesc',
+      'material_desc',
       'ingdesc',
       'ing desc',
       'ing_desc',
       'description',
       'itemdesc',
+      'item_desc',
     ],
     materialType: [
       'materialtype',
@@ -310,6 +355,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'cost',
       'unitcost',
       'costperkg',
+      'cost_per_kg',
     ],
     companyId: [
       'companycode',
@@ -317,12 +363,14 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
     safetyStockQty: [
       'safetystockqty',
       'safety_stock_qty',
       'minstock',
       'minimumstock',
+      'minstockqty',
     ],
     isActive: ['isactive', 'is_active', 'active', 'status'],
     reorderPoint: ['reorderpoint', 'reorder_point', 'reorder point'],
@@ -334,12 +382,16 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'product_sku',
       'product sku',
       'itemcode',
+      'item_code',
       'productcode',
+      'product_code',
       'barcode',
       'code',
       'prdno',
       'prd no',
       'prd_no',
+      'fgcode',
+      'fg_code',
     ],
     name: [
       'name',
@@ -347,10 +399,12 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'product_name',
       'product name',
       'itemdesc',
+      'item_desc',
       'description',
       'prddesc',
       'prd desc',
       'prd_desc',
+      'product',
     ],
     productType: [
       'producttype',
@@ -362,11 +416,13 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     categoryId: [
       'categoryname',
       'categorycode',
+      'category_code',
       'category_name',
       'category',
       'catname',
       'major',
       'maincategory',
+      'main_category',
     ],
     unitId: [
       'unit',
@@ -378,7 +434,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'prd uom',
       'prd_uom',
     ],
-    standardCost: ['standardcost', 'standard_cost', 'standard cost', 'stdcost'],
+    standardCost: ['standardcost', 'standard_cost', 'standard cost', 'stdcost', 'std_cost'],
     salePrice: [
       'saleprice',
       'sale_price',
@@ -387,6 +443,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'sellingprice',
       'selling_price',
       'unitprice',
+      'unit_price',
     ],
     companyId: [
       'companycode',
@@ -394,6 +451,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'company_code',
       'company_name',
       'companyid',
+      'company',
     ],
     isActive: ['isactive', 'is_active', 'active', 'status'],
   },
@@ -409,7 +467,6 @@ export const MODEL_FIELD_WHITELIST: Record<string, string[]> = {
     'currencyCode',
     'fiscalYearStartMonth',
     'taxNumber',
-    'companyId',
   ],
   site: [
     'name',
@@ -445,11 +502,6 @@ export const MODEL_FIELD_WHITELIST: Record<string, string[]> = {
     'phone',
     'email',
     'companyId',
-    'country',
-    'city',
-    'supplierType',
-    'isActive',
-    'leadTimeDays',
   ],
   material: [
     'code',
@@ -461,7 +513,6 @@ export const MODEL_FIELD_WHITELIST: Record<string, string[]> = {
     'companyId',
     'safetyStockQty',
     'isActive',
-    'reorderPoint',
   ],
   product: [
     'sku',
@@ -625,6 +676,8 @@ export function normalizeHeaderToField(
     .trim();
   const aliases = MODULE_COLUMN_ALIASES[module];
   if (!aliases) return null;
+
+  // First pass: exact alias match
   for (const [field, fieldAliases] of Object.entries(aliases)) {
     if (
       fieldAliases.some(
@@ -634,7 +687,86 @@ export function normalizeHeaderToField(
       return field;
     }
   }
+
+  // Second pass: if header contains "name" or "code" as a word, try fuzzy matching
+  const headerLower = header.toLowerCase().trim();
+  if (/\bname\b/.test(headerLower)) {
+    if (aliases['name']) return 'name';
+  }
+  if (/\bcode\b/.test(headerLower)) {
+    if (aliases['code']) return 'code';
+  }
+  if (/\bdescription\b/.test(headerLower) || /\bdesc\b/.test(headerLower)) {
+    if (aliases['name']) return 'name';
+  }
+  if (/\bsku\b/.test(headerLower)) {
+    if (aliases['sku']) return 'sku';
+  }
+  if (/\btype\b/.test(headerLower)) {
+    if (aliases['type']) return 'type';
+  }
+  if (/\bphone\b/.test(headerLower) || /\btel\b/.test(headerLower)) {
+    if (aliases['phone']) return 'phone';
+  }
+  if (/\bemail\b/.test(headerLower) || /\bmail\b/.test(headerLower)) {
+    if (aliases['email']) return 'email';
+  }
+  if (/\bdate\b/.test(headerLower)) {
+    if (aliases['date']) return 'date';
+  }
+  if (/\baddress\b/.test(headerLower)) {
+    if (aliases['address']) return 'address';
+  }
+  if (/\bstatus\b/.test(headerLower) || /\bactive\b/.test(headerLower)) {
+    if (aliases['isActive']) return 'isActive';
+  }
+  if (/\bprice\b/.test(headerLower) || /\bcost\b/.test(headerLower)) {
+    if (aliases['purchasePrice']) return 'purchasePrice';
+    if (aliases['salePrice']) return 'salePrice';
+    if (aliases['standardCost']) return 'standardCost';
+    if (aliases['price']) return 'price';
+  }
+  if (/\bcurrency\b/.test(headerLower)) {
+    if (aliases['currencyCode']) return 'currencyCode';
+  }
+  if (/\bcountry\b/.test(headerLower)) {
+    if (aliases['country']) return 'country';
+  }
+  if (/\bcity\b/.test(headerLower) || /\btown\b/.test(headerLower)) {
+    if (aliases['city']) return 'city';
+  }
+  if (/\bregion\b/.test(headerLower) || /\bdistrict\b/.test(headerLower)) {
+    if (aliases['region']) return 'region';
+  }
+  if (/\buom\b/.test(headerLower) || /\bunit\b/.test(headerLower)) {
+    if (aliases['symbol']) return 'symbol';
+    if (aliases['unitId']) return 'unitId';
+  }
+
   return null;
+}
+
+export function findOriginalRowValue(
+  row: Record<string, unknown>,
+  ...possibleKeys: string[]
+): unknown {
+  for (const key of possibleKeys) {
+    if (row[key] !== null && row[key] !== undefined && row[key] !== '') {
+      return row[key];
+    }
+  }
+  // Case-insensitive search as last resort
+  const lowerMap = new Map<string, unknown>();
+  for (const k of Object.keys(row)) {
+    lowerMap.set(k.toLowerCase().replace(/[\s_-]+/g, ''), row[k]);
+  }
+  for (const key of possibleKeys) {
+    const normalized = key.toLowerCase().replace(/[\s_-]+/g, '');
+    if (lowerMap.has(normalized)) {
+      return lowerMap.get(normalized);
+    }
+  }
+  return undefined;
 }
 
 /* ─── Map Row Data Using Aliases ───────────────────────────────────── */

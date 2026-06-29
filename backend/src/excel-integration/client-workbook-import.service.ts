@@ -18,6 +18,7 @@ import {
   getModuleTitle,
   inferAccountType,
   normalizeHeaderToField,
+  findOriginalRowValue,
   MODULE_COLUMN_ALIASES,
 } from './import-utils';
 
@@ -1417,6 +1418,29 @@ export class ClientWorkbookImportService {
       // Whitelist fields
       const clean = whitelistFields(coerced, modelName);
 
+      // Handle Company module specially: update existing, don't create new
+      if (module === 'companies') {
+        if (Object.keys(clean).length === 0) continue;
+        try {
+          await this.prisma.company.update({
+            where: { id: companyId },
+            data: clean,
+          });
+          imported++;
+          result.totals[module] = (result.totals[module] || 0) + 1;
+          continue;
+        } catch (err: any) {
+          const { friendly } = normalizeImportError(err, {
+            module,
+            row: rowNum,
+            sheet: sheetName,
+          });
+          errors.push(`Row ${rowNum}: ${friendly}`);
+          failed++;
+          continue;
+        }
+      }
+
       // Skip rows with no meaningful data
       const relevantKeys = Object.keys(clean).filter((k) => k !== 'companyId');
       if (relevantKeys.length === 0) continue;
@@ -1434,11 +1458,43 @@ export class ClientWorkbookImportService {
       }
       if (module === 'customers' && !clean.code) {
         clean.code = String(
-          row.customerCode || row.customerName || `CUST-${rowNum}`,
+          (typeof findOriginalRowValue(
+            row,
+            'Customer Code',
+            'customer_code',
+            'customerCode',
+            'Code',
+            'CODE',
+            'code',
+            'Customer No',
+            'customer_no',
+            'Customer Number',
+            'customer_number',
+            'Client Code',
+            'client_code',
+            'Account Number',
+            'account_number',
+          ) as string) || `CUST-${rowNum}`,
         );
       }
       if (module === 'suppliers' && !clean.name) {
-        clean.name = row.supplierName || `Supplier ${rowNum}`;
+        clean.name = String(
+          (typeof findOriginalRowValue(
+            row,
+            'Supplier Name',
+            'supplier_name',
+            'supplierName',
+            'Name',
+            'NAME',
+            'name',
+            'Vendor Name',
+            'vendor_name',
+            'vendorName',
+            'Supplier',
+            'VENDOR',
+            'Company',
+          ) as string) || `Supplier ${rowNum}`,
+        );
       }
 
       try {

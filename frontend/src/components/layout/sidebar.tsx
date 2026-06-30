@@ -82,7 +82,6 @@ const NAV: NavGroup[] = [
   {
     tKey: 'nav.excelImports',
     items: [
-      { tKey: 'nav.excelIntegration', href: '/excel-integration', icon: FileText },
       { tKey: 'nav.actualImports', href: '/actuals', icon: ClipboardList },
       { tKey: 'nav.exchangeRates', href: '/exchange-rates', icon: RefreshCw },
     ],

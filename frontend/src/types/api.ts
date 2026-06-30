@@ -487,6 +487,13 @@ export interface BudgetLine {
   notes: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  account?: {
+    id: string;
+    code: string;
+    name: string;
+    type: string;
+    parentId: string | null;
+  } | null;
 }
 
 export interface BudgetCycle {
@@ -557,6 +564,13 @@ export interface ForecastLine {
   notes: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  account?: {
+    id: string;
+    code: string;
+    name: string;
+    type: string;
+    parentId: string | null;
+  } | null;
 }
 
 export interface ForecastCycle {

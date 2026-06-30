@@ -38,6 +38,7 @@ import type {
   BudgetCycle,
   BudgetLine,
   Account,
+  AccountType,
   Site,
   CostCenter,
   Product,
@@ -64,6 +65,8 @@ interface AccountNode {
 
 function buildAccountTree(accounts: Account[], lines: BudgetLine[]): AccountNode[] {
   const accountMap = new Map<string, AccountNode>();
+
+  // Seed from fetched accounts
   accounts.forEach((acc) => {
     accountMap.set(acc.id, {
       account: acc,
@@ -76,12 +79,37 @@ function buildAccountTree(accounts: Account[], lines: BudgetLine[]): AccountNode
     });
   });
 
+  // Backfill any accounts referenced by lines but not in the accounts state
+  lines.forEach((line) => {
+    if (!accountMap.has(line.accountId) && line.account) {
+      const acc: Account = {
+        id: line.account.id,
+        code: line.account.code,
+        name: line.account.name,
+        accountType: line.account.type as AccountType,
+        parentId: line.account.parentId ?? undefined,
+        companyId: '',
+        tenantId: '',
+        createdAt: '',
+        updatedAt: '',
+      };
+      accountMap.set(line.accountId, {
+        account: acc,
+        children: [],
+        lines: lines.filter((l) => l.accountId === line.accountId),
+        directTotal: lines
+          .filter((l) => l.accountId === line.accountId)
+          .reduce((sum, l) => sum + Number(l.amount), 0),
+        rolledUpTotal: 0,
+      });
+    }
+  });
+
   const roots: AccountNode[] = [];
-  accounts.forEach((acc) => {
-    const node = accountMap.get(acc.id)!;
+  accountMap.forEach((node, id) => {
+    const acc = node.account;
     if (acc.parentId && accountMap.has(acc.parentId)) {
-      const parentNode = accountMap.get(acc.parentId)!;
-      parentNode.children.push(node);
+      accountMap.get(acc.parentId)!.children.push(node);
     } else {
       roots.push(node);
     }
@@ -183,30 +211,31 @@ export default function BudgetsPage() {
   // ---------------------------------------------------------------------------
   // Load Master Data (once company is active)
   // ---------------------------------------------------------------------------
-  useEffect(() => {
+  const loadMasterData = useCallback(async () => {
     if (!activeCompanyId) return;
-    async function loadMasterData() {
-      try {
-        const [accs, sts, ccs, prds, mats, custs] = await Promise.all([
-          apiGet<PaginatedResponse<Account>>('/accounts?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Site>>('/sites?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<CostCenter>>('/cost-centers?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Product>>('/products?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Material>>('/materials?limit=1000').then((r) => r.data),
-          apiGet<PaginatedResponse<Customer>>('/customers?limit=1000').then((r) => r.data),
-        ]);
-        setAccounts(accs);
-        setSites(sts);
-        setCostCenters(ccs);
-        setProducts(prds);
-        setMaterials(mats);
-        setCustomers(custs);
-      } catch {
-        // Log or handle master data load failure silently
-      }
+    try {
+      const [accs, sts, ccs, prds, mats, custs] = await Promise.all([
+        apiGet<PaginatedResponse<Account>>('/accounts?limit=1000').then((r) => r.data),
+        apiGet<PaginatedResponse<Site>>('/sites?limit=1000').then((r) => r.data),
+        apiGet<PaginatedResponse<CostCenter>>('/cost-centers?limit=1000').then((r) => r.data),
+        apiGet<PaginatedResponse<Product>>('/products?limit=1000').then((r) => r.data),
+        apiGet<PaginatedResponse<Material>>('/materials?limit=1000').then((r) => r.data),
+        apiGet<PaginatedResponse<Customer>>('/customers?limit=1000').then((r) => r.data),
+      ]);
+      setAccounts(accs);
+      setSites(sts);
+      setCostCenters(ccs);
+      setProducts(prds);
+      setMaterials(mats);
+      setCustomers(custs);
+    } catch {
+      // Log or handle master data load failure silently
     }
-    void loadMasterData();
   }, [activeCompanyId]);
+
+  useEffect(() => {
+    void loadMasterData();
+  }, [loadMasterData]);
 
   // ---------------------------------------------------------------------------
   // Load Single Cycle Details
@@ -631,6 +660,63 @@ export default function BudgetsPage() {
               </div>
             )}
           </div>
+
+          {/* Flat Budget Lines Table - All Lines */}
+          <div className="space-y-3">
+            <h3 className="text-base font-bold text-slate-900">{t('page.budgets.budgetLinesLabel')} — All Lines</h3>
+            {isLoadingDetail ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+              </div>
+            ) : !selectedCycle.budgetLines || selectedCycle.budgetLines.length === 0 ? (
+              <EmptyState title={t('page.budgets.noLinesDetail')} description={t('page.budgets.noLinesDetailDesc')} />
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                    <tr>
+                      <th className="px-3 py-2 text-left">{t('common.month')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.accountCode')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.accountName')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.site')}</th>
+                      <th className="px-3 py-2 text-left">{t('page.budgets.costCenter')}</th>
+                      <th className="px-3 py-2 text-left">SKU / Customer</th>
+                      <th className="px-3 py-2 text-right">{t('common.quantity')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.unitPrice')}</th>
+                      <th className="px-3 py-2 text-right">{t('common.amount')}</th>
+                      <th className="px-3 py-2 text-left">{t('common.notes')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(selectedCycle.budgetLines ?? [])
+                      .sort((a, b) => a.periodMonth - b.periodMonth)
+                      .map((line) => {
+                      const siteName = sites.find((s) => s.id === line.siteId)?.name ?? '—';
+                      const ccName = costCenters.find((c) => c.id === line.costCenterId)?.name ?? '—';
+                      const prodSku = products.find((p) => p.id === line.productId)?.sku ?? '';
+                      const custCode = customers.find((c) => c.id === line.customerId)?.code ?? '';
+                      const refStr = [prodSku, custCode].filter(Boolean).join(' / ') || '—';
+                      const acc = accounts.find((a) => a.id === line.accountId);
+                      return (
+                        <tr key={line.id} className="hover:bg-slate-50/50">
+                          <td className="px-3 py-2 font-medium text-slate-700">{t('common.month')} {line.periodMonth}</td>
+                          <td className="px-3 py-2 font-mono text-slate-600">{acc?.code ?? '—'}</td>
+                          <td className="px-3 py-2 text-slate-700">{acc?.name ?? '—'}</td>
+                          <td className="px-3 py-2 text-slate-500">{siteName}</td>
+                          <td className="px-3 py-2 text-slate-500">{ccName}</td>
+                          <td className="px-3 py-2 text-slate-500 max-w-[160px] truncate" title={refStr}>{refStr}</td>
+                          <td className="px-3 py-2 text-right font-mono text-slate-600">{line.quantity > 0 ? line.quantity.toLocaleString() : '—'}</td>
+                          <td className="px-3 py-2 text-right font-mono text-slate-600">{line.unitPrice > 0 ? `$${line.unitPrice.toFixed(2)}` : '—'}</td>
+                          <td className="px-3 py-2 text-right font-mono font-semibold text-emerald-700">${Number(line.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          <td className="px-3 py-2 text-slate-400 max-w-[140px] truncate" title={line.notes ?? ''}>{line.notes ?? '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         // LIST VIEW
@@ -766,7 +852,11 @@ export default function BudgetsPage() {
           moduleLabel={t('page.budgets.budgetLinesLabel')}
           onClose={() => setImportOpen(false)}
           onSuccess={() => {
+            void loadMasterData();
             void fetchCycles();
+            if (selectedCycleId) {
+              void fetchCycleDetail(selectedCycleId);
+            }
           }}
         />
       )}

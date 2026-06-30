@@ -9,6 +9,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     name: [
       'name',
       'companyname',
+      'companyName',
       'legalname',
       'tradingas',
       'company_name',
@@ -24,6 +25,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
     legalName: [
       'legalname',
+      'legalName',
       'legal_name',
       'legal name',
       'registeredname',
@@ -33,6 +35,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
     industryType: [
       'industrytype',
+      'industryType',
       'industry_type',
       'industry type',
       'industry',
@@ -40,6 +43,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
     fiscalYearStartMonth: [
       'fiscalyearstartmonth',
+      'fiscalYearStartMonth',
       'fiscal_year_start_month',
       'fiscal year start month',
       'fystartmonth',
@@ -48,6 +52,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
     taxNumber: [
       'taxnumber',
+      'taxNumber',
       'tax_number',
       'tax number',
       'vatnumber',
@@ -60,6 +65,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     ],
     currencyCode: [
       'currencycode',
+      'currencyCode',
       'currency_code',
       'currency code',
       'currency',
@@ -327,6 +333,13 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'type',
       'rmtype',
     ],
+    unitSymbol: [
+      'unit',
+      'uom',
+      'unitsymbol',
+      'unit_symbol',
+      'unit symbol',
+    ],
     unitId: [
       'unit',
       'uom',
@@ -424,6 +437,13 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
       'maincategory',
       'main_category',
     ],
+    unitSymbol: [
+      'unit',
+      'uom',
+      'unitsymbol',
+      'unit_symbol',
+      'unit symbol',
+    ],
     unitId: [
       'unit',
       'uom',
@@ -513,7 +533,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
     materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
     customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
-    transactionDate: ['transactiondate', 'transaction_date', 'transaction date', 'date', 'actualdate', 'actual date', 'invoicedate', 'invoice date', 'postingdate', 'posting date', 'trxdate', 'trx_date'],
+    transactionDate: ['transactiondate', 'transaction_date', 'transaction date', 'date', 'actualdate', 'actual date', 'invoicedate', 'invoice date', 'postingdate', 'posting date', 'trxdate', 'trx_date', 'tarih', 'تاريخ', 'fecha'],
     quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
     unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
     amount: ['amount', 'value', 'actualamt', 'actual_amt'],
@@ -521,13 +541,14 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
   },
   rawmaterialprices: {
     materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'itemcode', 'item code'],
-    price: ['price', 'rate', 'cost', 'latestprice'],
-    priceDate: ['pricedate', 'price_date', 'price date', 'effectivedate', 'effective_date', 'effective date', 'date'],
-    source: ['source', 'source_system', 'remarks'],
+    price: ['price', 'rate', 'cost', 'latestprice', 'unitprice', 'unit_price', 'unit price'],
+    effectiveDate: ['pricedate', 'price_date', 'price date', 'effectivedate', 'effective_date', 'effective date', 'date'],
+    supplierCode: ['suppliercode', 'supplier_code', 'supplier code', 'supplier', 'vendor'],
+    notes: ['source', 'source_system', 'remarks', 'notes'],
   },
   productionplans: {
     productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'code', 'product'],
-    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+    siteName: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
     fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
     periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
     plannedQty: ['plannedqty', 'planned_qty', 'planned qty', 'planqty', 'plan qty'],
@@ -548,7 +569,7 @@ export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
     periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
     targetValue: ['targetvalue', 'target_value', 'target value', 'target'],
     unit: ['unit', 'kpiunit', 'kpi_unit', 'uom'],
-    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
+    siteId: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
   },
   promotions: {
     name: ['name', 'promotionname', 'promotion_name', 'promotion name', 'title'],
@@ -618,6 +639,7 @@ export const MODEL_FIELD_WHITELIST: Record<string, string[]> = {
     'name',
     'materialType',
     'unitId',
+    'unitSymbol',
     'supplierId',
     'purchasePrice',
     'companyId',
@@ -630,6 +652,7 @@ export const MODEL_FIELD_WHITELIST: Record<string, string[]> = {
     'productType',
     'categoryId',
     'unitId',
+    'unitSymbol',
     'standardCost',
     'salePrice',
     'companyId',
@@ -850,6 +873,7 @@ export function normalizeHeaderToField(
   }
   if (/\buom\b/.test(headerLower) || /\bunit\b/.test(headerLower)) {
     if (aliases['symbol']) return 'symbol';
+    if (aliases['unitSymbol']) return 'unitSymbol';
     if (aliases['unitId']) return 'unitId';
   }
 
@@ -975,6 +999,12 @@ export function coerceValue(
     const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
     const valid = ['raw_material', 'finished_good', 'semi_finished', 'service', 'other'];
     return valid.includes(v) ? v : 'finished_good';
+  }
+
+  if (field === 'industryType' || field === 'industry_type') {
+    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
+    const valid = ['food_manufacturing', 'food_retail', 'mixed', 'other'];
+    return valid.includes(v) ? v : 'other';
   }
 
   if (field === 'materialType' || field === 'material_type') {

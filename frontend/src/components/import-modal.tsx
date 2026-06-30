@@ -258,11 +258,6 @@ export function ImportModal({
   // Structured error response from backend
   const [structuredError, setStructuredError] = useState<ImportErrorResponse | null>(null);
 
-  // Client workbook state
-  const [clientWorkbookPreview, setClientWorkbookPreview] = useState<ClientWorkbookPreview | null>(null);
-  const [isClientImporting, setIsClientImporting] = useState(false);
-  const [clientWorkbookResult, setClientWorkbookResult] = useState<ClientWorkbookImportResult | null>(null);
-
   // -------------------------------------------------------------------------
   // Download sample template
   // -------------------------------------------------------------------------
@@ -444,37 +439,6 @@ export function ImportModal({
     }, 200);
 
     try {
-      // For .xlsx files, try client-workbook preview first
-      if (fileExtension === '.xlsx' || fileExtension === '.xls') {
-        try {
-          // Build FormData for file upload
-          const file = fileRef.current?.files?.[0];
-          if (file) {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const wbRes = await api.post<ClientWorkbookPreview>(
-              `/excel-integration/client-workbook/preview`,
-              formData,
-              { timeout: 120_000, headers: { 'Content-Type': 'multipart/form-data' } },
-            );
-
-            if (wbRes.data && wbRes.data.workbookType !== 'unknown' && wbRes.data.readyToImport) {
-              clearInterval(progressInterval);
-              setProgress(100);
-              setProgressStatus(t('component.importModal.progressComplete'));
-              setClientWorkbookPreview(wbRes.data);
-              setPreviewRows(null);
-              setStructuredError(null);
-              setIsPreviewing(false);
-              return;
-            }
-          }
-        } catch {
-          // Fall through to regular preview
-        }
-      }
-
       const res = await api.post(
         `/imports/preview`,
         { module, fileContent, fileName },
@@ -644,82 +608,10 @@ export function ImportModal({
     setFileContent(null);
     setImportStats(null);
     setStructuredError(null);
-    setClientWorkbookPreview(null);
-    setClientWorkbookResult(null);
     setProgress(0);
     setProgressStatus('');
     setExpandedErrors(new Set());
     if (fileRef.current) fileRef.current.value = '';
-  }
-
-  // -------------------------------------------------------------------------
-  // Client Workbook Import
-  // -------------------------------------------------------------------------
-  async function handleClientWorkbookImport() {
-    const file = fileRef.current?.files?.[0];
-    if (!file || !token || !activeCompanyId) return;
-
-    setIsClientImporting(true);
-    setProgress(0);
-    setProgressStatus(t('component.importModal.progressUploading'));
-
-    const startTime = Date.now();
-
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 3;
-      });
-    }, 200);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await api.post<ClientWorkbookImportResult>(
-        `/excel-integration/client-workbook/import`,
-        formData,
-        { timeout: 300_000, headers: { 'Content-Type': 'multipart/form-data' } },
-      );
-
-      clearInterval(progressInterval);
-      setProgress(100);
-      setProgressStatus(t('component.importModal.progressComplete'));
-
-      const result = { ...res.data, timeTaken: Date.now() - startTime };
-      setClientWorkbookResult(result);
-      setClientWorkbookPreview(null);
-
-      if (result.success) {
-        toastSuccess(
-          `Imported ${result.sheetsImported} sheet(s) successfully. Created ${result.autoCreated.length} new records.`,
-        );
-        onSuccess();
-      } else {
-        toastError(`Import failed: ${(result.errors || []).join(', ')}`);
-      }
-    } catch (err: unknown) {
-      clearInterval(progressInterval);
-      setProgress(0);
-      setProgressStatus('');
-
-      let msg = t('component.importModal.importFailed');
-      if (axios.isAxiosError(err)) {
-        const status = err.response?.status;
-        const serverMessage = (err.response?.data as { message?: string })?.message;
-        if (status === 413) {
-          msg = t('import.error.fileTooLarge');
-        } else if (serverMessage) {
-          msg = serverMessage;
-        }
-      }
-      toastError(msg);
-    } finally {
-      setIsClientImporting(false);
-    }
   }
 
   function toggleErrorRow(index: number) {
@@ -930,7 +822,7 @@ export function ImportModal({
           )}
 
           {/* Progress Bar */}
-          {isProcessing && !clientWorkbookResult && (
+          {isProcessing && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-card-foreground">{progressStatus}</span>
@@ -1091,147 +983,6 @@ export function ImportModal({
             </div>
           )}
 
-          {/* Client Workbook Import Result */}
-          {clientWorkbookResult && !importStats && (
-            <div className="space-y-4">
-              {/* Result Summary */}
-              <div className={`rounded-xl border p-5 ${clientWorkbookResult.success ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
-                <div className="flex items-start gap-3">
-                  {clientWorkbookResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
-                  )}
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-card-foreground">
-                      {clientWorkbookResult.success ? 'Import Complete' : 'Import Failed'}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {clientWorkbookResult.sheetsImported} sheet(s) imported · {clientWorkbookResult.sheetsReference ?? 0} reference sheet(s) skipped · {clientWorkbookResult.sheetsInstruction ?? 0} instruction sheet(s) skipped · {clientWorkbookResult.sheetsSkipped} data sheet(s) with no rows
-                    </p>
-                  </div>
-                </div>
-                {/* Stats */}
-                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
-                    <p className="text-lg font-bold text-emerald-600">{clientWorkbookResult.sheetsImported}</p>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Inserted</p>
-                  </div>
-                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
-                    <p className="text-lg font-bold text-muted-foreground">{clientWorkbookResult.sheetsReference ?? 0}</p>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Reference Skipped</p>
-                  </div>
-                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
-                    <p className="text-lg font-bold text-muted-foreground">{clientWorkbookResult.sheetsInstruction ?? 0}</p>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Instruction Skipped</p>
-                  </div>
-                  <div className="rounded-lg border border-border bg-white/50 p-2 text-center">
-                    <p className="text-lg font-bold text-amber-600">{clientWorkbookResult.sheetsSkipped}</p>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">No Data Skipped</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Auto-Created Records */}
-              {clientWorkbookResult.autoCreated.length > 0 && (
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <h4 className="text-xs font-semibold text-card-foreground uppercase tracking-wider mb-3">
-                    {t('component.importModal.autoCreatePlan')}
-                  </h4>
-                  <div className="space-y-1.5">
-                    {clientWorkbookResult.autoCreated.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs">
-                        <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
-                        <span className="text-muted-foreground">{item.type}:</span>
-                        <span className="font-medium text-card-foreground">{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Sheet Results */}
-              <div className="rounded-xl border border-border bg-card overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-secondary/50 border-b border-border">
-                    <tr>
-                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Sheet Name</th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Role</th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Status</th>
-                      <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground">Rows</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {clientWorkbookResult.sheetResults.map((sr, idx) => (
-                      <tr key={idx} className="hover:bg-secondary/50">
-                        <td className="px-4 py-2.5 font-medium text-card-foreground">{sr.sheetName}</td>
-                        <td className="px-4 py-2.5">
-                          {sr.sheetRole === 'data' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Data Sheet</span>
-                          ) : sr.sheetRole === 'reference' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">Reference Sheet</span>
-                          ) : sr.sheetRole === 'instruction' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Instructions</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500">Ignored</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {sr.status === 'imported' ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                              <CheckCircle className="h-3 w-3" /> Imported
-                            </span>
-                          ) : sr.status === 'reference' || sr.status === 'instruction' ? (
-                            <span className="inline-flex items-center gap-1 text-muted-foreground">
-                              Skipped
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
-                              <AlertCircle className="h-3 w-3" /> {sr.status}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{sr.rowsImported}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Errors */}
-              {clientWorkbookResult.errors.length > 0 && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                  <h4 className="text-xs font-semibold text-red-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                    Errors ({clientWorkbookResult.errors.length})
-                  </h4>
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {clientWorkbookResult.errors.map((e, idx) => (
-                      <p key={idx} className="text-xs text-red-700">{e}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Warnings */}
-              {clientWorkbookResult.warnings.length > 0 && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">
-                    Warnings
-                  </h4>
-                  <ul className="space-y-1">
-                    {clientWorkbookResult.warnings.map((w, idx) => (
-                      <li key={idx} className="text-xs text-amber-700 flex items-start gap-1">
-                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                        {w}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Step 3: Preview table */}
           {previewRows && !importStats && !structuredError && (
             <div>
@@ -1381,7 +1132,7 @@ export function ImportModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4 flex-shrink-0">
-          {importStats || clientWorkbookResult ? (
+          {importStats ? (
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('common.close')}
             </Button>
@@ -1390,11 +1141,9 @@ export function ImportModal({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={
-                  previewRows || clientWorkbookPreview ? handleCancelImport : onClose
-                }
+                onClick={previewRows ? handleCancelImport : onClose}
               >
-                {previewRows || clientWorkbookPreview
+                {previewRows
                   ? t('component.importModal.cancelImport')
                   : t('common.cancel')}
               </Button>

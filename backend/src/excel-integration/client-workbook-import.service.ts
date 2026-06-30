@@ -20,6 +20,7 @@ import {
   normalizeHeaderToField,
   findOriginalRowValue,
   MODULE_COLUMN_ALIASES,
+  MODEL_FIELD_WHITELIST,
 } from './import-utils';
 
 const MONTH_MAP: Record<string, number> = {
@@ -302,15 +303,37 @@ export class ClientWorkbookImportService {
       coerced[key] = coerceValue(val, key, modelName);
     }
 
-    // 4. Whitelist fields
-    const clean = whitelistFields(coerced, modelName);
-
-    // 5. Schema Validation (check required fields)
+    // 4. Whitelist fields (keep database model fields, Excel schema fields, and metadata)
     const { getSheetByModule } = require('./client-workbook-schema');
     const sheetDef = getSheetByModule(module);
+
+    const allowedFields = new Set<string>();
+    if (MODEL_FIELD_WHITELIST[modelName]) {
+      (MODEL_FIELD_WHITELIST[modelName] as string[]).forEach((f: string) => allowedFields.add(f));
+    }
+    if (sheetDef && sheetDef.columns) {
+      sheetDef.columns.forEach((c: any) => allowedFields.add(c.field));
+    }
+    allowedFields.add('companyId');
+    allowedFields.add('createdBy');
+    allowedFields.add('createdAt');
+    allowedFields.add('updatedAt');
+
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(coerced)) {
+      if (allowedFields.has(k)) {
+        clean[k] = v;
+      }
+    }
+
+    // 5. Schema Validation (check required fields)
     if (sheetDef) {
       for (const col of sheetDef.columns) {
-        const val = clean[col.field] ?? coerced[col.field];
+        let val = clean[col.field] ?? coerced[col.field];
+        // For "Unit Symbol" display field, also accept unitSymbol or string unitId
+        if (col.display === 'Unit Symbol') {
+          val = clean.unitSymbol ?? coerced.unitSymbol ?? clean.unitId ?? coerced.unitId ?? val;
+        }
         if (col.required && (val === null || val === undefined || val === '')) {
           errors.push(`Missing required field: ${col.display}`);
         }
@@ -613,6 +636,16 @@ export class ClientWorkbookImportService {
       const name = String(resolved.forecastCycleName);
       resolved.forecastCycleId = await this.resolveForecastCycle(name, companyId, userId, resolved.fiscalYear);
       delete resolved.forecastCycleName;
+    }
+
+    if ('effectiveDate' in resolved) {
+      resolved.priceDate = resolved.effectiveDate;
+      delete resolved.effectiveDate;
+    }
+
+    if ('notes' in resolved && module === 'rawmaterialprices') {
+      resolved.source = resolved.notes;
+      delete resolved.notes;
     }
 
     return resolved;
@@ -1622,11 +1655,14 @@ export class ClientWorkbookImportService {
       materialMap,
       result,
     );
-    await this.importHrvMaterialPrices(
+    await this.importGenericSheetByModule(
       workbook,
+      'rawmaterialprices',
       companyId,
-      materialMap,
+      userId,
       result,
+      { materialMap },
+      sheetIndex,
     );
     await this.importGenericSheetByModule(
       workbook,
@@ -1814,12 +1850,19 @@ export class ClientWorkbookImportService {
 
     // Special handling for certain modules
     if (module === 'rawmaterialprices') {
-      // Delegate to the dedicated HRV Material Prices handler or skip if no HRV sheet
+      // Delegate to the dedicated HRV Material Prices handler
       if (workbook.Sheets['HRV M.Price']) {
         const emptyMap = new Map<number, bigint>();
         await this.importHrvMaterialPrices(workbook, companyId, emptyMap, result);
+        return;
       }
-      return;
+      // Fallback: import via generic path using rawMaterialPrice model, not materials
+      // The module name 'rawmaterialprices' ensures modelName is 'rawMaterialPrice'
+      // (line 1906), so it creates RawMaterialPrice records, not Material records.
+      this.logger.log(
+        `No HRV M.Price sheet — importing "${sheetName}" as rawMaterialPrice records`,
+      );
+      // Continue to the generic insert path below
     }
 
     if (module === 'priceList') {
@@ -1947,7 +1990,10 @@ export class ClientWorkbookImportService {
 
       // Skip rows with no meaningful data
       const relevantKeys = Object.keys(clean).filter((k) => k !== 'companyId');
-      if (relevantKeys.length === 0) continue;
+      if (relevantKeys.length === 0) {
+        this.logger.warn(`Row ${rowNum} in "${sheetName}" (${module}): all fields empty/whitelisted-out after mapping — keys in clean: ${Object.keys(clean).join(',')}`);
+        continue;
+      }
 
       // 2. Resolve references
       let resolved: Record<string, any>;
@@ -2063,6 +2109,50 @@ export class ClientWorkbookImportService {
             this.cache.products.set(sku.toLowerCase().trim(), created.id);
             this.cache.products.set(name.toLowerCase().trim(), created.id);
           }
+        } else if (module === 'exchangerates') {
+          const _p = prismaClean as any;
+          _p.rateDate = new Date(_p.rateDate);
+          await this.prisma.exchangeRate.upsert({
+            where: {
+              companyId_fromCurrency_toCurrency_rateDate: {
+                companyId: _p.companyId,
+                fromCurrency: _p.fromCurrency,
+                toCurrency: _p.toCurrency,
+                rateDate: _p.rateDate,
+              },
+            },
+            create: _p,
+            update: _p,
+          });
+        } else if (module === 'productionplans') {
+          const _p = prismaClean as any;
+          _p.companyId = typeof _p.companyId === 'bigint' ? _p.companyId : companyId;
+          if (!_p.siteId) {
+            this.logger.warn(`Row ${rowNum}: Production plan missing siteId — skipping`);
+            this.logger.debug(`Prisma payload: ${JSON.stringify(prismaClean, (_k, v) => typeof v === 'bigint' ? v.toString() : v)}`);
+            failed++;
+            continue;
+          }
+          if (!_p.productId) {
+            this.logger.warn(`Row ${rowNum}: Production plan missing productId — skipping`);
+            this.logger.debug(`Prisma payload: ${JSON.stringify(prismaClean, (_k, v) => typeof v === 'bigint' ? v.toString() : v)}`);
+            failed++;
+            continue;
+          }
+          const existingPlan = await this.prisma.productionPlan.findFirst({
+            where: {
+              companyId: _p.companyId,
+              siteId: _p.siteId,
+              productId: _p.productId,
+              fiscalYear: _p.fiscalYear,
+              periodMonth: _p.periodMonth,
+            },
+          });
+          if (existingPlan) {
+            await this.prisma.productionPlan.update({ where: { id: existingPlan.id }, data: _p });
+          } else {
+            await this.prisma.productionPlan.create({ data: _p });
+          }
         } else {
           // General create fallback
           await prismaModel.create({ data: prismaClean });
@@ -2077,8 +2167,13 @@ export class ClientWorkbookImportService {
         });
         errors.push(`Row ${rowNum}: ${friendly}`);
         failed++;
-        this.logger.debug(`Row ${rowNum} failed: ${err.message}`);
+        this.logger.error(`Row ${rowNum} in "${sheetName}" (${module}) failed: ${err.message}`);
+        this.logger.error(`Prisma payload: ${JSON.stringify(prismaClean, (_k, v) => typeof v === 'bigint' ? v.toString() : v)}`);
       }
+    }
+
+    if (imported === 0 && rawRows.length > 0) {
+      this.logger.warn(`Zero rows imported for "${sheetName}" (${module}) — ${rawRows.length} rows present, ${failed} failed. First error: ${errors[0] || 'none'}`);
     }
 
     const status = imported > 0 ? 'imported' : 'skipped';
@@ -2248,7 +2343,17 @@ export class ClientWorkbookImportService {
       (v: string) =>
         v === 'item code' || v === 'code-' || v === 'code' || v === 'code-',
     );
+    // Try month-column format
     const monthCols: Array<{ col: number; month: number; year: number }> = [];
+    // Also try salePrice column format (simple columnar)
+    const salePriceCol = h.findIndex(
+      (v: string) =>
+        v === 'saleprice' || v === 'sale_price' || v === 'price' || v === 'sellingprice',
+    );
+    const skuCol = h.findIndex(
+      (v: string) =>
+        v === 'productsku' || v === 'product_sku' || v === 'sku' || v === 'itemcode' || v === 'code',
+    );
     for (let i = 0; i < h.length; i++) {
       const parsed = this.parseMonthYearString(h[i]);
       if (parsed)
@@ -2256,30 +2361,66 @@ export class ClientWorkbookImportService {
     }
 
     let imported = 0;
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length < 2) continue;
 
-      const codeVal = codeCol >= 0 ? row[codeCol] : row[0];
-      if (!codeVal) continue;
+    if (monthCols.length > 0) {
+      // Month-column format
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length < 2) continue;
 
-      const sku = String(codeVal).trim();
+        const codeVal = codeCol >= 0 ? row[codeCol] : row[0];
+        if (!codeVal) continue;
 
-      for (const mc of monthCols) {
+        const sku = String(codeVal).trim();
+
+        for (const mc of monthCols) {
+          const price =
+            typeof row[mc.col] === 'number' ? (row[mc.col] as number) : null;
+          if (!price || price <= 0) continue;
+
+          try {
+            const updated = await this.prisma.product.updateMany({
+              where: { sku, companyId },
+              data: { salePrice: price },
+            });
+            if (updated.count === 0) {
+              this.logger.warn(`Price list: product not found for SKU "${sku}"`);
+            }
+            imported++;
+            result.totals.priceListEntries =
+              (result.totals.priceListEntries || 0) + 1;
+          } catch (err: any) {
+            this.logger.warn(`Price list row skipped for SKU "${sku}": ${err.message}`);
+          }
+        }
+      }
+    } else if (salePriceCol >= 0 && skuCol >= 0) {
+      // Simple columnar format: productSku | salePrice
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length < 2) continue;
+
+        const codeVal = row[skuCol];
+        if (!codeVal) continue;
+
+        const sku = String(codeVal).trim();
         const price =
-          typeof row[mc.col] === 'number' ? (row[mc.col] as number) : null;
+          typeof row[salePriceCol] === 'number' ? (row[salePriceCol] as number) : null;
         if (!price || price <= 0) continue;
 
         try {
-          await this.prisma.product.updateMany({
+          const updated = await this.prisma.product.updateMany({
             where: { sku, companyId },
             data: { salePrice: price },
           });
+          if (updated.count === 0) {
+            this.logger.warn(`Price list: product not found for SKU "${sku}"`);
+          }
           imported++;
           result.totals.priceListEntries =
             (result.totals.priceListEntries || 0) + 1;
-        } catch {
-          /* row skipped */
+        } catch (err: any) {
+          this.logger.warn(`Price list row skipped for SKU "${sku}": ${err.message}`);
         }
       }
     }
@@ -2391,8 +2532,8 @@ export class ClientWorkbookImportService {
             });
             imported++;
             result.totals.promotions = (result.totals.promotions || 0) + 1;
-          } catch {
-            /* skip */
+          } catch (err: any) {
+            this.logger.warn(`Discount row skipped for SKU "${productSku}": ${err.message}`);
           }
         }
       }
@@ -2459,6 +2600,7 @@ export class ClientWorkbookImportService {
         continue;
       }
       const field =
+        normalizeHeaderToField(h, 'actuallines') ||
         normalizeHeaderToField(h, 'accounts') ||
         normalizeHeaderToField(h, 'customers') ||
         normalizeHeaderToField(h, 'materials') ||
@@ -2558,8 +2700,11 @@ export class ClientWorkbookImportService {
           if (prod) productId = prod.id;
         }
 
-        // Find transactionDate from mapped fields
-        let trxDateVal = row['transactionDate'] || row['Transaction Date'] || row['Actual Date'] || row['Invoice Date'] || row['Posting Date'];
+        // Find transactionDate from mapped fields (try mapped first, then raw row)
+        let trxDateVal = mapped.transactionDate;
+        if (!trxDateVal) {
+          trxDateVal = row['Transaction Date'] || row['Actual Date'] || row['Invoice Date'] || row['Posting Date'] || row['trx_date'];
+        }
         if (!trxDateVal) {
           for (const [header, field] of Object.entries(fieldMap)) {
             if (field === 'transactionDate') {
@@ -2567,6 +2712,13 @@ export class ClientWorkbookImportService {
               break;
             }
           }
+        }
+        // Fallback: try periodMonth or importDate from current row
+        if (!trxDateVal && row['periodMonth']) {
+          trxDateVal = row['periodMonth'];
+        }
+        if (!trxDateVal && row['importDate']) {
+          trxDateVal = row['importDate'];
         }
 
         // Create actual line with connect pattern
@@ -2595,9 +2747,14 @@ export class ClientWorkbookImportService {
         result.totals.actualLines = (result.totals.actualLines || 0) + 1;
       } catch (err: any) {
         const { friendly } = normalizeImportError(err);
+        this.logger.error(`Actual Line row ${rowNum}: ${err?.message || err}`);
         errors.push(`Row ${rowNum}: ${friendly}`);
         failed++;
       }
+    }
+
+    if (imported === 0 && rows.length > 0) {
+      this.logger.warn(`Zero rows imported for Actuals — ${rows.length} rows present, ${failed} failed`);
     }
 
     result.sheetResults.push({

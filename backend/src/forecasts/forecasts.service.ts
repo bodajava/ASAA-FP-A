@@ -21,7 +21,9 @@ import { CostingService } from '../costing/costing.service';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 export type QueryForecastCycle = ForecastCycle & {
-  forecastLines: ForecastLine[];
+  forecastLines: (ForecastLine & {
+    account?: { id: bigint; code: string; name: string; type: string; parentId: bigint | null } | null;
+  })[];
 };
 
 export interface ForecastLineResponseDto {
@@ -41,6 +43,13 @@ export interface ForecastLineResponseDto {
   notes: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
+  account?: {
+    id: string;
+    code: string;
+    name: string;
+    type: string;
+    parentId: string | null;
+  } | null;
 }
 
 export interface ForecastCycleResponseDto {
@@ -111,6 +120,15 @@ export function mapForecastCycleToResponse(
     notes: line.notes,
     createdAt: line.createdAt,
     updatedAt: line.updatedAt,
+    account: line.account
+      ? {
+          id: line.account.id.toString(),
+          code: line.account.code,
+          name: line.account.name,
+          type: line.account.type,
+          parentId: line.account.parentId ? line.account.parentId.toString() : null,
+        }
+      : null,
   }));
 
   return {
@@ -436,7 +454,13 @@ export class ForecastsService {
 
     const cycle = await this.prisma.forecastCycle.findFirst({
       where: { id, companyId },
-      include: { forecastLines: true },
+      include: {
+        forecastLines: {
+          include: {
+            account: { select: { id: true, code: true, name: true, type: true, parentId: true } },
+          },
+        },
+      },
     });
 
     if (!cycle) {

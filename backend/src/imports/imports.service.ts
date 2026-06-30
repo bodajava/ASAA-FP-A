@@ -59,6 +59,33 @@ const UNSUPPORTED_EXTENSIONS = /\.(numbers)$/i;
 export class ImportsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private normalizeModuleName(moduleName: string): string {
+    const mod = moduleName.toLowerCase().replace(/[-_]/g, '');
+    if (mod === 'rawmaterialprices') return 'materialprices';
+    return mod;
+  }
+
+  private parseDateValue(value: unknown): Date | null {
+    if (value == null || value === '') return null;
+
+    // Check for Excel serial date number (e.g. 46022 = 2025-12-31)
+    const num = Number(value);
+    if (!isNaN(num) && Number.isInteger(num) && num > 40000 && num < 200000) {
+      // Excel serial date: 1 = 1900-01-01
+      // Feb 29, 1900 bug: serial 60 doesn't exist, so adjust for serial >= 61
+      const adjusted = num >= 61 ? num - 2 : num - 1;
+      const date = new Date(Date.UTC(1899, 11, 30));
+      date.setUTCDate(date.getUTCDate() + adjusted);
+      if (!isNaN(date.getTime())) return date;
+    }
+
+    // Try standard date string parsing
+    const d = new Date(String(value));
+    if (!isNaN(d.getTime())) return d;
+
+    return null;
+  }
+
   private normalizeKeys(row: RowData, module?: string): RowData {
     const normalized: RowData = {};
     for (const key of Object.keys(row)) {
@@ -72,7 +99,7 @@ export class ImportsService {
 
     // Apply friendly header → internal field mapping for transaction modules
     if (module) {
-      const mod = module.toLowerCase().replace(/[-_]/g, '');
+      const mod = this.normalizeModuleName(module);
       const mapping = FRIENDLY_HEADER_MAP[mod];
       if (mapping) {
         for (const [friendly, internal] of Object.entries(mapping)) {
@@ -405,53 +432,205 @@ export class ImportsService {
   }
 
   getSampleCSV(module: string): string {
-    switch (module.toLowerCase()) {
+    const mod = this.normalizeModuleName(module);
+    const h = (header: string, rows: string[]) =>
+      [header, ...rows].join('\n');
+    switch (mod) {
       case 'companies':
-        return 'name,legalName,industryType,currencyCode,taxNumber';
+        return h(
+          'name,legalName,industryType,currencyCode,taxNumber',
+          [
+            'Acme Corp,Acme Corporation LLC,Manufacturing,USD,TAX-12345',
+            'Global Trade Inc,Global Trade Incorporated,Trading,EUR,TAX-67890',
+            'TechStart Ltd,TechStart Limited,Technology,USD,TAX-11111',
+          ],
+        );
       case 'sites':
-        return 'name,type,region,address';
+        return h(
+          'name,type,region,address',
+          [
+            'Main Plant,Manufacturing,Central,123 Factory Road',
+            'North Warehouse,Warehouse,North,456 Storage Ave',
+            'South Distribution Center,Distribution,South,789 Logistics Blvd',
+            'HQ Office,Office,Central,100 Corporate Plaza',
+          ],
+        );
       case 'units':
-        return 'name,symbol,type';
+        return h(
+          'name,symbol,type',
+          [
+            'Kilogram,kg,weight',
+            'Liter,L,volume',
+            'Piece,pcs,quantity',
+            'Meter,m,length',
+          ],
+        );
       case 'accounts':
-        return 'code,name,type,parentCode,isActive';
+        return h(
+          'code,name,type,parentCode,isActive',
+          [
+            '4000,Revenue,Sales Revenue,,true',
+            '4001,Product Sales,Sales Revenue,4000,true',
+            '5000,Cost of Goods Sold,Cost of Goods Sold,,true',
+            '5001,Raw Material Cost,Cost of Goods Sold,5000,true',
+            '6000,Operating Expenses,Operating Expenses,,true',
+            '6001,Salaries,Operating Expenses,6000,true',
+          ],
+        );
       case 'costcenters':
       case 'cost-centers':
-        return 'code,name,type,siteCode,parentCode';
+        return h(
+          'code,name,type,siteCode,parentCode',
+          [
+            'C100,Production Dept,Production,Main Plant,',
+            'C110,Packaging Line,Packaging,Main Plant,C100',
+            'C200,Logistics,Logistics,North Warehouse,',
+            'C300,Administration,Admin,HQ Office,',
+          ],
+        );
       case 'productcategories':
       case 'product-categories':
-        return 'name,parentCategoryName';
+        return h(
+          'name,parentCategoryName',
+          [
+            'Beverages,',
+            'Carbonated Drinks,Beverages',
+            'Juices,Beverages',
+            'Snacks,',
+          ],
+        );
       case 'suppliers':
-        return 'name,phone,email';
+        return h(
+          'name,phone,email',
+          [
+            'RawMaterials Co,+201001234567,info@rawmats.com',
+            'PackagingPlus,+201009876543,sales@packplus.com',
+            'LogisticsPro,+201005551234,ops@logipro.com',
+          ],
+        );
       case 'customers':
-        return 'code,name,customerType,region,phone,email,creditLimit,paymentTerms';
+        return h(
+          'code,name,customerType,region,phone,email,creditLimit,paymentTerms',
+          [
+            'CUST001,RetailMax Inc,Retailer,Central,+201011111111,orders@retailmax.com,500000,Net30',
+            'CUST002,WholesaleDirect,Wholesaler,North,+201022222222,info@wholesaledirect.com,1000000,Net45',
+            'CUST003,DistributorPlus,Distributor,South,+201033333333,purchasing@distplus.com,750000,Net30',
+            'CUST004,ExportPartner,Exporter,International,+201044444444,export@partner.com,2000000,Net60',
+          ],
+        );
       case 'products':
-        return 'sku,name,productType,salePrice,standardCost,categoryName,unitSymbol';
+        return h(
+          'sku,name,productType,salePrice,standardCost,categoryName,unitSymbol',
+          [
+            'SKU001,Cola Classic,Carbonated Drink,1.50,0.75,Carbonated Drinks,pcs',
+            'SKU002,Orange Juice,Natural Juice,2.00,1.20,Juices,pcs',
+            'SKU003,Apple Juice,Natural Juice,2.25,1.30,Juices,pcs',
+            'SKU004,Potato Chips 50g,Packaged Snack,0.80,0.45,Snacks,pcs',
+            'SKU005,Cola Zero,Carbonated Drink,1.50,0.80,Carbonated Drinks,pcs',
+          ],
+        );
       case 'materials':
-        return 'code,name,purchasePrice,safetyStockQty,supplierName,unitSymbol';
+        return h(
+          'code,name,purchasePrice,safetyStockQty,supplierName,unitSymbol',
+          [
+            'RM001,Sugar,1.20,10000,RawMaterials Co,kg',
+            'RM002,Concentrate Syrup,5.50,5000,RawMaterials Co,kg',
+            'RM003,Plastic Bottle 500ml,0.15,50000,PackagingPlus,pcs',
+            'RM004,Aluminum Can 330ml,0.25,30000,PackagingPlus,pcs',
+            'RM005,Cardboard Box,0.35,20000,PackagingPlus,pcs',
+          ],
+        );
       case 'bomrecipes':
       case 'bom-recipes':
-        return 'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct';
+        return h(
+          'productSku,version,outputQty,wastagePct,laborCost,overheadCost,materialCode,qtyPerOutput,bomLineWastagePct',
+          [
+            'SKU001,1,1,2,0.10,0.05,RM001,0.15,1',
+            'SKU001,1,1,2,0.10,0.05,RM002,0.02,1',
+            'SKU001,1,1,2,0.10,0.05,RM004,1,1',
+            'SKU002,1,1,3,0.12,0.06,RM001,0.10,1',
+            'SKU002,1,1,3,0.12,0.06,RM002,0.03,1',
+            'SKU002,1,1,3,0.12,0.06,RM003,1,1',
+          ],
+        );
       case 'budgetlines':
       case 'budget-lines':
-        return 'Budget Cycle,Fiscal Year,Account,Site,Cost Center,Product,Material,Customer,Month,Quantity,Unit Price,Amount,Notes';
+        return h(
+          'budgetCycleName,fiscalYear,accountCode,siteName,costCenterCode,productSku,customerCode,periodMonth,quantity,unitPrice,amount,notes',
+          [
+            'Budget 2025,2025,4001,Main Plant,C100,SKU001,CUST001,2025-01,10000,1.50,15000,Sales revenue',
+            'Budget 2025,2025,4001,Main Plant,C100,SKU001,CUST001,2025-02,12000,1.50,18000,',
+            'Budget 2025,2025,5001,Main Plant,C100,SKU001,CUST001,2025-01,10000,0.75,7500,COGS',
+            'Budget 2025,2025,4001,North Warehouse,C200,SKU002,CUST002,2025-01,8000,2.00,16000,',
+            'Budget 2025,2025,5001,North Warehouse,C200,SKU002,CUST002,2025-01,8000,1.20,9600,',
+          ],
+        );
       case 'forecastlines':
       case 'forecast-lines':
-        return 'forecastCycleName,fiscalYear,accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,periodMonth,quantity,unitPrice,amount,driverType,notes';
+        return h(
+          'forecastCycleName,fiscalYear,accountCode,siteName,costCenterCode,productSku,customerCode,periodMonth,quantity,unitPrice,amount,notes',
+          [
+            'Forecast H1 2025,2025,4001,Main Plant,C100,SKU001,CUST001,2025-01,11000,1.50,16500,Revised up',
+            'Forecast H1 2025,2025,4001,Main Plant,C100,SKU001,CUST001,2025-02,13000,1.50,19500,',
+            'Forecast H1 2025,2025,5001,Main Plant,C100,SKU001,CUST001,2025-01,11000,0.75,8250,',
+            'Forecast H1 2025,2025,4001,North Warehouse,C200,SKU002,CUST002,2025-01,9000,2.00,18000,Growth expected',
+            'Forecast H1 2025,2025,5001,North Warehouse,C200,SKU002,CUST002,2025-01,9000,1.20,10800,',
+          ],
+        );
       case 'actuallines':
       case 'actual-lines':
-        return 'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo';
+        return h(
+          'accountCode,siteCode,costCenterCode,productSku,materialCode,customerCode,transactionDate,quantity,unitPrice,amount,referenceNo',
+          [
+            '4001,Main Plant,C100,SKU001,,CUST001,2025-01-15,5000,1.50,7500,INV-001',
+            '4001,Main Plant,C100,SKU001,,CUST001,2025-01-31,4800,1.50,7200,INV-002',
+            '5001,Main Plant,C100,SKU001,,CUST001,2025-01-15,5000,0.75,3750,PO-001',
+            '5001,Main Plant,C100,SKU001,,CUST001,2025-01-31,4800,0.75,3600,PO-002',
+            '4001,North Warehouse,C200,SKU002,,CUST002,2025-01-20,3000,2.00,6000,INV-003',
+          ],
+        );
       case 'materialprices':
       case 'material-prices':
-        return 'materialCode,price,effectiveDate,notes';
+        return h(
+          'materialCode,price,effectiveDate,notes',
+          [
+            'RM001,1.25,2025-01-01,Annual price update',
+            'RM002,5.75,2025-01-01,',
+            'RM003,0.16,2025-02-01,New supplier pricing',
+            'RM004,0.26,2025-01-15,Per contract',
+          ],
+        );
       case 'packagingprices':
       case 'packaging-prices':
-        return 'materialCode,price,effectiveDate,notes';
+        return h(
+          'materialCode,price,effectiveDate,notes',
+          [
+            'RM003,0.16,2025-01-01,',
+            'RM004,0.26,2025-01-01,',
+            'RM005,0.38,2025-02-01,New box price',
+          ],
+        );
       case 'productionallocations':
       case 'production-allocations':
-        return 'siteCode,period,allocatedAmount,allocationBasis,notes';
+        return h(
+          'siteCode,period,allocatedAmount,allocationBasis,notes',
+          [
+            'Main Plant,2025-01,50000,machine_hours,',
+            'Main Plant,2025-02,52000,machine_hours,',
+            'North Warehouse,2025-01,30000,floor_area,',
+          ],
+        );
       case 'yieldwaste':
       case 'yield-waste':
-        return 'productSku,yieldPct,wastagePct,notes';
+        return h(
+          'productSku,yieldPct,wastagePct,notes',
+          [
+            'SKU001,98,2,Standard yield',
+            'SKU002,97,3,',
+            'SKU003,97,3,',
+            'SKU004,99,1,',
+          ],
+        );
       default:
         throw new BadRequestException(`Unknown module template: ${module}`);
     }
@@ -581,22 +760,23 @@ export class ImportsService {
     const allWarnings: string[] = [];
     const allErrors: string[] = [];
 
+    const mod = this.normalizeModuleName(module);
     for (let i = 0; i < rawRows.length; i++) {
       const rawRow = rawRows[i];
-      const normalized = this.normalizeKeys(rawRow, module);
+      const normalized = this.normalizeKeys(rawRow, mod);
       const errors: string[] = [];
 
       // Resolve friendly names to codes for transaction modules
       const resolved = await this.resolveTransactionReferences(
         normalized,
-        module.toLowerCase().replace(/[-_]/g, ''),
+        mod,
         companyId,
         errors,
         i + 1,
       );
 
       // Validate references and columns according to module
-      await this.validateRow(module, resolved, companyId, tenantId, errors);
+      await this.validateRow(mod, resolved, companyId, tenantId, errors);
 
       if (errors.length > 0) {
         allErrors.push(...errors.map((e) => `Row ${i + 1}: ${e}`));
@@ -698,7 +878,7 @@ export class ImportsService {
     tenantId: bigint,
     errors: string[],
   ): Promise<void> {
-    const mod = module.toLowerCase().replace(/[-_]/g, '');
+    const mod = this.normalizeModuleName(module);
 
     switch (mod) {
       case 'companies': {
@@ -1201,6 +1381,9 @@ export class ImportsService {
         if (!row.price) errors.push('Price is required.');
         else if (isNaN(Number(row.price)))
           errors.push('Price must be a number.');
+        if (row.effectivedate && !this.parseDateValue(row.effectivedate)) {
+          errors.push(`Date format is invalid for effectiveDate: "${row.effectivedate}". Use YYYY-MM-DD or Excel serial date format.`);
+        }
         if (row.materialcode && companyId) {
           const mat = await this.prisma.material.findFirst({
             where: { code: String(row.materialcode).trim(), companyId },
@@ -1273,10 +1456,10 @@ export class ImportsService {
   ): Promise<{ successCount: number; failCount: number }> {
     const validRows: RowData[] = [];
     let failCount = 0;
-    const mod = module.toLowerCase().replace(/[-_]/g, '');
+    const mod = this.normalizeModuleName(module);
 
     for (const rawRow of rows) {
-      const normalized = this.normalizeKeys(rawRow, module);
+      const normalized = this.normalizeKeys(rawRow, mod);
       const errors: string[] = [];
 
       // Resolve friendly names to codes for transaction modules
@@ -1288,7 +1471,7 @@ export class ImportsService {
         0,
       );
 
-      await this.validateRow(module, resolved, companyId, tenantId, errors);
+      await this.validateRow(mod, resolved, companyId, tenantId, errors);
       if (errors.length === 0) {
         validRows.push(resolved);
       } else {
@@ -1874,9 +2057,7 @@ export class ImportsService {
             });
             if (!material) break;
 
-            const effectiveDate = row.effectivedate
-              ? new Date(String(row.effectivedate))
-              : new Date();
+            const effectiveDate = this.parseDateValue(row.effectivedate) ?? new Date();
 
             await tx.material.update({
               where: { id: material.id },
@@ -1899,9 +2080,7 @@ export class ImportsService {
             });
             if (!material) break;
 
-            const effectiveDate = row.effectivedate
-              ? new Date(String(row.effectivedate))
-              : new Date();
+            const effectiveDate = this.parseDateValue(row.effectivedate) ?? new Date();
 
             await tx.material.update({
               where: { id: material.id },

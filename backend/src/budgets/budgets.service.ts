@@ -19,7 +19,9 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { SimpleCache } from '../common/utils/cache.util';
 
 export type QueryBudgetCycle = BudgetCycle & {
-  budgetLines: BudgetLine[];
+  budgetLines: (BudgetLine & {
+    account?: { id: bigint; code: string; name: string; type: string; parentId: bigint | null } | null;
+  })[];
 };
 
 export interface BudgetLineResponseDto {
@@ -38,6 +40,13 @@ export interface BudgetLineResponseDto {
   notes: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
+  account?: {
+    id: string;
+    code: string;
+    name: string;
+    type: string;
+    parentId: string | null;
+  } | null;
 }
 
 export interface BudgetCycleResponseDto {
@@ -95,6 +104,15 @@ export function mapBudgetCycleToResponse(
     notes: line.notes,
     createdAt: line.createdAt,
     updatedAt: line.updatedAt,
+    account: line.account
+      ? {
+          id: line.account.id.toString(),
+          code: line.account.code,
+          name: line.account.name,
+          type: line.account.type,
+          parentId: line.account.parentId ? line.account.parentId.toString() : null,
+        }
+      : null,
   }));
 
   return {
@@ -394,7 +412,13 @@ export class BudgetsService {
 
     const cycle = await this.prisma.budgetCycle.findFirst({
       where: { id, companyId },
-      include: { budgetLines: true },
+      include: {
+        budgetLines: {
+          include: {
+            account: { select: { id: true, code: true, name: true, type: true, parentId: true } },
+          },
+        },
+      },
     });
 
     if (!cycle) {

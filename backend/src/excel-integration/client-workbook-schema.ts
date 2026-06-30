@@ -94,13 +94,6 @@ export const CLIENT_WORKBOOK_SHEETS: SheetDef[] = [
     role: 'data',
     columns: [
       {
-        display: 'Company Name',
-        field: 'name',
-        required: true,
-        type: 'string',
-        description: 'Trading name of the company',
-      },
-      {
         display: 'Legal Name',
         field: 'legalName',
         required: false,

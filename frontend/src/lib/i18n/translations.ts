@@ -462,6 +462,7 @@ export type TranslationKey =
   | 'page.budgets.emptyTitle'
   | 'page.budgets.emptyDesc'
   | 'page.budgets.submitForApproval'
+  | 'page.budgets.pendingApproval'
   | 'page.budgets.approve'
   | 'page.budgets.reject'
   | 'page.budgets.lockCycle'
@@ -811,6 +812,8 @@ export type TranslationKey =
   | 'page.approvals.createdAt'
   | 'page.approvals.noApprovals'
   | 'page.approvals.noApprovalsDesc'
+  | 'page.approvals.noApprovalsFriendly'
+  | 'page.approvals.viewEntity'
   | 'page.approvals.noFilteredResults'
   | 'page.approvals.confirmApproval'
   | 'page.approvals.rejectRequest'
@@ -2395,6 +2398,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.budgets.emptyTitle': 'No budgets yet',
     'page.budgets.emptyDesc': 'Create a new budget cycle to start financial planning.',
     'page.budgets.submitForApproval': 'Submit for Approval',
+    'page.budgets.pendingApproval': 'Pending approval — awaiting review in Approvals.',
     'page.budgets.approve': 'Approve',
     'page.budgets.reject': 'Reject',
     'page.budgets.lockCycle': 'Lock Cycle',
@@ -2754,8 +2758,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.approvals.status': 'Status',
     'page.approvals.requestedBy': 'Requested By',
     'page.approvals.createdAt': 'Created At',
-    'page.approvals.noApprovals': 'No approvals found',
+    'page.approvals.noApprovals': 'No approval requests yet',
     'page.approvals.noApprovalsDesc': 'No approval requests have been created yet.',
+    'page.approvals.noApprovalsFriendly': 'No approval requests yet. Submit a budget or forecast for approval to see it here.',
+    'page.approvals.viewEntity': 'View details',
     'page.approvals.noFilteredResults': 'No {status} approval requests.',
     'page.approvals.confirmApproval': 'Confirm Approval',
     'page.approvals.rejectRequest': 'Reject Request',
@@ -4388,6 +4394,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.budgets.emptyTitle': 'لا توجد ميزانيات بعد',
     'page.budgets.emptyDesc': 'أنشئ دورة ميزانية جديدة لبدء التخطيط المالي.',
     'page.budgets.submitForApproval': 'تقديم للاعتماد',
+    'page.budgets.pendingApproval': 'في انتظار الاعتماد — قيد المراجعة في صفحة الموافقات.',
     'page.budgets.approve': 'اعتماد',
     'page.budgets.reject': 'رفض',
     'page.budgets.lockCycle': 'قفل الدورة',
@@ -4747,8 +4754,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.approvals.status': 'الحالة',
     'page.approvals.requestedBy': 'قدم بواسطة',
     'page.approvals.createdAt': 'تاريخ الإنشاء',
-    'page.approvals.noApprovals': 'لم يتم العثور على موافقات',
+    'page.approvals.noApprovals': 'لا توجد طلبات موافقة بعد',
     'page.approvals.noApprovalsDesc': 'لم يتم إنشاء أي طلبات موافقة بعد.',
+    'page.approvals.noApprovalsFriendly': 'لا توجد طلبات موافقة بعد. قم بتقديم ميزانية أو توقع للموافقة لرؤيتها هنا.',
+    'page.approvals.viewEntity': 'عرض التفاصيل',
     'page.approvals.noFilteredResults': 'لا توجد طلبات موافقة {status}.',
     'page.approvals.confirmApproval': 'تأكيد الموافقة',
     'page.approvals.rejectRequest': 'رفض الطلب',

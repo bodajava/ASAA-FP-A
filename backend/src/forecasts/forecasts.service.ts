@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -12,6 +13,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ApprovalsService } from '../approvals/approvals.service';
 import { ForecastEngineService } from './forecast-engine.service';
 import { CreateForecastCycleDto } from './dto/create-forecast-cycle.dto';
 import { UpdateForecastCycleDto } from './dto/update-forecast-cycle.dto';
@@ -151,10 +153,13 @@ export function mapForecastCycleToResponse(
 
 @Injectable()
 export class ForecastsService {
+  private readonly logger = new Logger(ForecastsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly forecastEngine: ForecastEngineService,
     private readonly notificationsService: NotificationsService,
+    private readonly approvalsService: ApprovalsService,
     private readonly costingService: CostingService,
     private readonly exchangeRatesService: ExchangeRatesService,
   ) {}
@@ -683,10 +688,42 @@ export class ForecastsService {
       },
     });
 
+    // Create approval request when submitting for approval
+    if (currentStatus === 'draft' && targetStatus === 'submitted') {
+      await this.approvalsService
+        .create(
+          { entityType: 'ForecastCycle', entityId: id.toString(), comments: `Submitted for approval` },
+          companyId,
+          tenantId,
+          userId,
+        )
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'submitForApproval',
+            entity: 'ForecastCycle',
+            entityId: id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
+    }
+
     if (targetStatus === 'approved') {
       await this.notificationsService
         .triggerForecastApproval(companyId, tenantId, id, updatedCycle.name)
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'triggerForecastApproval',
+            entity: 'ForecastCycle',
+            entityId: id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
     }
 
     return mapForecastCycleToResponse(updatedCycle);
@@ -1118,8 +1155,16 @@ export class ForecastsService {
           skipDuplicates: true,
         });
       }
-    } catch {
-      // accuracy logging is non-critical
+    } catch (err: unknown) {
+      this.logger.error({
+        operation: 'calculateAndLogAccuracy',
+        entity: 'ForecastCycle',
+        entityId: id.toString(),
+        companyId: companyId.toString(),
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
     }
 
     const finalCycle = await this.prisma.forecastCycle.findUnique({
@@ -1353,7 +1398,16 @@ export class ForecastsService {
           tenantId,
         );
         standardCostPerUnit = costing.totalCost;
-      } catch {
+      } catch (err: unknown) {
+        this.logger.error({
+          operation: 'calculateStandardCost',
+          entity: 'Product',
+          entityId: productId.toString(),
+          companyId: companyId.toString(),
+          userId: 'system',
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
         standardCostPerUnit = 0;
       }
 

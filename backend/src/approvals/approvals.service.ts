@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
@@ -34,6 +35,8 @@ function mapApprovalToResponse(approval: any): ApprovalResponseDto {
 
 @Injectable()
 export class ApprovalsService {
+  private readonly logger = new Logger(ApprovalsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
@@ -237,7 +240,22 @@ export class ApprovalsService {
       },
     });
 
+    // Update source entity status when approved or rejected
     if (newStatus === ApprovalStatus.approved) {
+      this.updateSourceEntityStatus(
+        approval.entityType, approval.entityId, 'approved', companyId, userId,
+      ).catch((err: unknown) => {
+        this.logger.error({
+          operation: 'updateSourceEntityStatus',
+          entity: approval.entityType,
+          entityId: approval.entityId.toString(),
+          companyId: companyId.toString(),
+          userId: userId.toString(),
+          newStatus: 'approved',
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+      });
       this.notificationsService
         .triggerBudgetApproval(
           companyId,
@@ -245,10 +263,58 @@ export class ApprovalsService {
           approval.entityId,
           `Approval for ${approval.entityType}`,
         )
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'triggerBudgetApproval',
+            entity: 'Approval',
+            entityId: id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
+    } else if (newStatus === ApprovalStatus.rejected) {
+      this.updateSourceEntityStatus(
+        approval.entityType, approval.entityId, 'rejected', companyId, userId,
+      ).catch((err: unknown) => {
+        this.logger.error({
+          operation: 'updateSourceEntityStatus',
+          entity: approval.entityType,
+          entityId: approval.entityId.toString(),
+          companyId: companyId.toString(),
+          userId: userId.toString(),
+          newStatus: 'rejected',
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+      });
     }
 
     return mapApprovalToResponse(updated);
+  }
+
+  private async updateSourceEntityStatus(
+    entityType: string,
+    entityId: bigint,
+    status: string,
+    companyId: bigint,
+    userId: bigint,
+  ): Promise<void> {
+    switch (entityType) {
+      case 'BudgetCycle':
+        await this.prisma.budgetCycle.updateMany({
+          where: { id: entityId, companyId },
+          data: { status: status as any, approvedBy: status === 'approved' ? userId : undefined, approvedAt: status === 'approved' ? new Date() : undefined },
+        });
+        break;
+      case 'ForecastCycle':
+        await this.prisma.forecastCycle.updateMany({
+          where: { id: entityId, companyId },
+          data: { status: status as any, approvedBy: status === 'approved' ? userId : undefined, approvedAt: status === 'approved' ? new Date() : undefined },
+        });
+        break;
+    }
   }
 
   async remove(

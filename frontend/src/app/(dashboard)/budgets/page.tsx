@@ -581,26 +581,7 @@ export default function BudgetsPage() {
                 </Button>
               )}
               {selectedCycle.status === 'submitted' && (
-                <>
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() => handleStatusTransition(selectedCycle.id, 'approved')}
-                    disabled={isTransitioning}
-                  >
-                    {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    {t('page.budgets.approve')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleStatusTransition(selectedCycle.id, 'rejected')}
-                    disabled={isTransitioning}
-                  >
-                    {isTransitioning && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    {t('page.budgets.reject')}
-                  </Button>
-                </>
+                <span className="text-xs text-slate-400 italic">{t('page.budgets.pendingApproval')}</span>
               )}
               {selectedCycle.status === 'approved' && (
                 <Button
@@ -851,11 +832,11 @@ export default function BudgetsPage() {
           module="budget-lines"
           moduleLabel={t('page.budgets.budgetLinesLabel')}
           onClose={() => setImportOpen(false)}
-          onSuccess={() => {
-            void loadMasterData();
-            void fetchCycles();
+          onSuccess={async () => {
+            await loadMasterData();
+            await fetchCycles();
             if (selectedCycleId) {
-              void fetchCycleDetail(selectedCycleId);
+              await fetchCycleDetail(selectedCycleId);
             }
           }}
         />

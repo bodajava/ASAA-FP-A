@@ -5,9 +5,10 @@ import { ForecastsController } from './forecasts.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CostingModule } from '../costing/costing.module';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
+import { ApprovalsModule } from '../approvals/approvals.module';
 
 @Module({
-  imports: [NotificationsModule, CostingModule, ExchangeRatesModule],
+  imports: [NotificationsModule, CostingModule, ExchangeRatesModule, ApprovalsModule],
   controllers: [ForecastsController],
   providers: [ForecastsService, ForecastEngineService],
   exports: [ForecastsService, ForecastEngineService],

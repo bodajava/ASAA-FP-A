@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -12,6 +13,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ApprovalsService } from '../approvals/approvals.service';
 import { CreateBudgetCycleDto } from './dto/create-budget-cycle.dto';
 import { UpdateBudgetCycleDto } from './dto/update-budget-cycle.dto';
 import { UpdateBudgetStatusDto } from './dto/update-budget-status.dto';
@@ -134,9 +136,12 @@ export function mapBudgetCycleToResponse(
 
 @Injectable()
 export class BudgetsService {
+  private readonly logger = new Logger(BudgetsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly approvalsService: ApprovalsService,
   ) {}
 
   private async ensureCompanyBelongsToTenant(
@@ -634,10 +639,42 @@ export class BudgetsService {
       },
     });
 
+    // Create approval request when submitting for approval
+    if (currentStatus === 'draft' && targetStatus === 'submitted') {
+      await this.approvalsService
+        .create(
+          { entityType: 'BudgetCycle', entityId: id.toString(), comments: `Submitted for approval` },
+          companyId,
+          tenantId,
+          userId,
+        )
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'submitForApproval',
+            entity: 'BudgetCycle',
+            entityId: id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
+    }
+
     if (targetStatus === 'approved') {
       await this.notificationsService
         .triggerBudgetApproval(companyId, tenantId, id, updatedCycle.name)
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'triggerBudgetApproval',
+            entity: 'BudgetCycle',
+            entityId: id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
     }
 
     return mapBudgetCycleToResponse(updatedCycle);

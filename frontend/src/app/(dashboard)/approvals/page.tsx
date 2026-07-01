@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Shield, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { CheckCircle, XCircle, Eye, Shield, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ export default function ApprovalsPage() {
   const { error: toastError } = useToast();
   const { t } = useI18n();
   const { tStatus } = useTranslateApi();
+  const router = useRouter();
 
   const STATUS_TABS: { label: string; value: ApprovalStatus | 'all' }[] = [
     { label: t('page.approvals.all'), value: 'all' },
@@ -118,11 +120,11 @@ export default function ApprovalsPage() {
       className: 'font-semibold',
       render: (v) => {
         const type = String(v);
+        const label = type === 'BudgetCycle' ? 'Budget' : type === 'ForecastCycle' ? 'Forecast' : type;
         const icon = type.toLowerCase().includes('budget') ? '💰' : '📊';
-        return <span>{icon} {type}</span>;
+        return <span>{icon} {label}</span>;
       },
     },
-    { key: 'entityId', header: t('page.approvals.entityId'), className: 'font-mono text-slate-500' },
     {
       key: 'status',
       header: t('page.approvals.status'),
@@ -141,25 +143,37 @@ export default function ApprovalsPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-32',
+      className: 'w-40',
       render: (_, row) => {
-        if (row.status !== 'pending') return null;
+        const entityPath = row.entityType === 'BudgetCycle' ? '/budgets' : '/forecasts';
+        const canAct = row.status === 'pending';
         return (
           <div className="flex items-center gap-1">
             <button
-              onClick={() => { setActionModal({ approval: row, action: 'approve' }); setActionComment(''); }}
-              className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"
-              title={t('page.approvals.approve')}
+              onClick={() => router.push(entityPath)}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              title={t('page.approvals.viewEntity')}
             >
-              <CheckCircle className="h-4 w-4" />
+              <Eye className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => { setActionModal({ approval: row, action: 'reject' }); setActionComment(''); }}
-              className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
-              title={t('page.approvals.reject')}
-            >
-              <XCircle className="h-4 w-4" />
-            </button>
+            {canAct && (
+              <>
+                <button
+                  onClick={() => { setActionModal({ approval: row, action: 'approve' }); setActionComment(''); }}
+                  className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"
+                  title={t('page.approvals.approve')}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => { setActionModal({ approval: row, action: 'reject' }); setActionComment(''); }}
+                  className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+                  title={t('page.approvals.reject')}
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              </>
+            )}
           </div>
         );
       },
@@ -216,7 +230,7 @@ export default function ApprovalsPage() {
           title={t('page.approvals.noApprovals')}
           description={
             statusFilter === 'all'
-              ? t('page.approvals.noApprovalsDesc')
+              ? t('page.approvals.noApprovalsFriendly')
               : t('page.approvals.noFilteredResults', { status: tStatus(statusFilter) })
           }
         />

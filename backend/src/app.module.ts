@@ -92,6 +92,7 @@ import { CommonModule } from './common/common.module';
     CostingModule,
     ExcelIntegrationModule,
     AiSettingsModule,
+    ContactModule,
   ],
   controllers: [AppController, BenchmarkController],
   providers: [

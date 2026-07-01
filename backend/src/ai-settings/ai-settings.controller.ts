@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Headers } from '@nestjs/common';
 import { AiSettingsService } from './ai-settings.service';
 import { UpdateAiSettingsDto } from './dto/ai-settings.dto';
 
-@Controller('api/v1/ai-settings')
+@Controller('ai-settings')
 export class AiSettingsController {
   constructor(private readonly aiSettingsService: AiSettingsService) {}
 

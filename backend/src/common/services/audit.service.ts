@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 
 interface AuditLogParams {
@@ -15,6 +15,8 @@ interface AuditLogParams {
 
 @Injectable()
 export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async log(params: AuditLogParams): Promise<void> {
@@ -33,7 +35,7 @@ export class AuditService {
         },
       });
     } catch (error) {
-      console.error('Failed to write audit log:', error);
+      this.logger.error('Failed to write audit log:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -53,7 +55,7 @@ export class AuditService {
         })),
       });
     } catch (error) {
-      console.error('Failed to write batch audit logs:', error);
+      this.logger.error('Failed to write batch audit logs:', error instanceof Error ? error.message : String(error));
     }
   }
 }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   OnApplicationBootstrap,
+  Logger,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -85,6 +86,8 @@ function mapMappingToResponse(mapping: ImportMapping): MappingResponseDto {
 
 @Injectable()
 export class IntegrationsService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(IntegrationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly actualImportsService: ActualImportsService,
@@ -271,15 +274,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       ];
     }
 
-    let oracledb: any;
-    try {
-      oracledb = require('oracledb');
-    } catch {
-      throw new BadRequestException({
-        message: 'Oracle client is not configured.',
-        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-      });
-    }
+    const oracledb = this.getOracledb('discoverOracleTables', companyId, connectionId);
 
     const password = connection.passwordEnc
       ? decrypt(connection.passwordEnc)
@@ -309,7 +304,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
       });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch((err: unknown) => {
+          this.logger.error({
+            operation: 'closeConnection',
+            entity: 'IntegrationConnection',
+            entityId: connectionId.toString(),
+            companyId: companyId.toString(),
+            userId: 'system',
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
       }
     }
   }
@@ -378,15 +383,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       ];
     }
 
-    let oracledb: any;
-    try {
-      oracledb = require('oracledb');
-    } catch {
-      throw new BadRequestException({
-        message: 'Oracle client is not configured.',
-        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-      });
-    }
+    const oracledb = this.getOracledb('discoverOracleColumns', companyId, connectionId);
 
     const password = connection.passwordEnc
       ? decrypt(connection.passwordEnc)
@@ -416,7 +413,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
       });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch((err: unknown) => {
+          this.logger.error({
+            operation: 'closeConnection',
+            entity: 'IntegrationConnection',
+            entityId: connectionId.toString(),
+            companyId: companyId.toString(),
+            userId: 'system',
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
       }
     }
   }
@@ -495,15 +502,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       return this.generateMockRows(mockConfig, companyId);
     }
 
-    let oracledb: any;
-    try {
-      oracledb = require('oracledb');
-    } catch {
-      throw new BadRequestException({
-        message: 'Oracle client is not configured.',
-        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-      });
-    }
+    const oracledb = this.getOracledb('previewOracleRows', companyId, connectionId);
 
     const password = connection.passwordEnc
       ? decrypt(connection.passwordEnc)
@@ -534,7 +533,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
       });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch((err: unknown) => {
+          this.logger.error({
+            operation: 'closeConnection',
+            entity: 'IntegrationConnection',
+            entityId: connectionId.toString(),
+            companyId: companyId.toString(),
+            userId: 'system',
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
       }
     }
   }
@@ -1692,9 +1701,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
             `Failed to sync row ${i + 1}: ${err.message}`,
           );
         } else {
-          console.error(
-            `[syncCustomDataRows] Skipping error on row ${i + 1}: ${err.message}`,
-          );
+          this.logger.error({
+            operation: 'syncCustomDataRows',
+            entity: targetModule,
+            entityId: `row-${i + 1}`,
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err.message,
+            stack: err.stack,
+          });
         }
       }
     }
@@ -2182,15 +2197,11 @@ export class IntegrationsService implements OnApplicationBootstrap {
     tenantId: bigint,
     originConnection: any,
   ): Promise<void> {
-    let oracledb: any;
-    try {
-      oracledb = require('oracledb');
-    } catch {
-      throw new BadRequestException({
-        message: 'Oracle client is not configured.',
-        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-      });
-    }
+    const oracledb = this.getOracledb(
+      'syncCompaniesAndConnections',
+      originConnection.companyId || 0n,
+      originConnection.id,
+    );
 
     const result = await connInstance.execute(
       `SELECT COMPANY_CODE, COMPANY_NAME, INDUSTRY_TYPE, CURRENCY_CODE FROM FP_COMPANIES`,
@@ -2389,15 +2400,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
       );
     }
     const companyCode = `COMP-${companyId}`;
-    let oracledb: any;
-    try {
-      oracledb = require('oracledb');
-    } catch {
-      throw new BadRequestException({
-        message: 'Oracle client is not configured.',
-        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-      });
-    }
+    const oracledb = this.getOracledb('syncMasterData', companyId, 'all');
 
     // 1. Sync Accounts
     try {
@@ -2440,7 +2443,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_ACCOUNTS sync: ${e.message}`);
+      this.logSyncError('syncAccounts', 'Account', companyId, e);
     }
 
     // 2. Sync Sites
@@ -2491,7 +2494,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_SITES sync: ${e.message}`);
+      this.logSyncError('syncSites', 'Site', companyId, e);
     }
 
     // 3. Sync Customers
@@ -2536,7 +2539,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_CUSTOMERS sync: ${e.message}`);
+      this.logSyncError('syncCustomers', 'Customer', companyId, e);
     }
 
     // 4. Sync Products
@@ -2604,7 +2607,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_PRODUCTS sync: ${e.message}`);
+      this.logSyncError('syncProducts', 'Product', companyId, e);
     }
 
     // 5. Sync Materials
@@ -2669,7 +2672,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_MATERIALS sync: ${e.message}`);
+      this.logSyncError('syncMaterials', 'Material', companyId, e);
     }
 
     // 6. Sync Cost Centers
@@ -2717,9 +2720,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(
-        `[syncMasterData] Skipping FP_COST_CENTERS sync: ${e.message}`,
-      );
+      this.logSyncError('syncCostCenters', 'CostCenter', companyId, e);
     }
 
     // 7. Sync Product Categories (standalone)
@@ -2744,9 +2745,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(
-        `[syncMasterData] Skipping FP_PRODUCT_CATEGORIES sync: ${e.message}`,
-      );
+      this.logSyncError('syncProductCategories', 'ProductCategory', companyId, e);
     }
 
     // 8. Sync Units (standalone)
@@ -2775,7 +2774,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_UNITS sync: ${e.message}`);
+      this.logSyncError('syncUnits', 'Unit', companyId, e);
     }
 
     // 9. Sync Suppliers (standalone)
@@ -2815,7 +2814,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_SUPPLIERS sync: ${e.message}`);
+      this.logSyncError('syncSuppliers', 'Supplier', companyId, e);
     }
 
     // 10. Sync BOM Recipes
@@ -2874,9 +2873,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(
-        `[syncMasterData] Skipping FP_BOM_RECIPES sync: ${e.message}`,
-      );
+      this.logSyncError('syncBomRecipes', 'BomRecipe', companyId, e);
     }
 
     // 11. Sync BOM Lines
@@ -2927,7 +2924,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: any) {
-      console.warn(`[syncMasterData] Skipping FP_BOM_LINES sync: ${e.message}`);
+      this.logSyncError('syncBomLines', 'BomLine', companyId, e);
     }
 
     // ============================================================
@@ -2973,8 +2970,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_INVENTORY_SNAPSHOTS failed: ${msg}`);
+      this.logSyncError('syncInventorySnapshots', 'InventorySnapshot', companyId, e);
     }
 
     // ============================================================
@@ -3064,8 +3060,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_BUDGET_LINES failed: ${msg}`);
+      this.logSyncError('syncBudgetLines', 'BudgetLine', companyId, e);
     }
 
     // ============================================================
@@ -3155,8 +3150,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_FORECAST_LINES failed: ${msg}`);
+      this.logSyncError('syncForecastLines', 'ForecastLine', companyId, e);
     }
 
     // ============================================================
@@ -3215,8 +3209,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_PRODUCTION_PLANS failed: ${msg}`);
+      this.logSyncError('syncProductionPlans', 'ProductionPlan', companyId, e);
     }
 
     // ============================================================
@@ -3286,8 +3279,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_HEADCOUNT_PLANS failed: ${msg}`);
+      this.logSyncError('syncHeadcountPlans', 'HeadcountPlan', companyId, e);
     }
 
     // ============================================================
@@ -3340,8 +3332,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_PROMOTIONS failed: ${msg}`);
+      this.logSyncError('syncPromotions', 'Promotion', companyId, e);
     }
 
     // ============================================================
@@ -3371,8 +3362,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         });
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_RAW_MATERIAL_PRICES failed: ${msg}`);
+      this.logSyncError('syncRawMaterialPrices', 'RawMaterialPrice', companyId, e);
     }
 
     // ============================================================
@@ -3446,8 +3436,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
         }
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[syncMasterData] FP_GL_ACTUALS failed: ${msg}`);
+      this.logSyncError('syncActualLines', 'ActualLine', companyId, e);
     }
   }
 
@@ -3465,7 +3454,16 @@ export class IntegrationsService implements OnApplicationBootstrap {
     let oracledb: any;
     try {
       oracledb = require('oracledb');
-    } catch {
+    } catch (err: unknown) {
+      this.logger.error({
+        operation: 'runCompanySyncForConnection',
+        entity: 'IntegrationConnection',
+        entityId: connection.id?.toString() || 'unknown',
+        companyId: connection.companyId?.toString() || 'unknown',
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       return;
     }
 
@@ -3486,11 +3484,29 @@ export class IntegrationsService implements OnApplicationBootstrap {
         tenantId,
         connection,
       );
-    } catch (err) {
-      console.error('Failed to sync companies during connection event:', err);
+    } catch (err: unknown) {
+      this.logger.error({
+        operation: 'runCompanySyncForConnection',
+        entity: 'IntegrationConnection',
+        entityId: connection.id?.toString() || 'unknown',
+        companyId: connection.companyId?.toString() || 'unknown',
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch((err: unknown) => {
+          this.logger.error({
+            operation: 'closeConnection',
+            entity: 'IntegrationConnection',
+            entityId: connection.id?.toString() || 'unknown',
+            companyId: connection.companyId?.toString() || 'unknown',
+            userId: 'system',
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
       }
     }
   }
@@ -3545,9 +3561,18 @@ export class IntegrationsService implements OnApplicationBootstrap {
         try {
           // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
           oracledb = require('oracledb');
-        } catch {
+        } catch (err: unknown) {
           success = false;
           message = 'Oracle client is not configured on this server.';
+          this.logger.error({
+            operation: 'testConnection',
+            entity: 'IntegrationConnection',
+            entityId: dto.connectionId || 'new',
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
         }
 
         if (success) {
@@ -3744,7 +3769,18 @@ export class IntegrationsService implements OnApplicationBootstrap {
     let parsedConfig: any = {};
     try {
       parsedConfig = JSON.parse(mapping.mappingConfig);
-    } catch {}
+    } catch (err: unknown) {
+      this.logger.error({
+        operation: 'parseMappingConfig',
+        entity: 'ImportMapping',
+        entityId: mapping.id.toString(),
+        companyId: companyId.toString(),
+        userId: userId.toString(),
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      parsedConfig = {};
+    }
 
     if (parsedConfig && parsedConfig.targetModule) {
       const targetModule = parsedConfig.targetModule;
@@ -3785,15 +3821,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
             }
             rawRows = await this.generateMockRows(mockConfig, companyId);
           } else {
-            let oracledb: any;
-            try {
-              oracledb = require('oracledb');
-            } catch {
-              throw new BadRequestException({
-                message: 'Oracle client is not configured.',
-                code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-              });
-            }
+            const oracledb = this.getOracledb('triggerMappingSync', companyId, connection.id);
 
             const password = connection.passwordEnc
               ? decrypt(connection.passwordEnc)
@@ -3848,7 +3876,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
               });
             } finally {
               if (connInstance) {
-                await connInstance.close().catch(() => {});
+                await connInstance.close().catch((err: unknown) => {
+                  this.logger.error({
+                    operation: 'closeConnection',
+                    entity: 'ImportMapping',
+                    entityId: mappingId.toString(),
+                    companyId: companyId.toString(),
+                    userId: userId.toString(),
+                    error: err instanceof Error ? err.message : String(err),
+                    stack: err instanceof Error ? err.stack : undefined,
+                  });
+                });
               }
             }
           }
@@ -3959,16 +3997,7 @@ export class IntegrationsService implements OnApplicationBootstrap {
               companyId,
             );
           } else {
-            let oracledb: any;
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
-              oracledb = require('oracledb');
-            } catch {
-              throw new BadRequestException({
-                message: 'Oracle client is not configured on this server.',
-                code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-              });
-            }
+            const oracledb = this.getOracledb('triggerManualSync', companyId, connection.id);
 
             const password = connection.passwordEnc
               ? decrypt(connection.passwordEnc)
@@ -4076,7 +4105,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
             } finally {
               if (connInstance) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                await (connInstance.close() as Promise<void>).catch(() => {});
+                await (connInstance.close() as Promise<void>).catch((err: unknown) => {
+                  this.logger.error({
+                    operation: 'closeConnection',
+                    entity: 'ImportMapping',
+                    entityId: mappingId.toString(),
+                    companyId: companyId.toString(),
+                    userId: userId.toString(),
+                    error: err instanceof Error ? err.message : String(err),
+                    stack: err instanceof Error ? err.stack : undefined,
+                  });
+                });
               }
             }
           }
@@ -4295,7 +4334,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
           createdImport.id,
           createdImport.errorLog ?? 'Validation failed',
         )
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'triggerImportFailed',
+            entity: 'ActualImport',
+            entityId: createdImport.id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
     } else if (
       createdImport.status === 'validated' ||
       createdImport.status === 'posted'
@@ -4306,7 +4355,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
           tenantId,
           periodFrom.getFullYear(),
         )
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'checkAndTriggerVarianceBreaches',
+            entity: 'ActualImport',
+            entityId: createdImport.id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
     }
 
     return {
@@ -4391,8 +4450,16 @@ export class IntegrationsService implements OnApplicationBootstrap {
     setInterval(async () => {
       try {
         await this.runSimulatedBackgroundSync();
-      } catch (err) {
-        console.error('Simulated background sync error:', err);
+      } catch (err: unknown) {
+        this.logger.error({
+          operation: 'onApplicationBootstrapSync',
+          entity: 'IntegrationConnection',
+          entityId: 'all',
+          companyId: 'system',
+          userId: 'system',
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
       }
     }, 60000);
   }
@@ -4512,7 +4579,15 @@ export class IntegrationsService implements OnApplicationBootstrap {
             rawRows = result.rows || [];
             await connInstance.close();
           } catch (err: unknown) {
-            console.error('[Background Sync] Oracle execution failed:', err);
+            this.logger.error({
+              operation: 'runSimulatedBackgroundSyncOracle',
+              entity: 'IntegrationConnection',
+              entityId: conn.id.toString(),
+              companyId: conn.companyId.toString(),
+              userId: 'system',
+              error: err instanceof Error ? err.message : String(err),
+              stack: err instanceof Error ? err.stack : undefined,
+            });
             oracleFailed = true;
             await this.prisma.integrationConnection.update({
               where: { id: conn.id },
@@ -4648,18 +4723,20 @@ export class IntegrationsService implements OnApplicationBootstrap {
         if (config && config.targetModule) {
           customMappings.push({ mapping: m, config });
         }
-      } catch {}
+      } catch (err: unknown) {
+        this.logger.error({
+          operation: 'parseMappingConfigInFullSync',
+          entity: 'ImportMapping',
+          entityId: m.id.toString(),
+          companyId: companyId.toString(),
+          userId: 'system',
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+      }
     }
 
-    let oracledb: any;
-    try {
-      oracledb = require('oracledb');
-    } catch {
-      throw new BadRequestException({
-        message: 'Oracle client is not configured on this server.',
-        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
-      });
-    }
+    const oracledb = this.getOracledb('fullSyncMasterData', companyId, connectionId);
 
     const password = connection.passwordEnc
       ? decrypt(connection.passwordEnc)
@@ -4774,7 +4851,17 @@ export class IntegrationsService implements OnApplicationBootstrap {
       });
     } finally {
       if (connInstance) {
-        await connInstance.close().catch(() => {});
+        await connInstance.close().catch((err: unknown) => {
+          this.logger.error({
+            operation: 'closeConnection',
+            entity: 'IntegrationConnection',
+            entityId: connectionId.toString(),
+            companyId: companyId.toString(),
+            userId: 'system',
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          });
+        });
       }
     }
   }
@@ -4843,5 +4930,42 @@ export class IntegrationsService implements OnApplicationBootstrap {
     }
 
     return rows;
+  }
+
+  private logSyncError(
+    operation: string,
+    entity: string,
+    companyId: bigint,
+    err: any,
+  ) {
+    this.logger.error({
+      operation,
+      entity,
+      entityId: 'all',
+      companyId: companyId.toString(),
+      userId: 'system',
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+  }
+
+  private getOracledb(operation: string, companyId: bigint, connectionId?: bigint | string) {
+    try {
+      return require('oracledb');
+    } catch (err: unknown) {
+      this.logger.error({
+        operation,
+        entity: 'IntegrationConnection',
+        entityId: connectionId?.toString() || 'unknown',
+        companyId: companyId.toString(),
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      throw new BadRequestException({
+        message: 'Oracle client is not configured on this server.',
+        code: ErrorCodes.ORACLE_CLIENT_NOT_CONFIGURED,
+      });
+    }
   }
 }

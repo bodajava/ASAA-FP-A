@@ -988,7 +988,19 @@ export function ImportModal({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => window.open('/excel-integration', '_blank')}
+                  onClick={async () => {
+                    try {
+                      const res = await api.get('/excel-integration/templates/client-workbook', { responseType: 'blob' });
+                      const url = URL.createObjectURL(new Blob([res.data as BlobPart]));
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'Master_Data_Workbook.xlsx';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      toastError(t('component.importModal.downloadFailed'));
+                    }
+                  }}
                 >
                   <Download className="h-3.5 w-3.5" />
                   {t('import.error.downloadMasterData')}

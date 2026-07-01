@@ -27,7 +27,6 @@ import type { Response } from 'express';
 import { ExcelIntegrationService } from './excel-integration.service';
 import { TemplateGeneratorService } from './template-generator.service';
 import { ClientWorkbookImportService } from './client-workbook-import.service';
-import { DebugImportService } from './debug-import.service';
 import {
   WorkbookAnalysis,
   ErpModuleMapping,
@@ -89,13 +88,12 @@ function multerConfig() {
   };
 }
 
-@Controller('api/v1/excel-integration')
+@Controller('excel-integration')
 export class ExcelIntegrationController {
   constructor(
     private readonly service: ExcelIntegrationService,
     private readonly templateGenerator: TemplateGeneratorService,
     private readonly clientWorkbookImport: ClientWorkbookImportService,
-    private readonly debugImport: DebugImportService,
   ) {}
 
   /* ─── POST /analyze — Analyze workbook structure ────────────────────── */
@@ -299,35 +297,6 @@ export class ExcelIntegrationController {
     const userId = req.user?.id ? BigInt(req.user.id) : BigInt(4);
 
     return this.clientWorkbookImport.importWorkbook(
-      file.buffer,
-      file.originalname,
-      BigInt(companyId),
-      userId,
-    );
-  }
-
-  /* ─── POST /client-workbook/debug-import — Debug mode import ──── */
-
-  @Post('client-workbook/debug-import')
-  @UseInterceptors(FileInterceptor('file', multerConfig()))
-  @HttpCode(HttpStatus.OK)
-  async debugImportClientWorkbook(
-    @UploadedFile() file: MulterFile,
-    @Headers('x-company-id') companyIdHeader: string,
-    @Req() req: Request & { user?: any },
-  ) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-
-    const companyId = parseInt(companyIdHeader, 10);
-    if (isNaN(companyId)) {
-      throw new BadRequestException('x-company-id header is required');
-    }
-
-    const userId = req.user?.id ? BigInt(req.user.id) : BigInt(4);
-
-    return this.debugImport.debugImport(
       file.buffer,
       file.originalname,
       BigInt(companyId),

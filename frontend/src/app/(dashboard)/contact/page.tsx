@@ -123,7 +123,7 @@ export default function ContactPage() {
       setIsSending(true);
 
       try {
-        await api.post('/api/v1/support/contact', {
+        await api.post('/support/contact', {
           fullName: formData.name,
           email: formData.email,
           inquiryType: formData.inquiryType,

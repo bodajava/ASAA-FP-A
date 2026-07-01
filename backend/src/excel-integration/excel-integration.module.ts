@@ -20,7 +20,6 @@ import { ExcelIntegrationService } from './excel-integration.service';
 import { TemplateGeneratorService } from './template-generator.service';
 import { ImportDependencyCheckerService } from './import-dependency-checker.service';
 import { ClientWorkbookImportService } from './client-workbook-import.service';
-import { DebugImportService } from './debug-import.service';
 import { ExcelIntegrationController } from './excel-integration.controller';
 import { PrismaModule } from '../prisma.module';
 
@@ -37,7 +36,6 @@ import { PrismaModule } from '../prisma.module';
     TemplateGeneratorService,
     ImportDependencyCheckerService,
     ClientWorkbookImportService,
-    DebugImportService,
   ],
   exports: [
     ExcelAnalyzerService,

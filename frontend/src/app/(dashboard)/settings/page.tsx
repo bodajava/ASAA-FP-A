@@ -14,6 +14,8 @@ import {
   Hash,
   Mail,
   Lock,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,7 @@ import { apiGet, apiPatch } from '@/lib/api';
 import { MONTH_NAMES } from '@/lib/constants';
 import type { Company, UpdateCompanyPayload } from '@/types/api';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import Link from 'next/link';
 
 // ---------------------------------------------------------------------------
 // Section Card wrapper
@@ -400,6 +403,23 @@ export default function SettingsPage() {
         <p className="mt-4 text-[10px] text-slate-400 font-medium">
           {t('page.settings.sessionDisclaimer')}
         </p>
+      </SectionCard>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 3. AI Integration                                                   */}
+      {/* ------------------------------------------------------------------ */}
+      <SectionCard
+        icon={<Sparkles className="h-4 w-4" />}
+        title={t('page.settings.aiIntegration')}
+        description={t('page.settings.aiIntegrationDesc')}
+      >
+        <Link
+          href="/settings/ai-integration"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
+        >
+          {t('page.settings.configureAi')}
+          <ArrowRight className="h-3 w-3" />
+        </Link>
       </SectionCard>
     </div>
   );

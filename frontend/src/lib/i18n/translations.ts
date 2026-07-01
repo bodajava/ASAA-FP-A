@@ -786,6 +786,9 @@ export type TranslationKey =
   | 'page.settings.userId'
   | 'page.settings.activeCompanyId'
   | 'page.settings.sessionDisclaimer'
+  | 'page.settings.aiIntegration'
+  | 'page.settings.aiIntegrationDesc'
+  | 'page.settings.configureAi'
   | 'page.settings.discardReload'
   | 'page.settings.saving'
   | 'page.settings.saveChanges'
@@ -2733,6 +2736,9 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.settings.userId': 'User ID',
     'page.settings.activeCompanyId': 'Active Company ID',
     'page.settings.sessionDisclaimer': 'Session details are managed by the authentication system and cannot be modified here. To change your password or email, contact your tenant administrator.',
+    'page.settings.aiIntegration': 'AI Integration',
+    'page.settings.aiIntegrationDesc': 'Configure AI-powered scenario planning and analysis',
+    'page.settings.configureAi': 'Configure AI Settings',
     'page.settings.discardReload': 'Discard & reload',
     'page.settings.saving': 'Saving…',
     'page.settings.saveChanges': 'Save Changes',
@@ -4729,6 +4735,9 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'page.settings.userId': 'معرف المستخدم',
     'page.settings.activeCompanyId': 'معرف الشركة النشطة',
     'page.settings.sessionDisclaimer': 'تتم إدارة تفاصيل الجلسة بواسطة نظام المصادقة ولا يمكن تعديلها هنا. لتغيير كلمة المرور أو البريد الإلكتروني، اتصل بمسؤول المؤسسة.',
+    'page.settings.aiIntegration': 'تكامل الذكاء الاصطناعي',
+    'page.settings.aiIntegrationDesc': 'تكوين تخطيط السيناريو والتحليل المستمد من الذكاء الاصطناعي',
+    'page.settings.configureAi': 'تكوين إعدادات الذكاء الاصطناعي',
     'page.settings.discardReload': 'تجاهل وإعادة تحميل',
     'page.settings.saving': 'جارٍ الحفظ...',
     'page.settings.saveChanges': 'حفظ التغييرات',

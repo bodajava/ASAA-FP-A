@@ -25,11 +25,11 @@ const ROUTE_PREFETCH_CONFIG: Record<string, (companyId: string) => {
   },
   '/budgets': (companyId) => ({
     queryKey: queryKeys.budgets.list(companyId, { page: '1', limit: '10' }),
-    endpoint: `/budget-cycles?companyId=${companyId}&page=1&limit=10`,
+    endpoint: `/budgets?page=1&limit=10`,
   }),
   '/forecasts': (companyId) => ({
     queryKey: queryKeys.forecasts.list(companyId, { page: '1', limit: '10' }),
-    endpoint: `/forecast-cycles?companyId=${companyId}&page=1&limit=10`,
+    endpoint: `/forecasts?page=1&limit=10`,
   }),
   '/scenarios': (companyId) => ({
     queryKey: queryKeys.scenarios.list(companyId, { page: '1', limit: '10' }),

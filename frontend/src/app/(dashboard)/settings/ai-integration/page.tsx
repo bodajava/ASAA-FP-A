@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import { useToast } from '@/components/ui/toast';
-import axios from 'axios';
+import { apiGet, apiPost } from '@/lib/api';
 
 interface AiSettings {
   provider: string;
@@ -42,13 +42,10 @@ export default function AiIntegrationPage() {
     async function loadSettings() {
       if (!activeCompanyId) return;
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        const res = await axios.get<AiSettings>(`${baseUrl}/api/v1/ai-settings`, {
-          headers: { 'x-company-id': String(activeCompanyId) },
-        });
-        setSettings(res.data);
-        setModel(res.data.model);
-        setIsEnabled(res.data.isEnabled);
+        const res = await apiGet<AiSettings>('/ai-settings');
+        setSettings(res);
+        setModel(res.model);
+        setIsEnabled(res.isEnabled);
       } catch {
         // Silent fail - use defaults
       } finally {
@@ -62,7 +59,6 @@ export default function AiIntegrationPage() {
     if (!activeCompanyId) return;
     setIsSaving(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const payload: Record<string, unknown> = {
         provider: 'google_gemini',
         model,
@@ -76,17 +72,12 @@ export default function AiIntegrationPage() {
         return;
       }
 
-      await axios.post(`${baseUrl}/api/v1/ai-settings`, payload, {
-        headers: { 'x-company-id': String(activeCompanyId) },
-      });
+      await apiPost('/ai-settings', payload);
 
       toastSuccess(t('page.aiSettings.saveSuccess'));
       setApiKey('');
-      // Reload settings
-      const res = await axios.get<AiSettings>(`${baseUrl}/api/v1/ai-settings`, {
-        headers: { 'x-company-id': String(activeCompanyId) },
-      });
-      setSettings(res.data);
+      const res = await apiGet<AiSettings>('/ai-settings');
+      setSettings(res);
     } catch {
       toastError(t('page.aiSettings.saveFailed'));
     } finally {
@@ -98,10 +89,7 @@ export default function AiIntegrationPage() {
     if (!activeCompanyId) return;
     setIsTesting(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      await axios.post(`${baseUrl}/api/v1/scenarios/ai-suggestions`, {}, {
-        headers: { 'x-company-id': String(activeCompanyId) },
-      });
+      await apiPost('/scenarios/ai-suggestions', {});
       toastSuccess('Connection successful');
     } catch {
       toastError('Connection failed. Please check your API key.');

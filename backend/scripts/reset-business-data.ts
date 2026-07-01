@@ -1,6 +1,24 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
-const prisma = new PrismaClient();
+function createPrismaClient(): PrismaClient {
+  let url = process.env.DATABASE_URL!;
+  if (url && url.startsWith('"') && url.endsWith('"')) {
+    url = url.slice(1, -1);
+  }
+  const urlObj = new URL(url);
+  if (!urlObj.searchParams.has('allowPublicKeyRetrieval')) {
+    urlObj.searchParams.set('allowPublicKeyRetrieval', 'true');
+  }
+  if (!urlObj.searchParams.has('connectionLimit')) {
+    urlObj.searchParams.set('connectionLimit', '10');
+  }
+  url = urlObj.toString();
+  const adapter = new PrismaMariaDb(url, { useTextProtocol: true });
+  return new PrismaClient({ adapter });
+}
+
+const prisma = createPrismaClient();
 
 async function main() {
   console.log('Resetting business data...');

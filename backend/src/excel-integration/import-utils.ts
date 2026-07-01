@@ -1,786 +1,41 @@
 import { Logger } from '@nestjs/common';
+import {
+  getAllDefinitions,
+  getDefinition,
+  resolveModuleKey,
+} from '../imports/import-definitions';
 
 const logger = new Logger('ImportUtils');
 
-/* ─── Column Alias Maps per Module ─────────────────────────────────── */
+/* ─── Column Alias Maps (built from import-definitions.ts) ─────────── */
 
-export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> = {
-  companies: {
-    name: [
-      'name',
-      'companyname',
-      'companyName',
-      'legalname',
-      'tradingas',
-      'company_name',
-      'company name',
-      'company',
-      'entity',
-      'entityname',
-      'entity_name',
-      'organisationname',
-      'organisation_name',
-      'organizationname',
-      'organization_name',
-    ],
-    legalName: [
-      'legalname',
-      'legalName',
-      'legal_name',
-      'legal name',
-      'registeredname',
-      'registered_name',
-      'officialname',
-      'official_name',
-    ],
-    industryType: [
-      'industrytype',
-      'industryType',
-      'industry_type',
-      'industry type',
-      'industry',
-      'sector',
-    ],
-    fiscalYearStartMonth: [
-      'fiscalyearstartmonth',
-      'fiscalYearStartMonth',
-      'fiscal_year_start_month',
-      'fiscal year start month',
-      'fystartmonth',
-      'startmonth',
-      'fystart',
-    ],
-    taxNumber: [
-      'taxnumber',
-      'taxNumber',
-      'tax_number',
-      'tax number',
-      'vatnumber',
-      'vat_number',
-      'tin',
-      'crnumber',
-      'cr_number',
-      'commercialregister',
-      'commercial_registration',
-    ],
-    currencyCode: [
-      'currencycode',
-      'currencyCode',
-      'currency_code',
-      'currency code',
-      'currency',
-      'ccy',
-    ],
-  },
-  sites: {
-    name: ['name', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization', 'organisation'],
-    type: ['type', 'sitetype', 'site_type', 'site type'],
-    address: ['address', 'location', 'street', 'cityaddress', 'address1'],
-    status: ['status', 'sitestatus', 'site_status'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    region: ['region', 'area', 'district', 'zone'],
-    city: ['city', 'town', 'municipality'],
-    country: ['country', 'nation'],
-    phone: ['phone', 'telephone', 'tel', 'mobile', 'phone1'],
-  },
-  units: {
-    name: ['name', 'unitname', 'unit_name', 'unit name', 'unit', 'uomname', 'uom name', 'uom_name'],
-    symbol: [
-      'symbol',
-      'code',
-      'uom',
-      'unitsymbol',
-      'unit_symbol',
-      'unit symbol',
-      'uomcode',
-      'uom_code',
-      'measure',
-      'abbreviation',
-      'abbr',
-    ],
-    type: ['type', 'unittype', 'unit_type', 'uomtype'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-  },
-  accounts: {
-    code: [
-      'code',
-      'accountcode',
-      'account_code',
-      'account code',
-      'glcode',
-      'gl_code',
-      'accountnumber',
-      'account_number',
-      'gl_number',
-      'glno',
-    ],
-    name: ['name', 'accountname', 'account_name', 'account name', 'title', 'account'],
-    type: [
-      'type',
-      'accounttype',
-      'account_type',
-      'account type',
-      'classification',
-      'accountcategory',
-    ],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    parentCode: ['parentcode', 'parent_code', 'parent code', 'parent', 'parentaccount'],
-  },
-  costcenters: {
-    code: [
-      'code',
-      'costcentercode',
-      'cost_center_code',
-      'cost center code',
-      'cccode',
-      'cc_code',
-    ],
-    name: [
-      'name',
-      'costcentername',
-      'cost_center_name',
-      'cost center name',
-      'ccname',
-      'costcenter',
-      'costcenter',
-      'department',
-      'departmentname',
-      'department_name',
-    ],
-    type: ['type', 'costcentertype', 'cost_center_type'],
-    siteId: ['sitecode', 'sitename', 'site_code', 'site_name', 'site'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-  },
-  productcategories: {
-    name: ['name', 'categoryname', 'category_name', 'category name', 'category', 'catname', 'productcategory', 'product_category'],
-    code: ['code', 'categorycode', 'category_code', 'category code', 'catcode'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    parentCategoryName: [
-      'parentcategoryname',
-      'parent_category_name',
-      'parent category',
-      'parentname',
-      'parent',
-    ],
-  },
-  customers: {
-    code: [
-      'code',
-      'customercode',
-      'customer_code',
-      'customer code',
-      'clientcode',
-      'client_code',
-      'customerid',
-      'customernumber',
-      'customer_number',
-      'customer no',
-      'customer_no',
-      'accountnumber',
-    ],
-    name: [
-      'name',
-      'customername',
-      'customer_name',
-      'customer name',
-      'clientname',
-      'client_name',
-      'company',
-    ],
-    customerType: [
-      'customertype',
-      'customer_type',
-      'customer type',
-      'type',
-      'segment',
-    ],
-    phone: ['phone', 'telephone', 'tel', 'mobile', 'phone1', 'phone2'],
-    email: ['email', 'e-mail', 'mail', 'emailaddress'],
-    creditLimit: [
-      'creditlimit',
-      'credit_limit',
-      'credit limit',
-      'credit',
-      'creditlimitusd',
-    ],
-    paymentTerms: [
-      'paymentterms',
-      'payment_terms',
-      'payment terms',
-      'terms',
-      'paymentdays',
-      'paymentdays',
-    ],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    region: ['region', 'area', 'city'],
-    country: ['country', 'nation'],
-    city: ['city', 'town'],
-  },
-  suppliers: {
-    code: [
-      'code',
-      'suppliercode',
-      'supplier_code',
-      'supplier code',
-      'vendorcode',
-      'vendor_code',
-      'supplierid',
-    ],
-    name: [
-      'name',
-      'suppliername',
-      'supplier_name',
-      'supplier name',
-      'vendorname',
-      'vendor_name',
-      'vendor',
-      'company',
-    ],
-    phone: ['phone', 'telephone', 'tel', 'mobile'],
-    email: ['email', 'e-mail', 'mail'],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    country: ['country', 'nation'],
-    city: ['city', 'town'],
-    supplierType: ['suppliertype', 'supplier_type', 'type', 'vendortype'],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-    leadTimeDays: ['leadtimedays', 'lead_time_days', 'lead time'],
-  },
-  materials: {
-    code: [
-      'code',
-      'materialcode',
-      'material_code',
-      'material code',
-      'rmcode',
-      'rm_code',
-      'rawmaterialcode',
-      'raw_material_code',
-      'itemcode',
-      'item_code',
-      'ingno',
-      'ing no',
-      'ing_no',
-    ],
-    name: [
-      'name',
-      'materialname',
-      'material_name',
-      'material name',
-      'materialdesc',
-      'material_desc',
-      'ingdesc',
-      'ing desc',
-      'ing_desc',
-      'description',
-      'itemdesc',
-      'item_desc',
-    ],
-    materialType: [
-      'materialtype',
-      'material_type',
-      'material type',
-      'type',
-      'rmtype',
-    ],
-    unitSymbol: [
-      'unit',
-      'uom',
-      'unitsymbol',
-      'unit_symbol',
-      'unit symbol',
-    ],
-    unitId: [
-      'unit',
-      'uom',
-      'unitsymbol',
-      'unit_symbol',
-      'unit symbol',
-      'inguom',
-      'ing uom',
-      'ing_uom',
-    ],
-    supplierId: [
-      'suppliercode',
-      'suppliername',
-      'supplier_code',
-      'supplier_name',
-      'supplier name',
-      'vendor',
-    ],
-    purchasePrice: [
-      'purchaseprice',
-      'purchase_price',
-      'purchase price',
-      'price',
-      'latestprice',
-      'lastprice',
-      'cost',
-      'unitcost',
-      'costperkg',
-      'cost_per_kg',
-    ],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    safetyStockQty: [
-      'safetystockqty',
-      'safety_stock_qty',
-      'minstock',
-      'minimumstock',
-      'minstockqty',
-    ],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-    reorderPoint: ['reorderpoint', 'reorder_point', 'reorder point'],
-  },
-  products: {
-    sku: [
-      'sku',
-      'productsku',
-      'product_sku',
-      'product sku',
-      'itemcode',
-      'item_code',
-      'productcode',
-      'product_code',
-      'barcode',
-      'code',
-      'prdno',
-      'prd no',
-      'prd_no',
-      'fgcode',
-      'fg_code',
-    ],
-    name: [
-      'name',
-      'productname',
-      'product_name',
-      'product name',
-      'itemdesc',
-      'item_desc',
-      'description',
-      'prddesc',
-      'prd desc',
-      'prd_desc',
-      'product',
-    ],
-    productType: [
-      'producttype',
-      'product_type',
-      'product type',
-      'type',
-      'fgtype',
-    ],
-    categoryId: [
-      'categoryname',
-      'categorycode',
-      'category_code',
-      'category_name',
-      'category',
-      'catname',
-      'major',
-      'maincategory',
-      'main_category',
-    ],
-    unitSymbol: [
-      'unit',
-      'uom',
-      'unitsymbol',
-      'unit_symbol',
-      'unit symbol',
-    ],
-    unitId: [
-      'unit',
-      'uom',
-      'unitsymbol',
-      'unit_symbol',
-      'unit symbol',
-      'prduom',
-      'prd uom',
-      'prd_uom',
-    ],
-    standardCost: ['standardcost', 'standard_cost', 'standard cost', 'stdcost', 'std_cost'],
-    salePrice: [
-      'saleprice',
-      'sale_price',
-      'sale price',
-      'price',
-      'sellingprice',
-      'selling_price',
-      'unitprice',
-      'unit_price',
-    ],
-    companyId: [
-      'companycode',
-      'companyname',
-      'company_code',
-      'company_name',
-      'companyid',
-      'company',
-    ],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-  },
-  bomrecipes: {
-    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'code', 'product', 'prdno', 'prd no', 'prd_no'],
-    version: ['version', 'bomversion', 'bom_version', 'ver'],
-    outputQty: ['outputqty', 'output_qty', 'output qty', 'outputquantity'],
-    wastagePct: ['wastagepct', 'wastage_pct', 'wastage %', 'wastage', 'wastage_percentage'],
-    laborCost: ['laborcost', 'labor_cost', 'labor cost', 'labor'],
-    overheadCost: ['overheadcost', 'overhead_cost', 'overhead cost', 'overhead'],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'ingno', 'ing no', 'ing_no'],
-    qtyPerOutput: ['qtyperoutput', 'qty_per_output', 'qty per output', 'quantity', 'qty', 'planqty', 'plan qty'],
-  },
-  bomlines: {
-    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'ingno', 'ing no', 'ing_no'],
-    qtyPerOutput: ['qtyperoutput', 'qty_per_output', 'qty per output', 'quantity', 'qty', 'planqty', 'plan qty'],
-    unitCost: ['unitcost', 'unit_cost', 'unit cost', 'cost', 'price'],
-    wastagePct: ['wastagepct', 'wastage_pct', 'wastage %', 'wastage'],
-    yieldPct: ['yieldpct', 'yield_pct', 'yield %', 'yield'],
-    costCategory: ['costcategory', 'cost_category', 'category'],
-    quantity: ['quantity', 'qty'],
-  },
-  budgetlines: {
-    budgetCycleName: ['budgetcyclename', 'budget_cycle_name', 'budget cycle name', 'budgetcycle', 'budget cycle', 'cycle'],
-    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
-    accountCode: ['accountcode', 'account_code', 'account code', 'account', 'glcode', 'gl_code', 'code'],
-    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
-    costCenterCode: ['costcentercode', 'cost_center_code', 'cost center code', 'costcenter', 'cc', 'cccode'],
-    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
-    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
-    customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
-    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
-    quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
-    unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
-    amount: ['amount', 'value', 'budgetamt', 'budget_amt'],
-    notes: ['notes', 'note', 'description', 'remarks'],
-  },
-  forecastlines: {
-    forecastCycleName: ['forecastcyclename', 'forecast_cycle_name', 'forecast cycle name', 'forecastcycle', 'forecast cycle', 'cycle'],
-    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
-    accountCode: ['accountcode', 'account_code', 'account code', 'account', 'glcode', 'gl_code', 'code'],
-    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
-    costCenterCode: ['costcentercode', 'cost_center_code', 'cost center code', 'costcenter', 'cc', 'cccode'],
-    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
-    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
-    customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
-    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
-    quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
-    unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
-    amount: ['amount', 'value', 'forecastamt', 'forecast_amt'],
-    driverType: ['drivertype', 'driver_type', 'driver type', 'driver'],
-    notes: ['notes', 'note', 'description', 'remarks'],
-  },
-  actuallines: {
-    accountCode: ['accountcode', 'account_code', 'account code', 'account', 'glcode', 'gl_code', 'code'],
-    siteCode: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
-    costCenterCode: ['costcentercode', 'cost_center_code', 'cost center code', 'costcenter', 'cc', 'cccode'],
-    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'itemcode', 'item_code', 'productcode', 'code', 'product'],
-    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code'],
-    customerCode: ['customercode', 'customer_code', 'customer code', 'customer', 'code'],
-    transactionDate: ['transactiondate', 'transaction_date', 'transaction date', 'date', 'actualdate', 'actual date', 'invoicedate', 'invoice date', 'postingdate', 'posting date', 'trxdate', 'trx_date', 'tarih', 'تاريخ', 'fecha'],
-    quantity: ['quantity', 'qty', 'plannedqty', 'planned_qty'],
-    unitPrice: ['unitprice', 'unit_price', 'unit price', 'price'],
-    amount: ['amount', 'value', 'actualamt', 'actual_amt'],
-    referenceNo: ['referenceno', 'reference_no', 'reference number', 'reference no', 'refno', 'ref no'],
-  },
-  rawmaterialprices: {
-    materialCode: ['materialcode', 'material_code', 'material code', 'material', 'code', 'itemcode', 'item code'],
-    price: ['price', 'rate', 'cost', 'latestprice', 'unitprice', 'unit_price', 'unit price'],
-    effectiveDate: ['pricedate', 'price_date', 'price date', 'effectivedate', 'effective_date', 'effective date', 'date'],
-    supplierCode: ['suppliercode', 'supplier_code', 'supplier code', 'supplier', 'vendor'],
-    notes: ['source', 'source_system', 'remarks', 'notes'],
-  },
-  productionplans: {
-    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'code', 'product'],
-    siteName: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
-    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
-    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
-    plannedQty: ['plannedqty', 'planned_qty', 'planned qty', 'planqty', 'plan qty'],
-    actualQty: ['actualqty', 'actual_qty', 'actual qty', 'actualquantity'],
-    status: ['status', 'planstatus', 'plan_status'],
-  },
-  exchangerates: {
-    fromCurrency: ['fromcurrency', 'from_currency', 'from currency', 'from', 'sourcecurrency'],
-    toCurrency: ['tocurrency', 'to_currency', 'to currency', 'to', 'targetcurrency'],
-    rate: ['rate', 'exchangerate', 'exchange_rate', 'value'],
-    rateDate: ['ratedate', 'rate_date', 'rate date', 'date', 'effectivedate'],
-    source: ['source', 'ratesource', 'remarks'],
-  },
-  kpitargets: {
-    kpiName: ['kpiname', 'kpi_name', 'kpi name', 'kpi'],
-    kpiCategory: ['kpicategory', 'kpi_category', 'kpi category', 'category'],
-    fiscalYear: ['fiscalyear', 'fiscal_year', 'fiscal year', 'year'],
-    periodMonth: ['periodmonth', 'period_month', 'period month', 'month'],
-    targetValue: ['targetvalue', 'target_value', 'target value', 'target'],
-    unit: ['unit', 'kpiunit', 'kpi_unit', 'uom'],
-    siteId: ['sitecode', 'site_code', 'site code', 'sitename', 'site_name', 'site name', 'site', 'location', 'org', 'organization'],
-  },
-  promotions: {
-    name: ['name', 'promotionname', 'promotion_name', 'promotion name', 'title'],
-    description: ['description', 'desc', 'promo_desc'],
-    productSku: ['productsku', 'product_sku', 'product sku', 'sku', 'product'],
-    customerCode: ['customercode', 'customer_code', 'customer code', 'customer'],
-    discountPct: ['discountpct', 'discount_pct', 'discount %', 'discountpercentage'],
-    discountAmt: ['discountamt', 'discount_amt', 'discountamount', 'discount_amount'],
-    startDate: ['startdate', 'start_date', 'start date', 'from'],
-    endDate: ['enddate', 'end_date', 'end date', 'to'],
-    budgetAmt: ['budgetamt', 'budget_amt', 'budgetamount', 'budget'],
-    actualCost: ['actualcost', 'actual_cost', 'actualcostamt'],
-    incrementalRevenue: ['incrementalrevenue', 'incremental_revenue', 'incremental revenue'],
-    roi: ['roi', 'returnoninvestment'],
-    isActive: ['isactive', 'is_active', 'active', 'status'],
-  },
-};
+export const MODULE_COLUMN_ALIASES: Record<string, Record<string, string[]>> =
+  buildAliasMap();
 
-/* ─── Whitelist Fields per Prisma Model ────────────────────────────── */
+function buildAliasMap(): Record<string, Record<string, string[]>> {
+  const map: Record<string, Record<string, string[]>> = {};
+  for (const def of getAllDefinitions()) {
+    const colMap: Record<string, string[]> = {};
+    for (const col of def.columns) {
+      colMap[col.field] = [...col.aliases, col.field, col.display];
+    }
+    map[def.moduleKey] = colMap;
+  }
+  return map;
+}
 
-export const MODEL_FIELD_WHITELIST: Record<string, string[]> = {
-  company: [
-    'name',
-    'legalName',
-    'industryType',
-    'currencyCode',
-    'fiscalYearStartMonth',
-    'taxNumber',
-  ],
-  site: [
-    'name',
-    'type',
-    'region',
-    'address',
-    'city',
-    'country',
-    'phone',
-    'status',
-    'companyId',
-  ],
-  unit: ['name', 'symbol', 'companyId'],
-  account: ['code', 'name', 'type', 'isActive', 'companyId'],
-  costCenter: ['code', 'name', 'type', 'siteId', 'companyId'],
-  productCategory: ['name', 'companyId'],
-  customer: [
-    'code',
-    'name',
-    'customerType',
-    'region',
-    'phone',
-    'email',
-    'creditLimit',
-    'paymentTerms',
-    'isActive',
-    'companyId',
-    'country',
-    'city',
-  ],
-  supplier: [
-    'name',
-    'phone',
-    'email',
-    'companyId',
-  ],
-  material: [
-    'code',
-    'name',
-    'materialType',
-    'unitId',
-    'unitSymbol',
-    'supplierId',
-    'purchasePrice',
-    'companyId',
-    'safetyStockQty',
-    'isActive',
-  ],
-  product: [
-    'sku',
-    'name',
-    'productType',
-    'categoryId',
-    'unitId',
-    'unitSymbol',
-    'standardCost',
-    'salePrice',
-    'companyId',
-    'isActive',
-  ],
-  actualImport: [
-    'companyId',
-    'sourceSystem',
-    'importType',
-    'periodFrom',
-    'periodTo',
-    'status',
-    'importedBy',
-  ],
-  actualLine: [
-    'actualImportId',
-    'accountId',
-    'siteId',
-    'costCenterId',
-    'productId',
-    'materialId',
-    'customerId',
-    'transactionDate',
-    'quantity',
-    'unitPrice',
-    'amount',
-    'referenceNo',
-  ],
-  budgetLine: [
-    'budgetCycleId',
-    'accountId',
-    'siteId',
-    'costCenterId',
-    'productId',
-    'materialId',
-    'customerId',
-    'periodMonth',
-    'quantity',
-    'unitPrice',
-    'amount',
-    'notes',
-  ],
-  forecastLine: [
-    'forecastCycleId',
-    'accountId',
-    'siteId',
-    'costCenterId',
-    'productId',
-    'materialId',
-    'customerId',
-    'periodMonth',
-    'quantity',
-    'unitPrice',
-    'amount',
-    'driverType',
-    'notes',
-  ],
-  bomRecipe: [
-    'companyId',
-    'productId',
-    'version',
-    'outputQty',
-    'wastagePct',
-    'laborCost',
-    'overheadCost',
-    'isActive',
-  ],
-  bomLine: [
-    'bomId',
-    'materialId',
-    'qtyPerOutput',
-    'unitCost',
-    'wastagePct',
-    'yieldPct',
-    'costCategory',
-    'quantity',
-  ],
-  exchangeRate: [
-    'companyId',
-    'fromCurrency',
-    'toCurrency',
-    'rate',
-    'rateDate',
-    'source',
-    'createdBy',
-  ],
-  kpiTarget: [
-    'companyId',
-    'siteId',
-    'kpiName',
-    'kpiCategory',
-    'fiscalYear',
-    'periodMonth',
-    'targetValue',
-    'unit',
-    'createdBy',
-  ],
-  productionPlan: [
-    'companyId',
-    'siteId',
-    'productId',
-    'planSource',
-    'fiscalYear',
-    'periodMonth',
-    'plannedQty',
-    'actualQty',
-    'estimatedCost',
-    'actualCost',
-  ],
-  promotion: [
-    'companyId',
-    'name',
-    'description',
-    'productId',
-    'customerId',
-    'discountPct',
-    'discountAmt',
-    'startDate',
-    'endDate',
-    'budgetAmt',
-    'actualCost',
-    'incrementalRevenue',
-    'roi',
-    'isActive',
-    'createdBy',
-  ],
-  rawMaterialPrice: ['companyId', 'materialId', 'price', 'priceDate', 'source'],
-};
+/* ─── Whitelist Fields per Prisma Model (built from definitions) ──── */
+
+export const MODEL_FIELD_WHITELIST: Record<string, string[]> =
+  buildWhitelist();
+
+function buildWhitelist(): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  for (const def of getAllDefinitions()) {
+    map[def.prismaModel] = def.columns.map((c) => c.prismaField ?? c.field);
+  }
+  return map;
+}
 
 /* ─── Account Type Inference from Code ─────────────────────────────── */
 
@@ -797,6 +52,12 @@ export function inferAccountType(code: string): string {
   return 'expense';
 }
 
+/* ─── Resolve keys with backward compatibility ─────────────────────── */
+
+function resolve(mod: string): string | undefined {
+  return resolveModuleKey(mod) ?? (getDefinition(mod) ? mod : undefined);
+}
+
 /* ─── Normalize Column Name to Field Key ───────────────────────────── */
 
 export function normalizeHeaderToField(
@@ -807,10 +68,14 @@ export function normalizeHeaderToField(
     .toLowerCase()
     .replace(/[\s_-]+/g, '')
     .trim();
-  const aliases = MODULE_COLUMN_ALIASES[module];
+  const resolved = resolve(module);
+  if (!resolved) return null;
+  const def = getDefinition(resolved);
+  if (!def) return null;
+
+  const aliases = MODULE_COLUMN_ALIASES[resolved];
   if (!aliases) return null;
 
-  // First pass: exact alias match
   for (const [field, fieldAliases] of Object.entries(aliases)) {
     if (
       fieldAliases.some(
@@ -821,57 +86,64 @@ export function normalizeHeaderToField(
     }
   }
 
-  // Second pass: if header contains "name" or "code" as a word, try fuzzy matching
   const headerLower = header.toLowerCase().trim();
-  if (/\bname\b/.test(headerLower)) {
-    if (aliases['name']) return 'name';
-  }
-  if (/\bcode\b/.test(headerLower)) {
-    if (aliases['code']) return 'code';
-  }
-  if (/\bdescription\b/.test(headerLower) || /\bdesc\b/.test(headerLower)) {
-    if (aliases['name']) return 'name';
-  }
-  if (/\bsku\b/.test(headerLower)) {
-    if (aliases['sku']) return 'sku';
-  }
-  if (/\btype\b/.test(headerLower)) {
-    if (aliases['type']) return 'type';
-  }
-  if (/\bphone\b/.test(headerLower) || /\btel\b/.test(headerLower)) {
-    if (aliases['phone']) return 'phone';
-  }
-  if (/\bemail\b/.test(headerLower) || /\bmail\b/.test(headerLower)) {
-    if (aliases['email']) return 'email';
-  }
-  if (/\bdate\b/.test(headerLower)) {
-    if (aliases['date']) return 'date';
-  }
-  if (/\baddress\b/.test(headerLower)) {
-    if (aliases['address']) return 'address';
-  }
-  if (/\bstatus\b/.test(headerLower) || /\bactive\b/.test(headerLower)) {
-    if (aliases['isActive']) return 'isActive';
-  }
-  if (/\bprice\b/.test(headerLower) || /\bcost\b/.test(headerLower)) {
+  if (/\bname\b/.test(headerLower) && aliases['name']) return 'name';
+  if (/\bcode\b/.test(headerLower) && aliases['code']) return 'code';
+  if (
+    (/\bdescription\b/.test(headerLower) || /\bdesc\b/.test(headerLower)) &&
+    aliases['name']
+  )
+    return 'name';
+  if (/\bsku\b/.test(headerLower) && aliases['sku']) return 'sku';
+  if (/\btype\b/.test(headerLower) && aliases['type']) return 'type';
+  if (
+    (/\bphone\b/.test(headerLower) || /\btel\b/.test(headerLower)) &&
+    aliases['phone']
+  )
+    return 'phone';
+  if (
+    (/\bemail\b/.test(headerLower) || /\bmail\b/.test(headerLower)) &&
+    aliases['email']
+  )
+    return 'email';
+  if (
+    (/\bdate\b/.test(headerLower)) &&
+    aliases['date']
+  )
+    return 'date';
+  if (
+    (/\baddress\b/.test(headerLower)) &&
+    aliases['address']
+  )
+    return 'address';
+  if (
+    (/\bstatus\b/.test(headerLower) || /\bactive\b/.test(headerLower)) &&
+    aliases['isActive']
+  )
+    return 'isActive';
+  if (
+    (/\bprice\b/.test(headerLower) || /\bcost\b/.test(headerLower))
+  ) {
     if (aliases['purchasePrice']) return 'purchasePrice';
     if (aliases['salePrice']) return 'salePrice';
     if (aliases['standardCost']) return 'standardCost';
     if (aliases['price']) return 'price';
   }
-  if (/\bcurrency\b/.test(headerLower)) {
-    if (aliases['currencyCode']) return 'currencyCode';
-  }
-  if (/\bcountry\b/.test(headerLower)) {
-    if (aliases['country']) return 'country';
-  }
-  if (/\bcity\b/.test(headerLower) || /\btown\b/.test(headerLower)) {
-    if (aliases['city']) return 'city';
-  }
-  if (/\bregion\b/.test(headerLower) || /\bdistrict\b/.test(headerLower)) {
-    if (aliases['region']) return 'region';
-  }
-  if (/\buom\b/.test(headerLower) || /\bunit\b/.test(headerLower)) {
+  if (/\bcurrency\b/.test(headerLower) && aliases['currencyCode']) return 'currencyCode';
+  if (/\bcountry\b/.test(headerLower) && aliases['country']) return 'country';
+  if (
+    (/\bcity\b/.test(headerLower) || /\btown\b/.test(headerLower)) &&
+    aliases['city']
+  )
+    return 'city';
+  if (
+    (/\bregion\b/.test(headerLower) || /\bdistrict\b/.test(headerLower)) &&
+    aliases['region']
+  )
+    return 'region';
+  if (
+    (/\buom\b/.test(headerLower) || /\bunit\b/.test(headerLower))
+  ) {
     if (aliases['symbol']) return 'symbol';
     if (aliases['unitSymbol']) return 'unitSymbol';
     if (aliases['unitId']) return 'unitId';
@@ -889,7 +161,6 @@ export function findOriginalRowValue(
       return row[key];
     }
   }
-  // Case-insensitive search as last resort
   const lowerMap = new Map<string, unknown>();
   for (const k of Object.keys(row)) {
     lowerMap.set(k.toLowerCase().replace(/[\s_-]+/g, ''), row[k]);
@@ -910,7 +181,8 @@ export function mapRowWithAliases(
   module: string,
 ): Record<string, unknown> {
   const mapped: Record<string, unknown> = {};
-  const aliases = MODULE_COLUMN_ALIASES[module];
+  const resolved = resolve(module);
+  const aliases = resolved ? MODULE_COLUMN_ALIASES[resolved] : undefined;
   if (!aliases) return { ...row };
 
   const processedFields = new Set<string>();
@@ -946,10 +218,13 @@ export function whitelistFields(
 
 /* ─── Coerce Values to Proper Types ────────────────────────────────── */
 
+/* NOTE: coerceValue uses the column definition from import-definitions.ts
+ * when a module is specified. Without a module, it falls back to heuristics. */
 export function coerceValue(
   value: unknown,
   field: string,
   model?: string,
+  module?: string,
 ): unknown {
   if (value === null || value === undefined || value === '') return null;
 
@@ -961,7 +236,7 @@ export function coerceValue(
   }
 
   if (
-    /^(quantity|qty|amount|price|cost|rate|total|plannedQty|actualQty|outputQty|targetValue|creditLimit|discountPct|discountAmt|budgetAmt|actualCost|incrementalRevenue|roi|salePrice|standardCost|purchasePrice|unitPrice|fiscalYear|fiscalYearStartMonth|periodMonth|leadTimeDays|weightKg|plannedQty|actualQty|estimatedCost|actualCost|safetyStockQty|reorderPoint)$/i.test(
+    /^(quantity|qty|amount|price|cost|rate|total|plannedQty|actualQty|outputQty|targetValue|creditLimit|discountPct|discountAmt|budgetAmt|actualCost|incrementalRevenue|roi|salePrice|standardCost|purchasePrice|unitPrice|fiscalYear|fiscalYearStartMonth|periodMonth|leadTimeDays|weightKg|estimatedCost|actualCost|safetyStockQty|reorderPoint)$/i.test(
       field,
     )
   ) {
@@ -1102,8 +377,9 @@ export function generateDefaults(
 ): Record<string, unknown> {
   const result = { ...data };
   const numSuffix = rowNumber !== undefined ? ` Row ${rowNumber}` : '';
+  const resolved = resolve(module) ?? module;
 
-  switch (module) {
+  switch (resolved) {
     case 'companies':
       if (!result.name) result.name = result.legalName || 'Imported Company';
       break;
@@ -1122,10 +398,10 @@ export function generateDefaults(
         result.type = inferAccountType(String(result.code));
       if (!result.type) result.type = 'expense';
       break;
-    case 'costcenters':
+    case 'cost-centers':
       if (!result.name) result.name = result.code ? `Cost Center ${result.code}` : `Cost Center${numSuffix || ' Row'}`;
       break;
-    case 'productcategories':
+    case 'product-categories':
       if (!result.name) result.name = `Category${numSuffix || ' Row'}`;
       break;
     case 'customers':
@@ -1238,14 +514,12 @@ export function normalizeImportError(
         category: 'missing_required',
       };
     }
-    // Catch enum errors from Prisma
     if (msg.includes('Invalid enum value') || msg.includes('Expected ')) {
       return {
         friendly: 'The value is not allowed for this field',
         category: 'invalid_enum',
       };
     }
-    // Catch invalid argument type (e.g. string where Int expected)
     if (msg.includes('Expected Int') || msg.includes('Expected Float') || msg.includes('Expected Boolean')) {
       return {
         friendly: 'A numeric value was entered as text. Please check the cell format.',
@@ -1285,6 +559,11 @@ export function normalizeImportError(
 /* ─── Module Title for Display ─────────────────────────────────────── */
 
 export function getModuleTitle(module: string): string {
+  const resolved = resolve(module);
+  if (resolved) {
+    const def = getDefinition(resolved);
+    if (def) return def.displayName;
+  }
   const titles: Record<string, string> = {
     companies: 'Company',
     sites: 'Site',
@@ -1297,7 +576,6 @@ export function getModuleTitle(module: string): string {
     materials: 'Material',
     products: 'Product',
     bomrecipes: 'BOM Recipe',
-    bomlines: 'BOM Line',
     budgetlines: 'Budget Line',
     forecastlines: 'Forecast Line',
     actuallines: 'Actual Line',
@@ -1306,10 +584,6 @@ export function getModuleTitle(module: string): string {
     productionplans: 'Production Plan',
     kpitargets: 'KPI Target',
     exchangerates: 'Exchange Rate',
-    priceList: 'Price List',
-    weightpercarton: 'Weight per Carton',
-    hrvrates: 'HRV Rates',
-    smga: 'S&M G&A',
   };
   return titles[module] || module;
 }

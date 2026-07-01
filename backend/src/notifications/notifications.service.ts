@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -81,6 +82,8 @@ function mapNotificationToResponse(
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly alertsService: AlertsService,
@@ -542,7 +545,17 @@ export class NotificationsService {
       }
     }
 
-    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch((err: unknown) => {
+      this.logger.error({
+        operation: 'checkAndGenerateAlerts',
+        entity: 'Company',
+        entityId: companyId.toString(),
+        companyId: companyId.toString(),
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+    });
   }
 
   async triggerBudgetApproval(
@@ -585,7 +598,17 @@ export class NotificationsService {
       }
     }
 
-    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch((err: unknown) => {
+      this.logger.error({
+        operation: 'checkAndGenerateAlerts',
+        entity: 'Company',
+        entityId: companyId.toString(),
+        companyId: companyId.toString(),
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+    });
   }
 
   async triggerForecastApproval(
@@ -628,7 +651,17 @@ export class NotificationsService {
       }
     }
 
-    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch((err: unknown) => {
+      this.logger.error({
+        operation: 'checkAndGenerateAlerts',
+        entity: 'Company',
+        entityId: companyId.toString(),
+        companyId: companyId.toString(),
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+    });
   }
 
   async checkAndTriggerVarianceBreaches(
@@ -753,6 +786,16 @@ export class NotificationsService {
       }
     }
 
-    await this.alertsService.checkAndGenerateAlerts(companyId).catch(() => {});
+    await this.alertsService.checkAndGenerateAlerts(companyId).catch((err: unknown) => {
+      this.logger.error({
+        operation: 'checkAndGenerateAlerts',
+        entity: 'Company',
+        entityId: companyId.toString(),
+        companyId: companyId.toString(),
+        userId: 'system',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+    });
   }
 }

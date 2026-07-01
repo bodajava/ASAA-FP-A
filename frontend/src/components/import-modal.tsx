@@ -136,7 +136,7 @@ export interface ImportModalProps {
   /** Human-readable label shown in the UI */
   moduleLabel: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -531,8 +531,14 @@ export function ImportModal({
 
     try {
       const res = await api.post<{
-        successCount: number;
-        failCount: number;
+        expectedRows: number;
+        insertedRows: number;
+        updatedRows: number;
+        skippedRows: number;
+        failedRows: number;
+        dbVerified: boolean;
+        beforeCount: number;
+        afterCount: number;
       }>(
         `/imports/commit`,
         { module, rows: validRows },
@@ -541,23 +547,36 @@ export function ImportModal({
       setProgress(100);
       setProgressStatus(t('component.importModal.progressComplete'));
 
-      const { successCount, failCount } = res.data;
-      const skippedCount = previewRows.length - validRows.length;
+      const {
+        expectedRows,
+        insertedRows,
+        updatedRows,
+        skippedRows,
+        failedRows,
+        dbVerified,
+      } = res.data;
+
+      const modSkippedCount = skippedRows + (previewRows.length - validRows.length);
       const timeTaken = Date.now() - startTime;
+      const totalSuccess = insertedRows + updatedRows;
 
       setImportStats({
-        successCount,
-        failCount,
-        skippedCount,
+        successCount: totalSuccess,
+        failCount: failedRows,
+        skippedCount: modSkippedCount,
         timeTaken,
       });
 
-      if (successCount > 0) {
-        toastSuccess(
-          t('component.importModal.importSuccess', { count: successCount }),
+      if (!dbVerified) {
+        toastError(
+          `Import completed but DB verification failed: counts do not match. Expected ${expectedRows} rows, got ${insertedRows} inserted. Please verify the data manually.`,
         );
-        onSuccess();
-      } else {
+      } else if (totalSuccess > 0) {
+        toastSuccess(
+          t('component.importModal.importSuccess', { count: totalSuccess }),
+        );
+        await Promise.resolve(onSuccess());
+      } else if (insertedRows === 0 && updatedRows === 0) {
         toastError(t('component.importModal.noCommit'));
       }
     } catch (err: unknown) {
@@ -569,12 +588,14 @@ export function ImportModal({
 
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        const serverMessage = (err.response?.data as { message?: string })?.message;
+        const data = err.response?.data as { message?: string; error?: string } | undefined;
 
         if (status === 413) {
           msg = t('import.error.fileTooLarge');
-        } else if (serverMessage) {
-          msg = serverMessage;
+        } else if (status === 500) {
+          msg = data?.message ?? data?.error ?? t('component.importModal.importFailed');
+        } else if (data?.message) {
+          msg = data.message;
         }
       }
 

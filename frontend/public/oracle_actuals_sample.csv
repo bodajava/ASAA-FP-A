@@ -1,4 +1,4 @@
-GL_Account_Code,Amount,Date,Quantity,UnitPrice,Reference_No
+accountCode,amount,transactionDate,quantity,unitPrice,referenceNo
 4000,120000.00,2025-01-15,8000,15.00,REV-202501
 5000,70000.00,2025-01-15,8750,8.00,COGS-202501
 6000,10000.00,2025-01-01,1,10000.00,RENT-202501

@@ -1,4 +1,4 @@
-SKU,Qty,Price,Total_Amount,Transaction_Date,Branch_Name,Customer_Code
+productSku,quantity,unitPrice,amount,transactionDate,siteName,customerCode
 PROD-JUICE,150,15.00,2250.00,2025-01-16 14:30:00,Main Factory,CUST-001
 PROD-MILK,80,35.00,2800.00,2025-01-16 15:00:00,Main Factory,CUST-002
 PROD-JUICE,200,15.00,3000.00,2025-01-17 11:20:00,Main Factory,CUST-001

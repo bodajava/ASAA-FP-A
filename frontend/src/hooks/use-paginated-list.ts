@@ -112,7 +112,7 @@ export function usePaginatedList<T>({
 
   // Invalidate list cache
   const invalidateList = useCallback(() => {
-    queryClient.invalidateQueries({
+    return queryClient.invalidateQueries({
       queryKey: [queryKeyPrefix ?? endpoint, 'list', activeCompanyId],
     });
   }, [queryClient, endpoint, queryKeyPrefix, activeCompanyId]);
@@ -144,7 +144,7 @@ export function usePaginatedList<T>({
   });
 
   const refresh = useCallback(() => {
-    invalidateList();
+    return invalidateList();
   }, [invalidateList]);
 
   const create = useCallback(

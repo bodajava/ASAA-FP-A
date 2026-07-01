@@ -1,4 +1,4 @@
-GL_Account_Code,Cost_Center_Code,Expense_Amount,Expense_Date,Receipt_No
+accountCode,costCenterCode,amount,transactionDate,referenceNo
 6000,CC_ADMIN,10000.00,2025-01-01,RENT-202501
 6100,CC_PROD,15000.00,2025-01-28,PAY-PROD-202501
 6100,CC_SALES,6500.00,2025-01-28,PAY-SALES-202501

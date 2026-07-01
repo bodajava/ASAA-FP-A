@@ -334,13 +334,14 @@ export function CrudPage<T extends { id: string }>({
         onCancel={() => setDeleteItem(null)}
       />
 
-      {/* Import modal */}
       {importOpen && importModule && (
         <ImportModal
           module={importModule}
           moduleLabel={title}
           onClose={() => setImportOpen(false)}
-          onSuccess={() => list.refresh()}
+          onSuccess={async () => {
+            await list.refresh();
+          }}
         />
       )}
     </div>

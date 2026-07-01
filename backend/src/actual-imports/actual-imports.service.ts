@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -118,6 +119,8 @@ export function mapActualImportToResponse(
 
 @Injectable()
 export class ActualImportsService {
+  private readonly logger = new Logger(ActualImportsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
@@ -654,7 +657,16 @@ export class ActualImportsService {
           imp.id,
           imp.errorLog ?? 'Validation failed',
         )
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'triggerImportFailed',
+            entity: 'ActualImport',
+            entityId: imp.id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
     } else if (imp.status === 'validated' || imp.status === 'posted') {
       await this.notificationsService
         .checkAndTriggerVarianceBreaches(
@@ -662,7 +674,16 @@ export class ActualImportsService {
           tenantId,
           new Date(createDto.periodFrom).getFullYear(),
         )
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.error({
+            operation: 'checkAndTriggerVarianceBreaches',
+            entity: 'ActualImport',
+            entityId: imp.id.toString(),
+            companyId: companyId.toString(),
+            userId: userId.toString(),
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
 
     return mapActualImportToResponse(fullImport);

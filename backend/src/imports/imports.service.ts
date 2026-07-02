@@ -337,7 +337,7 @@ export class ImportsService {
 
     if (rawRows.length === 0) {
       throw new BadRequestException(
-        'The uploaded template contains no data. Please add at least one row before importing.',
+        'This template contains no data rows. Please fill it before importing. | هذا القالب لا يحتوي على أي بيانات. يرجى تعبئته قبل الاستيراد.',
       );
     }
 
@@ -473,9 +473,16 @@ export class ImportsService {
       if (val === undefined || val === null || val === '') continue;
 
       if (col.type === 'number') {
-        const num = Number(val);
-        if (isNaN(num)) {
-          errors.push(`${col.display} must be a number.`);
+        if (col.field === 'periodMonth' || col.field === 'period_month' || col.display.toLowerCase().includes('month')) {
+          const parsed = this.parseMonthValue(val as string | number);
+          if (parsed === null) {
+            errors.push(`${col.display} must be a valid month (1–12, Jan, January, Q1–Q4, or Arabic month name).`);
+          }
+        } else {
+          const num = Number(val);
+          if (isNaN(num)) {
+            errors.push(`${col.display} must be a number.`);
+          }
         }
       }
 
@@ -521,20 +528,14 @@ export class ImportsService {
 
   }
 
-  /* ─── Get Sample CSV (backward compat) ─────────────────────────────── */
+  /* ─── Get Sample CSV (headers only, no data rows) ─────────────────── */
 
   getSampleCSV(module: string): string {
     const mod = this.resolve(module) ?? module;
     const def = getDefinition(mod);
     if (!def) return '';
 
-    const headers = def.columns.map((c) => c.display).join(',');
-    const rows = def.sampleRows
-      .slice(0, 3)
-      .map((r) => r.join(','))
-      .join('\n');
-
-    return rows ? `${headers}\n${rows}` : headers;
+    return def.columns.map((c) => c.display).join(',');
   }
 
   /* ─── Generate Error CSV ───────────────────────────────────────────── */
@@ -669,7 +670,7 @@ export class ImportsService {
     let dbVerified = true;
     const netIncrease = afterCount - beforeCount;
 
-    if (!isUpdateOnly && def.hasCompanyId) {
+    if (!isUpdateOnly && def.countQuery) {
       if (netIncrease !== actualInserts) {
         dbVerified = false;
         this.logger.error({
@@ -686,7 +687,7 @@ export class ImportsService {
       }
     }
 
-    if (actualInserts > 0 && netIncrease === 0 && !isUpdateOnly && def.hasCompanyId) {
+    if (actualInserts > 0 && netIncrease === 0 && !isUpdateOnly && def.countQuery) {
       dbVerified = false;
       this.logger.error({
         operation: 'import-commit-zero-insert',
@@ -770,6 +771,9 @@ export class ImportsService {
 
       case 'update':
         return this.commitUpdate(mod, row, companyId, tx);
+
+      case 'upsert':
+        return this.commitUpsert(mod, row, companyId, tenantId, userId, tx);
 
       default:
         return this.commitSimpleInsert(mod, row, companyId, tenantId, userId, tx);
@@ -855,52 +859,61 @@ export class ImportsService {
 
     switch (def.moduleKey) {
       case 'bom-recipes': {
-        const product = await (tx as any).product.findFirst({
-          where: { sku: String(row.productsku).trim(), companyId },
-        });
-        if (!product) return 'skip';
+        // Reuse already-resolved FK IDs (never search twice)
+        let productId = row.productId || row.productSkuId;
+        if (!productId) {
+          const product = await (tx as any).product.findFirst({
+            where: { sku: String(row.productSku || row.productsku).trim(), companyId },
+          });
+          if (!product) return 'skip';
+          productId = product.id;
+        }
 
-        const material = await (tx as any).material.findFirst({
-          where: { code: String(row.materialcode).trim(), companyId },
-        });
-        if (!material) return 'skip';
+        let materialId = row.materialId || row.materialCodeId;
+        if (!materialId) {
+          const material = await (tx as any).material.findFirst({
+            where: { code: String(row.materialCode || row.materialcode).trim(), companyId },
+          });
+          if (!material) return 'skip';
+          materialId = material.id;
+        }
 
         const version = row.version ? String(row.version).trim() : 'v1';
         let recipe = await (tx as any).bomRecipe.findFirst({
-          where: { productId: product.id, version, companyId },
+          where: { productId, version, companyId },
         });
         if (!recipe) {
           recipe = await (tx as any).bomRecipe.create({
             data: {
               companyId,
-              productId: product.id,
+              productId,
               version,
-              outputQty: row.outputqty ? Number(row.outputqty) : 1,
-              wastagePct: row.wastagepct ? Number(row.wastagepct) : 0,
-              laborCost: row.laborcost ? Number(row.laborcost) : 0,
-              overheadCost: row.overheadcost ? Number(row.overheadcost) : 0,
+              outputQty: Number(row.outputQty || row.outputqty || 1),
+              wastagePct: Number(row.wastagePct || row.wastagepct || 0),
+              laborCost: Number(row.laborCost || row.laborcost || 0),
+              overheadCost: Number(row.overheadCost || row.overheadcost || 0),
             },
           });
         }
+        const periodMonth = this.parseMonthValue(row.periodMonth ?? row.periodmonth);
         await (tx as any).bomLine.create({
           data: {
             bomId: recipe.id,
-            materialId: material.id,
-            qtyPerOutput: Number(row.qtyperoutput),
-            wastagePct: row.bomlinewastagepct ? Number(row.bomlinewastagepct) : 0,
+            materialId,
+            qtyPerOutput: Number(row.qtyPerOutput || row.qtyperoutput),
+            wastagePct: Number(row.bomLineWastagePct || row.bomlinewastagepct || 0),
+            ...(periodMonth ? { periodMonth } : {}),
           },
         });
         return 'insert';
       }
 
       case 'budget-lines': {
-        const acc = await (tx as any).account.findFirst({
-          where: { OR: [{ code: String(row.accountcode).trim(), companyId }, { name: String(row.accountcode).trim(), companyId }], isActive: true },
-        });
-        if (!acc) return 'skip';
+        const accountId = row.accountId || row.accountCodeId;
+        if (!accountId) return 'skip';
 
-        const fiscalYear = Number(row.fiscalyear);
-        const cycleName = String(row.budgetcyclename).trim();
+        const fiscalYear = Number(row.fiscalYear || row.fiscalyear);
+        const cycleName = String(row.budgetCycleName || row.budgetcyclename).trim();
         let cycle = await (tx as any).budgetCycle.findFirst({
           where: { name: cycleName, fiscalYear, companyId },
         });
@@ -910,18 +923,21 @@ export class ImportsService {
           });
         }
 
+        const periodMonth = this.parseMonthValue(row.periodMonth ?? row.periodmonth);
+        if (!periodMonth) return 'skip';
+
         await (tx as any).budgetLine.create({
           data: {
             budgetCycleId: cycle.id,
-            accountId: acc.id,
+            accountId,
             siteId: row.siteId ?? null,
             costCenterId: row.costCenterId ?? null,
             productId: row.productId ?? null,
             materialId: row.materialId ?? null,
             customerId: row.customerId ?? null,
-            periodMonth: Number(row.periodmonth),
-            quantity: row.quantity ? Number(row.quantity) : 0,
-            unitPrice: row.unitprice ? Number(row.unitprice) : 0,
+            periodMonth,
+            quantity: Number(row.quantity || row.qty || 0),
+            unitPrice: Number(row.unitPrice || row.unitprice || 0),
             amount: Number(row.amount),
             notes: row.notes ? String(row.notes).trim() : null,
           },
@@ -930,13 +946,11 @@ export class ImportsService {
       }
 
       case 'forecast-lines': {
-        const acc = await (tx as any).account.findFirst({
-          where: { OR: [{ code: String(row.accountcode).trim(), companyId }, { name: String(row.accountcode).trim(), companyId }], isActive: true },
-        });
-        if (!acc) return 'skip';
+        const accountId = row.accountId || row.accountCodeId;
+        if (!accountId) return 'skip';
 
-        const fiscalYear = Number(row.fiscalyear);
-        const cycleName = String(row.forecastcyclename).trim();
+        const fiscalYear = Number(row.fiscalYear || row.fiscalyear);
+        const cycleName = String(row.forecastCycleName || row.forecastcyclename).trim();
         let cycle = await (tx as any).forecastCycle.findFirst({
           where: { name: cycleName, fiscalYear, companyId },
         });
@@ -946,20 +960,23 @@ export class ImportsService {
           });
         }
 
+        const periodMonth = this.parseMonthValue(row.periodMonth ?? row.periodmonth);
+        if (!periodMonth) return 'skip';
+
         await (tx as any).forecastLine.create({
           data: {
             forecastCycleId: cycle.id,
-            accountId: acc.id,
+            accountId,
             siteId: row.siteId ?? null,
             costCenterId: row.costCenterId ?? null,
             productId: row.productId ?? null,
             materialId: row.materialId ?? null,
             customerId: row.customerId ?? null,
-            periodMonth: Number(row.periodmonth),
-            quantity: row.quantity ? Number(row.quantity) : 0,
-            unitPrice: row.unitprice ? Number(row.unitprice) : 0,
+            periodMonth,
+            quantity: Number(row.quantity || row.qty || 0),
+            unitPrice: Number(row.unitPrice || row.unitprice || 0),
             amount: Number(row.amount),
-            driverType: row.drivertype ? String(row.drivertype).trim() : null,
+            driverType: row.driverType || row.drivertype ? String(row.driverType || row.drivertype).trim() : null,
             notes: row.notes ? String(row.notes).trim() : null,
           },
         });
@@ -967,12 +984,11 @@ export class ImportsService {
       }
 
       case 'actual-lines': {
-        const acc = await (tx as any).account.findFirst({
-          where: { OR: [{ code: String(row.accountcode).trim(), companyId }, { name: String(row.accountcode).trim(), companyId }], isActive: true },
-        });
-        if (!acc) return 'skip';
+        const accountId = row.accountId || row.accountCodeId;
+        if (!accountId) return 'skip';
 
-        const transactionDate = new Date(row.transactiondate);
+        const transactionDate = this.parseDateValue(row.transactionDate || row.transactiondate);
+        if (!transactionDate) return 'skip';
         const fiscalYear = transactionDate.getFullYear();
 
         let imp = await (tx as any).actualImport.findFirst({
@@ -987,17 +1003,17 @@ export class ImportsService {
         await (tx as any).actualLine.create({
           data: {
             actualImportId: imp.id,
-            accountId: acc.id,
+            accountId,
             siteId: row.siteId ?? null,
             costCenterId: row.costCenterId ?? null,
             productId: row.productId ?? null,
             materialId: row.materialId ?? null,
             customerId: row.customerId ?? null,
             transactionDate,
-            quantity: row.quantity ? Number(row.quantity) : 0,
-            unitPrice: row.unitprice ? Number(row.unitprice) : 0,
+            quantity: Number(row.quantity || row.qty || 0),
+            unitPrice: Number(row.unitPrice || row.unitprice || 0),
             amount: Number(row.amount),
-            referenceNo: row.referenceno ? String(row.referenceno).trim() : null,
+            referenceNo: row.referenceNo || row.referenceno ? String(row.referenceNo || row.referenceno).trim() : null,
           },
         });
         return 'insert';
@@ -1046,27 +1062,121 @@ export class ImportsService {
       }
 
       case 'raw-material-prices': {
-        const material = await (tx as any).material.findFirst({
-          where: { code: String(row.materialcode).trim(), companyId },
-        });
-        if (!material) return 'skip';
+        const materialId = row.materialId || row.materialCodeId;
+        if (!materialId) return 'skip';
 
-        const effectiveDate = this.parseDateValue(row.effectivedate) ?? new Date();
+        const effectiveDate = this.parseDateValue(row.effectiveDate || row.effectivedate) ?? new Date();
 
         await (tx as any).material.update({
-          where: { id: material.id },
+          where: { id: materialId },
           data: { purchasePrice: Number(row.price) },
         });
 
         await (tx as any).rawMaterialPrice.create({
           data: {
             companyId,
-            materialId: material.id,
+            materialId,
             price: Number(row.price),
             priceDate: effectiveDate,
           },
         });
         return 'insert';
+      }
+
+      default:
+        return 'skip';
+    }
+  }
+
+  /* ─── Upsert Strategy (Production Plans / Sales Plans) ───────────── */
+
+  private async commitUpsert(
+    mod: string,
+    row: RowData,
+    companyId: bigint,
+    tenantId: bigint,
+    userId: bigint,
+    tx: PrismaTx,
+  ): Promise<'insert' | 'update' | 'skip'> {
+    const def = getDefinition(mod)!;
+
+    switch (def.moduleKey) {
+      case 'production-plans': {
+        const productId = row.productId || row.productSkuId;
+        const siteId = row.siteId || row.siteNameId;
+        if (!productId || !siteId) return 'skip';
+
+        const fiscalYear = Number(row.fiscalYear || row.fiscalyear);
+        const periodMonth = this.parseMonthValue(row.periodMonth ?? row.periodmonth);
+        if (!periodMonth || !fiscalYear) return 'skip';
+
+        const whereUnique = { companyId_siteId_productId_fiscalYear_periodMonth: { companyId, siteId, productId, fiscalYear, periodMonth } };
+        const whereFields = { companyId, siteId, productId, fiscalYear, periodMonth };
+        const existing = await (tx as any).productionPlan.findFirst({ where: whereFields });
+
+        const data: Record<string, unknown> = {
+          companyId, siteId, productId, fiscalYear, periodMonth,
+          plannedQty: Number(row.plannedQty || row.plannedqty || 0),
+          planSource: row.planSource || row.plansource || 'manual',
+        };
+        if (row.actualQty !== undefined && row.actualQty !== '') data.actualQty = Number(row.actualQty || row.actualqty);
+        if (row.estimatedCost !== undefined && row.estimatedCost !== '') data.estimatedCost = Number(row.estimatedCost || row.estimatedcost);
+        if (row.actualCost !== undefined && row.actualCost !== '') data.actualCost = Number(row.actualCost || row.actualcost);
+
+        try {
+          if (existing) {
+            await (tx as any).productionPlan.update({ where: whereUnique, data });
+            return 'update';
+          } else {
+            await (tx as any).productionPlan.create({ data });
+            return 'insert';
+          }
+        } catch {
+          try {
+            await (tx as any).productionPlan.upsert({ where: whereUnique, create: data, update: data });
+            return existing ? 'update' : 'insert';
+          } catch {
+            return 'skip';
+          }
+        }
+      }
+
+      case 'sales-plans': {
+        const productId = row.productId || row.productSkuId;
+        const siteId = row.siteId || row.siteNameId;
+        if (!productId || !siteId) return 'skip';
+
+        const fiscalYear = Number(row.fiscalYear || row.fiscalyear);
+        const periodMonth = this.parseMonthValue(row.periodMonth ?? row.periodmonth);
+        if (!periodMonth || !fiscalYear) return 'skip';
+
+        const whereUnique = { companyId_siteId_productId_fiscalYear_periodMonth: { companyId, siteId, productId, fiscalYear, periodMonth } };
+        const whereFields = { companyId, siteId, productId, fiscalYear, periodMonth };
+        const existing = await (tx as any).productionPlan.findFirst({ where: whereFields });
+
+        const data: Record<string, unknown> = {
+          companyId, siteId, productId, fiscalYear, periodMonth,
+          planSource: 'manual',
+          plannedQty: Number(row.plannedQty || row.plannedqty || 0),
+        };
+        if (row.actualQty !== undefined && row.actualQty !== '') data.actualQty = Number(row.actualQty || row.actualqty);
+
+        try {
+          if (existing) {
+            await (tx as any).productionPlan.update({ where: whereUnique, data });
+            return 'update';
+          } else {
+            await (tx as any).productionPlan.create({ data });
+            return 'insert';
+          }
+        } catch {
+          try {
+            await (tx as any).productionPlan.upsert({ where: whereUnique, create: data, update: data });
+            return existing ? 'update' : 'insert';
+          } catch {
+            return 'skip';
+          }
+        }
       }
 
       default:

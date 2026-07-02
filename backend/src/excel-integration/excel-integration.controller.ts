@@ -25,8 +25,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { ExcelIntegrationService } from './excel-integration.service';
-import { TemplateGeneratorService } from './template-generator.service';
 import { ClientWorkbookImportService } from './client-workbook-import.service';
+import { TemplateGeneratorService } from './template-generator.service';
 import {
   WorkbookAnalysis,
   ErpModuleMapping,
@@ -92,8 +92,8 @@ function multerConfig() {
 export class ExcelIntegrationController {
   constructor(
     private readonly service: ExcelIntegrationService,
-    private readonly templateGenerator: TemplateGeneratorService,
     private readonly clientWorkbookImport: ClientWorkbookImportService,
+    private readonly templateGenerator: TemplateGeneratorService,
   ) {}
 
   /* ─── POST /analyze — Analyze workbook structure ────────────────────── */
@@ -327,14 +327,8 @@ export class ExcelIntegrationController {
   @Get('templates/client-workbook')
   async downloadClientWorkbook(
     @Res() res: Response,
-    @Headers('x-company-id') companyIdHeader?: string,
   ) {
-    const companyId = companyIdHeader
-      ? parseInt(companyIdHeader, 10)
-      : undefined;
-    const buffer = await this.templateGenerator.generateFullWorkbook(
-      !isNaN(companyId ?? NaN) ? BigInt(companyId!) : undefined,
-    );
+    const buffer = await this.templateGenerator.generateFullWorkbook();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

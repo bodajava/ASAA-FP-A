@@ -123,22 +123,14 @@ export class ImportsController {
   ) {}
 
   @Get('sample/:module')
-  @ApiOperation({ summary: 'Get sample XLSX template for a module' })
-  @ApiHeader({
-    name: 'x-company-id',
-    description:
-      'Company ID header (optional, enables reference data in templates)',
-    required: false,
-  })
+  @ApiOperation({ summary: 'Get XLSX template for a module (headers only)' })
   async getSample(
     @Param('module') module: string,
-    @CompanyId() companyId: bigint | undefined,
     @Response() res: ExpressResponse,
   ) {
     try {
       const buffer = await this.templateGenerator.generateModuleTemplate(
         module,
-        companyId,
       );
       res.setHeader(
         'Content-Type',

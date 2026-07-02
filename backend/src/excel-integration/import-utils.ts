@@ -283,9 +283,7 @@ export function coerceValue(
   }
 
   if (field === 'materialType' || field === 'material_type') {
-    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
-    const valid = ['raw_material', 'packaging', 'operating_supply', 'spare_part', 'other'];
-    return valid.includes(v) ? v : 'raw_material';
+    return strVal; // free text with dropdown suggestions
   }
 
   if (field === 'costCenterType' || (field === 'type' && model === 'costCenter')) {
@@ -301,9 +299,11 @@ export function coerceValue(
   }
 
   if (field === 'driverType' || field === 'driver_type') {
-    const v = strVal.toLowerCase().replace(/[\s-]+/g, '_');
-    const valid = ['sales_volume', 'production_volume', 'headcount', 'square_meters', 'machine_hours', 'direct_labor_hours', 'manual', 'other'];
-    return valid.includes(v) ? v : 'manual';
+    return strVal; // free text with dropdown suggestions
+  }
+
+  if (field === 'allocationMethod' || field === 'allocation_method') {
+    return strVal; // free text with dropdown suggestions
   }
 
   if (field === 'rateSource' || field === 'source') {

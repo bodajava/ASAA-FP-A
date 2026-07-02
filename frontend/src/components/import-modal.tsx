@@ -462,7 +462,7 @@ export function ImportModal({
             success: false,
             errorType: 'EMPTY_FILE',
             title: t('import.error.title', { module: moduleLabel }),
-            message: 'The uploaded template contains no data. Please add at least one row before importing.',
+            message: 'This template contains no data rows. Please fill it before importing.',
             steps: [],
             missingData: [],
             actions: [],

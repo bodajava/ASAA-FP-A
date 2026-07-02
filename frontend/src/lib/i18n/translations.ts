@@ -3024,7 +3024,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     /* Import Modal */
     'component.importModal.title': 'Import {module}',
     'component.importModal.howItWorks': 'How it works',
-    'component.importModal.instruction1': 'Download the sample CSV template below',
+    'component.importModal.instruction1': 'Download the template below',
     'component.importModal.instruction2': 'Fill in your data following the column headers',
     'component.importModal.instruction3': 'Upload the completed file',
     'component.importModal.instruction4': 'Preview and validate — fix any errors shown',
@@ -3896,7 +3896,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.error.unsupportedFileType': 'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.',
     'import.error.numbersNotSupported': 'Apple Numbers files (.numbers) are not supported. Please export your spreadsheet as CSV or Excel (.xlsx) before uploading.',
     'import.error.emptyFile': 'The uploaded file is empty. Please add data before importing.',
-    'import.error.emptyTemplate': 'The uploaded template contains no data. Please add at least one row before importing.',
+    'import.error.emptyTemplate': 'This template contains no data rows. Please fill it before importing.',
     'import.error.summary': 'Import Summary',
   },
 
@@ -5023,7 +5023,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     /* Import Modal */
     'component.importModal.title': 'استيراد {module}',
     'component.importModal.howItWorks': 'كيف يعمل',
-    'component.importModal.instruction1': 'قم بتنزيل قالب CSV النموذجي أدناه',
+    'component.importModal.instruction1': 'قم بتنزيل القالب أدناه',
     'component.importModal.instruction2': 'املأ بياناتك باتباع رؤوس الأعمدة',
     'component.importModal.instruction3': 'قم برفع الملف المكتمل',
     'component.importModal.instruction4': 'معاينة والتحقق — أصلح أي أخطاء تظهر',
@@ -5882,7 +5882,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     'import.error.unsupportedFileType': 'نوع الملف غير مدعوم. يرجى رفع ملف CSV (.csv) أو Excel (.xlsx, .xls).',
     'import.error.numbersNotSupported': 'ملفات Apple Numbers (.numbers) غير مدعومة. يرجى تصدير جدول البيانات كـ CSV أو Excel (.xlsx) قبل الرفع.',
     'import.error.emptyFile': 'الملف المرفوع فارغ. يرجى إضافة بيانات قبل الاستيراد.',
-    'import.error.emptyTemplate': 'القالب المرفوع لا يحتوي على بيانات. يرجى إضافة صف واحد على الأقل قبل الاستيراد.',
+    'import.error.emptyTemplate': 'هذا القالب لا يحتوي على أي بيانات. يرجى تعبئته قبل الاستيراد.',
     'import.error.summary': 'ملخص الاستيراد',
   },
 };

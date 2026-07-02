@@ -218,11 +218,7 @@ export const companies = register({
       aliases: ['fiscalyearstartmonth', 'fiscalYearStartMonth', 'fiscal_year_start_month', 'fiscal year start month', 'fystartmonth', 'startmonth', 'fystart'],
     },
   ],
-  sampleRows: [
-    ['Acme Food Industries', 'Acme Food Industries S.A.E.', 'food_processing', 'EGP', '123-456-789', '1'],
-    ['Bawadi Foods Egypt', 'Bawadi Foods S.A.E.', 'food_processing', 'EGP', '987-654-321', '1'],
-    ['Heavens Date', 'Heavens Date Trading Co', 'agricultural', 'USD', '111-222-333', '1'],
-  ],
+  sampleRows: [],
   countQuery: 'company.count({ where: { tenantId } })',
 });
 
@@ -285,11 +281,7 @@ export const sites = register({
       aliases: ['status', 'sitestatus', 'site_status'],
     },
   ],
-  sampleRows: [
-    ['Cairo Factory', 'factory', 'Cairo', '123 Industrial Zone', 'active'],
-    ['Bawadi Factory', 'factory', '6th of October', 'Plot 45, Industrial Area', 'active'],
-    ['Alexandria Warehouse', 'warehouse', 'Alexandria', 'KM 21, Desert Road', 'active'],
-  ],
+  sampleRows: [],
   countQuery: 'site.count({ where: { companyId } })',
 });
 
@@ -325,12 +317,7 @@ export const units = register({
       aliases: ['symbol', 'code', 'uom', 'unitsymbol', 'unit_symbol', 'unit symbol', 'uomcode', 'uom_code', 'measure', 'abbreviation', 'abbr'],
     },
   ],
-  sampleRows: [
-    ['Kilogram', 'kg'],
-    ['Gram', 'g'],
-    ['Piece', 'pcs'],
-    ['Carton', 'ctn'],
-  ],
+  sampleRows: [],
   countQuery: 'unit.count({ where: { companyId } })',
 });
 
@@ -402,12 +389,7 @@ export const accounts = register({
       aliases: ['isactive', 'is_active', 'active', 'status'],
     },
   ],
-  sampleRows: [
-    ['4000', 'Sales Revenue', 'revenue', '', 'true'],
-    ['5000', 'Cost of Goods Sold', 'cogs', '', 'true'],
-    ['5100', 'Direct Labor Cost', 'expense', '', 'true'],
-    ['6000', 'Selling & Marketing Expenses', 'expense', '', 'true'],
-  ],
+  sampleRows: [],
   countQuery: 'account.count({ where: { companyId } })',
 });
 
@@ -481,11 +463,7 @@ export const costCenters = register({
       },
     },
   ],
-  sampleRows: [
-    ['CC-001', 'Production Line A', 'production', 'Cairo Factory', ''],
-    ['CC-002', 'Packaging Department', 'production', 'Bawadi Factory', 'CC-001'],
-    ['CC-003', 'Logistics & Distribution', 'logistics', 'Alexandria Warehouse', ''],
-  ],
+  sampleRows: [],
   countQuery: 'costCenter.count({ where: { companyId } })',
 });
 
@@ -527,11 +505,7 @@ export const productCategories = register({
       },
     },
   ],
-  sampleRows: [
-    ['Halva & Tahina', ''],
-    ['Dates & Dried Fruits', ''],
-    ['Dairy & Cheese', ''],
-  ],
+  sampleRows: [],
   countQuery: 'productCategory.count({ where: { companyId } })',
 });
 
@@ -628,11 +602,7 @@ export const customers = register({
       aliases: ['isactive', 'is_active', 'active', 'status'],
     },
   ],
-  sampleRows: [
-    ['CUST-001', 'HyperOne Egypt', 'retail', 'Sheikh Zayed', '+20 2 9876 5432', 'sales@hyperone.com', '500000', '30', 'true'],
-    ['CUST-002', 'Carrefour Egypt', 'retail', 'Maadi', '+20 2 8765 4321', 'purchasing@carrefour.eg', '1000000', '45', 'true'],
-    ['CUST-003', 'B2B Distributor Cairo', 'wholesale', 'Heliopolis', '+20 2 7654 3210', 'b2b@distributoreg.com', '2000000', '60', 'true'],
-  ],
+  sampleRows: [],
   countQuery: 'customer.count({ where: { companyId } })',
 });
 
@@ -676,11 +646,7 @@ export const suppliers = register({
       aliases: ['email', 'e-mail', 'mail'],
     },
   ],
-  sampleRows: [
-    ['Sesame Seed Importing Co', '+249 1 123 4567', 'sales@sesameimport.com'],
-    ['Modern Packaging Solutions', '+20 2 5555 1234', 'info@modernpack.eg'],
-    ['Sugar & Sweeteners Corp', '+20 2 6666 7890', 'sales@sugarcorp.com'],
-  ],
+  sampleRows: [],
   countQuery: 'supplier.count({ where: { companyId } })',
 });
 
@@ -722,11 +688,10 @@ export const materials = register({
     {
       field: 'materialType',
       display: 'Material Type',
-      type: 'enum',
+      type: 'string',
       required: false,
-      description: 'Classification',
+      description: 'Classification (free text, suggested: raw_material, packaging, operating_supply, spare_part, other)',
       defaultValue: 'raw_material',
-      allowedValues: ['raw_material', 'packaging', 'operating_supply', 'spare_part', 'other'],
       aliases: ['materialtype', 'material_type', 'material type', 'type', 'rmtype'],
     },
     {
@@ -785,11 +750,7 @@ export const materials = register({
       aliases: ['isactive', 'is_active', 'active', 'status'],
     },
   ],
-  sampleRows: [
-    ['RM-001', 'Raw Sesame Seeds', 'raw_material', 'kg', '45.00', 'SUPP-001', '50000', 'true'],
-    ['RM-002', 'White Refined Sugar', 'raw_material', 'kg', '28.00', 'SUPP-003', '20000', 'true'],
-    ['PM-001', 'Halva Tub 500g', 'packaging', 'pcs', '3.50', 'SUPP-002', '100000', 'true'],
-  ],
+  sampleRows: [],
   countQuery: 'material.count({ where: { companyId } })',
 });
 
@@ -890,11 +851,7 @@ export const products = register({
       aliases: ['isactive', 'is_active', 'active', 'status'],
     },
   ],
-  sampleRows: [
-    ['P-001', 'Plain Halva 500g', 'finished_good', 'Halva & Tahina', 'pcs', '40.00', '60.00', 'true'],
-    ['P-002', 'Chocolate Halva 500g', 'finished_good', 'Halva & Tahina', 'pcs', '45.00', '65.00', 'true'],
-    ['P-003', 'Stuffed Dates 250g', 'finished_good', 'Dates & Dried Fruits', 'pcs', '35.00', '50.00', 'true'],
-  ],
+  sampleRows: [],
   countQuery: 'product.count({ where: { companyId } })',
 });
 
@@ -1009,11 +966,7 @@ export const bomRecipes = register({
       prismaField: 'wastagePct',
     },
   ],
-  sampleRows: [
-    ['P-001', 'v1', '1', '1', '0.05', '0.02', 'RM-001', '0.300', '1'],
-    ['P-001', 'v1', '1', '1', '0.05', '0.02', 'RM-002', '0.150', '2'],
-    ['P-002', 'v1', '1', '1', '0.05', '0.02', 'RM-001', '0.280', '1'],
-  ],
+  sampleRows: [],
   countQuery: 'bomLine.count({ where: { bomRecipe: { companyId } } })',
 });
 
@@ -1080,10 +1033,7 @@ export const exchangeRates = register({
       aliases: ['source', 'ratesource', 'remarks'],
     },
   ],
-  sampleRows: [
-    ['USD', 'EGP', '48.50', '2026-01-01', 'manual'],
-    ['EUR', 'EGP', '52.30', '2026-01-01', 'api'],
-  ],
+  sampleRows: [],
   countQuery: 'exchangeRate.count({ where: { companyId } })',
 });
 
@@ -1171,10 +1121,7 @@ export const kpiTargets = register({
       },
     },
   ],
-  sampleRows: [
-    ['OEE', 'operational', '2026', '', '0.85', '%', 'Cairo Factory'],
-    ['Capacity Utilization', 'production', '2026', '', '0.90', '%', 'Bawadi Factory'],
-  ],
+  sampleRows: [],
   countQuery: 'kpiTarget.count({ where: { companyId } })',
 });
 
@@ -1194,7 +1141,7 @@ export const rawMaterialPrices = register({
   page: 'raw-material-prices',
   importOrder: 14,
   dependencies: ['companies', 'materials'],
-  strategy: 'insert',
+  strategy: 'update',
   updateOnly: false,
   columns: [
     {
@@ -1238,10 +1185,7 @@ export const rawMaterialPrices = register({
       aliases: ['source', 'ratesource', 'remarks'],
     },
   ],
-  sampleRows: [
-    ['RM-001', '45.00', '2026-01-01', 'manual'],
-    ['RM-002', '28.00', '2026-01-01', 'manual'],
-  ],
+  sampleRows: [],
   countQuery: 'rawMaterialPrice.count({ where: { companyId } })',
 });
 
@@ -1353,10 +1297,7 @@ export const productionPlans = register({
       aliases: ['plansource', 'plan_source', 'plan source', 'source', 'status'],
     },
   ],
-  sampleRows: [
-    ['P-001', 'Cairo Factory', '2026', '1', '12000', '10000', '', '', 'manual'],
-    ['P-002', 'Bawadi Factory', '2026', '1', '9000', '8000', '', '', 'manual'],
-  ],
+  sampleRows: [],
   countQuery: 'productionPlan.count({ where: { companyId } })',
 });
 
@@ -1420,19 +1361,36 @@ export const productionAllocations = register({
     {
       field: 'allocationMethod',
       display: 'Allocation Method',
-      type: 'enum',
+      type: 'string',
       required: false,
-      description: 'Allocation basis method',
+      description: 'Allocation basis method (free text, suggested: production_volume, machine_hours, direct_labor_hours, floor_area, headcount, manual)',
       defaultValue: 'production_volume',
-      allowedValues: ['production_volume', 'machine_hours', 'direct_labor_hours', 'floor_area', 'headcount', 'manual'],
       aliases: ['allocationmethod', 'allocation_method', 'allocation basis', 'allocationbasis', 'allocation_basis'],
     },
+    {
+      field: 'productSku',
+      display: 'Product SKU',
+      type: 'string',
+      required: false,
+      description: 'Product SKU (must exist in Products, for product-specific allocations)',
+      aliases: ['productsku', 'product_sku', 'product sku', 'sku', 'product'],
+      fkLookup: {
+        model: 'product',
+        lookupFields: ['sku', 'name'],
+        assignField: 'productId',
+        label: 'Product',
+      },
+    },
+    {
+      field: 'description',
+      display: 'Description',
+      type: 'string',
+      required: false,
+      description: 'Allocation description',
+      aliases: ['description', 'desc', 'notes', 'remarks'],
+    },
   ],
-  sampleRows: [
-    ['Cairo Factory', '2026-01', '50000', 'overhead', 'machine_hours'],
-    ['Cairo Factory', '2026-02', '52000', 'overhead', 'machine_hours'],
-    ['Alexandria Warehouse', '2026-01', '30000', 'overhead', 'floor_area'],
-  ],
+  sampleRows: [],
   countQuery: 'productionCostAllocation.count({ where: { companyId } })',
 });
 
@@ -1477,10 +1435,7 @@ export const yieldWaste = register({
       aliases: ['wastagepct', 'wastage_pct', 'wastage %', 'wastage', 'wastage_percentage'],
     },
   ],
-  sampleRows: [
-    ['P-001', '2'],
-    ['P-002', '3'],
-  ],
+  sampleRows: [],
   countQuery: '',
 });
 
@@ -1646,11 +1601,7 @@ export const budgetLines = register({
       aliases: ['notes', 'note', 'description', 'remarks'],
     },
   ],
-  sampleRows: [
-    ['FY26 Annual Budget', '2026', '4000', 'Cairo Factory', 'CC-001', 'P-001', '', '', '1', '10000', '60.00', '600000', 'Sales Budget - Plain Halva Jan'],
-    ['FY26 Annual Budget', '2026', '4000', 'Bawadi Factory', 'CC-002', 'P-002', '', '', '1', '8000', '65.00', '520000', 'Sales Budget - Chocolate Halva Jan'],
-    ['FY26 Annual Budget', '2026', '5000', 'Cairo Factory', 'CC-001', '', 'RM-001', '', '1', '3000', '45.00', '135000', 'Purchase Budget - Sesame Jan'],
-  ],
+  sampleRows: [],
   countQuery: 'budgetLine.count({ where: { budgetCycle: { companyId } } })',
 });
 
@@ -1806,11 +1757,10 @@ export const forecastLines = register({
     {
       field: 'driverType',
       display: 'Driver Type',
-      type: 'enum',
+      type: 'string',
       required: false,
-      description: 'Forecast driver type',
+      description: 'Forecast driver type (free text, suggested: sales_volume, production_volume, headcount, square_meters, machine_hours, direct_labor_hours, manual, other)',
       aliases: ['drivertype', 'driver_type', 'driver type', 'driver'],
-      allowedValues: ['sales_volume', 'production_volume', 'headcount', 'square_meters', 'machine_hours', 'direct_labor_hours', 'manual', 'other'],
     },
     {
       field: 'notes',
@@ -1821,11 +1771,7 @@ export const forecastLines = register({
       aliases: ['notes', 'note', 'description', 'remarks'],
     },
   ],
-  sampleRows: [
-    ['FY26 Q1 Forecast', '2026', '4000', 'Cairo Factory', 'CC-001', 'P-001', '', '', '1', '11000', '60.00', '660000', 'sales_volume', 'Forecast Plain Halva Jan'],
-    ['FY26 Q1 Forecast', '2026', '4000', 'Bawadi Factory', 'CC-002', 'P-002', '', '', '1', '8500', '65.00', '552500', 'sales_volume', 'Forecast Choc Halva Jan'],
-    ['FY26 Q1 Forecast', '2026', '5000', 'Cairo Factory', 'CC-001', '', 'RM-001', '', '1', '3200', '45.00', '144000', 'material_price', 'Forecast Sesame Jan'],
-  ],
+  sampleRows: [],
   countQuery: 'forecastLine.count({ where: { forecastCycle: { companyId } } })',
 });
 
@@ -1971,11 +1917,7 @@ export const actualLines = register({
       aliases: ['referenceno', 'reference_no', 'reference number', 'reference no', 'refno', 'ref no'],
     },
   ],
-  sampleRows: [
-    ['4000', 'Cairo Factory', 'CC-001', 'P-001', '', 'CUST-001', '2026-01-15', '1200', '60.00', '72000', 'INV-2026-0001'],
-    ['4000', 'Bawadi Factory', 'CC-002', 'P-002', '', 'CUST-002', '2026-01-16', '900', '65.00', '58500', 'INV-2026-0002'],
-    ['5000', 'Cairo Factory', 'CC-001', '', 'RM-001', 'SUPP-001', '2026-01-17', '500', '45.00', '22500', 'PO-2026-0001'],
-  ],
+  sampleRows: [],
   countQuery: 'actualLine.count({ where: { actualImport: { companyId } } })',
 });
 
@@ -2116,10 +2058,7 @@ export const promotions = register({
       aliases: ['isactive', 'is_active', 'active', 'status'],
     },
   ],
-  sampleRows: [
-    ['Plain Halva Discount', '', 'P-001', 'CUST-001', '10', '', '2026-01-01', '2026-01-31', '', '', '', '', 'true'],
-    ['Chocolate Halva Promo', '', 'P-002', 'CUST-002', '15', '', '2026-01-01', '2026-01-31', '', '', '', '', 'true'],
-  ],
+  sampleRows: [],
   countQuery: 'promotion.count({ where: { companyId } })',
 });
 
@@ -2242,6 +2181,15 @@ export const headcountPlans = register({
       aliases: ['allowances', 'benefits', 'housing', 'transport'],
     },
     {
+      field: 'socialInsurance',
+      display: 'Social Insurance',
+      type: 'number',
+      required: false,
+      description: 'Monthly social insurance cost',
+      defaultValue: 0,
+      aliases: ['socialinsurance', 'social_insurance', 'social insurance', 'insurance'],
+    },
+    {
       field: 'totalCost',
       display: 'Total Cost',
       type: 'number',
@@ -2249,12 +2197,16 @@ export const headcountPlans = register({
       description: 'Total monthly cost (salary + allowances + insurance)',
       aliases: ['totalcost', 'total_cost', 'total cost', 'total'],
     },
+    {
+      field: 'notes',
+      display: 'Notes',
+      type: 'string',
+      required: false,
+      description: 'Headcount notes or description',
+      aliases: ['notes', 'note', 'description', 'remarks', 'comment'],
+    },
   ],
-  sampleRows: [
-    ['FY26 Annual Budget', 'Cairo Factory', 'CC-001', 'Production Operator', 'Manufacturing', 'full_time', '1', '10', '5000', '1500', '6800'],
-    ['FY26 Annual Budget', 'Cairo Factory', 'CC-001', 'Quality Inspector', 'Quality', 'full_time', '1', '3', '6000', '2000', '8300'],
-    ['FY26 Annual Budget', 'Bawadi Factory', 'CC-002', 'Packaging Supervisor', 'Packaging', 'full_time', '1', '2', '5500', '1800', '7550'],
-  ],
+  sampleRows: [],
   countQuery: 'headcountPlan.count({ where: { budgetCycle: { companyId } } })',
 });
 
@@ -2345,10 +2297,7 @@ export const notificationRules = register({
       aliases: ['isactive', 'is_active', 'active', 'status'],
     },
   ],
-  sampleRows: [
-    ['Budget Variance Alert', 'variance_pct', '10', '4000', '', 'system,email', 'true'],
-    ['KPI Breach Alert', 'kpi_breach', '', '', 'Cairo Factory', 'system', 'true'],
-  ],
+  sampleRows: [],
   countQuery: 'notificationRule.count({ where: { companyId } })',
 });
 
@@ -2367,7 +2316,7 @@ export const salesPlans = register({
   endpoint: '/sales-plans',
   importOrder: 25,
   dependencies: ['companies', 'products', 'sites'],
-  strategy: 'insert',
+  strategy: 'upsert',
   updateOnly: false,
   columns: [
     {
@@ -2432,10 +2381,7 @@ export const salesPlans = register({
       aliases: ['actualqty', 'actual_qty', 'actual qty', 'actualsales'],
     },
   ],
-  sampleRows: [
-    ['P-001', 'Cairo Factory', '2026', '1', '10000', '9500'],
-    ['P-002', 'Bawadi Factory', '2026', '1', '8000', '7800'],
-  ],
+  sampleRows: [],
   countQuery: 'productionPlan.count({ where: { companyId } })',
 });
 
